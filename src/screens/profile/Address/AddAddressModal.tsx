@@ -19,12 +19,13 @@ interface AddressDetails {
   pincode: string;
   landmark: string;
   tag: string;
+  isDefaultAddress: boolean;
 }
 
 interface AddAddressModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (address: AddressDetails & { latitude?: number; longitude?: number }) => void;
+  onSave: (address: AddressDetails) => void;
 }
 
 const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => {
@@ -40,6 +41,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
     pincode: '',
     landmark: '',
     tag: 'Home',
+    isDefaultAddress: false,
   });
 
   const handleLocationSelect = (selectedLocation: Location) => {
@@ -50,8 +52,8 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
   const handleSaveAddress = () => {
     const fullAddress = {
       ...addressDetails,
-      latitude: location?.latitude,
-      longitude: location?.longitude,
+      latitude: location?.latitude?.toString(),
+      longitude: location?.longitude?.toString(),
     };
     onSave(fullAddress);
     resetForm();
@@ -69,6 +71,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       pincode: '',
       landmark: '',
       tag: 'Home',
+      isDefaultAddress: false,
     });
   };
 

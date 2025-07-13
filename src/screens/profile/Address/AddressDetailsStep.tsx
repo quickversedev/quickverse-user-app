@@ -1,5 +1,13 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 
 interface Location {
@@ -16,6 +24,7 @@ interface AddressDetails {
   pincode: string;
   landmark: string;
   tag: string;
+  isDefaultAddress: boolean;
 }
 
 interface AddressDetailsStepProps {
@@ -26,14 +35,14 @@ interface AddressDetailsStepProps {
 }
 
 const AddressDetailsStep = ({
-  location,
+  location: _location,
   details,
   onDetailsChange,
   onSave,
 }: AddressDetailsStepProps) => {
   const { getColor, getTypography, theme } = useTheme();
 
-  const handleChange = (field: keyof AddressDetails, value: string) => {
+  const handleChange = (field: keyof AddressDetails, value: string | boolean) => {
     onDetailsChange({
       ...details,
       [field]: value,
@@ -110,6 +119,16 @@ const AddressDetailsStep = ({
     saveButtonText: {
       fontWeight: 'bold',
       color: isFormValid() ? getColor('white') : getColor('text'),
+      fontSize: getTypography('body'),
+    },
+    defaultContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    defaultLabel: {
+      color: getColor('text'),
       fontSize: getTypography('body'),
     },
   });
@@ -201,6 +220,17 @@ const AddressDetailsStep = ({
             </Text>
           </TouchableOpacity>
         ))}
+      </View>
+
+      <View style={themedStyles.defaultContainer}>
+        <Text style={themedStyles.defaultLabel}>Set as default address</Text>
+        <Switch
+          value={details.isDefaultAddress}
+          onValueChange={value => handleChange('isDefaultAddress', value)}
+          trackColor={{ false: getColor('border'), true: getColor('primary') }}
+          thumbColor={getColor('white')}
+          ios_backgroundColor={getColor('border')}
+        />
       </View>
 
       <TouchableOpacity style={themedStyles.saveButton} disabled={!isFormValid()} onPress={onSave}>

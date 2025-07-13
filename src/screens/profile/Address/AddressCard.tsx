@@ -1,18 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
-
-type Address = {
-  id: string;
-  name: string;
-  addressLine1: string;
-  addressLine2?: string;
-  city: string;
-  state: string;
-  pincode: string;
-  tag: string;
-  isDefault?: boolean;
-};
+import { Address } from '../../../types/address';
+import {
+  getAddressDisplayName,
+  getAddressTag,
+  getConcatenatedAddress,
+} from '../../../utils/addressUtils';
 
 const AddressCard = ({ address }: { address: Address }) => {
   const { getColor, getTypography, theme } = useTheme();
@@ -54,12 +48,13 @@ const AddressCard = ({ address }: { address: Address }) => {
       color: getColor('text'),
       fontSize: getTypography('body'),
       fontWeight: '600',
-      marginBottom: 2,
+      marginBottom: 4,
     },
     address: {
       color: getColor('text'),
       fontSize: getTypography('body'),
-      marginBottom: 2,
+      marginBottom: 4,
+      lineHeight: 20,
     },
     actions: {
       flexDirection: 'row',
@@ -75,16 +70,12 @@ const AddressCard = ({ address }: { address: Address }) => {
   return (
     <View style={themedStyles.card}>
       <View style={themedStyles.header}>
-        <Text style={themedStyles.tag}>{address.tag}</Text>
+        <Text style={themedStyles.tag}>{getAddressTag(address)}</Text>
         {address.isDefault && <Text style={themedStyles.defaultTag}>Default</Text>}
       </View>
 
-      <Text style={themedStyles.name}>{address.name}</Text>
-      <Text style={themedStyles.address}>{address.addressLine1}</Text>
-      {address.addressLine2 && <Text style={themedStyles.address}>{address.addressLine2}</Text>}
-      <Text style={themedStyles.address}>
-        {address.city}, {address.state} - {address.pincode}
-      </Text>
+      <Text style={themedStyles.name}>{getAddressDisplayName(address)}</Text>
+      <Text style={themedStyles.address}>{getConcatenatedAddress(address)}</Text>
 
       <View style={themedStyles.actions}>
         <TouchableOpacity>
