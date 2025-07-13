@@ -3,9 +3,9 @@ import React, { useEffect } from 'react';
 import { useAuth } from '../contexts/login/AuthProvider';
 import { useLocationPermission } from '../hooks/Permissions/usePermissions';
 import { useNotifications } from '../hooks/useNotifications';
+import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
 import Registration from '../screens/login/Registration';
-import ProfileScreen from '../screens/profile/profileScreen';
 
 export type RootStackParamList = {
   MainApp: undefined;
@@ -37,7 +37,7 @@ export const AppStack = () => {
       }}
     >
       <Stack.Screen name="MainApp" component={TabNavigation} />
-      <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="Profile" component={ProfileStack} />
     </Stack.Navigator>
   );
 };

@@ -3,6 +3,7 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply plugin: 'com.google.gms.google-services'
 
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -118,5 +119,20 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+
+    // Google Play Services - use compatible versions
+    implementation "com.google.android.gms:play-services-base:18.2.0"
+    implementation "com.google.android.gms:play-services-maps:18.1.0"
+    implementation "com.google.android.gms:play-services-location:21.0.1"
+
+    // Force consistent versions to avoid conflicts
+    constraints {
+        implementation("com.google.android.gms:play-services-base:18.2.0") {
+            because "Ensure consistent Google Play Services version"
+        }
+        implementation("com.google.android.gms:play-services-location:21.0.1") {
+            because "Ensure consistent location services version"
+        }
     }
 }

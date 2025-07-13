@@ -1,6 +1,6 @@
+import Geolocation from '@react-native-community/geolocation';
 import { useEffect, useState } from 'react';
 import { Alert, AppState, Platform } from 'react-native';
-import Geolocation from 'react-native-geolocation-service';
 import {
   check,
   openSettings,
@@ -64,7 +64,8 @@ export const useLocationPermission = () => {
 
     setIsLoading(true);
     Geolocation.getCurrentPosition(
-      position => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (position: any) => {
         setLocation({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -72,7 +73,8 @@ export const useLocationPermission = () => {
         });
         setIsLoading(false);
       },
-      error => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (error: any) => {
         setLocation({
           latitude: null,
           longitude: null,

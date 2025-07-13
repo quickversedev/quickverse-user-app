@@ -1,3 +1,4 @@
+import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import {
   Image,
@@ -11,6 +12,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useTheme } from '../../theme/ThemeContext';
+import { AppNavigationProp } from '../../types/navigation';
 
 type FeatureItem = {
   id: string;
@@ -19,16 +21,39 @@ type FeatureItem = {
   onPress: () => void;
 };
 
+const FeatureButton = ({ item }: { item: FeatureItem }) => {
+  const { getColor } = useTheme();
+  return (
+    <TouchableOpacity
+      style={[styles.featureButton, { backgroundColor: getColor('card') }]}
+      onPress={item.onPress}
+    >
+      <View style={styles.featureContent}>
+        <Icon name={item.icon} size={24} color={getColor('text')} />
+        <Text style={[styles.featureText, { color: getColor('text') }]}>{item.title}</Text>
+      </View>
+      <Icon name="chevron-right" size={24} color={getColor('text')} />
+    </TouchableOpacity>
+  );
+};
+
 const ProfileScreen = () => {
   const { signOut } = useAuth();
   const { getColor } = useTheme();
+  const navigation = useNavigation<AppNavigationProp>();
 
   const features: FeatureItem[] = [
     {
       id: 'feature1',
-      title: 'Feature 01',
+      title: 'Addresses',
       icon: 'circle-outline',
-      onPress: () => {},
+      onPress: () => {
+        // navigation is not defined in this scope, so we need to get it from props or useNavigation
+        // We'll use the useNavigation hook from @react-navigation/native
+        // Make sure to import: import { useNavigation } from '@react-navigation/native';
+        // And add: const navigation = useNavigation();
+        navigation.navigate('Addresses');
+      },
     },
     {
       id: 'feature2',
@@ -49,19 +74,6 @@ const ProfileScreen = () => {
       onPress: () => {},
     },
   ];
-
-  const FeatureButton = ({ item }: { item: FeatureItem }) => (
-    <TouchableOpacity
-      style={[styles.featureButton, { backgroundColor: getColor('card') }]}
-      onPress={item.onPress}
-    >
-      <View style={styles.featureContent}>
-        <Icon name={item.icon} size={24} color={getColor('text')} />
-        <Text style={[styles.featureText, { color: getColor('text') }]}>{item.title}</Text>
-      </View>
-      <Icon name="chevron-right" size={24} color={getColor('text')} />
-    </TouchableOpacity>
-  );
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: getColor('background') }]}>
