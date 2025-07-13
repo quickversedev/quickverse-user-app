@@ -138,7 +138,7 @@ const AddressScreen = () => {
           <>
             <FlatList
               data={addresses}
-              keyExtractor={item => item.id}
+              keyExtractor={(item, index) => item.id || `address-${index}`}
               renderItem={({ item }) => <AddressCard address={item} />}
               contentContainerStyle={themedStyles.listContainer}
             />

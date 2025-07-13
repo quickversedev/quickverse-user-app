@@ -3,7 +3,7 @@ import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { useTheme } from '../../../theme/ThemeContext';
 import AddressDetailsStep from './AddressDetailsStep';
-import MapLocationStep from './MapLocationStep';
+import MapLocationStep from './components/MapLocationStep';
 
 interface Location {
   latitude: number;

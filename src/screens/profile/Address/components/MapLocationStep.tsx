@@ -19,8 +19,9 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { v4 as uuidv4 } from 'uuid';
-import { useLocationPermission } from '../../../hooks/Permissions/usePermissions';
-import { useTheme } from '../../../theme/ThemeContext';
+import { useLocationPermission } from '../../../../hooks/Permissions/usePermissions';
+import { useTheme } from '../../../../theme/ThemeContext';
+import { getRegionFromLocation } from '../utils/mapUtils';
 
 const { width, height } = Dimensions.get('window');
 
@@ -87,13 +88,16 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
 
   // When current location is available, center map and update selected location
   useEffect(() => {
-    if (currentLocation.latitude && currentLocation.longitude) {
-      setRegion({
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      });
+    if (
+      typeof currentLocation.latitude === 'number' &&
+      typeof currentLocation.longitude === 'number'
+    ) {
+      setRegion(
+        getRegionFromLocation({
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+        })
+      );
       setSelectedLocation({
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
@@ -103,13 +107,16 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
 
   const handleGetCurrentLocation = () => {
     getCurrentLocation();
-    if (currentLocation.latitude && currentLocation.longitude) {
-      setRegion({
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      });
+    if (
+      typeof currentLocation.latitude === 'number' &&
+      typeof currentLocation.longitude === 'number'
+    ) {
+      setRegion(
+        getRegionFromLocation({
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+        })
+      );
       setSelectedLocation({
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
@@ -150,10 +157,11 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
             console.warn('OlaPlaceAutocomplete: Unexpected response structure', response.data);
             setSearchResults([]);
           }
-        } catch (err: any) {
+        } catch (err: unknown) {
+          const error = err as { response?: { data?: unknown }; message?: string };
           console.warn(
             'Error during Ola Maps autocomplete:',
-            err.response?.data || err.message || err
+            error.response?.data || error.message || err
           );
           setSearchResults([]);
         } finally {
@@ -412,7 +420,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
           {/* Center Pin Overlay */}
           <View pointerEvents="none" style={themedStyles.centerPinContainer}>
             <Image
-              source={require('../../../assets/images/map-location.png')}
+              source={require('../../../../assets/images/map-location.png')}
               style={themedStyles.centerPin}
             />
           </View>

@@ -2,11 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Address } from '../../../types/address';
-import {
-  getAddressDisplayName,
-  getAddressTag,
-  getConcatenatedAddress,
-} from '../../../utils/addressUtils';
+import { getAddressDisplayName, getAddressTag, getConcatenatedAddress } from './utils/addressUtils';
 
 const AddressCard = ({ address }: { address: Address }) => {
   const { getColor, getTypography, theme } = useTheme();
