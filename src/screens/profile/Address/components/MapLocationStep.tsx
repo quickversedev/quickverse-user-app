@@ -49,7 +49,7 @@ interface SearchResult {
   };
 }
 
-const PIN_SIZE = 48;
+const PIN_SIZE = Math.max(48, width * 0.12);
 const MAP_HEIGHT = height * 0.8;
 
 const OLA_MAPS_AUTOCOMPLETE_ENDPOINT = 'https://api.olamaps.io/places/v1/autocomplete';
@@ -378,7 +378,11 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View style={themedStyles.outerContainer}>
+      <View
+        style={themedStyles.outerContainer}
+        accessible={true}
+        accessibilityLabel="Map location selection screen"
+      >
         {/* Map with rounded top corners */}
         <View style={themedStyles.mapContainer}>
           <MapView
@@ -441,6 +445,12 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                 placeholderTextColor={getColor('placeholder')}
                 value={searchQuery}
                 onChangeText={handleSearchInputChange}
+                accessible={true}
+                accessibilityRole="search"
+                accessibilityLabel="Search for a location"
+                accessibilityHint="Type to search for places and addresses"
+                returnKeyType="search"
+                autoCapitalize="words"
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity
@@ -448,6 +458,11 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                     setSearchQuery('');
                     setSearchResults([]);
                   }}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear search"
+                  accessibilityHint="Clears the search input"
+                  activeOpacity={0.7}
                 >
                   <MaterialCommunityIcons
                     name="close-circle"
@@ -489,6 +504,11 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                         setSearchQuery(result.structured_formatting.main_text);
                         setSearchResults([]);
                       }}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Select ${result.structured_formatting.main_text}`}
+                      accessibilityHint={`Selects ${result.structured_formatting.main_text} as the location`}
+                      activeOpacity={0.7}
                     >
                       <Text style={{ color: getColor('text'), fontWeight: 'bold' }}>
                         {result.structured_formatting.main_text}
@@ -507,6 +527,10 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
             <TouchableOpacity
               style={[themedStyles.currentLocationButton, { backgroundColor: getColor('card') }]}
               onPress={handleGetCurrentLocation}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Use current location"
+              accessibilityHint="Centers the map on your current location"
               activeOpacity={0.85}
             >
               <MaterialCommunityIcons
@@ -526,6 +550,11 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
           <TouchableOpacity
             style={themedStyles.outlinedButton}
             onPress={handleLocationConfirm}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Confirm address location"
+            accessibilityHint="Confirms the selected location and proceeds to address details"
+            accessibilityState={{ disabled: !selectedLocation }}
             activeOpacity={0.85}
             disabled={!selectedLocation}
           >
