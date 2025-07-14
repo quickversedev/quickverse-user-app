@@ -112,4 +112,13 @@ export const StorageService = {
   clearAll: (): void => {
     storage.clearAll();
   },
+  setItem: (key: string, value: string): void => {
+    storage.set(key, value);
+  },
+  getItem: (key: string): string | undefined => {
+    return storage.getString(key) ?? undefined;
+  },
+  removeItem: (key: string): void => {
+    storage.delete(key);
+  },
 };

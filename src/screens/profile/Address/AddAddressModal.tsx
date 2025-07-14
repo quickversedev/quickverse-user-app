@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 
+import { useAddress } from '../../../hooks';
 import { useTheme } from '../../../theme/ThemeContext';
 import AddressDetailsStep from './AddressDetailsStep';
 import MapLocationStep from './components/MapLocationStep';
@@ -40,6 +41,7 @@ interface AddAddressModalProps {
 
 const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => {
   const { getColor, getTypography, theme } = useTheme();
+  const { addAddress, loading, error } = useAddress();
   const [step, setStep] = useState(1);
   const [location, setLocation] = useState<Location | null>(null);
   const [addressDetails, setAddressDetails] = useState<AddressDetails>({
@@ -53,20 +55,36 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
     tag: 'Home',
     isDefaultAddress: false,
   });
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const handleLocationSelect = (selectedLocation: Location) => {
     setLocation(selectedLocation);
     setStep(2);
   };
 
-  const handleSaveAddress = () => {
-    const fullAddress = {
-      ...addressDetails,
-      latitude: location?.latitude?.toString(),
-      longitude: location?.longitude?.toString(),
-    };
-    onSave(fullAddress);
-    resetForm();
+  const handleSaveAddress = async (details: AddressDetails) => {
+    setApiError(null);
+    try {
+      const newAddress = {
+        ...details,
+        latitude: location ? location.latitude.toString() : undefined,
+        longitude: location ? location.longitude.toString() : undefined,
+      };
+      const result = await addAddress(newAddress);
+      if (result.success) {
+        onSave(newAddress);
+        resetForm();
+      } else {
+        setApiError(
+          (result.error as { message?: string })?.message ||
+            'Failed to save address. Please try again.'
+        );
+      }
+    } catch (error: unknown) {
+      setApiError(
+        (error as { message?: string })?.message || 'Failed to save address. Please try again.'
+      );
+    }
   };
 
   const resetForm = () => {
@@ -187,6 +205,8 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
             details={addressDetails}
             onDetailsChange={setAddressDetails}
             onSave={handleSaveAddress}
+            isLoading={loading}
+            apiError={apiError || error}
           />
         )}
       </View>

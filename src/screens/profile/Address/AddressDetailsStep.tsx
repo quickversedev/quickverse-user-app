@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
@@ -48,15 +49,17 @@ interface AddressDetailsStepProps {
   location: Location | null;
   details: AddressDetails;
   onDetailsChange: (details: AddressDetails) => void;
-  onSave: () => void;
+  onSave: (details: AddressDetails) => void;
 }
 
 const AddressDetailsStep = ({
-  location: _location,
+  location,
   details,
   onDetailsChange,
   onSave,
-}: AddressDetailsStepProps) => {
+  isLoading = false,
+  apiError = null,
+}: AddressDetailsStepProps & { isLoading?: boolean; apiError?: string | null }) => {
   const { getColor, getTypography, theme } = useTheme();
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -150,6 +153,16 @@ const AddressDetailsStep = ({
     if (typeof value === 'string' && errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
+
+    // Clear API error when user makes changes
+    if (apiError) {
+      // setApiError(null); // This line is removed as per the new_code
+    }
+
+    // Mark field as touched when user starts typing
+    if (!touched[field]) {
+      setTouched(prev => ({ ...prev, [field]: true }));
+    }
   };
 
   const handleBlur = (field: keyof AddressDetails) => {
@@ -160,7 +173,7 @@ const AddressDetailsStep = ({
     setErrors(prev => ({ ...prev, [field]: error }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Mark all fields as touched
     const allFields = [
       'name',
@@ -177,13 +190,21 @@ const AddressDetailsStep = ({
     });
     setTouched(newTouched);
 
-    if (validateForm()) {
-      onSave();
+    if (!validateForm()) {
+      return;
     }
+
+    // Call parent onSave with all details (including location)
+    onSave({
+      ...details,
+      latitude: location ? location.latitude.toString() : undefined,
+      longitude: location ? location.longitude.toString() : undefined,
+    });
   };
 
   const isFormValid = () => {
-    return (
+    // Check if all required fields are filled
+    const requiredFieldsFilled =
       details.name.trim() &&
       details.addressLine1.trim() &&
       details.addressLine2.trim() &&
@@ -191,8 +212,16 @@ const AddressDetailsStep = ({
       details.state.trim() &&
       details.pincode.trim() &&
       /^\d{6}$/.test(details.pincode.trim()) &&
-      Object.keys(errors).length === 0
-    );
+      details.tag &&
+      details.tag.trim(); // Tag is also required
+
+    // Only check for errors if the field has been touched
+    const hasErrors = Object.keys(errors).some(key => {
+      const field = key as keyof AddressDetails;
+      return touched[field] && errors[field] && errors[field]!.trim().length > 0;
+    });
+
+    return requiredFieldsFilled && !hasErrors;
   };
 
   const themedStyles = StyleSheet.create({
@@ -291,14 +320,16 @@ const AddressDetailsStep = ({
       padding: Math.max(16, height * 0.02),
       borderRadius: theme.borderRadius.md,
       alignItems: 'center',
-      backgroundColor: isFormValid() ? getColor('primary') : getColor('button').disabled.background,
+      backgroundColor:
+        isFormValid() && !isLoading ? getColor('primary') : getColor('button').disabled.background,
       minHeight: 48,
       justifyContent: 'center',
       marginTop: 16,
+      opacity: isLoading ? 0.7 : 1,
     },
     saveButtonText: {
       fontWeight: 'bold',
-      color: isFormValid() ? getColor('white') : getColor('text'),
+      color: isFormValid() && !isLoading ? getColor('white') : getColor('text'),
       fontSize: getTypography('body'),
       includeFontPadding: false,
       textAlignVertical: 'center',
@@ -316,6 +347,33 @@ const AddressDetailsStep = ({
       includeFontPadding: false,
       textAlignVertical: 'center',
       flex: 1,
+    },
+    apiErrorContainer: {
+      backgroundColor: getColor('error'),
+      padding: Math.max(12, width * 0.03),
+      borderRadius: theme.borderRadius.md,
+      marginBottom: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    apiErrorText: {
+      color: getColor('white'),
+      fontSize: getTypography('body'),
+      flex: 1,
+      includeFontPadding: false,
+      lineHeight: getTypography('body') * 1.2,
+    },
+    loadingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loadingText: {
+      color: getColor('white'),
+      fontSize: getTypography('body'),
+      fontWeight: '600',
+      marginLeft: 8,
+      includeFontPadding: false,
     },
   });
 
@@ -362,6 +420,7 @@ const AddressDetailsStep = ({
           value={details[field] as string}
           onChangeText={text => handleChange(field, text)}
           onBlur={() => handleBlur(field)}
+          editable={!isLoading}
           accessible={true}
           accessibilityRole="text"
           accessibilityLabel={`Enter ${placeholder.toLowerCase()}`}
@@ -394,6 +453,12 @@ const AddressDetailsStep = ({
         accessible={true}
         accessibilityLabel="Address details form"
       >
+        {apiError && (
+          <View style={themedStyles.apiErrorContainer}>
+            <Text style={themedStyles.apiErrorText}>⚠️ {apiError}</Text>
+          </View>
+        )}
+
         {renderInput('name', 'Name (Eg. Rahul Yadav)', { required: true })}
         {renderInput('addressLine1', 'House No. / Flat No. / Building', { required: true })}
         {renderInput('addressLine2', 'Floor', { required: true })}
@@ -414,7 +479,8 @@ const AddressDetailsStep = ({
             accessibilityRole="text"
             accessibilityLabel="Save address as"
           >
-            Save as:
+            Save as:{' '}
+            {!details.tag && <Text style={themedStyles.requiredIndicator}>* Required</Text>}
           </Text>
           {['Home', 'Work', 'Other'].map(tag => (
             <TouchableOpacity
@@ -426,11 +492,12 @@ const AddressDetailsStep = ({
                 },
               ]}
               onPress={() => handleChange('tag', tag)}
+              disabled={isLoading}
               accessible={true}
               accessibilityRole="button"
               accessibilityLabel={`Save as ${tag}`}
               accessibilityHint={`Marks this address as ${tag.toLowerCase()}`}
-              accessibilityState={{ selected: details.tag === tag }}
+              accessibilityState={{ selected: details.tag === tag, disabled: isLoading }}
               activeOpacity={0.7}
             >
               <Text
@@ -462,26 +529,38 @@ const AddressDetailsStep = ({
             trackColor={{ false: getColor('border'), true: getColor('primary') }}
             thumbColor={getColor('white')}
             ios_backgroundColor={getColor('border')}
+            disabled={isLoading}
             accessible={true}
             accessibilityRole="switch"
             accessibilityLabel="Set as default address"
             accessibilityHint="Toggles whether this address should be your default address"
-            accessibilityState={{ checked: details.isDefaultAddress }}
+            accessibilityState={{ checked: details.isDefaultAddress, disabled: isLoading }}
           />
         </View>
 
         <TouchableOpacity
           style={themedStyles.saveButton}
-          disabled={!isFormValid()}
+          disabled={!isFormValid() || isLoading}
           onPress={handleSave}
           accessible={true}
           accessibilityRole="button"
-          accessibilityLabel="Save address"
-          accessibilityHint="Saves the address details and adds it to your saved addresses"
-          accessibilityState={{ disabled: !isFormValid() }}
+          accessibilityLabel={isLoading ? 'Saving address' : 'Save address'}
+          accessibilityHint={
+            isLoading
+              ? 'Address is being saved'
+              : 'Saves the address details and adds it to your saved addresses'
+          }
+          accessibilityState={{ disabled: !isFormValid() || isLoading }}
           activeOpacity={0.7}
         >
-          <Text style={themedStyles.saveButtonText}>Save Address</Text>
+          {isLoading ? (
+            <View style={themedStyles.loadingContainer}>
+              <ActivityIndicator size="small" color={getColor('white')} />
+              <Text style={themedStyles.loadingText}>Saving Address...</Text>
+            </View>
+          ) : (
+            <Text style={themedStyles.saveButtonText}>Save Address</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
