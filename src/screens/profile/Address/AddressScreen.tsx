@@ -1,0 +1,268 @@
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { useAddress } from '../../../hooks/useAddress';
+import { useTheme } from '../../../theme/ThemeContext';
+import { NewAddress } from '../../../types/address';
+import AddAddressModal from './AddAddressModal';
+import AddressCard from './AddressCard';
+
+const { width, height } = Dimensions.get('window');
+
+const AddressScreen = () => {
+  const { getColor, getTypography, theme } = useTheme();
+  const { addresses, loading, error, addAddress, retryFetch } = useAddress();
+  const [showAddModal, setShowAddModal] = useState(false);
+  const insets = useSafeAreaInsets();
+
+  const handleAddAddress = async (newAddress: NewAddress) => {
+    const result = await addAddress(newAddress);
+    if (result.success) {
+      setShowAddModal(false);
+    }
+  };
+
+  const themedStyles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: getColor('background'),
+    },
+    header: {
+      backgroundColor: getColor('card'),
+      paddingTop: Platform.OS === 'ios' ? insets.top + 16 : insets.top + 8,
+      paddingBottom: 16,
+      paddingHorizontal: Math.max(16, width * 0.04),
+      borderBottomWidth: 1,
+      borderBottomColor: getColor('border'),
+      ...Platform.select({
+        android: {
+          elevation: 2,
+        },
+        ios: {
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: theme.colors.shadow.offset,
+          shadowOpacity: theme.colors.shadow.opacity,
+          shadowRadius: theme.colors.shadow.radius,
+        },
+      }),
+    },
+    headerTitle: {
+      fontSize: Math.min(getTypography('h1'), 24),
+      fontWeight: 'bold',
+      color: getColor('text'),
+      textAlign: 'center',
+      includeFontPadding: false,
+      textAlignVertical: 'center',
+    },
+    content: {
+      flex: 1,
+    },
+    errorContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: Math.max(24, width * 0.06),
+    },
+    errorText: {
+      color: getColor('error'),
+      fontSize: getTypography('body'),
+      textAlign: 'center',
+      marginBottom: 16,
+      includeFontPadding: false,
+    },
+    retryButton: {
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: theme.borderRadius.md,
+      backgroundColor: getColor('primary'),
+    },
+    retryButtonText: {
+      color: getColor('white'),
+      fontSize: getTypography('body'),
+      fontWeight: '600',
+      includeFontPadding: false,
+    },
+    listContainer: {
+      padding: Math.max(16, width * 0.04),
+      paddingBottom: 100, // Space for FAB
+    },
+    emptyContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: getColor('background'),
+      padding: Math.max(24, width * 0.06),
+    },
+    emptyText: {
+      color: getColor('subText'),
+      fontSize: getTypography('body'),
+      marginBottom: 16,
+      textAlign: 'center',
+      includeFontPadding: false,
+    },
+    addButton: {
+      backgroundColor: getColor('primary'),
+      paddingVertical: 12,
+      paddingHorizontal: Math.max(32, width * 0.08),
+      borderRadius: theme.borderRadius.md,
+      alignItems: 'center',
+      marginTop: 12,
+      minHeight: 48,
+      justifyContent: 'center',
+    },
+    addButtonText: {
+      color: getColor('white'),
+      fontSize: getTypography('body'),
+      fontWeight: 'bold',
+      includeFontPadding: false,
+    },
+    fab: {
+      position: 'absolute',
+      bottom: Math.max(32, height * 0.04),
+      right: Math.max(32, width * 0.08),
+      width: 56,
+      height: 56,
+      borderRadius: theme.borderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: getColor('primary'),
+      ...Platform.select({
+        android: {
+          elevation: 6,
+        },
+        ios: {
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: theme.colors.shadow.offset,
+          shadowOpacity: theme.colors.shadow.opacity,
+          shadowRadius: theme.colors.shadow.radius,
+        },
+      }),
+    },
+    fabText: {
+      color: getColor('white'),
+      fontSize: getTypography('h2'),
+      fontWeight: 'bold',
+      includeFontPadding: false,
+      textAlignVertical: 'center',
+    },
+  });
+
+  const renderEmptyState = () => (
+    <View style={themedStyles.emptyContainer}>
+      <Text
+        style={themedStyles.emptyText}
+        accessible={true}
+        accessibilityRole="text"
+        accessibilityLabel="No addresses saved yet"
+      >
+        No addresses saved yet.
+      </Text>
+      <TouchableOpacity
+        style={themedStyles.addButton}
+        onPress={() => setShowAddModal(true)}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Add new address"
+        accessibilityHint="Opens the add address form"
+        activeOpacity={0.7}
+      >
+        <Text style={themedStyles.addButtonText}>Add Address</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  return (
+    <View
+      style={themedStyles.container}
+      accessible={true}
+      accessibilityLabel="Saved addresses screen"
+    >
+      <View style={themedStyles.header}>
+        <Text
+          style={themedStyles.headerTitle}
+          accessible={true}
+          accessibilityRole="header"
+          accessibilityLabel="Saved addresses"
+        >
+          Saved Addresses
+        </Text>
+      </View>
+
+      <View style={themedStyles.content}>
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color={getColor('primary')}
+            accessible={true}
+            accessibilityLabel="Loading addresses"
+          />
+        ) : error ? (
+          <View style={themedStyles.errorContainer}>
+            <Text
+              style={themedStyles.errorText}
+              accessible={true}
+              accessibilityRole="alert"
+              accessibilityLabel={`Error: ${error}`}
+            >
+              {error}
+            </Text>
+            <TouchableOpacity
+              onPress={retryFetch}
+              style={themedStyles.retryButton}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Retry loading addresses"
+              accessibilityHint="Attempts to load addresses again"
+              activeOpacity={0.7}
+            >
+              <Text style={themedStyles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : addresses.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          <>
+            <FlatList
+              data={addresses}
+              keyExtractor={(item, index) => item.id || `address-${index}`}
+              renderItem={({ item }) => <AddressCard address={item} />}
+              contentContainerStyle={themedStyles.listContainer}
+              showsVerticalScrollIndicator={false}
+              accessible={true}
+              accessibilityLabel="List of saved addresses"
+            />
+            <TouchableOpacity
+              style={themedStyles.fab}
+              onPress={() => setShowAddModal(true)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Add new address"
+              accessibilityHint="Opens the add address form"
+              activeOpacity={0.7}
+            >
+              <Text style={themedStyles.fabText}>+</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+
+      <AddAddressModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleAddAddress}
+      />
+    </View>
+  );
+};
+
+export default AddressScreen;

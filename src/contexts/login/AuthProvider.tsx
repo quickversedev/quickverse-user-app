@@ -9,13 +9,16 @@ import {
   setSkipLoginFlow,
   StorageService,
 } from '../../services/localStorage/storage.service';
+import { Address } from '../../types/address';
 
 type AuthContextData = {
   authData?: string;
   loading: boolean;
   skipUserLogin?: boolean;
   isNewUser: boolean | undefined;
+  selectedAddress: Address | null;
   setSkipLogin: (skipLogin: boolean) => void;
+  setSelectedAddress: (address: Address | null) => void;
   sendOtp(phoneNumber: string): Promise<string>;
   verifyOtp(phoneNumber: string, otp: string, verificationId: string): Promise<void>;
   signOut(): void;
@@ -34,6 +37,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState<boolean | undefined>();
   const [skipUserLogin, setSkipUserLogin] = useState<boolean | undefined>(false);
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
 
   useEffect(() => {
     const loadStorageData = async () => {
@@ -46,6 +50,17 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSkipUserLogin(skipLoginFlow);
         const isNewUser = getNewUser();
         setIsNewUser(isNewUser);
+
+        // Load selected address from storage
+        const storedAddress = StorageService.getItem('selectedAddress');
+        if (storedAddress) {
+          try {
+            const parsedAddress = JSON.parse(storedAddress);
+            setSelectedAddress(parsedAddress);
+          } catch (error) {
+            console.error('Failed to parse stored address', error);
+          }
+        }
       } catch (error) {
         console.error('Failed to load auth data from storage', error);
       } finally {
@@ -54,25 +69,39 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     loadStorageData();
-  });
+  }, []);
 
   const setSkipLogin = (skipLogin: boolean): void => {
     setSkipLoginFlow(skipLogin);
     setSkipUserLogin(skipLogin);
   };
+
   const setAuth = (token: string): void => {
     setAuthData(token);
     setAuthToken(token);
   };
+
   const setNewUserstate = (newUser: boolean): void => {
     setIsNewUser(newUser);
     setNewUser(newUser);
   };
+
+  const handleSetSelectedAddress = (address: Address | null): void => {
+    setSelectedAddress(address);
+    if (address) {
+      StorageService.setItem('selectedAddress', JSON.stringify(address));
+    } else {
+      StorageService.removeItem('selectedAddress');
+    }
+  };
+
   const resetAuthState = (): void => {
     setAuthData(undefined);
     setSkipUserLogin(undefined);
+    setSelectedAddress(null);
     StorageService.clearAll();
   };
+
   const sendOtp = async (phoneNumber: string): Promise<string> => {
     return await authService.sendOtp(phoneNumber);
   };
@@ -93,10 +122,10 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signUp = async (
-    fullName: string,
-    campusId: string,
-    email: string,
-    dob: string
+    _fullName: string,
+    _campusId: string,
+    _email: string,
+    _dob: string
   ): Promise<void> => {
     try {
       // const registration = await authService.signUp(
@@ -124,7 +153,9 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         loading,
         skipUserLogin,
         isNewUser,
+        selectedAddress,
         setSkipLogin,
+        setSelectedAddress: handleSetSelectedAddress,
         sendOtp,
         verifyOtp,
         signOut,
