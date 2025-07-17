@@ -181,6 +181,7 @@ export const PharmacyContent: React.FC<PharmacyContentProps> = ({
     },
     bannerContainer: {
       marginVertical: 12,
+      marginHorizontal: 12,
       // You can add more custom styles here if needed
     },
   });
@@ -208,6 +209,7 @@ export const PharmacyContent: React.FC<PharmacyContentProps> = ({
         bannerButton={{ label: 'Order Medicines', onPress: () => {} }}
         size="small"
         style={styles.bannerContainer}
+        backgroundColor="red"
       />
 
       {/* Vendors Grid */}

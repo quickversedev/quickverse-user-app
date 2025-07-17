@@ -1,5 +1,5 @@
 import { RouteProp, useRoute } from '@react-navigation/native';
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Image,
   Linking,
@@ -63,6 +63,25 @@ const VendorProfile: React.FC = () => {
   const { getColor, getTypography } = useTheme();
   const route = useRoute<VendorProfileRouteProp>();
   const { vendor } = route.params;
+
+  const [currentOffer, setCurrentOffer] = useState(0);
+  const offersScrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentOffer(prev => (prev === mockOffers.length - 1 ? 0 : prev + 1));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (offersScrollRef.current) {
+      offersScrollRef.current.scrollTo({
+        x: currentOffer * 220, // Adjust 220 if your offerCard width+margin is different
+        animated: true,
+      });
+    }
+  }, [currentOffer]);
 
   const handlePhoneCall = () => {
     if (vendor.phone) {
@@ -412,7 +431,13 @@ const VendorProfile: React.FC = () => {
           </View>
         </View>
         {/* Offers */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.offersRow}>
+        <ScrollView
+          ref={offersScrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.offersRow}
+          scrollEventThrottle={26}
+        >
           {mockOffers.map(offer => (
             <View key={offer.id} style={styles.offerCard}>
               <Image source={offer.image} style={styles.offerImage} />

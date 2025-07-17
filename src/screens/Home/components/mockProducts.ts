@@ -1,6 +1,7 @@
 export const mockProducts = [
   {
-    id: '1',
+    sku: 'sku1',
+    shopId: '4512',
     name: 'Brownie Fantasy',
     price: 69,
     mrp: 79,
@@ -10,7 +11,8 @@ export const mockProducts = [
     options: 2,
   },
   {
-    id: '2',
+    sku: 'sku2',
+    shopId: '4512',
     name: 'Strawberry Dream',
     price: 75,
     mrp: 85,
@@ -20,7 +22,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '3',
+    sku: 'sku3',
+    shopId: '4512',
     name: 'Vanilla Bliss',
     price: 65,
     mrp: 75,
@@ -30,7 +33,8 @@ export const mockProducts = [
     options: 0,
   },
   {
-    id: '4',
+    sku: 'sku4',
+    shopId: '4512',
     name: 'Choco Sundae',
     price: 99,
     mrp: 120,
@@ -40,7 +44,8 @@ export const mockProducts = [
     options: 0,
   },
   {
-    id: '5',
+    sku: 'sku5',
+    shopId: '4512',
     name: 'Nutty Sundae',
     price: 110,
     mrp: 130,
@@ -50,7 +55,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '6',
+    sku: 'sku6',
+    shopId: '4512',
     name: 'Mango Magic Sundae',
     price: 105,
     mrp: 120,
@@ -60,7 +66,8 @@ export const mockProducts = [
     options: 0,
   },
   {
-    id: '7',
+    sku: 'sku7',
+    shopId: '4512',
     name: 'Classic Cone',
     price: 49,
     mrp: 59,
@@ -70,7 +77,8 @@ export const mockProducts = [
     options: 0,
   },
   {
-    id: '8',
+    sku: 'sku8',
+    shopId: '4512',
     name: 'Chocolate Cone',
     price: 55,
     mrp: 65,
@@ -80,7 +88,8 @@ export const mockProducts = [
     options: 0,
   },
   {
-    id: '9',
+    sku: 'sku9',
+    shopId: '4512',
     name: 'Rainbow Cone',
     price: 60,
     mrp: 70,
@@ -90,7 +99,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '10',
+    sku: 'sku10',
+    shopId: '4512',
     name: 'Family Delight',
     price: 299,
     mrp: 349,
@@ -100,7 +110,8 @@ export const mockProducts = [
     options: 0,
   },
   {
-    id: '11',
+    sku: 'sku11',
+    shopId: '4512',
     name: 'Party Pack',
     price: 399,
     mrp: 450,
@@ -110,7 +121,8 @@ export const mockProducts = [
     options: 2,
   },
   {
-    id: '12',
+    sku: 'sku12',
+    shopId: '4512',
     name: 'Super Saver Family',
     price: 349,
     mrp: 399,
@@ -120,7 +132,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '13',
+    sku: 'sku13',
+    shopId: '4512',
     name: 'Schezwan Rice',
     price: 69,
     mrp: 79,
@@ -130,7 +143,8 @@ export const mockProducts = [
     options: 0,
   },
   {
-    id: '14',
+    sku: 'sku14',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -141,7 +155,8 @@ export const mockProducts = [
   },
   // Add more unique products as needed...
   {
-    id: '15',
+    sku: 'sku15',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -151,7 +166,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '16',
+    sku: 'sku16',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -161,7 +177,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '17',
+    sku: 'sku17',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -171,7 +188,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '18',
+    sku: 'sku18',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -181,7 +199,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '19',
+    sku: 'sku19',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -191,7 +210,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '20',
+    sku: 'sku20',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -201,7 +221,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '15',
+    sku: 'sku21',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -211,7 +232,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '21',
+    sku: 'sku22',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -221,7 +243,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '22',
+    sku: 'sku23',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -231,7 +254,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '15',
+    sku: 'sku24',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -241,7 +265,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '23',
+    sku: 'sku25',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -251,7 +276,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '24',
+    sku: 'sku26',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -261,7 +287,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '25',
+    sku: 'sku27',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -271,7 +298,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '26',
+    sku: 'sku28',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -281,7 +309,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '15',
+    sku: 'sku29',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -291,7 +320,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '27',
+    sku: 'sku30',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,
@@ -301,37 +331,8 @@ export const mockProducts = [
     options: 1,
   },
   {
-    id: '28',
-    name: 'Paneer Tikka Cone',
-    price: 70,
-    mrp: 80,
-    rating: 4.2,
-    image: require('../../../assets/images/bg_1.png'),
-    category: 'scoops',
-    options: 1,
-  },
-  {
-    id: '29',
-    name: 'Paneer Tikka Cone',
-    price: 70,
-    mrp: 80,
-    rating: 4.2,
-    image: require('../../../assets/images/bg_1.png'),
-    category: 'scoops',
-    options: 1,
-  },
-  {
-    id: '30',
-    name: 'Paneer Tikka Cone',
-    price: 70,
-    mrp: 80,
-    rating: 4.2,
-    image: require('../../../assets/images/bg_1.png'),
-    category: 'scoops',
-    options: 1,
-  },
-  {
-    id: '31',
+    sku: 'sku31',
+    shopId: '4512',
     name: 'Paneer Tikka Cone',
     price: 70,
     mrp: 80,

@@ -181,6 +181,7 @@ export const FoodContent: React.FC<FoodContentProps> = ({
     },
     bannerContainer: {
       marginVertical: 12,
+      marginHorizontal: 12,
       // You can add more custom styles here if needed
     },
   });
@@ -208,6 +209,7 @@ export const FoodContent: React.FC<FoodContentProps> = ({
         bannerButton={{ label: 'Order Now', onPress: () => {} }}
         size="medium"
         style={styles.bannerContainer}
+        backgroundColor="green"
       />
 
       {/* Vendors Grid */}

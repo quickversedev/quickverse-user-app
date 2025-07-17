@@ -181,6 +181,7 @@ export const GroceryContent: React.FC<GroceryContentProps> = ({
     },
     bannerContainer: {
       marginVertical: 12,
+      marginHorizontal: 12,
       // You can add more custom styles here if needed
     },
   });
@@ -208,6 +209,7 @@ export const GroceryContent: React.FC<GroceryContentProps> = ({
         bannerButton={{ label: 'Shop Now', onPress: () => {} }}
         size="large"
         style={styles.bannerContainer}
+        backgroundColor="yellow"
       />
 
       {/* Vendors Grid */}

@@ -81,7 +81,7 @@ export const ForYouContent: React.FC<ForYouContentProps> = ({
       scrollEventThrottle={scrollEventThrottle}
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
-      style={{ paddingTop: 100 }}
+      style={{ paddingVertical: 100 }}
     >
       <VendorList />
       {dummyRecommendations.map(item => (
