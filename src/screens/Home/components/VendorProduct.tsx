@@ -6,7 +6,10 @@ import {
   Dimensions,
   FlatList,
   Image,
+  Platform,
+  SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -403,150 +406,161 @@ const VendorProduct: React.FC = () => {
     },
   });
 
+  const safeAreaTop = Platform.select({
+    ios: 0,
+    android: StatusBar.currentHeight || 0,
+    default: 0,
+  });
+
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{vendor.name}</Text>
-        <View style={{ flex: 1 }} />
-        <MaterialCommunityIcons name="heart-outline" size={24} color={getColor('primary')} />
-      </View>
-
-      {/* Vendor Card */}
-      <TouchableOpacity
-        style={styles.vendorCard}
-        onPress={() => navigation.navigate('VendorProfile', { vendor })}
-      >
-        <Image source={{ uri: vendor.logo }} style={styles.vendorLogo} />
-        <View style={styles.vendorInfo}>
-          <Text style={styles.vendorName}>{vendor.name}</Text>
-          <View style={styles.vendorMeta}>
-            <Text style={styles.vendorMetaText}>⏱ {vendor.preparationTime}</Text>
-            <Text style={styles.vendorMetaText}>| {formatAddress()}</Text>
-            <View style={styles.ratingBox}>
-              <MaterialCommunityIcons name="star" size={14} color="#fff" />
-              {renderRating()}
-            </View>
-            <Text style={styles.vendorMetaText}>(242+)</Text>
-          </View>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: getColor('background'), paddingTop: safeAreaTop }}
+    >
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{vendor.name}</Text>
+          <View style={{ flex: 1 }} />
+          <MaterialCommunityIcons name="heart-outline" size={24} color={getColor('primary')} />
         </View>
-        <MaterialCommunityIcons name="chevron-right" size={28} color={getColor('primary')} />
-      </TouchableOpacity>
 
-      {/* Main Content: Categories + Products */}
-      <View style={{ flex: 1 }}>
-        {/* Category List (absolute overlay with animation) */}
-        <View style={{ alignItems: 'center', marginBottom: 8 }}>
-          <Text
-            style={{
-              color: getColor('subText'),
-              fontSize: getTypography('caption'),
-              letterSpacing: 2,
-            }}
-          >
-            {vendor.openingTime} - {vendor.closingTime}
-          </Text>
-        </View>
-        <Animated.View
-          style={[
-            styles.categoryContainer,
-            { transform: [{ translateX: categoryAnim }] },
-            // Removed display logic using __getValue
-          ]}
+        {/* Vendor Card */}
+        <TouchableOpacity
+          style={styles.vendorCard}
+          onPress={() => navigation.navigate('VendorProfile', { vendor })}
         >
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {mockCategories.map(cat => (
-              <TouchableOpacity
-                key={cat.id}
-                style={[
-                  styles.categoryItem,
-                  selectedCategory === cat.id && styles.categoryItemActive,
-                ]}
-                onPress={() => handleCategorySelect(cat.id)}
-              >
-                <Image source={cat.icon} style={styles.categoryIcon} />
-                <Text
-                  style={{
-                    color: selectedCategory === cat.id ? getColor('primary') : getColor('subText'),
-                    fontWeight: selectedCategory === cat.id ? 'bold' : 'normal',
-                  }}
-                >
-                  {cat.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </Animated.View>
-        {/* Product List with headers */}
-        <Animated.View style={[styles.productList, { width: width }]}>
-          <Animated.FlatList
-            ref={flatListRef}
-            data={rowProductList}
-            keyExtractor={(item, idx) => {
-              if (item.type === 'header') return `header-${item.category.id}`;
-              if (item.type === 'products') return `products-row-${idx}`;
-              return `row-${idx}`;
-            }}
-            renderItem={({ item }) => {
-              if (item.type === 'header') {
-                return (
-                  <View style={styles.categoryHeader}>
-                    <Text style={styles.categoryHeaderText}>{item.category.name}</Text>
-                  </View>
-                );
-              } else if (item.type === 'products') {
-                return (
-                  <View style={styles.productRow}>
-                    {item.products.map((product: Product) => (
-                      <ProductCard
-                        key={product.id}
-                        image={product.image}
-                        name={product.name}
-                        price={product.price}
-                        mrp={product.mrp}
-                        rating={product.rating}
-                        onAdd={() => {}}
-                      />
-                    ))}
-                    {/* Fill empty columns if needed */}
-                    {item.products.length < numColumns &&
-                      Array.from({ length: numColumns - item.products.length }).map((_, idx) => (
-                        <View key={`empty-${idx}`} style={styles.emptyProductCell} />
-                      ))}
-                  </View>
-                );
-              }
-              return null;
-            }}
-            numColumns={1}
-            key={'row-based'}
-            showsVerticalScrollIndicator={false}
-            getItemLayout={undefined}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-            onViewableItemsChanged={onViewableItemsChanged}
-            viewabilityConfig={viewabilityConfig}
-          />
-          {/* Show button to unhide category when hidden */}
-          {hideCategory && (
-            <TouchableOpacity
-              style={styles.unhideCategoryButton}
-              onPress={() => setHideCategory(false)}
+          <Image source={{ uri: vendor.logo }} style={styles.vendorLogo} />
+          <View style={styles.vendorInfo}>
+            <Text style={styles.vendorName}>{vendor.name}</Text>
+            <View style={styles.vendorMeta}>
+              <Text style={styles.vendorMetaText}>⏱ {vendor.preparationTime}</Text>
+              <Text style={styles.vendorMetaText}>| {formatAddress()}</Text>
+              <View style={styles.ratingBox}>
+                <MaterialCommunityIcons name="star" size={14} color="#fff" />
+                {renderRating()}
+              </View>
+              <Text style={styles.vendorMetaText}>(242+)</Text>
+            </View>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={28} color={getColor('primary')} />
+        </TouchableOpacity>
+
+        {/* Main Content: Categories + Products */}
+        <View style={{ flex: 1 }}>
+          {/* Category List (absolute overlay with animation) */}
+          <View style={{ alignItems: 'center', marginBottom: 8 }}>
+            <Text
+              style={{
+                color: getColor('subText'),
+                fontSize: getTypography('caption'),
+                letterSpacing: 2,
+              }}
             >
-              <Text style={styles.unhideCategoryText}>{selectedCategory}</Text>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={24}
-                color={getColor('background')}
-              />
-            </TouchableOpacity>
-          )}
-        </Animated.View>
+              {vendor.openingTime} - {vendor.closingTime}
+            </Text>
+          </View>
+          <Animated.View
+            style={[
+              styles.categoryContainer,
+              { transform: [{ translateX: categoryAnim }] },
+              // Removed display logic using __getValue
+            ]}
+          >
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {mockCategories.map(cat => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[
+                    styles.categoryItem,
+                    selectedCategory === cat.id && styles.categoryItemActive,
+                  ]}
+                  onPress={() => handleCategorySelect(cat.id)}
+                >
+                  <Image source={cat.icon} style={styles.categoryIcon} />
+                  <Text
+                    style={{
+                      color:
+                        selectedCategory === cat.id ? getColor('primary') : getColor('subText'),
+                      fontWeight: selectedCategory === cat.id ? 'bold' : 'normal',
+                    }}
+                  >
+                    {cat.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </Animated.View>
+          {/* Product List with headers */}
+          <Animated.View style={[styles.productList, { width: width }]}>
+            <Animated.FlatList
+              ref={flatListRef}
+              data={rowProductList}
+              keyExtractor={(item, idx) => {
+                if (item.type === 'header') return `header-${item.category.id}`;
+                if (item.type === 'products') return `products-row-${idx}`;
+                return `row-${idx}`;
+              }}
+              renderItem={({ item }) => {
+                if (item.type === 'header') {
+                  return (
+                    <View style={styles.categoryHeader}>
+                      <Text style={styles.categoryHeaderText}>{item.category.name}</Text>
+                    </View>
+                  );
+                } else if (item.type === 'products') {
+                  return (
+                    <View style={styles.productRow}>
+                      {item.products.map((product: Product) => (
+                        <ProductCard
+                          key={product.id}
+                          image={product.image}
+                          name={product.name}
+                          price={product.price}
+                          mrp={product.mrp}
+                          rating={product.rating}
+                          onAdd={() => {}}
+                        />
+                      ))}
+                      {/* Fill empty columns if needed */}
+                      {item.products.length < numColumns &&
+                        Array.from({ length: numColumns - item.products.length }).map((_, idx) => (
+                          <View key={`empty-${idx}`} style={styles.emptyProductCell} />
+                        ))}
+                    </View>
+                  );
+                }
+                return null;
+              }}
+              numColumns={1}
+              key={'row-based'}
+              showsVerticalScrollIndicator={false}
+              getItemLayout={undefined}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+              onViewableItemsChanged={onViewableItemsChanged}
+              viewabilityConfig={viewabilityConfig}
+            />
+            {/* Show button to unhide category when hidden */}
+            {hideCategory && (
+              <TouchableOpacity
+                style={styles.unhideCategoryButton}
+                onPress={() => setHideCategory(false)}
+              >
+                <Text style={styles.unhideCategoryText}>{selectedCategory}</Text>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={24}
+                  color={getColor('background')}
+                />
+              </TouchableOpacity>
+            )}
+          </Animated.View>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
