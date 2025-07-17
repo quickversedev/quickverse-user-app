@@ -11,6 +11,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { ThemeText } from '../../../../components/common/theme/ThemeText';
+import VendorList from '../../../../components/modules/Vendor/VendorList';
 import { useTheme } from '../../../../theme/ThemeContext';
 
 const { width } = Dimensions.get('window');
@@ -80,11 +81,9 @@ export const ForYouContent: React.FC<ForYouContentProps> = ({
       scrollEventThrottle={scrollEventThrottle}
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+      style={{ paddingTop: 100 }}
     >
-      <ThemeText variant="h2" style={styles.sectionTitle}>
-        Recommended For You
-      </ThemeText>
-
+      <VendorList />
       {dummyRecommendations.map(item => (
         <TouchableOpacity
           key={item.id}

@@ -1,6 +1,8 @@
 // src/theme/ThemeContext.tsx
+// NOTE: ThemeProvider will always use DefaultTheme if useDefaultTheme is true in the config or if the API fails, as handled by the store.
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { DefaultTheme } from '../assets/theme/defaultTheme';
+import useThemeStore from '../store/themeStore';
 
 type ButtonColors = {
   default: {
@@ -77,23 +79,17 @@ type ThemeContextType = {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const API_ENDPOINT = 'https://your-api.com/theme-config';
-
 const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>(DefaultTheme);
+  const [theme, setTheme] = useState(DefaultTheme);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const themeStore = useThemeStore();
 
   useEffect(() => {
-    const fetchTheme = async () => {
+    const loadTheme = async () => {
       try {
-        const response = await fetch(API_ENDPOINT);
-        if (!response.ok) throw new Error('Failed to fetch theme');
-
-        const apiTheme = await response.json();
-        const validatedTheme = validateTheme(apiTheme);
-
-        setTheme(validatedTheme);
+        await themeStore.fetchConfig();
+        setTheme(themeStore.getTheme());
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Unknown error'));
         setTheme(DefaultTheme);
@@ -101,8 +97,8 @@ const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         setIsLoading(false);
       }
     };
-
-    fetchTheme();
+    loadTheme();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const validateTheme = (apiTheme: any): Theme => {

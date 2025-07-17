@@ -1,58 +1,25 @@
-import React from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import React, { useEffect } from 'react';
 import {
   Animated,
   Dimensions,
-  Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
   StyleSheet,
-  TouchableOpacity,
+  Text,
   View,
   ViewStyle,
 } from 'react-native';
-import { ThemeText } from '../../../../components/common/theme/ThemeText';
+import CategoryLogo from '../../../../components/common/CategoryLogo';
+import PromoBanner from '../../../../components/common/PromoBanner';
+import VendorCard from '../../../../components/modules/Vendor/VendorCard';
+import { RootStackParamList } from '../../../../routes/AppStack';
+import useVendorStore from '../../../../store/vendorStore';
 import { useTheme } from '../../../../theme/ThemeContext';
 
 const { width } = Dimensions.get('window');
-const cardWidth = width * 0.9;
-
-const dummyGroceryItems = [
-  {
-    id: '1',
-    name: 'Fresh Vegetables Pack',
-    price: '₹199',
-    description: 'Assorted fresh vegetables',
-    image: require('../../../../assets/images/bg_1.png'),
-  },
-  {
-    id: '2',
-    name: 'Organic Fruits Bundle',
-    price: '₹299',
-    description: 'Selection of organic fruits',
-    image: require('../../../../assets/images/bg_1.png'),
-  },
-  {
-    id: '3',
-    name: 'Daily Essentials Kit',
-    price: '₹499',
-    description: 'Basic household items',
-    image: require('../../../../assets/images/bg_1.png'),
-  },
-  {
-    id: '4',
-    name: 'Breakfast Bundle',
-    price: '₹399',
-    description: 'Complete breakfast items',
-    image: require('../../../../assets/images/bg_1.png'),
-  },
-  {
-    id: '5',
-    name: 'Snacks Package',
-    price: '₹299',
-    description: 'Assorted healthy snacks',
-    image: require('../../../../assets/images/bg_1.png'),
-  },
-];
+const cardWidth = (width - 48) / 2; // 2 columns with margins
 
 interface GroceryContentProps {
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -68,66 +35,193 @@ export const GroceryContent: React.FC<GroceryContentProps> = ({
   showsVerticalScrollIndicator,
 }) => {
   const { theme } = useTheme();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const { getVendorsByCategory, fetchVendors } = useVendorStore();
+  const groceryVendors = getVendorsByCategory('Grocery');
+
+  useEffect(() => {
+    fetchVendors();
+  }, [fetchVendors]);
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      marginTop: 100,
+      alignItems: 'center',
+      paddingVertical: 20,
+      paddingHorizontal: 16,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: '#4CAF50',
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    logoContainer: {
+      alignItems: 'center',
+      marginTop: 16,
+    },
+    logo: {
+      width: 120,
+      height: 80,
+      borderRadius: 12,
+    },
+    promoBanner: {
+      backgroundColor: '#2E7D32',
+      marginHorizontal: 16,
+      marginVertical: 16,
+      borderRadius: 12,
+      padding: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    bannerContent: {
+      flex: 1,
+    },
+    bannerTitle: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginBottom: 4,
+    },
+    bannerSubtitle: {
+      color: '#fff',
+      fontSize: 12,
+      marginBottom: 8,
+    },
+    bannerButton: {
+      backgroundColor: '#4CAF50',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 6,
+      alignSelf: 'flex-start',
+    },
+    bannerButtonText: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: 'bold',
+    },
+    bannerImage: {
+      width: 60,
+      height: 60,
+      borderRadius: 8,
+      backgroundColor: '#fff',
+    },
+    sectionTitle: {
+      marginHorizontal: 16,
+      marginTop: 20,
+      marginBottom: 12,
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: theme.colors.text,
+    },
+    vendorGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+    },
+    vendorCard: {
+      width: cardWidth,
+      backgroundColor: theme.colors.card,
+      borderRadius: 12,
+      marginBottom: 16,
+      overflow: 'hidden',
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    },
+    vendorImage: {
+      width: '100%',
+      height: 120,
+      resizeMode: 'cover',
+    },
+    vendorInfo: {
+      padding: 12,
+    },
+    vendorName: {
+      color: theme.colors.text,
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginBottom: 4,
+    },
+    vendorRating: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    ratingText: {
+      color: theme.colors.text,
+      fontSize: 14,
+      marginLeft: 4,
+    },
+    vendorMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    metaText: {
+      color: theme.colors.subText,
+      fontSize: 12,
+      marginLeft: 4,
+    },
+    favoriteButton: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      borderRadius: 12,
+      padding: 4,
+    },
+    bannerContainer: {
+      marginVertical: 12,
+      // You can add more custom styles here if needed
+    },
+  });
 
   return (
     <Animated.ScrollView
+      style={styles.container}
       onScroll={onScroll}
       scrollEventThrottle={scrollEventThrottle}
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
     >
-      <ThemeText variant="h2" style={styles.sectionTitle}>
-        Grocery Delivery
-      </ThemeText>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.logoContainer}>
+          <CategoryLogo category="Grocery" style={styles.logo} resizeMode="cover" />
+        </View>
+      </View>
 
-      {dummyGroceryItems.map(item => (
-        <TouchableOpacity
-          key={item.id}
-          style={[styles.itemCard, { backgroundColor: theme.colors.card }]}
-        >
-          <Image source={item.image} style={styles.itemImage} />
-          <View style={styles.itemInfo}>
-            <ThemeText variant="h2">{item.name}</ThemeText>
-            <ThemeText variant="body" color={theme.colors.subText}>
-              {item.description}
-            </ThemeText>
-            <ThemeText variant="subtitle" style={styles.price}>
-              {item.price}
-            </ThemeText>
-          </View>
-        </TouchableOpacity>
-      ))}
+      {/* Promotional Banner */}
+      <PromoBanner
+        promo="groceryPromo"
+        title="Fresh Groceries Delivered"
+        subtitle="Get your daily essentials at your doorstep"
+        bannerButton={{ label: 'Shop Now', onPress: () => {} }}
+        size="large"
+        style={styles.bannerContainer}
+      />
+
+      {/* Vendors Grid */}
+      <Text style={styles.sectionTitle}>Grocery Delivery</Text>
+      <View style={styles.vendorGrid}>
+        {groceryVendors.map(vendor => (
+          <VendorCard
+            key={vendor.shopId}
+            vendor={vendor}
+            onPress={vendor => navigation.navigate('VendorProduct', { vendor })}
+            favoriteColor="#4CAF50"
+          />
+        ))}
+      </View>
     </Animated.ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  sectionTitle: {
-    marginHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 12,
-  },
-  itemCard: {
-    width: cardWidth,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    overflow: 'hidden',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  itemImage: {
-    width: '100%',
-    height: 150,
-    resizeMode: 'cover',
-  },
-  itemInfo: {
-    padding: 12,
-  },
-  price: {
-    marginTop: 8,
-  },
-});

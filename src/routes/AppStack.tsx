@@ -5,11 +5,16 @@ import { useLocationPermission } from '../hooks/Permissions/usePermissions';
 import { useNotifications } from '../hooks/useNotifications';
 import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
+import VendorProduct from '../screens/Home/components/VendorProduct';
+import VendorProfile from '../screens/Home/components/VendorProfile';
 import Registration from '../screens/login/Registration';
+import { Vendor } from '../types/vendor';
 
 export type RootStackParamList = {
   MainApp: undefined;
   Profile: undefined;
+  VendorProduct: { vendor: Vendor };
+  VendorProfile: { vendor: Vendor };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -38,6 +43,8 @@ export const AppStack = () => {
     >
       <Stack.Screen name="MainApp" component={TabNavigation} />
       <Stack.Screen name="Profile" component={ProfileStack} />
+      <Stack.Screen name="VendorProduct" component={VendorProduct} />
+      <Stack.Screen name="VendorProfile" component={VendorProfile} />
     </Stack.Navigator>
   );
 };
