@@ -16,7 +16,9 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import CartBar from '../../../components/common/CartBar';
 import { RootStackParamList } from '../../../routes/AppStack';
+import useCartStore from '../../../store/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
 import ProductCard from './ProductCard';
@@ -29,7 +31,8 @@ interface Category {
   icon: number; // require returns a number for images
 }
 interface Product {
-  id: string;
+  sku: string;
+  shopId: string;
   name: string;
   price: number;
   mrp: number;
@@ -83,6 +86,33 @@ const VendorProduct: React.FC = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<VendorProductRouteProp>();
   const { vendor } = route.params;
+
+  // Cart store integration
+  const { addToCart, increment, decrement, setActiveCart, clearCart, carts } = useCartStore();
+
+  // Create vendor-specific cart ID
+  const cartId = `vendor_${vendor.shopId}`;
+
+  // Set this cart as active when component mounts
+  useEffect(() => {
+    setActiveCart(cartId);
+  }, [cartId, setActiveCart]);
+
+  // Get item count for this cart
+  const itemCount = Object.values(carts[cartId]?.products || {}).reduce(
+    (sum, p) => sum + p.quantity,
+    0
+  );
+
+  // Handler for viewing cart
+  const handleViewCart = () => {
+    navigation.navigate('Cart');
+  };
+
+  // Handler for removing cart
+  const handleRemoveCart = () => {
+    clearCart(cartId);
+  };
 
   const renderRating = () => {
     if (!vendor.rating || vendor.rating === 0) {
@@ -171,6 +201,31 @@ const VendorProduct: React.FC = () => {
       }
     },
   });
+
+  // Cart operation handlers
+  const handleAddToCart = (product: Product) => {
+    addToCart(cartId, {
+      sku: product.sku,
+      shopId: vendor.shopId,
+      name: product.name,
+      price: product.price,
+      mrp: product.mrp,
+      image: product.image,
+    });
+  };
+
+  const handleIncrement = (sku: string) => {
+    increment(cartId, sku);
+  };
+
+  const handleDecrement = (sku: string) => {
+    decrement(cartId, sku);
+  };
+
+  const getProductQuantity = (sku: string) => {
+    const cart = useCartStore.getState().carts[cartId];
+    return cart?.products[sku]?.quantity || 0;
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -515,13 +570,16 @@ const VendorProduct: React.FC = () => {
                     <View style={styles.productRow}>
                       {item.products.map((product: Product) => (
                         <ProductCard
-                          key={product.id}
+                          key={product.sku}
                           image={product.image}
                           name={product.name}
                           price={product.price}
                           mrp={product.mrp}
                           rating={product.rating}
-                          onAdd={() => {}}
+                          onAdd={() => handleAddToCart(product)}
+                          onIncrement={() => handleIncrement(product.sku)}
+                          onDecrement={() => handleDecrement(product.sku)}
+                          quantity={getProductQuantity(product.sku)}
                         />
                       ))}
                       {/* Fill empty columns if needed */}
@@ -559,6 +617,14 @@ const VendorProduct: React.FC = () => {
             )}
           </Animated.View>
         </View>
+        {/* CartBar at the bottom */}
+        {itemCount > 0 && (
+          <CartBar
+            itemCount={itemCount}
+            onViewCart={handleViewCart}
+            onRemoveCart={handleRemoveCart}
+          />
+        )}
       </View>
     </SafeAreaView>
   );

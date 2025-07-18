@@ -5,6 +5,7 @@ import { useLocationPermission } from '../hooks/Permissions/usePermissions';
 import { useNotifications } from '../hooks/useNotifications';
 import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
+import CartScreen from '../screens/Home/components/CartScreen';
 import VendorProduct from '../screens/Home/components/VendorProduct';
 import VendorProfile from '../screens/Home/components/VendorProfile';
 import Registration from '../screens/login/Registration';
@@ -15,6 +16,7 @@ export type RootStackParamList = {
   Profile: undefined;
   VendorProduct: { vendor: Vendor };
   VendorProfile: { vendor: Vendor };
+  Cart: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -45,6 +47,7 @@ export const AppStack = () => {
       <Stack.Screen name="Profile" component={ProfileStack} />
       <Stack.Screen name="VendorProduct" component={VendorProduct} />
       <Stack.Screen name="VendorProfile" component={VendorProfile} />
+      <Stack.Screen name="Cart" component={CartScreen} />
     </Stack.Navigator>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -8,17 +8,29 @@ const CARD_MARGIN = 8;
 const CARD_WIDTH = ((SCREEN_WIDTH - CARD_MARGIN * 4) / 3) * 0.92;
 
 interface ProductCardProps {
-  image: any;
+  image: number;
   name: string;
   price: number;
   mrp: number;
   rating: number;
+  quantity: number;
   onAdd: () => void;
+  onIncrement: () => void;
+  onDecrement: () => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ image, name, price, mrp, rating, onAdd }) => {
+const ProductCard: React.FC<ProductCardProps> = ({
+  image,
+  name,
+  price,
+  mrp,
+  rating,
+  quantity,
+  onAdd,
+  onIncrement,
+  onDecrement,
+}) => {
   const { getColor, getTypography } = useTheme();
-  const [quantity, setQuantity] = useState(0);
 
   const styles = StyleSheet.create({
     card: {
@@ -162,19 +174,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ image, name, price, mrp, rati
           <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
         </View>
         {quantity === 0 ? (
-          <TouchableOpacity style={styles.addButton} onPress={() => setQuantity(1)}>
+          <TouchableOpacity style={styles.addButton} onPress={onAdd}>
             <Text style={styles.addButtonText}>ADD +</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.quantitySelector}>
-            <TouchableOpacity
-              style={styles.qtyBtn}
-              onPress={() => setQuantity(qty => Math.max(0, qty - 1))}
-            >
+            <TouchableOpacity style={styles.qtyBtn} onPress={onDecrement}>
               <Text style={styles.qtyText}>-</Text>
             </TouchableOpacity>
             <Text style={styles.qtyNum}>{quantity}</Text>
-            <TouchableOpacity style={styles.qtyBtn} onPress={() => setQuantity(qty => qty + 1)}>
+            <TouchableOpacity style={styles.qtyBtn} onPress={onIncrement}>
               <Text style={styles.qtyText}>+</Text>
             </TouchableOpacity>
           </View>

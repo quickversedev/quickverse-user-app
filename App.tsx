@@ -1,5 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/contexts/login/AuthProvider';
 import { TabProvider } from './src/contexts/TabContext';
@@ -32,15 +33,17 @@ function App(): React.JSX.Element {
   };
 
   return (
-    <TabProvider>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <NavigationContainer>
-            <AuthProvider>{renderContent()}</AuthProvider>
-          </NavigationContainer>
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </TabProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <TabProvider>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <NavigationContainer>
+              <AuthProvider>{renderContent()}</AuthProvider>
+            </NavigationContainer>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </TabProvider>
+    </GestureHandlerRootView>
   );
 }
 
