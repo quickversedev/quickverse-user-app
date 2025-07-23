@@ -3,7 +3,7 @@ import { ApiError, RetryConfig } from './axios.types';
 
 // API Configuration
 const API_CONFIG = {
-  baseURL: 'http://192.168.0.7:8080/quickVerse',
+  baseURL: 'http://192.168.1.43:8080/quickVerse',
   timeout: 15000, // 15 seconds default timeout
   retries: 3, // number of retries for failed requests
   timeoutMessage: 'Request timed out. Please check your internet connection and try again.',

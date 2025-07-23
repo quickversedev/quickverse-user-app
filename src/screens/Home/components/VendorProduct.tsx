@@ -19,37 +19,28 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import CartBar from '../../../components/common/CartBar';
 import { RootStackParamList } from '../../../routes/AppStack';
 import useCartStore from '../../../store/cartStore';
+import { Product, useProductsStore } from '../../../store/productsStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
 import ProductCard from './ProductCard';
-import { mockProducts } from './mockProducts';
 
-// Types for category and product
-interface Category {
+// Category type for local use
+type Category = {
   id: string;
   name: string;
-  icon: number; // require returns a number for images
-}
-interface Product {
-  sku: string;
-  shopId: string;
-  name: string;
-  price: number;
-  mrp: number;
-  rating: number;
-  image: number; // require returns a number for images
-  category: string;
-  options: number;
-}
-// Removed unused FlatListItem type
+  icon: number;
+};
 
+// Category type remains, Product is now imported from mock data
 // Mock categories
-const mockCategories: Category[] = [
+const allCategories: Category[] = [
   { id: 'scoops', name: 'Scoops', icon: require('../../../assets/images/bg_1.png') },
   { id: 'sundaes', name: 'Sundaes', icon: require('../../../assets/images/bg_1.png') },
   { id: 'cones', name: 'Cones', icon: require('../../../assets/images/bg_1.png') },
   { id: 'family', name: 'Family Packs', icon: require('../../../assets/images/bg_1.png') },
 ];
+
+// Categories will be filtered based on fetched products
 
 interface VendorProductRouteParams {
   vendor: Vendor;
@@ -86,6 +77,29 @@ const VendorProduct: React.FC = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<VendorProductRouteProp>();
   const { vendor } = route.params;
+
+  // Products store integration
+  const {
+    products,
+    loading: productsLoading,
+    error: productsError,
+    fetchProducts,
+    resetProducts,
+  } = useProductsStore();
+
+  // Fetch products on mount or when vendor.shopId changes
+  useEffect(() => {
+    resetProducts();
+    fetchProducts({ offset: 0, limit: 30 });
+    // Optionally, setShopId(vendor.shopId) if you want to support dynamic shop switching
+    // setShopId(vendor.shopId);
+    // fetchProducts({ offset: 0, limit: 30 });
+  }, [vendor.shopId]);
+
+  // Only include categories that have at least one product (from fetched products)
+  const filteredCategories: Category[] = allCategories.filter(cat =>
+    products.some(product => product.category === cat.id)
+  );
 
   // Cart store integration
   const { addToCart, increment, decrement, setActiveCart, clearCart, carts } = useCartStore();
@@ -128,12 +142,14 @@ const VendorProduct: React.FC = () => {
     return 'Location';
   };
 
-  const [selectedCategory, setSelectedCategory] = useState(mockCategories[0].id);
+  const [selectedCategory, setSelectedCategory] = useState(
+    filteredCategories.length > 0 ? filteredCategories[0].id : ''
+  );
   const scrollY = useRef(new Animated.Value(0)).current;
   const [hideCategory, setHideCategory] = useState(false);
   const categoryAnim = useRef(new Animated.Value(0)).current; // 0: shown, -CATEGORY_WIDTH: hidden
   const numColumns = 3;
-  const rowProductList = getRowBasedProductList(mockCategories, mockProducts, numColumns);
+  const rowProductList = getRowBasedProductList(filteredCategories, products, numColumns);
   type RowProductListItem =
     | { type: 'header'; category: Category }
     | { type: 'products'; products: Product[] };
@@ -195,8 +211,8 @@ const VendorProduct: React.FC = () => {
       if (!hideCategory && offsetY > 10) setHideCategory(true);
       if (offsetY <= 0) {
         // At the very top, force select the first category
-        if (selectedCategory !== mockCategories[0].id) {
-          setSelectedCategory(mockCategories[0].id);
+        if (filteredCategories.length > 0 && selectedCategory !== filteredCategories[0].id) {
+          setSelectedCategory(filteredCategories[0].id);
         }
       }
     },
@@ -208,9 +224,9 @@ const VendorProduct: React.FC = () => {
       sku: product.sku,
       shopId: vendor.shopId,
       name: product.name,
-      price: product.price,
+      price: product.sellingPrice,
       mrp: product.mrp,
-      image: product.image,
+      image: product.imageUrl, // Now a URL string
     });
   };
 
@@ -226,6 +242,31 @@ const VendorProduct: React.FC = () => {
     const cart = useCartStore.getState().carts[cartId];
     return cart?.products[sku]?.quantity || 0;
   };
+
+  // If there are no categories or products, show a message
+  if (!productsLoading && filteredCategories.length === 0) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>No products available for this vendor.</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (productsLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading products...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (productsError) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Error loading products: {productsError}</Text>
+      </SafeAreaView>
+    );
+  }
 
   const styles = StyleSheet.create({
     container: {
@@ -525,7 +566,7 @@ const VendorProduct: React.FC = () => {
             ]}
           >
             <ScrollView showsVerticalScrollIndicator={false}>
-              {mockCategories.map(cat => (
+              {filteredCategories.map(cat => (
                 <TouchableOpacity
                   key={cat.id}
                   style={[
@@ -571,11 +612,11 @@ const VendorProduct: React.FC = () => {
                       {item.products.map((product: Product) => (
                         <ProductCard
                           key={product.sku}
-                          image={product.image}
+                          image={require('../../../assets/images/bg_1.png')}
                           name={product.name}
-                          price={product.price}
+                          price={product.sellingPrice}
                           mrp={product.mrp}
-                          rating={product.rating}
+                          rating={0}
                           onAdd={() => handleAddToCart(product)}
                           onIncrement={() => handleIncrement(product.sku)}
                           onDecrement={() => handleDecrement(product.sku)}
