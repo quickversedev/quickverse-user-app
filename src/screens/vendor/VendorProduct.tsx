@@ -16,13 +16,14 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import CartBar from '../../../components/common/CartBar';
-import { RootStackParamList } from '../../../routes/AppStack';
-import useCartStore from '../../../store/cartStore';
-import { Product, useProductsStore } from '../../../store/productsStore';
-import { useTheme } from '../../../theme/ThemeContext';
-import { Vendor } from '../../../types/vendor';
-import ProductCard from './ProductCard';
+import { Product } from '../../assets/mock/products';
+import CartBar from '../../components/common/CartBar';
+import ProductCard from '../../components/modules/Product/ProductCard';
+import { RootStackParamList } from '../../routes/AppStack';
+import useCartStore from '../../store/cartStore';
+import { useProductsStore } from '../../store/productsStore';
+import { useTheme } from '../../theme/ThemeContext';
+import { Vendor } from '../../types/vendor';
 
 // Category type for local use
 type Category = {
@@ -34,10 +35,10 @@ type Category = {
 // Category type remains, Product is now imported from mock data
 // Mock categories
 const allCategories: Category[] = [
-  { id: 'scoops', name: 'Scoops', icon: require('../../../assets/images/bg_1.png') },
-  { id: 'sundaes', name: 'Sundaes', icon: require('../../../assets/images/bg_1.png') },
-  { id: 'cones', name: 'Cones', icon: require('../../../assets/images/bg_1.png') },
-  { id: 'family', name: 'Family Packs', icon: require('../../../assets/images/bg_1.png') },
+  { id: 'scoops', name: 'Scoops', icon: require('../../assets/images/bg_1.png') },
+  { id: 'sundaes', name: 'Sundaes', icon: require('../../assets/images/bg_1.png') },
+  { id: 'cones', name: 'Cones', icon: require('../../assets/images/bg_1.png') },
+  { id: 'family', name: 'Family Packs', icon: require('../../assets/images/bg_1.png') },
 ];
 
 // Categories will be filtered based on fetched products
@@ -612,7 +613,7 @@ const VendorProduct: React.FC = () => {
                       {item.products.map((product: Product) => (
                         <ProductCard
                           key={product.sku}
-                          image={require('../../../assets/images/bg_1.png')}
+                          image={require('../../assets/images/bg_1.png')}
                           name={product.name}
                           price={product.sellingPrice}
                           mrp={product.mrp}

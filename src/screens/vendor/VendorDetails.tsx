@@ -2,8 +2,8 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useTheme } from '../../../theme/ThemeContext';
-import { Vendor } from '../../../types/vendor';
+import { useTheme } from '../../theme/ThemeContext';
+import { Vendor } from '../../types/vendor';
 
 // Define the route params type
 interface VendorProductRouteParams {

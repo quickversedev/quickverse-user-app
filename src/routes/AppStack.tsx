@@ -5,10 +5,10 @@ import { useLocationPermission } from '../hooks/Permissions/usePermissions';
 import { useNotifications } from '../hooks/useNotifications';
 import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
-import CartScreen from '../screens/Home/components/CartScreen';
-import VendorProduct from '../screens/Home/components/VendorProduct';
-import VendorProfile from '../screens/Home/components/VendorProfile';
+import CartScreen from '../screens/cart/CartScreen';
 import Registration from '../screens/login/Registration';
+import VendorProduct from '../screens/vendor/VendorProduct';
+import VendorProfile from '../screens/vendor/VendorProfile';
 import { Vendor } from '../types/vendor';
 
 export type RootStackParamList = {

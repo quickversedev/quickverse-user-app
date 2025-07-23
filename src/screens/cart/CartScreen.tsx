@@ -12,9 +12,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import useCartStore, { CartProduct } from '../../../store/cartStore';
-import useVendorStore from '../../../store/vendorStore';
-import { useTheme } from '../../../theme/ThemeContext';
+import useCartStore, { CartProduct } from '../../store/cartStore';
+import useVendorStore from '../../store/vendorStore';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface CartItemProps extends CartProduct {
   tag?: string;
@@ -181,9 +181,9 @@ const CartScreen: React.FC = () => {
 
   // Example suggested items (mock)
   const suggestedItems: SuggestedItem[] = [
-    { name: 'Choco Lava Cake', price: 20, image: require('../../../assets/images/bg_1.png') },
-    { name: 'Choco Lava Cake', price: 20, image: require('../../../assets/images/bg_1.png') },
-    { name: 'Choco Lava Cake', price: 20, image: require('../../../assets/images/bg_1.png') },
+    { name: 'Choco Lava Cake', price: 20, image: require('../../assets/images/bg_1.png') },
+    { name: 'Choco Lava Cake', price: 20, image: require('../../assets/images/bg_1.png') },
+    { name: 'Choco Lava Cake', price: 20, image: require('../../assets/images/bg_1.png') },
   ];
 
   const handleClearCart = () => {

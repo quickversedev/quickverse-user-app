@@ -4,7 +4,8 @@ import axiosInstance from '../config/api/axios.config';
 
 interface ProductsStore {
   products: Product[];
-  loading: boolean;
+  loading: boolean; // true while fetching any data (including first batch)
+  fullyLoaded: boolean; // true only when all pages are fetched
   error: string | null;
   offset: number;
   limit: number;
@@ -26,6 +27,7 @@ const USE_PRODUCTS_MOCKS = true; // Set to true for mock data
 export const useProductsStore = create<ProductsStore>((set, get) => ({
   products: [],
   loading: false,
+  fullyLoaded: false,
   error: null,
   offset: 0,
   limit: 10,
@@ -34,7 +36,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
   hasMore: true,
 
   fetchProducts: async ({ offset, limit, append } = {}) => {
-    set({ loading: true, error: null });
+    set({ loading: true, fullyLoaded: false, error: null });
     if (USE_PRODUCTS_MOCKS) {
       // Simulate network delay
       await new Promise(res => setTimeout(res, 500));
@@ -48,38 +50,67 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
         total,
         hasMore: currentOffset + pagedProducts.length < total,
         loading: false,
+        fullyLoaded: currentOffset + pagedProducts.length >= total,
         error: null,
       }));
       return;
     }
     try {
-      const currentOffset = offset !== undefined ? offset : get().offset;
       const currentLimit = limit !== undefined ? limit : get().limit;
+      let currentOffset = offset !== undefined ? offset : get().offset;
+      // Ensure offset is always a multiple of limit
+      currentOffset = Math.floor(currentOffset / currentLimit) * currentLimit;
       const shopId = get().shopId;
-      const response = await axiosInstance.post(`/v3/products?shopId=${shopId}`, {
-        filters: {},
-        offset: String(currentOffset),
-        limit: String(currentLimit),
-      });
-      if (!response || typeof response !== 'object' || !('data' in response)) {
-        set({ loading: false, error: 'Invalid server response.' });
-        return;
+      let allProducts: Product[] = append ? [...get().products] : [];
+      let hasMore = true;
+      let total = 0;
+      let firstBatchLoaded = false;
+      while (hasMore) {
+        const response = await axiosInstance.post(`/v3/products?shopId=${shopId}`, {
+          filters: {},
+          offset: String(currentOffset),
+          limit: String(currentLimit),
+        });
+        if (!response || typeof response !== 'object' || !('data' in response)) {
+          set({ loading: false, fullyLoaded: false, error: 'Invalid server response.' });
+          return;
+        }
+        const data = response.data;
+        if (!data || typeof data !== 'object') {
+          set({ loading: false, fullyLoaded: false, error: 'Invalid data format from server.' });
+          return;
+        }
+        const newProducts = data.products || data.data || [];
+        total = data.total || data.count || 0;
+        allProducts = [...allProducts, ...newProducts];
+        currentOffset += newProducts.length;
+        // Set loading to false after first batch so UI can show products
+        if (!firstBatchLoaded) {
+          set({
+            products: allProducts,
+            offset: allProducts.length,
+            total,
+            hasMore: true,
+            loading: false,
+            fullyLoaded: false,
+            error: null,
+          });
+          firstBatchLoaded = true;
+        }
+        // If less than limit, we've reached the last page
+        if (newProducts.length < currentLimit) {
+          hasMore = false;
+        }
       }
-      const data = response.data;
-      if (!data || typeof data !== 'object') {
-        set({ loading: false, error: 'Invalid data format from server.' });
-        return;
-      }
-      const newProducts = data.products || data.data || [];
-      const total = data.total || data.count || 0;
-      set(state => ({
-        products: append ? [...state.products, ...newProducts] : newProducts,
-        offset: currentOffset + newProducts.length,
+      set({
+        products: allProducts,
+        offset: allProducts.length,
         total,
-        hasMore: currentOffset + newProducts.length < total,
+        hasMore: allProducts.length < total,
         loading: false,
+        fullyLoaded: true,
         error: null,
-      }));
+      });
     } catch (error: unknown) {
       console.error('error', error);
       let message = 'Failed to fetch products.';
@@ -99,11 +130,20 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
           message = (error as { message?: string }).message || message;
         }
       }
-      set({ loading: false, error: message });
+      set({ loading: false, fullyLoaded: false, error: message });
     }
   },
 
-  resetProducts: () => set({ products: [], offset: 0, total: 0, hasMore: true, error: null }),
+  resetProducts: () =>
+    set({
+      products: [],
+      offset: 0,
+      total: 0,
+      hasMore: true,
+      loading: false,
+      fullyLoaded: false,
+      error: null,
+    }),
 
   setShopId: (shopId: string) => set({ shopId }),
 
