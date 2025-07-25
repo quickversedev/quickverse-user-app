@@ -1,0 +1,86 @@
+// Vendor mock data moved from vendorStore.ts
+import { Vendor } from '../../types/vendor';
+
+export const mockVendors: Vendor[] = [
+  {
+    shopId: '4512',
+    name: 'BCRoy-713206',
+    logo: 'https://www.smartbiz.in/AadharRestaurant',
+    banner: 'https://i.postimg.cc/mkTrt2Y7/Aahar.jpg',
+    owner: 'Aadhar Restaurant',
+    phone: '7384434233',
+    openingTime: '25 Mins',
+    closingTime: '10:30 AM',
+    preparationTime: '10:30 PM',
+    description: 'Biryani, Kebabs, Chinese and more done perfectly!',
+    category: 'Restaurant',
+    storeEnabled: true,
+    storeActive: true,
+    rating: 4.3,
+    shopAddress: {
+      address: 'Something',
+      city: 'Bangalore',
+      state: 'Bangalore',
+      postalCode: '560034',
+    },
+    coordinates: {
+      longitude: 78.9,
+      latitude: 34.4,
+    },
+  },
+  {
+    shopId: '7890',
+    name: 'Daily Mart',
+    logo: 'https://images.unsplash.com/photo-1606813902624-c8f63f1a7df0?auto=format&fit=crop&w=80&q=80',
+    banner:
+      'https://images.unsplash.com/photo-1610394212206-f9d23c3e5eae?auto=format&fit=crop&w=800&q=80',
+    owner: 'Priya Desai',
+    phone: '9876543210',
+    openingTime: '07:00 AM',
+    closingTime: '10:00 PM',
+    preparationTime: '15 mins',
+    description: 'Fresh groceries delivered to your doorstep.',
+    category: 'Grocery',
+    storeEnabled: true,
+    storeActive: true,
+    rating: 0,
+    shopAddress: {
+      address: 'FC Road',
+      city: 'Pune',
+      state: 'Maharashtra',
+      postalCode: '411005',
+    },
+    coordinates: {
+      longitude: 73.8567,
+      latitude: 18.5204,
+    },
+  },
+  {
+    shopId: '4514',
+    name: 'MediCare Pharmacy',
+    logo: 'https://images.unsplash.com/photo-1588776814546-ec7d8d3c7c17?auto=format&fit=crop&w=80&q=80',
+    banner:
+      'https://images.unsplash.com/photo-1584362917165-6b8c43ab6597?auto=format&fit=crop&w=800&q=80',
+    owner: 'Rahul Verma',
+    phone: '9988776655',
+    openingTime: '09:00 AM',
+    closingTime: '09:00 PM',
+    preparationTime: '30 mins',
+    description: 'Order genuine medicines and health supplies online.',
+    category: 'Pharmacy',
+    storeEnabled: true,
+    storeActive: true,
+    rating: 4.1,
+    shopAddress: {
+      address: 'Near City Center',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      postalCode: '600001',
+    },
+    coordinates: {
+      longitude: 80.2707,
+      latitude: 13.0827,
+    },
+  },
+  // ... (rest of the vendors, copy as in your original MOCK_VENDORS array)
+];

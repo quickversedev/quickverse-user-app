@@ -44,63 +44,72 @@ export type Product = {
   }>;
 };
 
-export const mockProducts: Product[] = Array.from({ length: 50 }, (_, i) => {
-  const sku = `SKU_${1000 + i}`;
-  const brand = brands[i % brands.length];
-  const category = categories[i % categories.length];
-  const division = divisions[i % divisions.length];
-  const subDivision = subDivisions[i % subDivisions.length];
-  const tag = tags[i % tags.length];
-  const name = `${brand} ${subDivision} ${i + 1}`;
+const generateProducts = (shopId: string, count: number, startIndex: number = 0): Product[] => {
+  return Array.from({ length: count }, (_, i) => {
+    const index = startIndex + i;
+    const sku = `SKU_${shopId}_${index}`;
+    const brand = brands[index % brands.length];
+    const category = categories[index % categories.length];
+    const division = divisions[index % divisions.length];
+    const subDivision = subDivisions[index % subDivisions.length];
+    const tag = tags[index % tags.length];
+    const name = `${brand} ${subDivision} ${index + 1}`;
 
-  const mrp = +(20 + Math.random() * 80).toFixed(2);
-  const discount = +(Math.random() * 30).toFixed(2);
-  const sellingPrice = +(mrp - (mrp * discount) / 100).toFixed(2);
-  const gst = +(5 + Math.random() * 10).toFixed(2);
-  const stock = Math.floor(Math.random() * 10);
-  const variants = Math.floor(Math.random() * 4) + 1;
+    const mrp = +(20 + Math.random() * 80).toFixed(2);
+    const discount = +(Math.random() * 30).toFixed(2);
+    const sellingPrice = +(mrp - (mrp * discount) / 100).toFixed(2);
+    const gst = +(5 + Math.random() * 10).toFixed(2);
+    const stock = Math.floor(Math.random() * 10);
+    const variants = Math.floor(Math.random() * 4) + 1;
 
-  return {
-    sku,
-    shopId: '4512',
-    name,
-    mrp,
-    sellingPrice,
-    gst,
-    category,
-    division,
-    subDivision,
-    brand,
-    description: `${division} ${subDivision} from ${brand}`,
-    imageUrl: `https://via.placeholder.com/150?text=${encodeURIComponent(name)}`,
-    discount,
-    numberOfVariants: variants,
-    currentStock: stock,
-    inStock: stock > 0,
-    primarySKU: sku,
-    attributes: {
-      color: null,
-      id: null,
-      name: null,
-      description: null,
-      price: null,
-      product: null,
-    },
-    additionalImages: [
-      {
-        url: null,
+    return {
+      sku,
+      shopId,
+      name,
+      mrp,
+      sellingPrice,
+      gst,
+      category,
+      division,
+      subDivision,
+      brand,
+      description: `${division} ${subDivision} from ${brand}`,
+      imageUrl: `https://via.placeholder.com/150?text=${encodeURIComponent(name)}`,
+      discount,
+      numberOfVariants: variants,
+      currentStock: stock,
+      inStock: stock > 0,
+      primarySKU: sku,
+      attributes: {
+        color: null,
         id: null,
+        name: null,
+        description: null,
+        price: null,
+        product: null,
       },
-    ],
-    variantAttributes: [
-      {
-        name: `${subDivision} Variant ${i + 1}`,
-      },
-    ],
-    tags: [
-      {
-        tagName: tag,
-      },
-    ],
-  };
-});
+      additionalImages: [
+        {
+          url: null,
+          id: null,
+        },
+      ],
+      variantAttributes: [
+        {
+          name: `${subDivision} Variant ${index + 1}`,
+        },
+      ],
+      tags: [
+        {
+          tagName: tag,
+        },
+      ],
+    };
+  });
+};
+
+// Create 50 products for each shop
+export const mockProducts: Product[] = [
+  ...generateProducts('4512', 50),
+  ...generateProducts('7890', 50, 50), // startIndex 50 to keep names unique
+];

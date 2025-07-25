@@ -665,6 +665,13 @@ const VendorProduct: React.FC = () => {
             itemCount={itemCount}
             onViewCart={handleViewCart}
             onRemoveCart={handleRemoveCart}
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 30,
+            }}
+            shopId={vendor.shopId}
           />
         )}
       </View>

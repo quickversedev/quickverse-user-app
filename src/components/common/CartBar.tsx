@@ -1,23 +1,40 @@
 import React, { useRef } from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 
 interface CartBarProps {
   itemCount: number;
   onViewCart: () => void;
   onRemoveCart: () => void;
+  /**
+   * Pass custom styles for the CartBar container, including position, top, left, right, etc.
+   * This will override the default sticky positioning.
+   */
   style?: ViewStyle;
+  shopId: string;
 }
 
-const CartBar: React.FC<CartBarProps> = ({ itemCount, onViewCart, onRemoveCart, style }) => {
+const CartBar: React.FC<CartBarProps> = ({
+  itemCount,
+  onViewCart,
+  onRemoveCart,
+  style,
+  shopId,
+}) => {
   const { getColor } = useTheme();
   const swipeableRef = useRef<Swipeable>(null);
+  const getVendorNameById = useVendorStore(state => state.getVendorNameById);
+  const vendorName = getVendorNameById(shopId) || shopId;
 
   // Handler for when the left action (remove) is shown (swiped right)
   const handleLeftActionOpen = () => {
-    console.log('CartBar swiped right');
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('CartBar swiped right');
+    }
   };
 
   // Render the red Remove button when swiped right
@@ -62,7 +79,7 @@ const CartBar: React.FC<CartBarProps> = ({ itemCount, onViewCart, onRemoveCart, 
             style={{ marginRight: 10 }}
           />
           <View style={styles.divider} />
-          <Text style={styles.cartText}>View Cart</Text>
+          <Text style={styles.cartText}>{vendorName}</Text>
           <View style={{ flex: 1 }} />
           <Text style={styles.itemCount}>
             {itemCount} Item{itemCount > 1 ? 's' : ''}{' '}
@@ -81,14 +98,9 @@ const CartBar: React.FC<CartBarProps> = ({ itemCount, onViewCart, onRemoveCart, 
 
 const styles = StyleSheet.create({
   stickyContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: Platform.OS === 'ios' ? 24 : 12,
     zIndex: 100,
     alignItems: 'center',
     justifyContent: 'center',
-    // pointerEvents: 'box-none',
   },
   cartBar: {
     flexDirection: 'row',
@@ -99,14 +111,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     minWidth: 320,
     minHeight: 56,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
+
     width: '100%',
     alignSelf: 'center',
-    borderTopRightRadius: 16, // <-- add this
-    borderBottomRightRadius: 16,
   },
   divider: {
     width: 1,

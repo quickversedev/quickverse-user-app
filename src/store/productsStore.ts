@@ -42,8 +42,10 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       await new Promise(res => setTimeout(res, 500));
       const currentOffset = offset !== undefined ? offset : get().offset;
       const currentLimit = limit !== undefined ? limit : get().limit;
-      const pagedProducts = mockProducts.slice(currentOffset, currentOffset + currentLimit);
-      const total = mockProducts.length;
+      const shopId = get().shopId;
+      const shopProducts = mockProducts.filter(p => p.shopId === shopId);
+      const pagedProducts = shopProducts.slice(currentOffset, currentOffset + currentLimit);
+      const total = shopProducts.length;
       set(state => ({
         products: append ? [...state.products, ...pagedProducts] : pagedProducts,
         offset: currentOffset + pagedProducts.length,

@@ -8,6 +8,7 @@ import { FoodContent } from './components/tabs/FoodContent';
 import { ForYouContent } from './components/tabs/ForYouContent';
 import { GroceryContent } from './components/tabs/GroceryContent';
 import { PharmacyContent } from './components/tabs/PharmacyContent';
+import FloatingCartsStack from './FloatingCartsStack';
 
 const HEADER_HEIGHT = 280; // Approximate total header height
 
@@ -31,7 +32,6 @@ const HomeMainScreen = () => {
         return <GroceryContent {...contentProps} />;
       case 'Pharmacy':
         return <PharmacyContent {...contentProps} />;
-
       case 'ForYou':
       default:
         return <ForYouContent {...contentProps} />;
@@ -44,6 +44,7 @@ const HomeMainScreen = () => {
         <Header translateY={translateY} hiddenSectionsOpacity={opacity} />
         <View style={styles.content}>{renderContent()}</View>
       </View>
+      <FloatingCartsStack />
     </SafeAreaView>
   );
 };

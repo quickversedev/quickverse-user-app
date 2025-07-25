@@ -73,4 +73,5 @@ export interface VendorStore {
   getVendorsByCategory: (category: string) => Vendor[];
   getFilteredVendors: () => Vendor[];
   getVendorsNearLocation: (location: LocationFilter) => Vendor[];
+  getVendorNameById: (shopId: string) => string | undefined;
 }

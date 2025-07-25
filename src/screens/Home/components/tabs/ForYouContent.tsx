@@ -108,6 +108,7 @@ export const ForYouContent: React.FC<ForYouContentProps> = ({
           </View>
         </TouchableOpacity>
       ))}
+      {/* <FloatingCartsStack /> */}
     </Animated.ScrollView>
   );
 };

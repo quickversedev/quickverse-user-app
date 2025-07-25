@@ -26,6 +26,7 @@ interface CartStore {
   clearCart: (cartId: string) => void;
   getCartCount: (cartId: string) => number;
   getTotalCarts: () => number;
+  getAllCarts: () => Cart[];
 }
 
 const MAX_CARTS = 3;
@@ -48,7 +49,6 @@ const useCartStore = create<CartStore>((set, get) => ({
           ? { ...existing, quantity: existing.quantity + 1 }
           : { ...product, quantity: 1 },
       };
-      console.log('updatedProducts', updatedProducts);
       return {
         carts: {
           ...state.carts,
@@ -135,11 +135,9 @@ const useCartStore = create<CartStore>((set, get) => ({
   clearCart: cartId => {
     set(state => {
       if (!state.carts[cartId]) return {};
+      const { [cartId]: _, ...restCarts } = state.carts;
       return {
-        carts: {
-          ...state.carts,
-          [cartId]: { ...state.carts[cartId], products: {} },
-        },
+        carts: restCarts,
       };
     });
   },
@@ -152,6 +150,10 @@ const useCartStore = create<CartStore>((set, get) => ({
 
   getTotalCarts: () => {
     return Object.keys(get().carts).length;
+  },
+
+  getAllCarts: () => {
+    return Object.values(get().carts);
   },
 }));
 
