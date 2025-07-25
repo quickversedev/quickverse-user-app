@@ -6,6 +6,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import CartBar from '../../components/common/CartBar';
 import type { RootStackParamList } from '../../routes/AppStack';
 import useCartStore from '../../store/cartStore';
+import { useTheme } from '../../theme/ThemeContext';
 
 const ANIMATION_DURATION = 250;
 
@@ -17,6 +18,7 @@ const FloatingCartsStack: React.FC = () => {
   const clearCart = useCartStore(state => state.clearCart);
   const [expanded, setExpanded] = useState(false);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const { getColor } = useTheme();
 
   // Sort carts: most recently active at the top
   const sortedCarts = [...allCarts].sort((a, b) => {
@@ -89,14 +91,14 @@ const FloatingCartsStack: React.FC = () => {
               <MaterialCommunityIcons
                 name="chevron-down"
                 size={28}
-                color="#FFD600"
+                color={getColor('primary')}
                 style={styles.chevronIcon}
               />
             ) : (
               <MaterialCommunityIcons
                 name="chevron-up"
                 size={28}
-                color="#FFD600"
+                color={getColor('primary')}
                 style={styles.chevronIcon}
               />
             )}
@@ -112,9 +114,10 @@ const FloatingCartsStack: React.FC = () => {
                 {
                   position: 'absolute',
                   top: 8,
-                  left: 10,
+                  left: 0,
                   right: 0,
                   zIndex: 0,
+                  backgroundColor: getColor('primary'),
                 },
               ]}
               pointerEvents="none"
@@ -202,7 +205,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#FFD600',
+    // backgroundColor is set dynamically
     opacity: 0.7,
   },
   stack: {
@@ -224,11 +227,10 @@ const styles = StyleSheet.create({
     // backgroundColor: 'rgba(0,255,0,0.2)', // debug
   },
   cartShadow: {
-    backgroundColor: '#FFD600',
     borderRadius: 20,
-    width: '90%',
-    maxWidth: 340,
-    height: 65, // match CartBar height
+    width: '100%',
+    maxWidth: 360,
+    height: 60, // match CartBar height
     opacity: 0.7,
     alignSelf: 'center',
   },

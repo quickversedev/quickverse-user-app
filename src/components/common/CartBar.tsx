@@ -24,7 +24,7 @@ const CartBar: React.FC<CartBarProps> = ({
   style,
   shopId,
 }) => {
-  const { getColor } = useTheme();
+  const { getColor, getTypography } = useTheme();
   const swipeableRef = useRef<Swipeable>(null);
   const getVendorNameById = useVendorStore(state => state.getVendorNameById);
   const vendorName = getVendorNameById(shopId) || shopId;
@@ -41,12 +41,17 @@ const CartBar: React.FC<CartBarProps> = ({
   const renderLeftActions = (_progress: unknown, _dragX: unknown) => {
     return (
       <TouchableOpacity
-        style={[styles.removeButton, { backgroundColor: '#C6284B' }]}
+        style={[styles.removeButton, { backgroundColor: getColor('error') }]}
         onPress={onRemoveCart}
         activeOpacity={0.8}
       >
-        <MaterialCommunityIcons name="close" size={20} color="#fff" style={{ marginRight: 4 }} />
-        <Text style={styles.removeText}>Remove</Text>
+        <MaterialCommunityIcons
+          name="close"
+          size={20}
+          color={getColor('white')}
+          style={styles.removeIcon}
+        />
+        <Text style={styles.removeText}>{'Remove'}</Text>
       </TouchableOpacity>
     );
   };
@@ -66,29 +71,38 @@ const CartBar: React.FC<CartBarProps> = ({
           {/* Red cross icon */}
           <TouchableOpacity
             onPress={() => swipeableRef.current?.openLeft()}
-            style={{ marginRight: 8, justifyContent: 'center', alignItems: 'center' }}
+            style={styles.crossIconBtn}
             hitSlop={{ left: 8, right: 8, top: 8, bottom: 8 }}
           >
-            <MaterialCommunityIcons name="close-circle" size={18} color="#C6284B" />
+            <MaterialCommunityIcons name="close-circle" size={18} color={getColor('error')} />
           </TouchableOpacity>
           {/* Cart icon */}
           <MaterialCommunityIcons
             name="cart-outline"
             size={26}
-            color="#222"
-            style={{ marginRight: 10 }}
+            color={getColor('text')}
+            style={styles.cartIcon}
           />
           <View style={styles.divider} />
-          <Text style={styles.cartText}>{vendorName}</Text>
+          <Text
+            style={[
+              styles.cartText,
+              { fontSize: getTypography('subtitle'), color: getColor('text') },
+            ]}
+          >
+            {vendorName}
+          </Text>
           <View style={{ flex: 1 }} />
-          <Text style={styles.itemCount}>
+          <Text
+            style={[styles.itemCount, { color: getColor('text'), fontSize: getTypography('body') }]}
+          >
             {itemCount} Item{itemCount > 1 ? 's' : ''}{' '}
           </Text>
           <MaterialCommunityIcons
             name="chevron-right"
             size={22}
             color={getColor('text')}
-            style={{ marginLeft: 2 }}
+            style={styles.chevronIcon}
           />
         </TouchableOpacity>
       </Swipeable>
@@ -105,33 +119,28 @@ const styles = StyleSheet.create({
   cartBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFD600',
+    backgroundColor: '#FFD600', // This should be replaced with theme color if available
     borderRadius: 16,
     paddingVertical: 18,
     paddingHorizontal: 18,
     minWidth: 320,
     minHeight: 56,
-
     width: '100%',
     alignSelf: 'center',
   },
   divider: {
     width: 1,
     height: 28,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#E0E0E0', // This should be replaced with theme color if available
     marginHorizontal: 10,
     borderRadius: 1,
   },
   cartText: {
-    color: '#222',
     fontWeight: 'bold',
-    fontSize: 18,
     letterSpacing: 0.2,
   },
   itemCount: {
-    color: '#222',
     fontWeight: 'bold',
-    fontSize: 15,
     marginRight: 2,
   },
   removeButton: {
@@ -145,9 +154,22 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   removeText: {
-    color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+    marginLeft: 2,
+  },
+  removeIcon: {
+    marginRight: 4,
+  },
+  crossIconBtn: {
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cartIcon: {
+    marginRight: 10,
+  },
+  chevronIcon: {
     marginLeft: 2,
   },
 });
