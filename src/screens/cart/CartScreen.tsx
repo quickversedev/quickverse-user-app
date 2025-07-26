@@ -195,7 +195,10 @@ const CartScreen: React.FC = () => {
   ];
 
   const handleClearCart = () => {
-    if (cart) clearCart(cart.cartId);
+    if (cart) {
+      clearCart(cart.cartId);
+      navigation.goBack();
+    }
   };
   const handleInc = (sku: string) => {
     if (cart) increment(cart.cartId, sku);
