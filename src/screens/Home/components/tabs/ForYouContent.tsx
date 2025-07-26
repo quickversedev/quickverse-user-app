@@ -10,6 +10,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { Images } from '../../../../assets';
 import { ThemeText } from '../../../../components/common/theme/ThemeText';
 import VendorList from '../../../../components/modules/Vendor/VendorList';
 import { useTheme } from '../../../../theme/ThemeContext';
@@ -23,7 +24,7 @@ const dummyRecommendations = [
     type: 'restaurant',
     name: 'Healthy Bites Cafe',
     description: 'Based on your healthy eating preferences',
-    image: require('../../../../assets/images/bg_1.png'),
+    image: Images.bg1,
     tag: 'Recommended',
   },
   {
@@ -31,7 +32,7 @@ const dummyRecommendations = [
     type: 'grocery',
     name: 'Organic Essentials Pack',
     description: 'Similar to your last grocery order',
-    image: require('../../../../assets/images/bg_1.png'),
+    image: Images.bg1,
     tag: 'Recent',
   },
   {
@@ -39,7 +40,7 @@ const dummyRecommendations = [
     type: 'pharmacy',
     name: 'Wellness Package',
     description: 'Recommended health products',
-    image: require('../../../../assets/images/bg_1.png'),
+    image: Images.bg1,
     tag: 'New',
   },
   {
@@ -47,7 +48,7 @@ const dummyRecommendations = [
     type: 'restaurant',
     name: 'Quick Bites Express',
     description: 'Popular in your area',
-    image: require('../../../../assets/images/bg_1.png'),
+    image: Images.bg1,
     tag: 'Trending',
   },
   {
@@ -55,7 +56,7 @@ const dummyRecommendations = [
     type: 'grocery',
     name: 'Fresh Fruits Bundle',
     description: 'Seasonal picks for you',
-    image: require('../../../../assets/images/bg_1.png'),
+    image: Images.bg1,
     tag: 'Season Special',
   },
 ];

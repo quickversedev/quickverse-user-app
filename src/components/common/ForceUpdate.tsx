@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 
 import DeviceInfo from 'react-native-device-info';
+import { Images } from '../../assets';
 import useFetchUpdateData from '../../hooks/useFetchUpdateData';
 import { Theme, useTheme } from '../../theme/ThemeContext';
 
@@ -159,10 +160,7 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
     console.log('loading ::::::', loading, isChecking);
     return (
       <View style={getStyles(theme).loadingContainer}>
-        <Image
-          style={getStyles(theme).loadingLogo}
-          source={require('../../assets/images/logo_qv.png')}
-        />
+        <Image style={getStyles(theme).loadingLogo} source={Images.logoQv} />
         <ActivityIndicator
           size="large"
           color={theme.colors.secondary}
@@ -177,10 +175,7 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
   if (error) {
     return (
       <View style={getStyles(theme).errorContainer}>
-        <Image
-          style={getStyles(theme).errorLogo}
-          source={require('../../assets/images/logo_qv.png')}
-        />
+        <Image style={getStyles(theme).errorLogo} source={Images.logoQv} />
         <Text style={getStyles(theme).errorTitle}>Connection Error</Text>
         <Text style={getStyles(theme).errorText}>
           Failed to check for updates. Please check your internet connection.
@@ -204,16 +199,13 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
         ]}
       >
         <ImageBackground
-          source={require('../../assets/images/bg_1.png')}
+          source={Images.bg1}
           style={getStyles(theme).topBackground}
           resizeMode="cover"
         />
 
         <View style={getStyles(theme).logoContainer}>
-          <Image
-            style={getStyles(theme).topLogo}
-            source={require('../../assets/images/logo_qv.png')}
-          />
+          <Image style={getStyles(theme).topLogo} source={Images.logoQv} />
         </View>
 
         <Animated.View

@@ -1,23 +1,18 @@
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import CartBar from '../../components/common/CartBar';
-import type { RootStackParamList } from '../../routes/AppStack';
-import useCartStore from '../../store/cartStore';
-import { useTheme } from '../../theme/ThemeContext';
+import useCartStore from '../../../store/cartStore';
+import { useTheme } from '../../../theme/ThemeContext';
+import CartBar from './CartBar';
 
+const { width } = Dimensions.get('window');
 const ANIMATION_DURATION = 250;
 
 const FloatingCartsStack: React.FC = () => {
   const carts = useCartStore(state => state.carts);
   const allCarts = Object.values(carts);
   const activeCartId = useCartStore(state => state.activeCartId);
-  const setActiveCart = useCartStore(state => state.setActiveCart);
-  const clearCart = useCartStore(state => state.clearCart);
   const [expanded, setExpanded] = useState(false);
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { getColor } = useTheme();
 
   // Sort carts: most recently active at the top
@@ -114,7 +109,7 @@ const FloatingCartsStack: React.FC = () => {
                 {
                   position: 'absolute',
                   top: 8,
-                  left: 0,
+                  left: -20,
                   right: 0,
                   zIndex: 0,
                   backgroundColor: getColor('primary'),
@@ -151,33 +146,13 @@ const FloatingCartsStack: React.FC = () => {
               >
                 <CartBar
                   itemCount={Object.values(cart.products).reduce((sum, p) => sum + p.quantity, 0)}
-                  onViewCart={() => {
-                    if (expanded) {
-                      if (activeCartId !== cart.cartId) setActiveCart(cart.cartId);
-                      navigation.navigate('Cart');
-                    } else {
-                      setExpanded(true);
-                    }
-                  }}
-                  onRemoveCart={() => clearCart(cart.cartId)}
-                  style={styles.cartBar}
                   shopId={cart.cartId.replace('vendor_', '')}
+                  cartId={cart.cartId}
+                  isExpanded={expanded}
+                  onExpand={() => setExpanded(true)}
                 />
               </Animated.View>
             );
-            if (!expanded) {
-              // When collapsed, make the cart clickable to expand
-              return (
-                <TouchableOpacity
-                  key={cart.cartId}
-                  activeOpacity={0.9}
-                  onPress={() => setExpanded(true)}
-                  style={{ width: '100%' }}
-                >
-                  {CartContent}
-                </TouchableOpacity>
-              );
-            }
             // When expanded, clicking the cart navigates to CartScreen
             return CartContent;
           })}
@@ -213,25 +188,28 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     alignItems: 'center',
     justifyContent: 'flex-start',
+    overflow: 'visible',
   },
   cartBarWrapper: {
-    width: '100%',
-    maxWidth: 360,
+    width: width - 30,
+    maxWidth: width - 30,
     marginBottom: 10,
     alignItems: 'center',
+    // overflow: 'visible',
     // backgroundColor: 'rgba(255,0,0,0.2)', // debug
   },
   cartBar: {
     width: '100%',
     maxWidth: 360,
+    overflow: 'visible',
     // backgroundColor: 'rgba(0,255,0,0.2)', // debug
   },
   cartShadow: {
     borderRadius: 20,
-    width: '100%',
-    maxWidth: 360,
-    height: 60, // match CartBar height
-    opacity: 0.7,
+    width: width - 30,
+    maxWidth: width - 30,
+    height: 65, // match CartBar height
+    opacity: 0.9,
     alignSelf: 'center',
   },
   crossIcon: {

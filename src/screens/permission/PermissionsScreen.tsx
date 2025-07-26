@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Images } from '../../assets';
 import { useLocationPermission } from '../../hooks/Permissions/usePermissions';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -200,13 +201,9 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
       >
-        <ImageBackground
-          source={require('../../assets/images/bg_1.png')}
-          style={styles.topBackground}
-          resizeMode="cover"
-        />
+        <ImageBackground source={Images.bg1} style={styles.topBackground} resizeMode="cover" />
         <View style={styles.logoContainer}>
-          <Image style={styles.topLogo} source={require('../../assets/images/logo_qv.png')} />
+          <Image style={styles.topLogo} source={Images.logoQv} />
         </View>
         <View style={styles.card}>
           <TouchableOpacity style={styles.skipContainer} onPress={skipLocationPermission}>

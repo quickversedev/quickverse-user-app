@@ -12,7 +12,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import CategoryLogo from '../../../../components/common/CategoryLogo';
-import PromoBanner from '../../../../components/common/PromoBanner';
+import PromoBanner from '../../../../components/common/promo/PromoBanner';
 import VendorCard from '../../../../components/modules/Vendor/VendorCard';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import useVendorStore from '../../../../store/vendorStore';

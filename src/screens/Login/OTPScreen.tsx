@@ -21,6 +21,7 @@ import {
   useBlurOnFulfill,
   useClearByFocusCell,
 } from 'react-native-confirmation-code-field';
+import { Images } from '../../assets';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { LoginStackParamList } from '../../navigation/LoginNavigation';
@@ -222,13 +223,9 @@ const OTPScreen: React.FC = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
       >
-        <ImageBackground
-          source={require('../../assets/images/bg_1.png')}
-          style={styles.topBackground}
-          resizeMode="cover"
-        />
+        <ImageBackground source={Images.bg1} style={styles.topBackground} resizeMode="cover" />
         <View style={styles.logoContainer}>
-          <Image style={styles.topLogo} source={require('../../assets/images/logo_qv.png')} />
+          <Image style={styles.topLogo} source={Images.logoQv} />
         </View>
 
         <View style={styles.card}>

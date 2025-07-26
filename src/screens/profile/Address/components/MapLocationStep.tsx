@@ -19,6 +19,7 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { v4 as uuidv4 } from 'uuid';
+import { Images } from '../../../../assets';
 import { useLocationPermission } from '../../../../hooks/Permissions/usePermissions';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { getRegionFromLocation } from '../utils/mapUtils';
@@ -423,10 +424,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
           </MapView>
           {/* Center Pin Overlay */}
           <View pointerEvents="none" style={themedStyles.centerPinContainer}>
-            <Image
-              source={require('../../../../assets/images/map-location.png')}
-              style={themedStyles.centerPin}
-            />
+            <Image source={Images.mapLocation} style={themedStyles.centerPin} />
           </View>
           {/* Search Bar Overlay */}
           <KeyboardAvoidingView

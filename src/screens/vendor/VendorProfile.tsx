@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Images } from '../../assets';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
 
@@ -41,12 +42,12 @@ const mockReviews: Review[] = [
 const mockOffers = [
   {
     id: '1',
-    image: require('../../assets/images/bg_1.png'),
+    image: Images.bg1,
     text: 'Get 25% OFF when you pay with District',
   },
   {
     id: '2',
-    image: require('../../assets/images/bg_1.png'),
+    image: Images.bg1,
     text: 'Get 25% OFF when you pay with District',
   },
 ];

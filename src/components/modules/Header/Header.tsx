@@ -1,5 +1,15 @@
 import React from 'react';
-import { Animated, Image, Platform, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import {
+  Animated,
+  Image,
+  ImageBackground,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { Images } from '../../../assets';
 import { NavigationItems } from '../../../screens/Home/components/NavigationItems';
 import { useTheme } from '../../../theme/ThemeContext';
 import { LocationSelector } from './LocationSelector';
@@ -38,11 +48,13 @@ export const Header: React.FC<HeaderProps> = ({ translateY, hiddenSectionsOpacit
 
           {/* Section 3: Logo */}
           <View style={styles.logoContainer}>
-            <Image
-              source={require('../../../assets/images/homeBackground.png')}
-              style={styles.logo}
+            <ImageBackground
+              source={Images.homeBackground}
+              style={styles.backgroundImage}
               resizeMode="cover"
-            />
+            >
+              <Image source={Images.homeBackground} style={styles.logo} resizeMode="cover" />
+            </ImageBackground>
           </View>
         </Animated.View>
 
@@ -117,5 +129,9 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     borderBottomWidth: 3,
+  },
+  backgroundImage: {
+    width: '100%',
+    height: '100%',
   },
 });

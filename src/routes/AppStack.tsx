@@ -16,7 +16,7 @@ export type RootStackParamList = {
   Profile: undefined;
   VendorProduct: { vendor: Vendor };
   VendorProfile: { vendor: Vendor };
-  Cart: undefined;
+  Cart: { cartId: string } | undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();

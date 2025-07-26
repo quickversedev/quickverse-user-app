@@ -1,8 +1,7 @@
 import React from 'react';
 import { Image, ImageProps, ImageStyle, StyleProp } from 'react-native';
-import useThemeStore from '../../store/themeStore';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const fallbackPromo = require('../../assets/images/bg_1.png');
+import { Images } from '../../../assets';
+import useThemeStore from '../../../store/themeStore';
 
 interface PromoImageProps extends Omit<ImageProps, 'source'> {
   promo: string;
@@ -15,6 +14,8 @@ const sizeMap = {
   medium: 100,
   large: 160,
 };
+
+const fallbackPromo = Images.bg1;
 
 const PromoImage: React.FC<PromoImageProps> = ({ promo, size = 'medium', style, ...rest }) => {
   const promoImages = useThemeStore(state => state.getPromoImages());

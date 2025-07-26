@@ -1,5 +1,6 @@
 import React from 'react';
 import { Platform, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import { Header } from '../../components/modules/Header/Header';
 import { useTab } from '../../contexts/TabContext';
 import { useHeaderAnimation } from '../../hooks/useHeaderAnimation';
@@ -8,7 +9,6 @@ import { FoodContent } from './components/tabs/FoodContent';
 import { ForYouContent } from './components/tabs/ForYouContent';
 import { GroceryContent } from './components/tabs/GroceryContent';
 import { PharmacyContent } from './components/tabs/PharmacyContent';
-import FloatingCartsStack from './FloatingCartsStack';
 
 const HEADER_HEIGHT = 280; // Approximate total header height
 

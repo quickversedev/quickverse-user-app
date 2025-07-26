@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Images } from '../../assets';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
@@ -93,11 +94,7 @@ const ProfileScreen = () => {
               </Text>
             </View>
           </View>
-          <Image
-            source={require('../../assets/images/logo_qv.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <Image source={Images.logoQv} style={styles.logo} resizeMode="contain" />
         </View>
 
         {/* Features Section */}

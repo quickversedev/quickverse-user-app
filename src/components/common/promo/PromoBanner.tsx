@@ -10,9 +10,8 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import useThemeStore from '../../store/themeStore';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const fallbackPromo = require('../../assets/images/bg_1.png');
+import { Images } from '../../../assets';
+import useThemeStore from '../../../store/themeStore';
 
 export type PromoBannerSize = 'small' | 'medium' | 'large' | number;
 
@@ -103,6 +102,8 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
     typeof size === 'number'
       ? { img: size, font: 16, subFont: 12, pad: 12, btn: 28 }
       : sizeMap[size] || sizeMap.medium;
+
+  const fallbackPromo = Images.bg1;
 
   return (
     <View style={[styles.container, bannerShadow, { padding: s.pad, backgroundColor }, style]}>

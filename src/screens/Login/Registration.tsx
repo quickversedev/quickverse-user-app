@@ -19,6 +19,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { Images } from '../../assets';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { LoginStackParamList } from '../../navigation/LoginNavigation';
@@ -295,12 +296,12 @@ const Registration: React.FC = () => {
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             <View style={styles.container}>
               <ImageBackground
-                source={require('../../assets/images/bg_1.png')}
+                source={Images.bg1}
                 style={styles.topBackground}
                 resizeMode="cover"
               />
               <View style={styles.logoContainer}>
-                <Image style={styles.topLogo} source={require('../../assets/images/logo_qv.png')} />
+                <Image style={styles.topLogo} source={Images.logoQv} />
               </View>
 
               <View style={styles.card}>

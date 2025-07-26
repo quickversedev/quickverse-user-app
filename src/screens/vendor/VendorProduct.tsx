@@ -16,8 +16,9 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Images } from '../../assets';
 import { Product } from '../../assets/mock/products';
-import CartBar from '../../components/common/CartBar';
+import CartBar from '../../components/common/Cart/CartBar';
 import ProductCard from '../../components/modules/Product/ProductCard';
 import { RootStackParamList } from '../../routes/AppStack';
 import useCartStore from '../../store/cartStore';
@@ -35,10 +36,10 @@ type Category = {
 // Category type remains, Product is now imported from mock data
 // Mock categories
 const allCategories: Category[] = [
-  { id: 'scoops', name: 'Scoops', icon: require('../../assets/images/bg_1.png') },
-  { id: 'sundaes', name: 'Sundaes', icon: require('../../assets/images/bg_1.png') },
-  { id: 'cones', name: 'Cones', icon: require('../../assets/images/bg_1.png') },
-  { id: 'family', name: 'Family Packs', icon: require('../../assets/images/bg_1.png') },
+  { id: 'scoops', name: 'Scoops', icon: Images.bg1 },
+  { id: 'sundaes', name: 'Sundaes', icon: Images.bg1 },
+  { id: 'cones', name: 'Cones', icon: Images.bg1 },
+  { id: 'family', name: 'Family Packs', icon: Images.bg1 },
 ];
 
 // Categories will be filtered based on fetched products
@@ -103,7 +104,7 @@ const VendorProduct: React.FC = () => {
   );
 
   // Cart store integration
-  const { addToCart, increment, decrement, setActiveCart, clearCart, carts } = useCartStore();
+  const { addToCart, increment, decrement, setActiveCart, carts } = useCartStore();
 
   // Create vendor-specific cart ID
   const cartId = `vendor_${vendor.shopId}`;
@@ -118,16 +119,6 @@ const VendorProduct: React.FC = () => {
     (sum, p) => sum + p.quantity,
     0
   );
-
-  // Handler for viewing cart
-  const handleViewCart = () => {
-    navigation.navigate('Cart');
-  };
-
-  // Handler for removing cart
-  const handleRemoveCart = () => {
-    clearCart(cartId);
-  };
 
   const renderRating = () => {
     if (!vendor.rating || vendor.rating === 0) {
@@ -613,7 +604,7 @@ const VendorProduct: React.FC = () => {
                       {item.products.map((product: Product) => (
                         <ProductCard
                           key={product.sku}
-                          image={require('../../assets/images/bg_1.png')}
+                          image={Images.bg1}
                           name={product.name}
                           price={product.sellingPrice}
                           mrp={product.mrp}
@@ -663,8 +654,6 @@ const VendorProduct: React.FC = () => {
         {itemCount > 0 && (
           <CartBar
             itemCount={itemCount}
-            onViewCart={handleViewCart}
-            onRemoveCart={handleRemoveCart}
             style={{
               position: 'absolute',
               left: 0,
@@ -672,6 +661,7 @@ const VendorProduct: React.FC = () => {
               bottom: 30,
             }}
             shopId={vendor.shopId}
+            cartId={cartId}
           />
         )}
       </View>

@@ -1,4 +1,5 @@
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import React from 'react';
 import {
   Image,
@@ -12,9 +13,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Images } from '../../assets';
+import { RootStackParamList } from '../../routes/AppStack';
 import useCartStore, { CartProduct } from '../../store/cartStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
+
+type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
+type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
 
 interface CartItemProps extends CartProduct {
   tag?: string;
@@ -166,7 +172,9 @@ const CartFooter: React.FC<{
 
 // Main CartScreen
 const CartScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<CartScreenNavigationProp>();
+  const route = useRoute<CartScreenRouteProp>();
+  const { cartId } = route.params || {};
   const { carts, activeCartId, increment, decrement, clearCart } = useCartStore();
   const { vendors } = useVendorStore();
   const [showAddressModal, setShowAddressModal] = React.useState(false);
@@ -175,15 +183,15 @@ const CartScreen: React.FC = () => {
   const { theme, getColor, getButtonColor, getTypography } = useTheme();
 
   // Get current cart and vendor
-  const cart = activeCartId ? carts[activeCartId] : undefined;
+  const cart = cartId ? carts[cartId] : activeCartId ? carts[activeCartId] : undefined;
   const cartItems = cart ? Object.values(cart.products) : [];
   const vendor = vendors.find(v => v.shopId === cart?.cartId.replace('vendor_', ''));
 
   // Example suggested items (mock)
   const suggestedItems: SuggestedItem[] = [
-    { name: 'Choco Lava Cake', price: 20, image: require('../../assets/images/bg_1.png') },
-    { name: 'Choco Lava Cake', price: 20, image: require('../../assets/images/bg_1.png') },
-    { name: 'Choco Lava Cake', price: 20, image: require('../../assets/images/bg_1.png') },
+    { name: 'Choco Lava Cake', price: 20, image: Images.bg1 },
+    { name: 'Choco Lava Cake', price: 20, image: Images.bg1 },
+    { name: 'Choco Lava Cake', price: 20, image: Images.bg1 },
   ];
 
   const handleClearCart = () => {
@@ -197,7 +205,6 @@ const CartScreen: React.FC = () => {
   };
   const handleAddSuggested = (_idx: number) => {};
   const handleCheckout = () => {};
-
   // Dynamic styles using theme
   const themedStyles = StyleSheet.create({
     headerRow: {
