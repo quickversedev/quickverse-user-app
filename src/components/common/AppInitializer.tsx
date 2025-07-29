@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAddress } from '../../hooks';
+import { useLocation } from '../../hooks/Permissions/useLocation';
 import TabNavigation from '../../navigation/TabNavigation';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
@@ -13,7 +14,7 @@ interface AppInitializerProps {
 const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
   const { getColor } = useTheme();
   const [isInitialized, setIsInitialized] = useState(false);
-
+  const { location, getCurrentLocation, isGranted } = useLocation();
   // Store hooks
   const { fetchVendors, loading: vendorLoading, error: vendorError } = useVendorStore();
 
@@ -24,22 +25,22 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
 
   // Combined error state
   const error = vendorError || addressError;
-  console.log('error', addressError, vendorError);
+
   const initializeApp = async () => {
     try {
-      // Call all necessary initialization APIs in parallel
-      await Promise.all([
-        // Fetch vendors data
-        fetchVendors().catch(error => {
+      // Always fetch addresses
+      await fetchAddresses().catch(error => {
+        console.warn('Address fetch failed:', error);
+        return null; // Allow fallback to empty addresses
+      });
+
+      // Only fetch vendors if location is available
+      if (isGranted && location.latitude && location.longitude) {
+        await fetchVendors().catch(error => {
           console.warn('Vendor fetch failed:', error);
           return null; // Allow fallback to mock data
-        }),
-
-        fetchAddresses().catch(error => {
-          console.warn('Address fetch failed:', error);
-          return null; // Allow fallback to empty addresses
-        }),
-      ]);
+        });
+      }
 
       setIsInitialized(true);
     } catch (error: unknown) {
@@ -55,6 +56,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
 
   useEffect(() => {
     if (!isInitialized) {
+      getCurrentLocation();
       initializeApp();
     }
   }, [isInitialized]);

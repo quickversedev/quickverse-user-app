@@ -12,7 +12,7 @@ import {
   onMessage,
   onNotificationOpenedApp,
 } from '@react-native-firebase/messaging';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
 
 interface NotificationPayload {
@@ -270,7 +270,6 @@ export const useNotifications = () => {
   }, []);
 
   const setupNotifeeBackgroundHandler = () => {
-
     try {
       notifee.onBackgroundEvent(async ({ type, detail }: Event) => {
         try {
@@ -314,57 +313,51 @@ export const useNotifications = () => {
     }
   };
 
-  useEffect(() => {
+  const setupNotifications = async () => {
     let unsubscribeForeground: (() => void) | undefined;
     let unsubscribeBackground: (() => void) | undefined;
     let unsubscribeOpened: (() => void) | undefined;
 
-    const setupNotifications = async () => {
+    try {
+      const permissionStatus = await requestPermissions();
 
-      try {
-        const permissionStatus = await requestPermissions();
-
-        if (!permissionStatus) {
-          throw new PermissionError(
-            'Notification permissions not granted',
-            'PERMISSION_NOT_GRANTED'
-          );
-        }
-
-        // Get the FCM token
-        const token = await getFCMToken();
-        if (!token) {
-          throw new MessagingError('No FCM token available', 'TOKEN_UNAVAILABLE');
-        }
-
-        // Setup handlers
-        unsubscribeForeground = setupForegroundHandler();
-        unsubscribeBackground = setupNotifeeBackgroundHandler();
-        unsubscribeOpened = setupNotificationOpenedHandler();
-        setupBackgroundHandler();
-        await setupInitialNotification();
-      } catch (error) {
-        handleError(error, 'Setup notifications failed');
+      if (!permissionStatus) {
+        throw new PermissionError('Notification permissions not granted', 'PERMISSION_NOT_GRANTED');
       }
-    };
 
-    setupNotifications();
-
-    // Cleanup
-    return () => {
-      try {
-        unsubscribeForeground?.();
-        unsubscribeBackground?.();
-        unsubscribeOpened?.();
-      } catch (error) {
-        handleError(error, 'Notification cleanup failed');
+      // Get the FCM token
+      const token = await getFCMToken();
+      if (!token) {
+        throw new MessagingError('No FCM token available', 'TOKEN_UNAVAILABLE');
       }
-    };
-  }, [setupInitialNotification, setupNotificationOpenedHandler]);
+
+      // Setup handlers
+      unsubscribeForeground = setupForegroundHandler();
+      unsubscribeBackground = setupNotifeeBackgroundHandler();
+      unsubscribeOpened = setupNotificationOpenedHandler();
+      setupBackgroundHandler();
+      await setupInitialNotification();
+
+      // Return cleanup function
+      return () => {
+        try {
+          unsubscribeForeground?.();
+          unsubscribeBackground?.();
+          unsubscribeOpened?.();
+        } catch (error) {
+          handleError(error, 'Notification cleanup failed');
+        }
+      };
+    } catch (error) {
+      handleError(error, 'Setup notifications failed');
+      return () => {}; // Return no-op cleanup function on error
+    }
+  };
 
   return {
     displayNotification,
     getFCMToken,
     requestPermissions,
+    setupNotifications,
   };
 };

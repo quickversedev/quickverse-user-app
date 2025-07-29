@@ -17,7 +17,7 @@ export type Address = {
   address: string;
   city: string;
   state: string;
-  zipCode: string;
+  postalCode: string;
   country: string;
   isDefault?: boolean;
   // Add missing properties to match AddressDetails

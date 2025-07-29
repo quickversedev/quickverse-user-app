@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
+import { useAddress } from '../../../hooks';
+import { useLocation } from '../../../hooks/Permissions/useLocation';
+import { findClosestAddressWithinRadius } from '../../../screens/profile/Address/utils/addressUtils';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Address } from '../../../types/address';
 import { ThemeText } from '../../common/theme/ThemeText';
@@ -11,6 +14,41 @@ export const LocationSelector = () => {
   const { theme } = useTheme();
   const { selectedAddress, setSelectedAddress } = useAuth();
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const { addresses } = useAddress();
+  const { location, isGranted, getCurrentLocation } = useLocation();
+
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
+
+  // Auto-select closest address within 200m radius when location is available
+  useEffect(() => {
+    if (
+      isGranted &&
+      location.latitude &&
+      location.longitude &&
+      addresses.length > 0 &&
+      !selectedAddress
+    ) {
+      const currentLocation = {
+        latitude: location.latitude,
+        longitude: location.longitude,
+      };
+
+      const closestAddressResult = findClosestAddressWithinRadius(currentLocation, addresses, 200);
+
+      if (closestAddressResult) {
+        setSelectedAddress(closestAddressResult.address as Address);
+      }
+    }
+  }, [
+    isGranted,
+    location.latitude,
+    location.longitude,
+    addresses,
+    selectedAddress,
+    setSelectedAddress,
+  ]);
 
   const handleAddressSelect = (address: Address) => {
     setSelectedAddress(address);
@@ -19,7 +57,7 @@ export const LocationSelector = () => {
 
   const getDisplayAddress = () => {
     if (selectedAddress) {
-      return `${selectedAddress.city} - ${selectedAddress.zipCode}`;
+      return `${selectedAddress.city} - ${selectedAddress.postalCode}`;
     }
     return 'Select Address';
   };

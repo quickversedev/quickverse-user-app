@@ -1,13 +1,12 @@
 import { createStackNavigator } from '@react-navigation/stack';
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { AppInitializer } from '../components/common';
 import { useAuth } from '../contexts/login/AuthProvider';
-import { useLocation } from '../hooks/Permissions/useLocation';
-import { useNotifications } from '../hooks/useNotifications';
 import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
 import CartScreen from '../screens/cart/CartScreen';
 import Registration from '../screens/login/Registration';
+import PermissionsScreen from '../screens/permission/PermissionsScreen';
 import VendorProduct from '../screens/vendor/VendorProduct';
 import VendorProfile from '../screens/vendor/VendorProfile';
 import { Vendor } from '../types/vendor';
@@ -23,19 +22,17 @@ export type RootStackParamList = {
 const Stack = createStackNavigator<RootStackParamList>();
 
 export const AppStack = () => {
-  const { isDenied, handleDeniedPermissionModal } = useLocation();
   const { isNewUser } = useAuth();
-  const { requestPermissions } = useNotifications();
 
-  useEffect(() => {
-    if (isDenied) {
-      handleDeniedPermissionModal();
-    }
-    requestPermissions();
-  }, [handleDeniedPermissionModal, isDenied, requestPermissions]);
+  const [permissionsCompleted, setPermissionsCompleted] = useState(false);
 
   if (isNewUser) {
     return <Registration />;
+  }
+
+  // Show permission screen after registration for new users
+  if (!permissionsCompleted) {
+    return <PermissionsScreen onPermissionsComplete={() => setPermissionsCompleted(true)} />;
   }
 
   return (

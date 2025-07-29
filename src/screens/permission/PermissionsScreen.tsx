@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { Images } from '../../assets';
+import { useNotifications } from '../../hooks';
 import { useLocation } from '../../hooks/Permissions/useLocation';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -24,6 +25,8 @@ interface PermissionsScreenProps {
 
 const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComplete }) => {
   const { theme } = useTheme();
+  const { requestPermissions, setupNotifications } = useNotifications();
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   const styles = StyleSheet.create({
     safeArea: {
@@ -182,9 +185,29 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
 
   useEffect(() => {
     if (isGranted || hasSkippedLocation) {
-      onPermissionsComplete();
+      // Setup notifications when location permission is granted or skipped
+      setupNotifications()
+        .then(cleanup => {
+          if (cleanup) {
+            cleanupRef.current = cleanup;
+          }
+          onPermissionsComplete();
+        })
+        .catch(error => {
+          console.warn('Failed to setup notifications:', error);
+          onPermissionsComplete();
+        });
     }
-  }, [isGranted, hasSkippedLocation, onPermissionsComplete]);
+  }, [isGranted, hasSkippedLocation, onPermissionsComplete, setupNotifications]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (cleanupRef.current) {
+        cleanupRef.current();
+      }
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -194,7 +217,15 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
       </View>
     );
   }
-
+  const handlePermission = async () => {
+    try {
+      // Request both location and notification permissions
+      await requestLocationPermission();
+      await requestPermissions();
+    } catch (error) {
+      console.warn('Permission request failed:', error);
+    }
+  };
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -229,7 +260,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
               <Text style={styles.permissionDesc}>Serve you better, wherever you are.</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.permissionButton} onPress={requestLocationPermission}>
+          <TouchableOpacity style={styles.permissionButton} onPress={handlePermission}>
             <Text style={styles.permissionButtonText}>Allow Permissions</Text>
           </TouchableOpacity>
         </View>
