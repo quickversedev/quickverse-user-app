@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import useAddressStore from '../store/addressStore';
 import { NewAddress } from '../types/address';
 
@@ -7,9 +6,9 @@ export const useAddress = () => {
     useAddressStore();
 
   // Auto-fetch addresses on mount
-  useEffect(() => {
-    fetchAddresses();
-  }, [fetchAddresses]);
+  // useEffect(() => {
+  //   fetchAddresses();
+  // }, [fetchAddresses]);
 
   const handleAddAddress = async (newAddress: NewAddress) => {
     try {
@@ -22,7 +21,6 @@ export const useAddress = () => {
 
   const retryFetch = () => {
     clearError();
-    fetchAddresses();
   };
 
   return {

@@ -11,6 +11,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Images } from '../../../../assets';
+import SectionDivider from '../../../../components/common/SectionDivider';
 import { ThemeText } from '../../../../components/common/theme/ThemeText';
 import VendorList from '../../../../components/modules/Vendor/VendorList';
 import { useTheme } from '../../../../theme/ThemeContext';
@@ -84,6 +85,7 @@ export const ForYouContent: React.FC<ForYouContentProps> = ({
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
       style={{ paddingVertical: 100 }}
     >
+      <SectionDivider text="RESTAURANTS" />
       <VendorList />
       {dummyRecommendations.map(item => (
         <TouchableOpacity

@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import type { RootStackParamList } from '../../../routes/AppStack';
 import useVendorStore from '../../../store/vendorStore';
@@ -8,14 +8,14 @@ import { useTheme } from '../../../theme/ThemeContext';
 import VendorCard from './VendorCard';
 
 const VendorList = () => {
-  const { loading, error, getActiveVendors, fetchVendors } = useVendorStore();
+  const { loading, error, getActiveVendors } = useVendorStore();
   const { getColor } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const vendors = getActiveVendors();
 
-  useEffect(() => {
-    fetchVendors();
-  }, []);
+  // useEffect(() => {
+  //   fetchVendors();
+  // }, []);
 
   const styles = StyleSheet.create({
     container: {

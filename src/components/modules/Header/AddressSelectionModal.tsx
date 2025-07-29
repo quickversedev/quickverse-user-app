@@ -44,7 +44,6 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
 
   useEffect(() => {
     if (visible) {
-      fetchAddresses();
       // Slide up animation
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -73,7 +72,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
         }),
       ]).start();
     }
-  }, [visible, slideAnim, backdropAnim, fetchAddresses]);
+  }, [visible, slideAnim, backdropAnim]);
 
   const handleClose = () => {
     Animated.parallel([
@@ -103,7 +102,6 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
 
   const handleAddAddressSuccess = () => {
     setShowAddModal(false);
-    fetchAddresses(); // Refresh the list
   };
 
   const renderAddressItem = ({ item }: { item: Address }) => {

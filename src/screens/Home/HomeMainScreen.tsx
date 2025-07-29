@@ -24,7 +24,7 @@ const HomeMainScreen = () => {
       contentContainerStyle: styles.scrollContent,
       showsVerticalScrollIndicator: false,
     };
-
+    console.log('selectedTab', selectedTab);
     switch (selectedTab || 'ForYou') {
       case 'food':
         return <FoodContent {...contentProps} />;
@@ -33,7 +33,6 @@ const HomeMainScreen = () => {
       case 'Pharmacy':
         return <PharmacyContent {...contentProps} />;
       case 'ForYou':
-      default:
         return <ForYouContent {...contentProps} />;
     }
   };

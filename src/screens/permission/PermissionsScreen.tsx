@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import { Images } from '../../assets';
-import { useLocationPermission } from '../../hooks/Permissions/usePermissions';
+import { useLocation } from '../../hooks/Permissions/useLocation';
 import { useTheme } from '../../theme/ThemeContext';
 
 const { height } = Dimensions.get('window');
@@ -172,7 +172,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
     hasSkippedLocation,
     skipLocationPermission,
     getCurrentLocation,
-  } = useLocationPermission();
+  } = useLocation();
 
   useEffect(() => {
     if (!isLoading && !isDenied) {

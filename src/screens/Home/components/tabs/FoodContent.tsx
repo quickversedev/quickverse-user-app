@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   Animated,
   Dimensions,
@@ -36,12 +36,12 @@ export const FoodContent: React.FC<FoodContentProps> = ({
 }) => {
   const { theme } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const { getVendorsByCategory, fetchVendors } = useVendorStore();
+  const { getVendorsByCategory } = useVendorStore();
   const foodVendors = getVendorsByCategory('Food');
 
-  useEffect(() => {
-    fetchVendors();
-  }, [fetchVendors]);
+  // useEffect(() => {
+  //   fetchVendors();
+  // }, [fetchVendors]);
 
   const styles = StyleSheet.create({
     container: {

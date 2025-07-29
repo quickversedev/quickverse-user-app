@@ -17,7 +17,7 @@ type Location = {
   error: string | null;
 };
 
-export const useLocationPermission = () => {
+export const useLocation = () => {
   const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>(RESULTS.UNAVAILABLE);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [location, setLocation] = useState<Location>({

@@ -20,7 +20,7 @@ import MapView, { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { v4 as uuidv4 } from 'uuid';
 import { Images } from '../../../../assets';
-import { useLocationPermission } from '../../../../hooks/Permissions/usePermissions';
+import { useLocation } from '../../../../hooks/Permissions/useLocation';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { getRegionFromLocation } from '../utils/mapUtils';
 
@@ -63,7 +63,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     requestLocationPermission,
     getCurrentLocation,
     location: currentLocation,
-  } = useLocationPermission();
+  } = useLocation();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);

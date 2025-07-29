@@ -19,6 +19,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { Images } from '../../assets';
 import { Product } from '../../assets/mock/products';
 import CartBar from '../../components/common/Cart/CartBar';
+import SectionDivider from '../../components/common/SectionDivider';
 import ProductCard from '../../components/modules/Product/ProductCard';
 import { RootStackParamList } from '../../routes/AppStack';
 import useCartStore from '../../store/cartStore';
@@ -539,17 +540,12 @@ const VendorProduct: React.FC = () => {
         {/* Main Content: Categories + Products */}
         <View style={{ flex: 1 }}>
           {/* Category List (absolute overlay with animation) */}
-          <View style={{ alignItems: 'center', marginBottom: 8 }}>
-            <Text
-              style={{
-                color: getColor('subText'),
-                fontSize: getTypography('caption'),
-                letterSpacing: 2,
-              }}
-            >
-              {vendor.openingTime} - {vendor.closingTime}
-            </Text>
-          </View>
+
+          <SectionDivider
+            text={`${vendor.openingTime} - ${vendor.closingTime}`}
+            textStyle={{ fontSize: 14, fontWeight: 'normal' }}
+          />
+
           <Animated.View
             style={[
               styles.categoryContainer,

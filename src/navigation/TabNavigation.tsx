@@ -22,7 +22,7 @@ const TabNavigation = () => {
   const isAnimating = useRef(false);
   const tabBarTranslateY = useRef(new Animated.Value(0)).current;
   const { getColor } = useTheme();
-
+  console.log('TabNavigation');
   const showTabBar = () => {
     if (isAnimating.current) return;
     isAnimating.current = true;
