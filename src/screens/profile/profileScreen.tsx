@@ -47,20 +47,18 @@ const ProfileScreen = () => {
     {
       id: 'feature1',
       title: 'Addresses',
-      icon: 'circle-outline',
+      icon: 'map-marker-outline',
       onPress: () => {
-        // navigation is not defined in this scope, so we need to get it from props or useNavigation
-        // We'll use the useNavigation hook from @react-navigation/native
-        // Make sure to import: import { useNavigation } from '@react-navigation/native';
-        // And add: const navigation = useNavigation();
         navigation.navigate('Addresses');
       },
     },
     {
       id: 'feature2',
-      title: 'Feature 02',
-      icon: 'circle-outline',
-      onPress: () => {},
+      title: 'Orders',
+      icon: 'package-variant',
+      onPress: () => {
+        navigation.navigate('Orders');
+      },
     },
     {
       id: 'feature3',

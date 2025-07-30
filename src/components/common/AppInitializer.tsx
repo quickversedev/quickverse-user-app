@@ -35,12 +35,12 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
       });
 
       // Only fetch vendors if location is available
-      if (isGranted && location.latitude && location.longitude) {
-        await fetchVendors().catch(error => {
-          console.warn('Vendor fetch failed:', error);
-          return null; // Allow fallback to mock data
-        });
-      }
+      // if (isGranted && location.latitude && location.longitude) {
+      await fetchVendors().catch(error => {
+        console.warn('Vendor fetch failed:', error);
+        return null; // Allow fallback to mock data
+      });
+      // }
 
       setIsInitialized(true);
     } catch (error: unknown) {

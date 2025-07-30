@@ -1,15 +1,4 @@
 import { NavigationProp } from '@react-navigation/native';
-
-export type RootStackParamList = {
-  Home: undefined;
-  Profile: undefined;
-  Addresses: undefined;
-};
+import { RootStackParamList } from '../routes/AppStack';
 
 export type AppNavigationProp = NavigationProp<RootStackParamList>;
-
-declare global {
-  namespace ReactNavigation {
-    interface RootParamList extends RootStackParamList {}
-  }
-}

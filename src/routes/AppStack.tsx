@@ -9,6 +9,7 @@ import Registration from '../screens/login/Registration';
 import PermissionsScreen from '../screens/permission/PermissionsScreen';
 import VendorProduct from '../screens/vendor/VendorProduct';
 import VendorProfile from '../screens/vendor/VendorProfile';
+import OrderDetailsScreen from '../screens/orders/OrderDetailsScreen';
 import { Vendor } from '../types/vendor';
 
 export type RootStackParamList = {
@@ -17,6 +18,8 @@ export type RootStackParamList = {
   VendorProduct: { vendor: Vendor };
   VendorProfile: { vendor: Vendor };
   Cart: { cartId: string } | undefined;
+  Orders: undefined;
+  OrderDetails: { orderId: string };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -47,6 +50,7 @@ export const AppStack = () => {
         <Stack.Screen name="VendorProduct" component={VendorProduct} />
         <Stack.Screen name="VendorProfile" component={VendorProfile} />
         <Stack.Screen name="Cart" component={CartScreen} />
+        <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
       </Stack.Navigator>
     </AppInitializer>
   );

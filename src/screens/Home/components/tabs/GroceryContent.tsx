@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import CategoryLogo from '../../../../components/common/CategoryLogo';
 import PromoBanner from '../../../../components/common/promo/PromoBanner';
+import VendorEmptyState from '../../../../components/common/VendorEmptyState';
 import VendorCard from '../../../../components/modules/Vendor/VendorCard';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import useVendorStore from '../../../../store/vendorStore';
@@ -194,36 +195,44 @@ export const GroceryContent: React.FC<GroceryContentProps> = ({
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <CategoryLogo category="Grocery" style={styles.logo} resizeMode="cover" />
-        </View>
-      </View>
+      {groceryVendors.length > 0 ? (
+        <>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <CategoryLogo category="Grocery" style={styles.logo} resizeMode="cover" />
+            </View>
+          </View>
 
-      {/* Promotional Banner */}
-      <PromoBanner
-        promo="groceryPromo"
-        title="Fresh Groceries Delivered"
-        subtitle="Get your daily essentials at your doorstep"
-        bannerButton={{ label: 'Shop Now', onPress: () => {} }}
-        size="large"
-        style={styles.bannerContainer}
-        backgroundColor="yellow"
-      />
-
-      {/* Vendors Grid */}
-      <Text style={styles.sectionTitle}>Grocery Delivery</Text>
-      <View style={styles.vendorGrid}>
-        {groceryVendors.map(vendor => (
-          <VendorCard
-            key={vendor.shopId}
-            vendor={vendor}
-            onPress={vendor => navigation.navigate('VendorProduct', { vendor })}
-            favoriteColor="#4CAF50"
+          {/* Promotional Banner */}
+          <PromoBanner
+            promo="groceryPromo"
+            title="Fresh Groceries Delivered"
+            subtitle="Get your daily essentials at your doorstep"
+            bannerButton={{ label: 'Shop Now', onPress: () => {} }}
+            size="large"
+            style={styles.bannerContainer}
+            backgroundColor="yellow"
           />
-        ))}
-      </View>
+
+          {/* Vendors Grid */}
+          <Text style={styles.sectionTitle}>Grocery Delivery</Text>
+          <View style={styles.vendorGrid}>
+            {groceryVendors.map(vendor => (
+              <VendorCard
+                key={vendor.shopId}
+                vendor={vendor}
+                onPress={vendor => navigation.navigate('VendorProduct', { vendor })}
+                favoriteColor="#4CAF50"
+              />
+            ))}
+          </View>
+        </>
+      ) : (
+        <View style={styles.header}>
+          <VendorEmptyState category="Grocery" />
+        </View>
+      )}
     </Animated.ScrollView>
   );
 };

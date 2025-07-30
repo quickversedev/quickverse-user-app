@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import CategoryLogo from '../../../../components/common/CategoryLogo';
 import PromoBanner from '../../../../components/common/promo/PromoBanner';
+import VendorEmptyState from '../../../../components/common/VendorEmptyState';
 import VendorCard from '../../../../components/modules/Vendor/VendorCard';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import useVendorStore from '../../../../store/vendorStore';
@@ -194,36 +195,44 @@ export const FoodContent: React.FC<FoodContentProps> = ({
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <CategoryLogo category="Food" style={styles.logo} resizeMode="cover" />
-        </View>
-      </View>
+      {foodVendors.length > 0 ? (
+        <>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <CategoryLogo category="Food" style={styles.logo} resizeMode="cover" />
+            </View>
+          </View>
 
-      {/* Starbucks Banner */}
-      <PromoBanner
-        promo="foodPromo"
-        title="Get 25% OFF!"
-        subtitle="On your first order with code WELCOME"
-        bannerButton={{ label: 'Order Now', onPress: () => {} }}
-        size="medium"
-        style={styles.bannerContainer}
-        backgroundColor="green"
-      />
-
-      {/* Vendors Grid */}
-      <Text style={styles.sectionTitle}>Food Delivery</Text>
-      <View style={styles.vendorGrid}>
-        {foodVendors.map(vendor => (
-          <VendorCard
-            key={vendor.shopId}
-            vendor={vendor}
-            onPress={vendor => navigation.navigate('VendorProduct', { vendor })}
-            favoriteColor="#FF6B35"
+          {/* Starbucks Banner */}
+          <PromoBanner
+            promo="foodPromo"
+            title="Get 25% OFF!"
+            subtitle="On your first order with code WELCOME"
+            bannerButton={{ label: 'Order Now', onPress: () => {} }}
+            size="medium"
+            style={styles.bannerContainer}
+            backgroundColor="green"
           />
-        ))}
-      </View>
+
+          {/* Vendors Grid */}
+          <Text style={styles.sectionTitle}>Food Delivery</Text>
+          <View style={styles.vendorGrid}>
+            {foodVendors.map(vendor => (
+              <VendorCard
+                key={vendor.shopId}
+                vendor={vendor}
+                onPress={vendor => navigation.navigate('VendorProduct', { vendor })}
+                favoriteColor="#FF6B35"
+              />
+            ))}
+          </View>
+        </>
+      ) : (
+        <View style={styles.header}>
+          <VendorEmptyState category="Food" />
+        </View>
+      )}
     </Animated.ScrollView>
   );
 };

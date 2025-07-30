@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import CategoryLogo from '../../../../components/common/CategoryLogo';
 import PromoBanner from '../../../../components/common/promo/PromoBanner';
+import VendorEmptyState from '../../../../components/common/VendorEmptyState';
 import VendorCard from '../../../../components/modules/Vendor/VendorCard';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import useVendorStore from '../../../../store/vendorStore';
@@ -190,36 +191,44 @@ export const PharmacyContent: React.FC<PharmacyContentProps> = ({
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <CategoryLogo category="Pharmacy" style={styles.logo} resizeMode="cover" />
-        </View>
-      </View>
+      {pharmacyVendors.length > 0 ? (
+        <>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <CategoryLogo category="Pharmacy" style={styles.logo} resizeMode="cover" />
+            </View>
+          </View>
 
-      {/* Promotional Banner */}
-      <PromoBanner
-        promo="pharmacyPromo"
-        title="Upto 30% OFF on Medicines"
-        subtitle="Order genuine medicines and health supplies online"
-        bannerButton={{ label: 'Order Medicines', onPress: () => {} }}
-        size="small"
-        style={styles.bannerContainer}
-        backgroundColor="red"
-      />
-
-      {/* Vendors Grid */}
-      <Text style={styles.sectionTitle}>Pharmacy</Text>
-      <View style={styles.vendorGrid}>
-        {pharmacyVendors.map(vendor => (
-          <VendorCard
-            key={vendor.shopId}
-            vendor={vendor}
-            onPress={vendor => navigation.navigate('VendorProduct', { vendor })}
-            favoriteColor="#E91E63"
+          {/* Promotional Banner */}
+          <PromoBanner
+            promo="pharmacyPromo"
+            title="Upto 30% OFF on Medicines"
+            subtitle="Order genuine medicines and health supplies online"
+            bannerButton={{ label: 'Order Medicines', onPress: () => {} }}
+            size="small"
+            style={styles.bannerContainer}
+            backgroundColor="red"
           />
-        ))}
-      </View>
+
+          {/* Vendors Grid */}
+          <Text style={styles.sectionTitle}>Pharmacy</Text>
+          <View style={styles.vendorGrid}>
+            {pharmacyVendors.map(vendor => (
+              <VendorCard
+                key={vendor.shopId}
+                vendor={vendor}
+                onPress={vendor => navigation.navigate('VendorProduct', { vendor })}
+                favoriteColor="#E91E63"
+              />
+            ))}
+          </View>
+        </>
+      ) : (
+        <View style={styles.header}>
+          <VendorEmptyState category="Pharmacy" />
+        </View>
+      )}
     </Animated.ScrollView>
   );
 };
