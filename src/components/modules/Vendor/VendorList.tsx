@@ -8,15 +8,15 @@ import { useTheme } from '../../../theme/ThemeContext';
 import VendorCard from './VendorCard';
 
 const VendorList = () => {
-  const { loading, error, getActiveVendors } = useVendorStore();
+  const { loading, error, vendors } = useVendorStore();
   const { getColor } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const vendors = getActiveVendors();
+  // const vendors = getActiveVendors();
 
   // useEffect(() => {
   //   fetchVendors();
   // }, []);
-
+  console.log('vendors', vendors);
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -43,6 +43,7 @@ const VendorList = () => {
             vendor={item}
             size="small"
             onPress={() => navigation.navigate('VendorProduct', { vendor: item })}
+            disabled={!item.storeActive}
           />
         )}
         horizontal

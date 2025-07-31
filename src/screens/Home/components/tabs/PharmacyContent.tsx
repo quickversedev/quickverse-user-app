@@ -220,6 +220,7 @@ export const PharmacyContent: React.FC<PharmacyContentProps> = ({
                 vendor={vendor}
                 onPress={vendor => navigation.navigate('VendorProduct', { vendor })}
                 favoriteColor="#E91E63"
+                disabled={!vendor.storeActive}
               />
             ))}
           </View>

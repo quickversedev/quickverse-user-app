@@ -1,20 +1,20 @@
+import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import {
   Animated,
   Dimensions,
-  Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
   StyleSheet,
-  TouchableOpacity,
-  View,
   ViewStyle,
 } from 'react-native';
 import { Images } from '../../../../assets';
 import SectionDivider from '../../../../components/common/SectionDivider';
-import { ThemeText } from '../../../../components/common/theme/ThemeText';
 import VendorList from '../../../../components/modules/Vendor/VendorList';
+import VendorProductList from '../../../../components/modules/Vendor/VendorProductList';
+import useVendorStore from '../../../../store/vendorStore';
 import { useTheme } from '../../../../theme/ThemeContext';
+import { AppNavigationProp } from '../../../../types/navigation';
 
 const { width } = Dimensions.get('window');
 const cardWidth = width * 0.9;
@@ -76,6 +76,8 @@ export const ForYouContent: React.FC<ForYouContentProps> = ({
   showsVerticalScrollIndicator,
 }) => {
   const { theme } = useTheme();
+  const navigation = useNavigation<AppNavigationProp>();
+  const { vendors } = useVendorStore();
 
   return (
     <Animated.ScrollView
@@ -85,33 +87,14 @@ export const ForYouContent: React.FC<ForYouContentProps> = ({
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
       style={{ paddingVertical: 100 }}
     >
-      <SectionDivider text="RESTAURANTS" />
+      <SectionDivider text="RESTAURANTS" fontSize={16} />
       <VendorList />
-      {dummyRecommendations.map(item => (
-        <TouchableOpacity
-          key={item.id}
-          style={[styles.itemCard, { backgroundColor: theme.colors.card }]}
-        >
-          <Image source={item.image} style={styles.itemImage} />
-          <View style={styles.itemInfo}>
-            <View style={styles.headerRow}>
-              <ThemeText variant="h2">{item.name}</ThemeText>
-              <View style={[styles.tag, { backgroundColor: theme.colors.primary }]}>
-                <ThemeText variant="small" color={theme.colors.white}>
-                  {item.tag}
-                </ThemeText>
-              </View>
-            </View>
-            <ThemeText variant="body" color={theme.colors.subText}>
-              {item.description}
-            </ThemeText>
-            <ThemeText variant="small" color={theme.colors.primary} style={styles.type}>
-              {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-            </ThemeText>
-          </View>
-        </TouchableOpacity>
-      ))}
-      {/* <FloatingCartsStack /> */}
+      <SectionDivider text="BESTSELLERS" fontSize={16} />
+      <VendorProductList
+        vendors={vendors}
+        onVendorPress={vendor => navigation.navigate('VendorProduct', { vendor })}
+        onProductPress={product => console.log('Product pressed:', product.name)}
+      />
     </Animated.ScrollView>
   );
 };

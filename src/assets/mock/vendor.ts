@@ -15,7 +15,7 @@ export const mockVendors: Vendor[] = [
     description: 'Biryani, Kebabs, Chinese and more done perfectly!',
     category: 'Restaurant',
     storeEnabled: true,
-    storeActive: true,
+    storeActive: false,
     rating: 4.3,
     shopAddress: {
       address: 'Something',
@@ -70,6 +70,33 @@ export const mockVendors: Vendor[] = [
     category: 'Pharmacy',
     storeEnabled: true,
     storeActive: true,
+    rating: 4.1,
+    shopAddress: {
+      address: 'Near City Center',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      postalCode: '600001',
+    },
+    coordinates: {
+      longitude: 80.2707,
+      latitude: 13.0827,
+    },
+  },
+  {
+    shopId: '4519',
+    name: 'Medi Pharma',
+    logo: 'https://images.unsplash.com/photo-1588776814546-ec7d8d3c7c17?auto=format&fit=crop&w=80&q=80',
+    banner:
+      'https://images.unsplash.com/photo-1584362917165-6b8c43ab6597?auto=format&fit=crop&w=800&q=80',
+    owner: 'Rahul Verma',
+    phone: '9988776655',
+    openingTime: '09:00 AM',
+    closingTime: '09:00 PM',
+    preparationTime: '30 mins',
+    description: 'Order genuine medicines and health supplies online.',
+    category: 'Pharmacy',
+    storeEnabled: true,
+    storeActive: false,
     rating: 4.1,
     shopAddress: {
       address: 'Near City Center',

@@ -1,7 +1,9 @@
 import React from 'react';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, StyleSheet, Text, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
+import AddButton from './AddButton';
+import QuantitySelector from './QuantitySelector';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 8;
@@ -17,6 +19,8 @@ interface ProductCardProps {
   onAdd: () => void;
   onIncrement: () => void;
   onDecrement: () => void;
+  size?: 'small' | 'regular';
+  disabled?: boolean;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
@@ -29,6 +33,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onAdd,
   onIncrement,
   onDecrement,
+  size = 'regular',
+  disabled = false,
 }) => {
   const { getColor, getTypography } = useTheme();
 
@@ -44,6 +50,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
       shadowOpacity: 0.08,
       shadowRadius: 4,
       elevation: 2,
+      position: 'relative',
+      overflow: 'hidden',
     },
     imageContainer: {
       width: '100%',
@@ -78,64 +86,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       fontSize: getTypography('caption'),
       marginLeft: 2,
     },
-    addButton: {
-      position: 'absolute',
-      right: 2,
-      bottom: 2,
-      borderWidth: 1,
-      borderColor: getColor('primary'),
-      borderRadius: 12,
-      minWidth: 70,
-      height: 36,
-      paddingHorizontal: 0,
-      paddingVertical: 0,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: getColor('card'),
-      zIndex: 3,
-    },
-    addButtonText: {
-      color: getColor('primary'),
-      fontWeight: 'bold',
-      fontSize: getTypography('caption'),
-      marginLeft: 4,
-    },
-    quantitySelector: {
-      position: 'absolute',
-      right: 2,
-      bottom: 2,
-      borderWidth: 1,
-      borderColor: getColor('primary'),
-      borderRadius: 12,
-      minWidth: 80,
-      height: 36,
-      paddingHorizontal: 0,
-      paddingVertical: 0,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: getColor('card'),
-      zIndex: 3,
-    },
-    qtyBtn: {
-      paddingHorizontal: 4,
-      paddingVertical: 2,
-    },
-    qtyText: {
-      color: '#FFD600',
-      fontSize: getTypography('caption'),
-      fontWeight: 'bold',
-      minWidth: 15,
-      textAlign: 'center',
-    },
-    qtyNum: {
-      color: '#fff',
-      fontSize: getTypography('caption'),
-      marginHorizontal: 4,
-      minWidth: 18,
-      textAlign: 'center',
-    },
+
     name: {
       color: getColor('text'),
       fontSize: getTypography('caption'),
@@ -163,10 +114,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
       fontSize: getTypography('caption'),
       fontWeight: 'bold',
     },
+    disabledOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      zIndex: 10,
+    },
   });
 
   return (
     <View style={styles.card}>
+      {disabled && <View style={styles.disabledOverlay} />}
       <View style={styles.imageContainer}>
         <Image source={image} style={styles.image} resizeMode="cover" />
         <View style={styles.ratingBadge}>
@@ -174,19 +135,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
         </View>
         {quantity === 0 ? (
-          <TouchableOpacity style={styles.addButton} onPress={onAdd}>
-            <Text style={styles.addButtonText}>ADD +</Text>
-          </TouchableOpacity>
+          <AddButton onPress={onAdd} size={size} />
         ) : (
-          <View style={styles.quantitySelector}>
-            <TouchableOpacity style={styles.qtyBtn} onPress={onDecrement}>
-              <Text style={styles.qtyText}>-</Text>
-            </TouchableOpacity>
-            <Text style={styles.qtyNum}>{quantity}</Text>
-            <TouchableOpacity style={styles.qtyBtn} onPress={onIncrement}>
-              <Text style={styles.qtyText}>+</Text>
-            </TouchableOpacity>
-          </View>
+          <QuantitySelector
+            quantity={quantity}
+            onIncrement={onIncrement}
+            onDecrement={onDecrement}
+            size={size}
+          />
         )}
       </View>
       <Text style={styles.name} numberOfLines={1}>

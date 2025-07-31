@@ -15,6 +15,7 @@ interface VendorCardProps {
   isFavorite?: boolean;
   favoriteColor?: string;
   size?: CardSize;
+  disabled?: boolean;
 }
 
 const VendorCard: React.FC<VendorCardProps> = ({
@@ -24,6 +25,7 @@ const VendorCard: React.FC<VendorCardProps> = ({
   isFavorite = false,
   favoriteColor = '#FF6B35',
   size = 'medium',
+  disabled = false,
 }) => {
   const { getColor, getTypography } = useTheme();
 
@@ -102,12 +104,39 @@ const VendorCard: React.FC<VendorCardProps> = ({
       backgroundColor: 'rgba(255, 255, 255, 0.9)',
       borderRadius: size === 'small' ? 8 : 12,
       padding: size === 'small' ? 2 : 4,
+      zIndex: 20,
+    },
+    disabledOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      zIndex: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    closedText: {
+      color: getColor('white'),
+      fontSize: getTypography('body'),
+      fontWeight: 'bold',
+      textTransform: 'uppercase',
+      fontFamily: 'BricolageGrotesque-Regular',
     },
   });
 
   return (
-    <TouchableOpacity style={styles.vendorCard} onPress={() => onPress(vendor)}>
+    <TouchableOpacity
+      style={[styles.vendorCard, disabled && { opacity: 0.4 }]}
+      onPress={() => onPress(vendor)}
+    >
       <View style={{ position: 'relative' }}>
+        {disabled && (
+          <View style={styles.disabledOverlay}>
+            <Text style={styles.closedText}>Store Closed</Text>
+          </View>
+        )}
         <Image source={{ uri: vendor.banner || vendor.logo }} style={styles.vendorImage} />
         <TouchableOpacity style={styles.favoriteButton} onPress={() => onFavoritePress?.(vendor)}>
           <MaterialCommunityIcons

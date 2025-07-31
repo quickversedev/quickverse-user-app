@@ -213,6 +213,7 @@ const VendorProduct: React.FC = () => {
 
   // Cart operation handlers
   const handleAddToCart = (product: Product) => {
+    if (!vendor.storeActive) return; // Disable when store is closed
     addToCart(cartId, {
       sku: product.sku,
       shopId: vendor.shopId,
@@ -224,10 +225,12 @@ const VendorProduct: React.FC = () => {
   };
 
   const handleIncrement = (sku: string) => {
+    if (!vendor.storeActive) return; // Disable when store is closed
     increment(cartId, sku);
   };
 
   const handleDecrement = (sku: string) => {
+    if (!vendor.storeActive) return; // Disable when store is closed
     decrement(cartId, sku);
   };
 
@@ -281,7 +284,7 @@ const VendorProduct: React.FC = () => {
       backgroundColor: getColor('card'),
       borderRadius: 16,
       margin: 16,
-      marginBottom: 12,
+      // marginBottom: 12,
       padding: 12,
       shadowColor: getColor('primary'),
       shadowOpacity: 0.2,
@@ -493,6 +496,40 @@ const VendorProduct: React.FC = () => {
       fontSize: getTypography('body'),
       marginRight: 4,
     },
+    closedBanner: {
+      backgroundColor: getColor('error'),
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+      marginTop: -16,
+      marginBottom: 16,
+      borderBottomLeftRadius: 16,
+      borderBottomRightRadius: 16,
+      marginHorizontal: 16,
+    },
+    closedText: {
+      color: getColor('white'),
+      fontSize: getTypography('caption'),
+      fontWeight: 'bold',
+      fontFamily: 'BricolageGrotesque-Regular',
+      textTransform: 'uppercase',
+    },
+    mainContent: {
+      flex: 1,
+    },
+    contentDisabled: {
+      // No visual effect - just gray colors
+    },
+    categoryItemDisabled: {
+      // No visual effect - just gray colors
+    },
+    iconDisabled: {
+      // No visual effect - just gray colors
+    },
+    vendorCardClosed: {
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 0,
+    },
   });
 
   const safeAreaTop = Platform.select({
@@ -518,7 +555,7 @@ const VendorProduct: React.FC = () => {
 
         {/* Vendor Card */}
         <TouchableOpacity
-          style={styles.vendorCard}
+          style={[styles.vendorCard, !vendor.storeActive && styles.vendorCardClosed]}
           onPress={() => navigation.navigate('VendorProfile', { vendor })}
         >
           <Image source={{ uri: vendor.logo }} style={styles.vendorLogo} />
@@ -537,8 +574,15 @@ const VendorProduct: React.FC = () => {
           <MaterialCommunityIcons name="chevron-right" size={28} color={getColor('primary')} />
         </TouchableOpacity>
 
+        {/* Store Status Banner */}
+        {!vendor.storeActive && (
+          <View style={styles.closedBanner}>
+            <Text style={styles.closedText}>WE ARE CLOSED</Text>
+          </View>
+        )}
+
         {/* Main Content: Categories + Products */}
-        <View style={{ flex: 1 }}>
+        <View style={styles.mainContent}>
           {/* Category List (absolute overlay with animation) */}
 
           <SectionDivider
@@ -560,14 +604,18 @@ const VendorProduct: React.FC = () => {
                   style={[
                     styles.categoryItem,
                     selectedCategory === cat.id && styles.categoryItemActive,
+                    !vendor.storeActive && { opacity: 0.6 },
                   ]}
                   onPress={() => handleCategorySelect(cat.id)}
                 >
                   <Image source={cat.icon} style={styles.categoryIcon} />
                   <Text
                     style={{
-                      color:
-                        selectedCategory === cat.id ? getColor('primary') : getColor('subText'),
+                      color: !vendor.storeActive
+                        ? getColor('subText')
+                        : selectedCategory === cat.id
+                        ? getColor('primary')
+                        : getColor('subText'),
                       fontWeight: selectedCategory === cat.id ? 'bold' : 'normal',
                     }}
                   >
@@ -609,6 +657,7 @@ const VendorProduct: React.FC = () => {
                           onIncrement={() => handleIncrement(product.sku)}
                           onDecrement={() => handleDecrement(product.sku)}
                           quantity={getProductQuantity(product.sku)}
+                          disabled={!vendor.storeActive}
                         />
                       ))}
                       {/* Fill empty columns if needed */}

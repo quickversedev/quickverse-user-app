@@ -224,6 +224,7 @@ export const FoodContent: React.FC<FoodContentProps> = ({
                 vendor={vendor}
                 onPress={vendor => navigation.navigate('VendorProduct', { vendor })}
                 favoriteColor="#FF6B35"
+                disabled={!vendor.storeActive}
               />
             ))}
           </View>
