@@ -16,6 +16,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { Images } from '../../assets';
 import { RootStackParamList } from '../../routes/AppStack';
 import useCartStore, { CartProduct } from '../../store/cartStore';
+import useCouponStore from '../../store/couponStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -177,6 +178,7 @@ const CartScreen: React.FC = () => {
   const { cartId } = route.params || {};
   const { carts, activeCartId, increment, decrement, clearCart } = useCartStore();
   const { vendors } = useVendorStore();
+  const { getAppliedCoupon, removeCoupon, availableCoupons } = useCouponStore();
   const [showAddressModal, setShowAddressModal] = React.useState(false);
   const [paymentExpanded, setPaymentExpanded] = React.useState(false);
   const [address, setAddress] = React.useState('Baner - Balewadi Road, Pune');
@@ -186,6 +188,7 @@ const CartScreen: React.FC = () => {
   const cart = cartId ? carts[cartId] : activeCartId ? carts[activeCartId] : undefined;
   const cartItems = cart ? Object.values(cart.products) : [];
   const vendor = vendors.find(v => v.shopId === cart?.cartId.replace('vendor_', ''));
+  const appliedCoupon = cart ? getAppliedCoupon(cart.cartId) : undefined;
 
   // Example suggested items (mock)
   const suggestedItems: SuggestedItem[] = [
@@ -489,6 +492,91 @@ const CartScreen: React.FC = () => {
       fontWeight: 'bold',
       fontSize: getTypography('body'),
     },
+    couponBox: {
+      backgroundColor: getColor('card'),
+      borderRadius: theme.borderRadius.md,
+      margin: 16,
+      padding: 16,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      ...Platform.select({
+        ios: {
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: theme.colors.shadow.offset,
+          shadowOpacity: theme.colors.shadow.opacity,
+          shadowRadius: theme.colors.shadow.radius,
+        },
+        android: {
+          elevation: 3,
+        },
+      }),
+    },
+    couponLeft: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      flex: 1,
+      marginRight: 12,
+    },
+    appliedCouponContainer: {
+      marginLeft: 12,
+      flex: 1,
+    },
+    couponText: {
+      color: getColor('text'),
+      fontWeight: 'bold',
+      fontSize: getTypography('subtitle'),
+      marginBottom: 4,
+      fontFamily: theme.typography.fontFamily,
+    },
+    appliedDiscount: {
+      color: getColor('primary'),
+      fontSize: getTypography('caption'),
+      fontFamily: theme.typography.fontFamily,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    couponDivider: {
+      height: 1,
+      backgroundColor: getColor('border'),
+      marginVertical: 8,
+    },
+    minOrderText: {
+      color: getColor('subText'),
+      fontSize: getTypography('small'),
+      fontFamily: theme.typography.fontFamily,
+    },
+    couponRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+    },
+    couponAvailable: {
+      color: getColor('primary'),
+      fontSize: getTypography('caption'),
+      marginRight: 8,
+      fontWeight: '500',
+      fontFamily: theme.typography.fontFamily,
+    },
+    removeCoupon: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'transparent',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: theme.borderRadius.sm,
+      borderWidth: 1,
+      borderColor: getColor('error'),
+      marginLeft: 'auto',
+    },
+    removeCouponText: {
+      color: getColor('error'),
+      fontSize: getTypography('small'),
+      marginLeft: 4,
+      fontWeight: '600',
+      fontFamily: theme.typography.fontFamily,
+      textTransform: 'uppercase',
+    },
     vendorPillContainer: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -573,6 +661,61 @@ const CartScreen: React.FC = () => {
         )}
         {/* Cart items */}
         <CartItemList items={cartItems} onInc={handleInc} onDec={handleDec} />
+        {/* Coupon Section */}
+        <TouchableOpacity
+          style={themedStyles.couponBox}
+          onPress={() => navigation.navigate('Coupons')}
+        >
+          <View style={themedStyles.couponLeft}>
+            <MaterialCommunityIcons
+              name="ticket-percent-outline"
+              size={24}
+              color={getColor('primary')}
+            />
+            {appliedCoupon ? (
+              <View style={themedStyles.appliedCouponContainer}>
+                <View>
+                  <Text style={themedStyles.couponText}>{appliedCoupon.code}</Text>
+                  <Text style={themedStyles.appliedDiscount}>
+                    <MaterialCommunityIcons
+                      name="check-circle"
+                      size={12}
+                      color={getColor('primary')}
+                    />{' '}
+                    {appliedCoupon.discount} discount applied
+                  </Text>
+                </View>
+                <View style={themedStyles.couponDivider} />
+                <Text style={themedStyles.minOrderText}>Min order: ₹{appliedCoupon.minOrder}</Text>
+              </View>
+            ) : (
+              <Text style={themedStyles.couponText}>Apply Coupon</Text>
+            )}
+          </View>
+          <View style={themedStyles.couponRight}>
+            {appliedCoupon ? (
+              <TouchableOpacity
+                onPress={() => removeCoupon(cart?.cartId || '')}
+                style={themedStyles.removeCoupon}
+              >
+                <MaterialCommunityIcons name="close" size={20} color={getColor('error')} />
+                <Text style={themedStyles.removeCouponText}>Remove</Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <Text style={themedStyles.couponAvailable}>
+                  {availableCoupons.length} Coupons Available
+                </Text>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={24}
+                  color={getColor('primary')}
+                />
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+
         {/* Payment summary */}
         <PaymentSummary expanded={paymentExpanded} onToggle={() => setPaymentExpanded(e => !e)} />
         {/* Suggested items */}

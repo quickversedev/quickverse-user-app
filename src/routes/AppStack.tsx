@@ -5,11 +5,12 @@ import { useAuth } from '../contexts/login/AuthProvider';
 import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
 import CartScreen from '../screens/cart/CartScreen';
+import CouponsScreen from '../screens/cart/CouponsScreen';
 import Registration from '../screens/login/Registration';
+import OrderDetailsScreen from '../screens/orders/OrderDetailsScreen';
 import PermissionsScreen from '../screens/permission/PermissionsScreen';
 import VendorProduct from '../screens/vendor/VendorProduct';
 import VendorProfile from '../screens/vendor/VendorProfile';
-import OrderDetailsScreen from '../screens/orders/OrderDetailsScreen';
 import { Vendor } from '../types/vendor';
 
 export type RootStackParamList = {
@@ -20,6 +21,7 @@ export type RootStackParamList = {
   Cart: { cartId: string } | undefined;
   Orders: undefined;
   OrderDetails: { orderId: string };
+  Coupons: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -51,6 +53,7 @@ export const AppStack = () => {
         <Stack.Screen name="VendorProfile" component={VendorProfile} />
         <Stack.Screen name="Cart" component={CartScreen} />
         <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
+        <Stack.Screen name="Coupons" component={CouponsScreen} />
       </Stack.Navigator>
     </AppInitializer>
   );
