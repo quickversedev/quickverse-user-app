@@ -1,5 +1,5 @@
 import Geolocation from '@react-native-community/geolocation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, AppState, Platform } from 'react-native';
 import {
   check,
@@ -27,12 +27,15 @@ export const useLocation = () => {
   });
   const [hasSkippedLocation, setHasSkippedLocation] = useState<boolean>(false);
 
-  const locationPermission =
-    Platform.OS === 'ios'
-      ? PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
-      : PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
+  const locationPermission = useMemo(
+    () =>
+      Platform.OS === 'ios'
+        ? PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
+        : PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
+    []
+  );
 
-  const checkLocationPermission = async () => {
+  const checkLocationPermission = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await check(locationPermission);
@@ -50,47 +53,55 @@ export const useLocation = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [locationPermission]);
 
-  const getCurrentLocation = () => {
-    if (hasSkippedLocation) {
-      setLocation({
-        latitude: null,
-        longitude: null,
-        error: 'Location permission skipped by user',
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    Geolocation.getCurrentPosition(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (position: any) => {
-        setLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          error: null,
-        });
-        setIsLoading(false);
-      },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (error: any) => {
+  const getCurrentLocation = useCallback(() => {
+    return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+      if (hasSkippedLocation) {
         setLocation({
           latitude: null,
           longitude: null,
-          error: error.message,
+          error: 'Location permission skipped by user',
         });
-        setIsLoading(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 10000,
+        reject(new Error('Location permission skipped by user'));
+        return;
       }
-    );
-  };
 
-  const requestLocationPermission = async () => {
+      setIsLoading(true);
+      Geolocation.getCurrentPosition(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (position: any) => {
+          const coords = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          setLocation({
+            ...coords,
+            error: null,
+          });
+          setIsLoading(false);
+          resolve(coords);
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (error: any) => {
+          setLocation({
+            latitude: null,
+            longitude: null,
+            error: error.message,
+          });
+          setIsLoading(false);
+          reject(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 10000,
+        }
+      );
+    });
+  }, [hasSkippedLocation]);
+
+  const requestLocationPermission = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await request(locationPermission);
@@ -107,7 +118,7 @@ export const useLocation = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [locationPermission]);
 
   const handleDeniedPermissionModal = () => {
     Alert.alert(
@@ -146,22 +157,32 @@ export const useLocation = () => {
   };
 
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      if (nextAppState === 'active') {
+    let isMounted = true;
+
+    const checkInitialPermissions = async () => {
+      const hasSkippedPermissions = await getSkipPermission();
+      if (isMounted) {
+        if (hasSkippedPermissions) {
+          setHasSkippedLocation(true);
+        }
         checkLocationPermission();
       }
-    });
+    };
 
-    checkLocationPermission();
-    const hasSkippedPermissions = getSkipPermission();
-    if (hasSkippedPermissions) {
-      setHasSkippedLocation(true);
-    }
+    const handleAppStateChange = (nextAppState: string) => {
+      if (nextAppState === 'active' && isMounted) {
+        checkLocationPermission();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    checkInitialPermissions();
 
     return () => {
+      isMounted = false;
       subscription.remove();
     };
-  }, []);
+  }, [checkLocationPermission]);
 
   return {
     permissionStatus,

@@ -1,6 +1,5 @@
-import axios from 'axios';
 import debounce from 'lodash.debounce';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -18,43 +17,26 @@ import {
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { v4 as uuidv4 } from 'uuid';
 import { Images } from '../../../../assets';
+import SectionDivider from '../../../../components/common/SectionDivider';
 import { useLocation } from '../../../../hooks/Permissions/useLocation';
+import {
+  getAddressFromCoordinates,
+  getAutocompleteSuggestions,
+  type Location,
+  type SearchResult,
+} from '../../../../services/api/locationService';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { getRegionFromLocation } from '../utils/mapUtils';
 
 const { width, height } = Dimensions.get('window');
 
-interface Location {
-  latitude: number;
-  longitude: number;
-}
-
 interface MapLocationStepProps {
   onLocationSelect: (location: Location) => void;
 }
 
-interface SearchResult {
-  place_id: string;
-  description: string;
-  structured_formatting: {
-    main_text: string;
-    secondary_text: string;
-  };
-  geometry: {
-    location: {
-      lat: number;
-      lng: number;
-    };
-  };
-}
-
 const PIN_SIZE = Math.max(48, width * 0.12);
-const MAP_HEIGHT = height * 0.8;
-
-const OLA_MAPS_AUTOCOMPLETE_ENDPOINT = 'https://api.olamaps.io/places/v1/autocomplete';
-const OLA_API_KEY = '4BCmnjxofvyjOnyJ0Sn6lHBBQ0yv6TALIrsRvE36';
+const MAP_HEIGHT = height * 0.65;
 
 const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const { getColor, getTypography, theme } = useTheme();
@@ -68,6 +50,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [addressLoading, setAddressLoading] = useState(false);
   const [region, setRegion] = useState({
     latitude: 18.5204, // Default to Pune
     longitude: 73.8567,
@@ -75,6 +58,37 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     longitudeDelta: 0.01,
   });
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [selectedAddressDescription, setSelectedAddressDescription] = useState<string>('');
+  const mapRef = useRef<MapView>(null);
+
+  // Function to get address from coordinates with proper error handling
+  const getAddressFromCoordinatesWithLoading = async (coordinates: Location): Promise<string> => {
+    setAddressLoading(true);
+    try {
+      const address = await getAddressFromCoordinates(coordinates);
+      return address;
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      console.warn('Error fetching address from coordinates:', err);
+      throw error;
+    } finally {
+      setAddressLoading(false);
+    }
+  };
+
+  // Function to update selected location and get address
+  const updateSelectedLocationAndAddress = async (newLocation: Location) => {
+    setSelectedLocation(newLocation);
+
+    try {
+      const address = await getAddressFromCoordinatesWithLoading(newLocation);
+      setSelectedAddressDescription(address);
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      console.warn('Failed to get address:', err.message);
+      setSelectedAddressDescription('Location selected (address unavailable)');
+    }
+  };
 
   // On mount, fetch and center on current location
   useEffect(() => {
@@ -85,7 +99,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       }
       getCurrentLocation();
     })();
-  }, []);
+  }, [checkLocationPermission, getCurrentLocation, requestLocationPermission]);
 
   // When current location is available, center map and update selected location
   useEffect(() => {
@@ -93,35 +107,45 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       typeof currentLocation.latitude === 'number' &&
       typeof currentLocation.longitude === 'number'
     ) {
-      setRegion(
-        getRegionFromLocation({
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
-        })
-      );
-      setSelectedLocation({
+      const newLocation = {
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
-      });
+      };
+
+      setRegion(getRegionFromLocation(newLocation));
+
+      // Update selected location and get address
+      updateSelectedLocationAndAddress(newLocation);
     }
   }, [currentLocation.latitude, currentLocation.longitude]);
 
-  const handleGetCurrentLocation = () => {
-    getCurrentLocation();
-    if (
-      typeof currentLocation.latitude === 'number' &&
-      typeof currentLocation.longitude === 'number'
-    ) {
-      setRegion(
-        getRegionFromLocation({
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
-        })
-      );
-      setSelectedLocation({
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-      });
+  const handleGetCurrentLocation = async () => {
+    try {
+      console.log('Getting current location...');
+
+      // // Get current location and wait for it to be available
+      // const coords = await getCurrentLocation();
+      // console.log('Current location obtained:', coords);
+
+      const newLocation = {
+        latitude: Number(currentLocation.latitude),
+        longitude: Number(currentLocation.longitude),
+      };
+
+      // Update the map region to center on current location
+      const newRegion = getRegionFromLocation(newLocation);
+
+      // Use animateToRegion for smooth animation to current location
+      if (mapRef.current) {
+        mapRef.current.animateToRegion(newRegion, 1000);
+      } else {
+        setRegion(newRegion);
+      }
+
+      // Update selected location and get address
+      await updateSelectedLocationAndAddress(newLocation);
+    } catch (error) {
+      console.error('Error getting current location:', error);
     }
   };
 
@@ -138,26 +162,11 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
         }
 
         setLoading(true);
-        const requestId = uuidv4();
 
         try {
-          const response = await axios.get(OLA_MAPS_AUTOCOMPLETE_ENDPOINT, {
-            params: {
-              input: currentSearchQuery,
-              api_key: OLA_API_KEY,
-              location: `${Number(latitude)},${Number(longitude)}`,
-            },
-            headers: {
-              Accept: 'application/json',
-              'X-Request-Id': requestId,
-            },
-          });
-          if (response.data && Array.isArray(response.data.predictions)) {
-            setSearchResults(response.data.predictions);
-          } else {
-            console.warn('OlaPlaceAutocomplete: Unexpected response structure', response.data);
-            setSearchResults([]);
-          }
+          const location = { latitude: Number(latitude), longitude: Number(longitude) };
+          const results = await getAutocompleteSuggestions(currentSearchQuery, location);
+          setSearchResults(results);
         } catch (err: unknown) {
           const error = err as { response?: { data?: unknown }; message?: string };
           console.warn(
@@ -184,7 +193,13 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     latitudeDelta: number;
     longitudeDelta: number;
   }) => {
-    setSelectedLocation({ latitude: newRegion.latitude, longitude: newRegion.longitude });
+    const newLocation = {
+      latitude: newRegion.latitude,
+      longitude: newRegion.longitude,
+    };
+
+    // Update selected location and get address
+    updateSelectedLocationAndAddress(newLocation);
   };
 
   const handleLocationConfirm = () => {
@@ -337,6 +352,29 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       width: '100%',
       paddingBottom: 8,
     },
+    selectedLocationContainer: {
+      width: '100%',
+      backgroundColor: getColor('background'),
+      borderRadius: theme.borderRadius.md,
+      padding: 16,
+      marginBottom: 16,
+    },
+    selectedLocationText: {
+      color: getColor('text'),
+      fontSize: getTypography('body'),
+      lineHeight: 20,
+    },
+    loadingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 8,
+    },
+    loadingText: {
+      color: getColor('subText'),
+      fontSize: getTypography('caption'),
+      marginLeft: 8,
+    },
     outlinedButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -347,7 +385,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       borderRadius: theme.borderRadius.md,
       paddingVertical: 10,
       paddingHorizontal: 32,
-      marginTop: 16,
+      marginTop: 8,
       backgroundColor: 'transparent',
     },
     outlinedButtonText: {
@@ -387,6 +425,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
         {/* Map with rounded top corners */}
         <View style={themedStyles.mapContainer}>
           <MapView
+            ref={mapRef}
             style={themedStyles.map}
             region={region}
             onRegionChangeComplete={handleRegionChangeComplete}
@@ -489,16 +528,20 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                       key={result.place_id || index}
                       style={themedStyles.resultItem}
                       onPress={() => {
-                        setRegion({
+                        const newLocation = {
                           latitude: result.geometry.location.lat,
                           longitude: result.geometry.location.lng,
+                        };
+
+                        setRegion({
+                          latitude: newLocation.latitude,
+                          longitude: newLocation.longitude,
                           latitudeDelta: 0.01,
                           longitudeDelta: 0.01,
                         });
-                        setSelectedLocation({
-                          latitude: result.geometry.location.lat,
-                          longitude: result.geometry.location.lng,
-                        });
+
+                        // Update selected location and get address
+                        updateSelectedLocationAndAddress(newLocation);
                         setSearchQuery(result.structured_formatting.main_text);
                         setSearchResults([]);
                       }}
@@ -545,13 +588,30 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
         </View>
         {/* Bottom Sheet Section */}
         <View style={themedStyles.bottomSheet}>
+          <SectionDivider text="DELIVERY ADDRESS" style={{ marginBottom: 16 }} fontSize={14} />
+
+          {selectedLocation && (
+            <View style={themedStyles.selectedLocationContainer}>
+              {addressLoading ? (
+                <View style={themedStyles.loadingContainer}>
+                  <ActivityIndicator size="small" color={getColor('primary')} />
+                  <Text style={themedStyles.loadingText}>Getting address...</Text>
+                </View>
+              ) : (
+                <Text style={themedStyles.selectedLocationText} numberOfLines={3}>
+                  {selectedAddressDescription || 'Location selected'}
+                </Text>
+              )}
+            </View>
+          )}
+
           <TouchableOpacity
             style={themedStyles.outlinedButton}
             onPress={handleLocationConfirm}
             accessible={true}
             accessibilityRole="button"
-            accessibilityLabel="Confirm address location"
-            accessibilityHint="Confirms the selected location and proceeds to address details"
+            accessibilityLabel="Add address details"
+            accessibilityHint="Opens form to add more address details"
             accessibilityState={{ disabled: !selectedLocation }}
             activeOpacity={0.85}
             disabled={!selectedLocation}
@@ -562,7 +622,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
               color={getColor('primary')}
               style={{ marginRight: 8 }}
             />
-            <Text style={themedStyles.outlinedButtonText}>confirm Address</Text>
+            <Text style={themedStyles.outlinedButtonText}>Add Address Details</Text>
           </TouchableOpacity>
         </View>
       </View>

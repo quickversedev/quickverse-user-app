@@ -4,10 +4,10 @@ import React from 'react';
 import {
   Image,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -19,6 +19,7 @@ import useCartStore, { CartProduct } from '../../store/cartStore';
 import useCouponStore from '../../store/couponStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
+import { Vendor } from '../../types/vendor';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
@@ -73,7 +74,9 @@ const CartItemList: React.FC<{
   items: CartProduct[];
   onInc: (sku: string) => void;
   onDec: (sku: string) => void;
-}> = ({ items, onInc, onDec }) => (
+  vendor?: Vendor;
+  navigation: CartScreenNavigationProp;
+}> = ({ items, onInc, onDec, vendor, navigation }) => (
   <View style={styles.cartItemListBox}>
     {items.map(item => (
       <CartItem
@@ -84,14 +87,20 @@ const CartItemList: React.FC<{
         onDec={() => onDec(item.sku)}
       />
     ))}
-    <View style={styles.addMoreInputRow}>
-      <TextInput
-        style={styles.addMoreInput}
-        value="+ Add More Items"
-        editable={false}
-        pointerEvents="none"
-      />
-    </View>
+    <TouchableOpacity
+      style={styles.addMoreInputRow}
+      onPress={() => {
+        if (vendor) {
+          navigation.navigate('VendorProduct', {
+            vendor: vendor,
+          });
+        }
+      }}
+    >
+      <View style={styles.addMoreInput}>
+        <Text style={[styles.addMoreInput, { borderWidth: 0 }]}>+ Add More Items</Text>
+      </View>
+    </TouchableOpacity>
   </View>
 );
 
@@ -660,7 +669,13 @@ const CartScreen: React.FC = () => {
           </View>
         )}
         {/* Cart items */}
-        <CartItemList items={cartItems} onInc={handleInc} onDec={handleDec} />
+        <CartItemList
+          items={cartItems}
+          onInc={handleInc}
+          onDec={handleDec}
+          vendor={vendor}
+          navigation={navigation}
+        />
         {/* Coupon Section */}
         <TouchableOpacity
           style={themedStyles.couponBox}
@@ -872,7 +887,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#888',
     borderRadius: 12,
-    padding: 14,
+    padding: 8,
     color: '#888',
     backgroundColor: '#23263A',
     textAlign: 'center',
