@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -12,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { AddressComponents } from '../../../services/api/olaLocationService';
 import { useTheme } from '../../../theme/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
@@ -47,13 +49,15 @@ interface ValidationErrors {
 
 interface AddressDetailsStepProps {
   location: Location | null;
+  selectedAddressDescription: AddressComponents;
   details: AddressDetails;
   onDetailsChange: (details: AddressDetails) => void;
   onSave: (details: AddressDetails) => void;
 }
 
 const AddressDetailsStep = ({
-  location,
+  location: _location,
+  selectedAddressDescription,
   details,
   onDetailsChange,
   onSave,
@@ -61,9 +65,35 @@ const AddressDetailsStep = ({
   apiError = null,
 }: AddressDetailsStepProps & { isLoading?: boolean; apiError?: string | null }) => {
   const { getColor, getTypography, theme } = useTheme();
+  const _navigation = useNavigation();
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  // Auto-fill city, state, and pincode from selectedAddressDescription
+  useEffect(() => {
+    if (selectedAddressDescription) {
+      const updates: Partial<AddressDetails> = {};
+
+      // Only auto-fill if the field is empty or hasn't been manually edited
+      if (!details.city.trim() && selectedAddressDescription.city) {
+        updates.city = selectedAddressDescription.city;
+      }
+      if (!details.state.trim() && selectedAddressDescription.state) {
+        updates.state = selectedAddressDescription.state;
+      }
+      if (!details.pincode.trim() && selectedAddressDescription.postalCode) {
+        updates.pincode = selectedAddressDescription.postalCode;
+      }
+
+      // Only update if there are changes to make
+      if (Object.keys(updates).length > 0) {
+        onDetailsChange({
+          ...details,
+          ...updates,
+        });
+      }
+    }
+  }, [selectedAddressDescription, details.city, details.state, details.pincode, onDetailsChange]);
   // Validation rules
   const validateField = (field: keyof AddressDetails, value: string): string | undefined => {
     switch (field) {
@@ -194,12 +224,8 @@ const AddressDetailsStep = ({
       return;
     }
 
-    // Call parent onSave with all details (including location)
-    onSave({
-      ...details,
-      latitude: location ? location.latitude.toString() : undefined,
-      longitude: location ? location.longitude.toString() : undefined,
-    });
+    // Call parent onSave with all details
+    onSave(details);
   };
 
   const isFormValid = () => {
@@ -230,51 +256,100 @@ const AddressDetailsStep = ({
       backgroundColor: getColor('background'),
     },
     contentContainer: {
-      padding: Math.max(16, width * 0.04),
-      paddingBottom: Math.max(32, height * 0.04),
+      padding: Math.max(20, width * 0.05),
+      paddingBottom: Math.max(40, height * 0.05),
     },
     locationPreview: {
-      marginBottom: 16,
-      padding: Math.max(12, width * 0.03),
+      marginBottom: 24,
+      padding: Math.max(16, width * 0.04),
       borderRadius: theme.borderRadius.md,
       alignItems: 'center',
       backgroundColor: getColor('card'),
-      minHeight: 60,
+      minHeight: 70,
       justifyContent: 'center',
+      // borderWidth: 1,
+      // borderColor: getColor('border'),
+      // shadowColor: theme.colors.shadow.color,
+      // shadowOffset: theme.colors.shadow.offset,
+      // shadowOpacity: theme.colors.shadow.opacity * 0.3,
+      // shadowRadius: theme.colors.shadow.radius,
+      // elevation: 2,
     },
     locationText: {
-      fontSize: getTypography('caption'),
-      color: getColor('subText'),
+      fontSize: getTypography('body'),
+      color: getColor('text'),
       textAlign: 'center',
       includeFontPadding: false,
+      lineHeight: getTypography('body') * 1.3,
+      marginBottom: 12,
+    },
+    changeLocationButton: {
+      alignSelf: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: theme.borderRadius.md,
+      // backgroundColor: getColor('primary'),
+      minHeight: 36,
+      borderWidth: 2,
+      borderColor: getColor('primary'),
+      justifyContent: 'center',
+    },
+    changeLocationButtonText: {
+      color: getColor('white'),
+      fontSize: getTypography('caption'),
+      fontWeight: '600',
+      includeFontPadding: false,
+      textAlignVertical: 'center',
     },
     inputContainer: {
-      marginBottom: 16,
+      marginBottom: 20,
+    },
+    inputWrapper: {
+      position: 'relative',
     },
     input: {
-      height: Math.max(48, height * 0.06),
-      paddingHorizontal: Math.max(16, width * 0.04),
+      height: Math.max(52, height * 0.065),
+      paddingHorizontal: Math.max(18, width * 0.045),
       borderRadius: theme.borderRadius.md,
-      borderWidth: 1,
+      borderWidth: 1.5,
       backgroundColor: getColor('card'),
       color: getColor('text'),
       fontSize: getTypography('body'),
       includeFontPadding: false,
       textAlignVertical: 'center',
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: theme.colors.shadow.opacity * 0.2,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    floatingLabel: {
+      position: 'absolute',
+      top: 8,
+      left: Math.max(18, width * 0.045),
+      fontSize: getTypography('caption'),
+      fontWeight: '600',
+      includeFontPadding: false,
+      zIndex: 1,
     },
     inputError: {
       borderColor: getColor('error'),
       borderWidth: 2,
+      shadowColor: getColor('error'),
+      shadowOpacity: 0.3,
     },
     inputValid: {
       borderColor: '#4CAF50', // Green color for valid state
+      shadowColor: '#4CAF50',
+      shadowOpacity: 0.2,
     },
     errorText: {
       color: getColor('error'),
       fontSize: getTypography('caption'),
-      marginTop: 4,
-      marginLeft: 4,
+      marginTop: 6,
+      marginLeft: 6,
       includeFontPadding: false,
+      fontWeight: '500',
     },
     requiredIndicator: {
       color: getColor('error'),
@@ -285,47 +360,57 @@ const AddressDetailsStep = ({
       color: getColor('subText'),
       fontSize: getTypography('caption'),
       fontStyle: 'italic',
-      marginLeft: 4,
+      marginLeft: 6,
+      marginTop: 4,
     },
     tagContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 24,
-      flexWrap: 'wrap',
+      marginBottom: 28,
     },
     tagLabel: {
-      marginRight: 12,
       color: getColor('text'),
       fontSize: getTypography('body'),
+      fontWeight: '600',
       includeFontPadding: false,
       textAlignVertical: 'center',
+      marginBottom: 12,
     },
     tagButton: {
-      paddingHorizontal: Math.max(16, width * 0.04),
+      paddingHorizontal: Math.max(20, width * 0.05),
       paddingVertical: 8,
       borderRadius: theme.borderRadius.full,
-      borderWidth: 1,
-      marginRight: 8,
-      marginBottom: 8,
+      borderWidth: 1.5,
+      marginRight: 12,
+      marginBottom: 12,
       borderColor: getColor('border'),
-      minHeight: 36,
+      minHeight: 44,
       justifyContent: 'center',
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: theme.colors.shadow.opacity * 0.2,
+      shadowRadius: 2,
+      elevation: 1,
     },
     tagButtonText: {
       fontSize: getTypography('body'),
+      fontWeight: '500',
       includeFontPadding: false,
       textAlignVertical: 'center',
     },
     saveButton: {
-      padding: Math.max(16, height * 0.02),
+      padding: Math.max(18, height * 0.025),
       borderRadius: theme.borderRadius.md,
       alignItems: 'center',
       backgroundColor:
         isFormValid() && !isLoading ? getColor('primary') : getColor('button').disabled.background,
-      minHeight: 48,
+      minHeight: 56,
       justifyContent: 'center',
-      marginTop: 16,
+      marginTop: 24,
       opacity: isLoading ? 0.7 : 1,
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: theme.colors.shadow.opacity * 0.3,
+      shadowRadius: 4,
+      elevation: 3,
     },
     saveButtonText: {
       fontWeight: 'bold',
@@ -333,35 +418,44 @@ const AddressDetailsStep = ({
       fontSize: getTypography('body'),
       includeFontPadding: false,
       textAlignVertical: 'center',
+      letterSpacing: 0.5,
     },
     defaultContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 24,
-      minHeight: 44,
+      marginBottom: 28,
+      minHeight: 48,
+      paddingHorizontal: 4,
     },
     defaultLabel: {
       color: getColor('text'),
       fontSize: getTypography('body'),
+      fontWeight: '500',
       includeFontPadding: false,
       textAlignVertical: 'center',
       flex: 1,
     },
     apiErrorContainer: {
       backgroundColor: getColor('error'),
-      padding: Math.max(12, width * 0.03),
+      padding: Math.max(16, width * 0.04),
       borderRadius: theme.borderRadius.md,
-      marginBottom: 16,
+      marginBottom: 20,
       flexDirection: 'row',
       alignItems: 'center',
+      shadowColor: getColor('error'),
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 3,
     },
     apiErrorText: {
       color: getColor('white'),
       fontSize: getTypography('body'),
       flex: 1,
       includeFontPadding: false,
-      lineHeight: getTypography('body') * 1.2,
+      lineHeight: getTypography('body') * 1.3,
+      fontWeight: '500',
     },
     loadingContainer: {
       flexDirection: 'row',
@@ -372,7 +466,7 @@ const AddressDetailsStep = ({
       color: getColor('white'),
       fontSize: getTypography('body'),
       fontWeight: '600',
-      marginLeft: 8,
+      marginLeft: 10,
       includeFontPadding: false,
     },
   });
@@ -404,36 +498,63 @@ const AddressDetailsStep = ({
       details[field] &&
       (details[field] as string).trim().length > 0;
 
+    // Add asterisk to placeholder if required
+    const displayPlaceholder = required ? `${placeholder} *` : placeholder;
+
+    // Check if input is focused or has content
+    const isActive = touched[field] || (details[field] as string).trim().length > 0;
+
     return (
       <View style={themedStyles.inputContainer}>
-        <TextInput
-          style={[
-            themedStyles.input,
-            hasError && themedStyles.inputError,
-            isValid && themedStyles.inputValid,
-            {
-              borderColor: hasError ? getColor('error') : isValid ? '#4CAF50' : getColor('border'),
-            },
-          ]}
-          placeholder={placeholder}
-          placeholderTextColor={getColor('placeholder')}
-          value={details[field] as string}
-          onChangeText={text => handleChange(field, text)}
-          onBlur={() => handleBlur(field)}
-          editable={!isLoading}
-          accessible={true}
-          accessibilityRole="text"
-          accessibilityLabel={`Enter ${placeholder.toLowerCase()}`}
-          accessibilityHint={`Type your ${placeholder.toLowerCase()}`}
-          returnKeyType={returnKeyType}
-          autoCapitalize={autoCapitalize}
-          keyboardType={keyboardType}
-          maxLength={maxLength}
-        />
-        {hasError && <Text style={themedStyles.errorText}>{errors[field]}</Text>}
-        {required && !details[field] && (
-          <Text style={themedStyles.requiredIndicator}>* Required</Text>
-        )}
+        <View style={themedStyles.inputWrapper}>
+          <TextInput
+            style={[
+              themedStyles.input,
+              hasError && themedStyles.inputError,
+              isValid && themedStyles.inputValid,
+              {
+                borderColor: hasError
+                  ? getColor('error')
+                  : isValid
+                  ? '#4CAF50'
+                  : getColor('border'),
+                paddingTop: isActive ? 20 : 0,
+              },
+            ]}
+            placeholder={isActive ? '' : displayPlaceholder}
+            placeholderTextColor={getColor('placeholder')}
+            value={details[field] as string}
+            onChangeText={text => handleChange(field, text)}
+            onBlur={() => handleBlur(field)}
+            onFocus={() => {
+              if (!touched[field]) {
+                setTouched(prev => ({ ...prev, [field]: true }));
+              }
+            }}
+            editable={!isLoading}
+            accessible={true}
+            accessibilityRole="text"
+            accessibilityLabel={`Enter ${placeholder.toLowerCase()}`}
+            accessibilityHint={`Type your ${placeholder.toLowerCase()}`}
+            returnKeyType={returnKeyType}
+            autoCapitalize={autoCapitalize}
+            keyboardType={keyboardType}
+            maxLength={maxLength}
+          />
+          {isActive && (
+            <Text
+              style={[
+                themedStyles.floatingLabel,
+                {
+                  color: hasError ? getColor('error') : isValid ? '#4CAF50' : getColor('primary'),
+                },
+              ]}
+            >
+              {displayPlaceholder}
+            </Text>
+          )}
+        </View>
+
         {optional && <Text style={themedStyles.optionalText}>(Optional)</Text>}
       </View>
     );
@@ -479,39 +600,40 @@ const AddressDetailsStep = ({
             accessibilityRole="text"
             accessibilityLabel="Save address as"
           >
-            Save as:{' '}
-            {!details.tag && <Text style={themedStyles.requiredIndicator}>* Required</Text>}
+            Save as *
           </Text>
-          {['Home', 'Work', 'Other'].map(tag => (
-            <TouchableOpacity
-              key={tag}
-              style={[
-                themedStyles.tagButton,
-                {
-                  backgroundColor: details.tag === tag ? getColor('primary') : getColor('card'),
-                },
-              ]}
-              onPress={() => handleChange('tag', tag)}
-              disabled={isLoading}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel={`Save as ${tag}`}
-              accessibilityHint={`Marks this address as ${tag.toLowerCase()}`}
-              accessibilityState={{ selected: details.tag === tag, disabled: isLoading }}
-              activeOpacity={0.7}
-            >
-              <Text
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+            {['Home', 'Work', 'Other'].map(tag => (
+              <TouchableOpacity
+                key={tag}
                 style={[
-                  themedStyles.tagButtonText,
+                  themedStyles.tagButton,
                   {
-                    color: details.tag === tag ? getColor('white') : getColor('text'),
+                    backgroundColor: details.tag === tag ? getColor('primary') : getColor('card'),
                   },
                 ]}
+                onPress={() => handleChange('tag', tag)}
+                disabled={isLoading}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Save as ${tag}`}
+                accessibilityHint={`Marks this address as ${tag.toLowerCase()}`}
+                accessibilityState={{ selected: details.tag === tag, disabled: isLoading }}
+                activeOpacity={0.7}
               >
-                {tag}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    themedStyles.tagButtonText,
+                    {
+                      color: details.tag === tag ? getColor('white') : getColor('text'),
+                    },
+                  ]}
+                >
+                  {tag}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         <View style={themedStyles.defaultContainer}>

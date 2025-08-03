@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { useAddress } from '../../../hooks';
+import { AddressComponents } from '../../../services/api/olaLocationService';
 import { useTheme } from '../../../theme/ThemeContext';
 import AddressDetailsStep from './AddressDetailsStep';
 import MapLocationStep from './components/MapLocationStep';
@@ -44,6 +45,13 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
   const { addAddress, loading, error } = useAddress();
   const [step, setStep] = useState(1);
   const [location, setLocation] = useState<Location | null>(null);
+  const [selectedAddressDescription, setSelectedAddressDescription] = useState<AddressComponents>({
+    country: '',
+    state: '',
+    city: '',
+    postalCode: '',
+    formatted_address: '',
+  });
   const [addressDetails, setAddressDetails] = useState<AddressDetails>({
     name: '',
     addressLine1: '',
@@ -57,8 +65,12 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
   });
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const handleLocationSelect = (selectedLocation: Location) => {
+  const handleLocationSelect = (
+    selectedLocation: Location,
+    addressDescription: AddressComponents
+  ) => {
     setLocation(selectedLocation);
+    setSelectedAddressDescription(addressDescription);
     setStep(2);
   };
 
@@ -90,6 +102,13 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
   const resetForm = () => {
     setStep(1);
     setLocation(null);
+    setSelectedAddressDescription({
+      country: '',
+      state: '',
+      city: '',
+      postalCode: '',
+      formatted_address: '',
+    });
     setAddressDetails({
       name: '',
       addressLine1: '',
@@ -202,6 +221,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
         ) : (
           <AddressDetailsStep
             location={location}
+            selectedAddressDescription={selectedAddressDescription}
             details={addressDetails}
             onDetailsChange={setAddressDetails}
             onSave={handleSaveAddress}

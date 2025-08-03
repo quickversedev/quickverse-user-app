@@ -6,6 +6,14 @@ export interface Location {
   longitude: number;
 }
 
+export interface AddressComponents {
+  country: string;
+  state: string;
+  city: string;
+  postalCode: string;
+  formatted_address: string;
+}
+
 export interface SearchResult {
   place_id: string;
   description: string;
@@ -21,14 +29,60 @@ export interface SearchResult {
   };
 }
 
+interface AddressComponent {
+  types: string[];
+  short_name: string;
+  long_name: string;
+}
+
+interface ApiError {
+  code?: string;
+  response?: { status?: number };
+  message?: string;
+}
+
 const OLA_MAPS_AUTOCOMPLETE_ENDPOINT = 'https://api.olamaps.io/places/v1/autocomplete';
 const OLA_MAPS_REVERSE_GEOCODE_ENDPOINT = 'https://api.olamaps.io/places/v1/reverse-geocode';
 const OLA_API_KEY = '4BCmnjxofvyjOnyJ0Sn6lHBBQ0yv6TALIrsRvE36';
 
 /**
+ * Extract address components from Ola Maps API response
+ */
+const extractAddressComponents = (
+  addressComponents: AddressComponent[],
+  formattedAddress: string
+): AddressComponents => {
+  const components: AddressComponents = {
+    country: '',
+    state: '',
+    city: '',
+    postalCode: '',
+    formatted_address: formattedAddress || '',
+  };
+
+  addressComponents.forEach(component => {
+    const types = component.types || [];
+
+    if (types.includes('country')) {
+      components.country = component.long_name || '';
+    } else if (types.includes('administrative_area_level_1')) {
+      components.state = component.long_name || '';
+    } else if (types.includes('administrative_area_level_2')) {
+      components.city = component.long_name || '';
+    } else if (types.includes('postal_code')) {
+      components.postalCode = component.long_name || '';
+    }
+  });
+
+  return components;
+};
+
+/**
  * Get address from coordinates using Ola Maps reverse geocoding API
  */
-export const getAddressFromCoordinates = async (coordinates: Location): Promise<string> => {
+export const getAddressFromCoordinates = async (
+  coordinates: Location
+): Promise<AddressComponents> => {
   try {
     const requestId = uuidv4();
     const response = await axios.get(
@@ -42,24 +96,29 @@ export const getAddressFromCoordinates = async (coordinates: Location): Promise<
     );
 
     if (response.data && response.data.results && response.data.results.length > 0) {
-      return response.data.results[0].formatted_address;
+      const result = response.data.results[0];
+      if (result.address_components) {
+        return extractAddressComponents(result.address_components, result.formatted_address || '');
+      } else {
+        throw new Error('No address components found for this location');
+      }
     } else {
       throw new Error('No address found for this location');
     }
   } catch (error: unknown) {
-    const err = error as { code?: string; response?: { status?: number }; message?: string };
-
-    // Handle different types of errors
+    const err = error as ApiError;
     if (err.code === 'ECONNABORTED') {
-      throw new Error('Request timeout. Please check your internet connection.');
+      throw new Error('Request timeout. Please try again.');
     } else if (err.response?.status === 429) {
-      throw new Error('Too many requests. Please try again later.');
+      throw new Error('Rate limit exceeded. Please try again later.');
     } else if (err.response?.status && err.response.status >= 500) {
       throw new Error('Server error. Please try again later.');
     } else if (err.response?.status && err.response.status >= 400) {
-      throw new Error('Invalid request. Please try a different location.');
+      throw new Error('Invalid request. Please check your coordinates.');
+    } else if (err.message) {
+      throw new Error(err.message);
     } else {
-      throw new Error('Unable to fetch address. Please try again.');
+      throw new Error('Failed to get address from coordinates');
     }
   }
 };

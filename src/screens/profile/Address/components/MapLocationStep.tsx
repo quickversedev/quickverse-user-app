@@ -23,16 +23,17 @@ import { useLocation } from '../../../../hooks/Permissions/useLocation';
 import {
   getAddressFromCoordinates,
   getAutocompleteSuggestions,
+  type AddressComponents,
   type Location,
   type SearchResult,
-} from '../../../../services/api/locationService';
+} from '../../../../services/api/olaLocationService';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { getRegionFromLocation } from '../utils/mapUtils';
 
 const { width, height } = Dimensions.get('window');
 
 interface MapLocationStepProps {
-  onLocationSelect: (location: Location) => void;
+  onLocationSelect: (location: Location, selectedAddressDescription: AddressComponents) => void;
 }
 
 const PIN_SIZE = Math.max(48, width * 0.12);
@@ -58,11 +59,19 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     longitudeDelta: 0.01,
   });
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
-  const [selectedAddressDescription, setSelectedAddressDescription] = useState<string>('');
+  const [selectedAddressDescription, setSelectedAddressDescription] = useState<AddressComponents>({
+    country: '',
+    state: '',
+    city: '',
+    postalCode: '',
+    formatted_address: '',
+  });
   const mapRef = useRef<MapView>(null);
 
   // Function to get address from coordinates with proper error handling
-  const getAddressFromCoordinatesWithLoading = async (coordinates: Location): Promise<string> => {
+  const getAddressFromCoordinatesWithLoading = async (
+    coordinates: Location
+  ): Promise<AddressComponents> => {
     setAddressLoading(true);
     try {
       const address = await getAddressFromCoordinates(coordinates);
@@ -86,7 +95,13 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     } catch (error: unknown) {
       const err = error as { message?: string };
       console.warn('Failed to get address:', err.message);
-      setSelectedAddressDescription('Location selected (address unavailable)');
+      setSelectedAddressDescription({
+        country: '',
+        state: '',
+        city: '',
+        postalCode: '',
+        formatted_address: '',
+      });
     }
   };
 
@@ -121,7 +136,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
 
   const handleGetCurrentLocation = async () => {
     try {
-      console.log('Getting current location...');
+      // Getting current location...
 
       // // Get current location and wait for it to be available
       // const coords = await getCurrentLocation();
@@ -204,7 +219,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
 
   const handleLocationConfirm = () => {
     if (selectedLocation) {
-      onLocationSelect(selectedLocation);
+      onLocationSelect(selectedLocation, selectedAddressDescription);
     }
   };
 
@@ -599,7 +614,11 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                 </View>
               ) : (
                 <Text style={themedStyles.selectedLocationText} numberOfLines={3}>
-                  {selectedAddressDescription || 'Location selected'}
+                  {selectedAddressDescription.formatted_address ||
+                    selectedAddressDescription.city ||
+                    selectedAddressDescription.state ||
+                    selectedAddressDescription.country ||
+                    'Location selected'}
                 </Text>
               )}
             </View>

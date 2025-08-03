@@ -98,6 +98,12 @@ const generateProducts = (shopId: string, count: number, startIndex: number = 0)
         {
           name: `${subDivision} Variant ${index + 1}`,
         },
+        {
+          name: `${subDivision} Variant ${index + 1}`,
+        },
+        {
+          name: `${subDivision} Variant ${index + 1}`,
+        },
       ],
       tags: [
         {
