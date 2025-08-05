@@ -16,6 +16,7 @@ import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
 import AddButton from '../Product/AddButton';
 import QuantitySelector from '../Product/QuantitySelector';
+import VariantsModal from '../Product/VariantsModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32; // Full width minus margins
@@ -37,6 +38,8 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
   const { getColor, getTypography } = useTheme();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showVariantsModal, setShowVariantsModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const cartId = `vendor_${vendor.shopId}`;
   const cart = useCartStore(state => state.carts[cartId]);
@@ -62,6 +65,41 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddToCart = (product: Product) => {
+    // If product has multiple variants, show variants modal
+    if ((product.numberOfVariants || 1) > 1) {
+      setSelectedProduct(product);
+      setShowVariantsModal(true);
+      return;
+    }
+
+    // Otherwise, add directly to cart
+    onAddToCart(product);
+  };
+
+  const handleVariantSelect = (variant: any) => {
+    if (!selectedProduct) return;
+
+    // Create a product object with variant data
+    const variantProduct = {
+      ...selectedProduct,
+      sku: variant.id,
+      name: variant.name,
+      price: variant.price,
+      mrp: variant.mrp,
+    };
+
+    onAddToCart(variantProduct);
+  };
+
+  // Convert Product from types/product to mock Product format for VariantsModal
+  const convertProductForVariantsModal = (product: Product) => {
+    return {
+      ...product,
+      sellingPrice: product.price, // Map price to sellingPrice
+    } as any; // Type assertion to bypass type checking
   };
 
   const renderProductItem = ({ item }: { item: Product }) => {
@@ -100,7 +138,11 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
                 size="small"
               />
             ) : (
-              <AddButton onPress={() => onAddToCart(item)} size="small" />
+              <AddButton
+                onPress={() => handleAddToCart(item)}
+                size="small"
+                numberOfVariants={item.numberOfVariants || 1}
+              />
             ))}
         </View>
         <Text style={[styles.productName, isStoreClosed && styles.textDisabled]} numberOfLines={1}>
@@ -336,6 +378,19 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
         <Text style={styles.exploreButtonText}>Explore More</Text>
         <MaterialCommunityIcons name="arrow-right" size={18} color={getColor('white')} />
       </TouchableOpacity>
+
+      {/* Variants Modal */}
+      {selectedProduct && (
+        <VariantsModal
+          visible={showVariantsModal}
+          onClose={() => {
+            setShowVariantsModal(false);
+            setSelectedProduct(null);
+          }}
+          product={convertProductForVariantsModal(selectedProduct)}
+          onVariantSelect={handleVariantSelect}
+        />
+      )}
     </View>
   );
 };

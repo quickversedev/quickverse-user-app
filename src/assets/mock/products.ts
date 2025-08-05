@@ -24,21 +24,6 @@ export type Product = {
   currentStock: number;
   inStock: boolean;
   primarySKU: string;
-  attributes: {
-    color: string | null;
-    id: string | null;
-    name: string | null;
-    description: string | null;
-    price: number | null;
-    product: string | null;
-  };
-  additionalImages: Array<{
-    url: string | null;
-    id: string | null;
-  }>;
-  variantAttributes: Array<{
-    name: string;
-  }>;
   tags: Array<{
     tagName: string;
   }>;
@@ -60,8 +45,7 @@ const generateProducts = (shopId: string, count: number, startIndex: number = 0)
     const sellingPrice = +(mrp - (mrp * discount) / 100).toFixed(2);
     const gst = +(5 + Math.random() * 10).toFixed(2);
     const stock = Math.floor(Math.random() * 10);
-    const variants = Math.floor(Math.random() * 4) + 1;
-
+    const numberOfVariants = Math.floor(Math.random() * 4) + 1;
     return {
       sku,
       shopId,
@@ -76,35 +60,11 @@ const generateProducts = (shopId: string, count: number, startIndex: number = 0)
       description: `${division} ${subDivision} from ${brand}`,
       imageUrl: `https://via.placeholder.com/150?text=${encodeURIComponent(name)}`,
       discount,
-      numberOfVariants: variants,
+      numberOfVariants: numberOfVariants,
       currentStock: stock,
       inStock: stock > 0,
       primarySKU: sku,
-      attributes: {
-        color: null,
-        id: null,
-        name: null,
-        description: null,
-        price: null,
-        product: null,
-      },
-      additionalImages: [
-        {
-          url: null,
-          id: null,
-        },
-      ],
-      variantAttributes: [
-        {
-          name: `${subDivision} Variant ${index + 1}`,
-        },
-        {
-          name: `${subDivision} Variant ${index + 1}`,
-        },
-        {
-          name: `${subDivision} Variant ${index + 1}`,
-        },
-      ],
+
       tags: [
         {
           tagName: tag,

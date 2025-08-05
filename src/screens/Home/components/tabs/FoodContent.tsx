@@ -1,11 +1,12 @@
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -40,9 +41,49 @@ export const FoodContent: React.FC<FoodContentProps> = ({
   const { getVendorsByCategory } = useVendorStore();
   const foodVendors = getVendorsByCategory('Food');
 
-  // useEffect(() => {
-  //   fetchVendors();
-  // }, [fetchVendors]);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const bannerData = [
+    {
+      promo: 'foodPromo',
+      title: 'Get 25% OFF!',
+      subtitle: 'On your first order with code WELCOME',
+      bannerButton: { label: 'Order Now', onPress: () => {} },
+      backgroundColor: 'green',
+      isBannerImage: false,
+    },
+    {
+      promo: 'foodPromo',
+      title: 'Free Delivery',
+      subtitle: 'On orders above ₹200',
+      bannerButton: { label: 'Shop Now', onPress: () => {} },
+      backgroundColor: 'blue',
+      isBannerImage: false,
+    },
+    {
+      promo: 'foodPromo',
+      title: '',
+      subtitle: '',
+      backgroundColor: 'orange',
+      isBannerImage: true,
+    },
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex(prevIndex => {
+        const nextIndex = (prevIndex + 1) % bannerData.length;
+        const bannerWidth = width - 32 + 12; // Full width minus padding plus margin
+        scrollViewRef.current?.scrollTo({
+          x: nextIndex * bannerWidth,
+          animated: true,
+        });
+        return nextIndex;
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [bannerData.length]);
 
   const styles = StyleSheet.create({
     container: {
@@ -50,7 +91,7 @@ export const FoodContent: React.FC<FoodContentProps> = ({
       backgroundColor: theme.colors.background,
     },
     header: {
-      marginTop: 100,
+      marginTop: 30,
       alignItems: 'center',
       paddingVertical: 20,
       paddingHorizontal: 16,
@@ -67,8 +108,8 @@ export const FoodContent: React.FC<FoodContentProps> = ({
       marginTop: 16,
     },
     logo: {
-      width: 120,
-      height: 80,
+      width: 450,
+      height: 200,
       borderRadius: 12,
     },
     starbucksBanner: {
@@ -180,10 +221,13 @@ export const FoodContent: React.FC<FoodContentProps> = ({
       borderRadius: 12,
       padding: 4,
     },
+    bannerScrollContainer: {
+      paddingHorizontal: 16,
+    },
     bannerContainer: {
-      marginVertical: 12,
-      marginHorizontal: 12,
-      // You can add more custom styles here if needed
+      width: width - 32, // Full width minus padding
+      marginVertical: 8,
+      marginRight: 12,
     },
   });
 
@@ -204,16 +248,29 @@ export const FoodContent: React.FC<FoodContentProps> = ({
             </View>
           </View>
 
-          {/* Starbucks Banner */}
-          <PromoBanner
-            promo="foodPromo"
-            title="Get 25% OFF!"
-            subtitle="On your first order with code WELCOME"
-            bannerButton={{ label: 'Order Now', onPress: () => {} }}
-            size="medium"
-            style={styles.bannerContainer}
-            backgroundColor="green"
-          />
+          {/* Promotional Banner */}
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.bannerScrollContainer}
+            pagingEnabled
+            scrollEventThrottle={16}
+          >
+            {bannerData.map((banner, index) => (
+              <PromoBanner
+                key={index}
+                promo={banner.promo}
+                title={banner.title}
+                subtitle={banner.subtitle}
+                bannerButton={banner.bannerButton}
+                size="medium"
+                style={styles.bannerContainer}
+                backgroundColor={banner.backgroundColor}
+                isBannerImage={banner.isBannerImage}
+              />
+            ))}
+          </ScrollView>
 
           {/* Vendors Grid */}
           <Text style={styles.sectionTitle}>Food Delivery</Text>

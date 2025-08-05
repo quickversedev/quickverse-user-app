@@ -23,13 +23,14 @@ interface BannerButtonConfig {
 
 interface PromoBannerProps {
   promo: string;
-  title: string;
+  title?: string;
   subtitle?: string;
   bannerButton?: React.ReactNode | BannerButtonConfig;
   size?: PromoBannerSize;
   style?: StyleProp<ViewStyle>;
   imageStyle?: StyleProp<ImageStyle>;
   backgroundColor?: string;
+  isBannerImage?: boolean;
 }
 
 const sizeMap = {
@@ -52,10 +53,14 @@ const bannerShadow =
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff', // default, will be overridden
+    alignItems: 'center', // default, will be overridden
     borderRadius: 16,
-    marginVertical: 8,
+    // marginVertical: 8,
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
   },
   image: {
     borderRadius: 12,
@@ -64,13 +69,33 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  bannerImageContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
   title: {
     fontWeight: 'bold',
     marginBottom: 2,
   },
+  bannerImageTitle: {
+    fontWeight: 'bold',
+    marginBottom: 2,
+    color: '#fff',
+  },
   subtitle: {
     color: '#666',
     marginBottom: 4,
+  },
+  bannerImageSubtitle: {
+    color: '#fff',
+    marginBottom: 4,
+    opacity: 0.9,
   },
   button: {
     backgroundColor: '#007AFF',
@@ -80,8 +105,20 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 4,
   },
+  bannerImageButton: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
   buttonText: {
     color: '#fff',
+    fontWeight: 'bold',
+  },
+  bannerImageButtonText: {
+    color: '#000',
     fontWeight: 'bold',
   },
 });
@@ -95,6 +132,7 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
   style,
   imageStyle,
   backgroundColor = '#fff',
+  isBannerImage = false,
 }) => {
   const promoImages = useThemeStore(state => state.getPromoImages());
   const imageUrl = promoImages[promo];
@@ -104,6 +142,18 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
       : sizeMap[size] || sizeMap.medium;
 
   const fallbackPromo = Images.bg1;
+
+  if (isBannerImage) {
+    return (
+      <View style={[styles.container, bannerShadow, style]}>
+        <Image
+          source={imageUrl ? { uri: imageUrl } : fallbackPromo}
+          style={[styles.bannerImage, { width: '100%', height: '100%' }, imageStyle]}
+          resizeMode="cover"
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, bannerShadow, { padding: s.pad, backgroundColor }, style]}>

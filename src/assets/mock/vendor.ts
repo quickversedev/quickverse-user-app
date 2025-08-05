@@ -13,7 +13,7 @@ export const mockVendors: Vendor[] = [
     closingTime: '10:30 AM',
     preparationTime: '10:30 PM',
     description: 'Biryani, Kebabs, Chinese and more done perfectly!',
-    category: 'Restaurant',
+    category: 'Food',
     storeEnabled: true,
     storeActive: false,
     rating: 4.3,
@@ -96,7 +96,7 @@ export const mockVendors: Vendor[] = [
     description: 'Order genuine medicines and health supplies online.',
     category: 'Pharmacy',
     storeEnabled: true,
-    storeActive: false,
+    storeActive: true,
     rating: 4.1,
     shopAddress: {
       address: 'Near City Center',

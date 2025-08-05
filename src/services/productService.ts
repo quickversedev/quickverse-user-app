@@ -47,6 +47,15 @@ class ProductService {
           price: 69,
           mrp: 79,
           image: require('../assets/images/bg_1.png'),
+          numberOfVariants: 2,
+          variantAttributes: [
+            {
+              name: 'Color',
+            },
+            {
+              name: 'Size',
+            },
+          ],
           rating: 4.5,
           discount: 50,
           quantity: 0,

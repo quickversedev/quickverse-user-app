@@ -14,6 +14,32 @@ export const Images = {
   forYou: require('./images/for-you.png'),
   grocery: require('./images/grocery.png'),
   pharmacy: require('./images/pharmacy.png'),
+  food: require('./images/food.png'),
+} as const;
+
+// Icons
+export const Icons = {
+  // Navigation Icons
+  home: require('./images/icons/Home.png'),
+  backArrow: require('./images/icons/backArrow.png'),
+  search: require('./images/icons/search.png'),
+
+  // Action Icons
+  bell: require('./images/icons/Bell.png'),
+  cart: require('./images/icons/cart.png'),
+  bookmark: require('./images/icons/bookmark.png'),
+  lightning: require('./images/icons/lightning.png'),
+  selectedAddress: require('./images/icons/selectedAddress.png'),
+
+  // Category Icons
+  foodIcon: require('./images/icons/food.png'),
+  forYouIcon: require('./images/icons/forYou.png'),
+  pharmacyIcon: require('./images/icons/pharmacy.png'),
+
+  // Utility Icons
+  bottle: require('./images/icons/Bottle.png'),
+  addressPin: require('./images/icons/addressPin.png'),
+  explore: require('./images/icons/explore.png'),
 } as const;
 
 // Fonts
@@ -30,10 +56,14 @@ export { mockVendors } from './mock/vendor';
 
 // Types for better TypeScript support
 export type ImageKey = keyof typeof Images;
+export type IconKey = keyof typeof Icons;
 export type FontKey = keyof typeof Fonts;
 
 // Helper function to get image by key
 export const getImage = (key: ImageKey) => Images[key];
+
+// Helper function to get icon by key
+export const getIcon = (key: IconKey) => Icons[key];
 
 // Helper function to get font by key
 export const getFont = (key: FontKey) => Fonts[key];

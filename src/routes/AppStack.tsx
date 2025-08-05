@@ -9,6 +9,7 @@ import CouponsScreen from '../screens/cart/CouponsScreen';
 import Registration from '../screens/login/Registration';
 import OrderDetailsScreen from '../screens/orders/OrderDetailsScreen';
 import PermissionsScreen from '../screens/permission/PermissionsScreen';
+import ProductDetailDemo from '../screens/vendor/ProductDetailDemo';
 import VendorProduct from '../screens/vendor/VendorProduct';
 import VendorProfile from '../screens/vendor/VendorProfile';
 import { Vendor } from '../types/vendor';
@@ -18,6 +19,7 @@ export type RootStackParamList = {
   Profile: undefined;
   VendorProduct: { vendor: Vendor };
   VendorProfile: { vendor: Vendor };
+  ProductDetailDemo: undefined;
   Cart: { cartId: string } | undefined;
   Orders: undefined;
   OrderDetails: { orderId: string };
@@ -51,6 +53,7 @@ export const AppStack = () => {
         <Stack.Screen name="Profile" component={ProfileStack} />
         <Stack.Screen name="VendorProduct" component={VendorProduct} />
         <Stack.Screen name="VendorProfile" component={VendorProfile} />
+        <Stack.Screen name="ProductDetailDemo" component={ProductDetailDemo} />
         <Stack.Screen name="Cart" component={CartScreen} />
         <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
         <Stack.Screen name="Coupons" component={CouponsScreen} />

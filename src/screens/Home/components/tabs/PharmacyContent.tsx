@@ -1,11 +1,12 @@
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -40,13 +41,58 @@ export const PharmacyContent: React.FC<PharmacyContentProps> = ({
   const { getVendorsByCategory } = useVendorStore();
   const pharmacyVendors = getVendorsByCategory('Pharmacy');
 
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const bannerData = [
+    {
+      promo: 'pharmacyPromo',
+      title: 'Upto 30% OFF on Medicines',
+      subtitle: 'Order genuine medicines and health supplies online',
+      bannerButton: { label: 'Order Medicines', onPress: () => {} },
+      backgroundColor: 'red',
+      isBannerImage: false,
+    },
+    {
+      promo: 'pharmacyPromo',
+      title: 'Free Health Checkup',
+      subtitle: 'Get free consultation with our health experts',
+      bannerButton: { label: 'Book Now', onPress: () => {} },
+      backgroundColor: 'pink',
+      isBannerImage: false,
+    },
+    {
+      promo: 'pharmacyPromo',
+      title: '',
+      subtitle: '',
+      backgroundColor: 'purple',
+      isBannerImage: true,
+    },
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex(prevIndex => {
+        const nextIndex = (prevIndex + 1) % bannerData.length;
+        const bannerWidth = width - 32 + 12; // Full width minus padding plus margin
+        scrollViewRef.current?.scrollTo({
+          x: nextIndex * bannerWidth,
+          animated: true,
+        });
+        return nextIndex;
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [bannerData.length]);
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
+      marginBottom: 100,
     },
     header: {
-      marginTop: 100,
+      marginTop: 30,
       alignItems: 'center',
       paddingVertical: 20,
       paddingHorizontal: 16,
@@ -63,8 +109,8 @@ export const PharmacyContent: React.FC<PharmacyContentProps> = ({
       marginTop: 16,
     },
     logo: {
-      width: 120,
-      height: 80,
+      width: 450,
+      height: 200,
       borderRadius: 12,
     },
     promoBanner: {
@@ -176,10 +222,13 @@ export const PharmacyContent: React.FC<PharmacyContentProps> = ({
       borderRadius: 12,
       padding: 4,
     },
+    bannerScrollContainer: {
+      paddingHorizontal: 16,
+    },
     bannerContainer: {
-      marginVertical: 12,
-      marginHorizontal: 12,
-      // You can add more custom styles here if needed
+      width: width - 32, // Full width minus padding
+      marginVertical: 8,
+      marginRight: 12,
     },
   });
 
@@ -201,15 +250,28 @@ export const PharmacyContent: React.FC<PharmacyContentProps> = ({
           </View>
 
           {/* Promotional Banner */}
-          <PromoBanner
-            promo="pharmacyPromo"
-            title="Upto 30% OFF on Medicines"
-            subtitle="Order genuine medicines and health supplies online"
-            bannerButton={{ label: 'Order Medicines', onPress: () => {} }}
-            size="small"
-            style={styles.bannerContainer}
-            backgroundColor="red"
-          />
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.bannerScrollContainer}
+            pagingEnabled
+            scrollEventThrottle={16}
+          >
+            {bannerData.map((banner, index) => (
+              <PromoBanner
+                key={index}
+                promo={banner.promo}
+                title={banner.title}
+                subtitle={banner.subtitle}
+                bannerButton={banner.bannerButton}
+                size="small"
+                style={styles.bannerContainer}
+                backgroundColor={banner.backgroundColor}
+                isBannerImage={banner.isBannerImage}
+              />
+            ))}
+          </ScrollView>
 
           {/* Vendors Grid */}
           <Text style={styles.sectionTitle}>Pharmacy</Text>

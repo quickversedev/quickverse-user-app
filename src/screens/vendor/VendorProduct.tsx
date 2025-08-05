@@ -21,6 +21,8 @@ import { Product } from '../../assets/mock/products';
 import CartBar from '../../components/common/Cart/CartBar';
 import SectionDivider from '../../components/common/SectionDivider';
 import ProductCard from '../../components/modules/Product/ProductCard';
+import ProductDetailModal from '../../components/modules/Product/ProductDetailModal';
+import VariantsModal from '../../components/modules/Product/VariantsModal';
 import { RootStackParamList } from '../../routes/AppStack';
 import useCartStore from '../../store/cartStore';
 import { useProductsStore } from '../../store/productsStore';
@@ -141,6 +143,14 @@ const VendorProduct: React.FC = () => {
   const scrollY = useRef(new Animated.Value(0)).current;
   const [hideCategory, setHideCategory] = useState(false);
   const categoryAnim = useRef(new Animated.Value(0)).current; // 0: shown, -CATEGORY_WIDTH: hidden
+
+  // Variants state
+  const [variantsModalVisible, setVariantsModalVisible] = useState(false);
+  const [selectedProductForVariants, setSelectedProductForVariants] = useState<Product | null>(
+    null
+  );
+  const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
+  const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
   const numColumns = 3;
   const rowProductList = getRowBasedProductList(filteredCategories, products, numColumns);
   type RowProductListItem =
@@ -214,6 +224,15 @@ const VendorProduct: React.FC = () => {
   // Cart operation handlers
   const handleAddToCart = (product: Product) => {
     if (!vendor.storeActive) return; // Disable when store is closed
+
+    // If product has multiple variants, show variants modal
+    if (product.numberOfVariants > 1) {
+      setSelectedProductForVariants(product);
+      setVariantsModalVisible(true);
+      return;
+    }
+
+    // Otherwise, add directly to cart
     addToCart(cartId, {
       sku: product.sku,
       shopId: vendor.shopId,
@@ -221,6 +240,19 @@ const VendorProduct: React.FC = () => {
       price: product.sellingPrice,
       mrp: product.mrp,
       image: product.imageUrl, // Now a URL string
+    });
+  };
+
+  const handleVariantSelect = (variant: any) => {
+    if (!selectedProductForVariants) return;
+
+    addToCart(cartId, {
+      sku: variant.id,
+      shopId: vendor.shopId,
+      name: variant.name,
+      price: variant.price,
+      mrp: variant.mrp,
+      image: selectedProductForVariants.imageUrl,
     });
   };
 
@@ -539,178 +571,242 @@ const VendorProduct: React.FC = () => {
   });
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: getColor('background'), paddingTop: safeAreaTop }}
-    >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{vendor.name}</Text>
-          <View style={{ flex: 1 }} />
-          <MaterialCommunityIcons name="heart-outline" size={24} color={getColor('primary')} />
-        </View>
-
-        {/* Vendor Card */}
-        <TouchableOpacity
-          style={[styles.vendorCard, !vendor.storeActive && styles.vendorCardClosed]}
-          onPress={() => navigation.navigate('VendorProfile', { vendor })}
-        >
-          <Image source={{ uri: vendor.logo }} style={styles.vendorLogo} />
-          <View style={styles.vendorInfo}>
-            <Text style={styles.vendorName}>{vendor.name}</Text>
-            <View style={styles.vendorMeta}>
-              <Text style={styles.vendorMetaText}>⏱ {vendor.preparationTime}</Text>
-              <Text style={styles.vendorMetaText}>| {formatAddress()}</Text>
-              <View style={styles.ratingBox}>
-                <MaterialCommunityIcons name="star" size={14} color="#fff" />
-                {renderRating()}
-              </View>
-              <Text style={styles.vendorMetaText}>(242+)</Text>
-            </View>
+    <>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: getColor('background'), paddingTop: safeAreaTop }}
+      >
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>{vendor.name}</Text>
+            <View style={{ flex: 1 }} />
+            <TouchableOpacity
+              style={{ marginRight: 12 }}
+              onPress={() => {
+                const mockProduct: Product = {
+                  sku: 'SKU_1',
+                  shopId: vendor.shopId,
+                  name: 'Kurkure Puffcorn Yummy Cheese',
+                  mrp: 79,
+                  sellingPrice: 69,
+                  gst: 5,
+                  category: 'snacks',
+                  division: 'Food',
+                  subDivision: 'Snacks',
+                  brand: 'Kurkure',
+                  description: 'Delicious cheese flavored puffcorn',
+                  imageUrl: '',
+                  discount: 12.7,
+                  numberOfVariants: 2,
+                  currentStock: 10,
+                  inStock: true,
+                  primarySKU: 'SKU_1',
+                  tags: [{ tagName: 'Popular' }],
+                };
+                setSelectedProductForDetail(mockProduct);
+                setProductDetailModalVisible(true);
+              }}
+            >
+              <MaterialCommunityIcons name="eye" size={24} color={getColor('primary')} />
+            </TouchableOpacity>
+            <MaterialCommunityIcons name="heart-outline" size={24} color={getColor('primary')} />
           </View>
-          <MaterialCommunityIcons name="chevron-right" size={28} color={getColor('primary')} />
-        </TouchableOpacity>
 
-        {/* Store Status Banner */}
-        {!vendor.storeActive && (
-          <View style={styles.closedBanner}>
-            <Text style={styles.closedText}>WE ARE CLOSED</Text>
-          </View>
-        )}
-
-        {/* Main Content: Categories + Products */}
-        <View style={styles.mainContent}>
-          {/* Category List (absolute overlay with animation) */}
-
-          <SectionDivider
-            text={`${vendor.openingTime} - ${vendor.closingTime}`}
-            textStyle={{ fontSize: 14, fontWeight: 'normal' }}
-          />
-
-          <Animated.View
-            style={[
-              styles.categoryContainer,
-              { transform: [{ translateX: categoryAnim }] },
-              // Removed display logic using __getValue
-            ]}
+          {/* Vendor Card */}
+          <TouchableOpacity
+            style={[styles.vendorCard, !vendor.storeActive && styles.vendorCardClosed]}
+            onPress={() => navigation.navigate('VendorProfile', { vendor })}
           >
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {filteredCategories.map(cat => (
-                <TouchableOpacity
-                  key={cat.id}
-                  style={[
-                    styles.categoryItem,
-                    selectedCategory === cat.id && styles.categoryItemActive,
-                    !vendor.storeActive && { opacity: 0.6 },
-                  ]}
-                  onPress={() => handleCategorySelect(cat.id)}
-                >
-                  <Image source={cat.icon} style={styles.categoryIcon} />
-                  <Text
-                    style={{
-                      color: !vendor.storeActive
-                        ? getColor('subText')
-                        : selectedCategory === cat.id
-                        ? getColor('primary')
-                        : getColor('subText'),
-                      fontWeight: selectedCategory === cat.id ? 'bold' : 'normal',
-                    }}
-                  >
-                    {cat.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </Animated.View>
-          {/* Product List with headers */}
-          <Animated.View style={[styles.productList, { width: width }]}>
-            <Animated.FlatList
-              ref={flatListRef}
-              data={rowProductList}
-              keyExtractor={(item, idx) => {
-                if (item.type === 'header') return `header-${item.category.id}`;
-                if (item.type === 'products') return `products-row-${idx}`;
-                return `row-${idx}`;
-              }}
-              renderItem={({ item }) => {
-                if (item.type === 'header') {
-                  return (
-                    <View style={styles.categoryHeader}>
-                      <Text style={styles.categoryHeaderText}>{item.category.name}</Text>
-                    </View>
-                  );
-                } else if (item.type === 'products') {
-                  return (
-                    <View style={styles.productRow}>
-                      {item.products.map((product: Product) => (
-                        <ProductCard
-                          key={product.sku}
-                          image={Images.bg1}
-                          name={product.name}
-                          price={product.sellingPrice}
-                          mrp={product.mrp}
-                          rating={0}
-                          onAdd={() => handleAddToCart(product)}
-                          onIncrement={() => handleIncrement(product.sku)}
-                          onDecrement={() => handleDecrement(product.sku)}
-                          quantity={getProductQuantity(product.sku)}
-                          disabled={!vendor.storeActive}
-                        />
-                      ))}
-                      {/* Fill empty columns if needed */}
-                      {item.products.length < numColumns &&
-                        Array.from({ length: numColumns - item.products.length }).map((_, idx) => (
-                          <View key={`empty-${idx}`} style={styles.emptyProductCell} />
-                        ))}
-                    </View>
-                  );
-                }
-                return null;
-              }}
-              numColumns={1}
-              key={'row-based'}
-              showsVerticalScrollIndicator={false}
-              getItemLayout={undefined}
-              onScroll={handleScroll}
-              scrollEventThrottle={16}
-              onViewableItemsChanged={onViewableItemsChanged}
-              viewabilityConfig={viewabilityConfig}
+            <Image source={{ uri: vendor.logo }} style={styles.vendorLogo} />
+            <View style={styles.vendorInfo}>
+              <Text style={styles.vendorName}>{vendor.name}</Text>
+              <View style={styles.vendorMeta}>
+                <Text style={styles.vendorMetaText}>⏱ {vendor.preparationTime}</Text>
+                <Text style={styles.vendorMetaText}>| {formatAddress()}</Text>
+                <View style={styles.ratingBox}>
+                  <MaterialCommunityIcons name="star" size={14} color="#fff" />
+                  {renderRating()}
+                </View>
+                <Text style={styles.vendorMetaText}>(242+)</Text>
+              </View>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={28} color={getColor('primary')} />
+          </TouchableOpacity>
+
+          {/* Store Status Banner */}
+          {!vendor.storeActive && (
+            <View style={styles.closedBanner}>
+              <Text style={styles.closedText}>WE ARE CLOSED</Text>
+            </View>
+          )}
+
+          {/* Main Content: Categories + Products */}
+          <View style={styles.mainContent}>
+            {/* Category List (absolute overlay with animation) */}
+
+            <SectionDivider
+              text={`${vendor.openingTime} - ${vendor.closingTime}`}
+              textStyle={{ fontSize: 14, fontWeight: 'normal' }}
             />
-            {/* Show button to unhide category when hidden */}
-            {hideCategory && (
-              <TouchableOpacity
-                style={styles.unhideCategoryButton}
-                onPress={() => setHideCategory(false)}
-              >
-                <Text style={styles.unhideCategoryText}>{selectedCategory}</Text>
-                <MaterialCommunityIcons
-                  name="chevron-right"
-                  size={24}
-                  color={getColor('background')}
-                />
-              </TouchableOpacity>
-            )}
-          </Animated.View>
+
+            <Animated.View
+              style={[
+                styles.categoryContainer,
+                { transform: [{ translateX: categoryAnim }] },
+                // Removed display logic using __getValue
+              ]}
+            >
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {filteredCategories.map(cat => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[
+                      styles.categoryItem,
+                      selectedCategory === cat.id && styles.categoryItemActive,
+                      !vendor.storeActive && { opacity: 0.6 },
+                    ]}
+                    onPress={() => handleCategorySelect(cat.id)}
+                  >
+                    <Image source={cat.icon} style={styles.categoryIcon} />
+                    <Text
+                      style={{
+                        color: !vendor.storeActive
+                          ? getColor('subText')
+                          : selectedCategory === cat.id
+                          ? getColor('primary')
+                          : getColor('subText'),
+                        fontWeight: selectedCategory === cat.id ? 'bold' : 'normal',
+                      }}
+                    >
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </Animated.View>
+            {/* Product List with headers */}
+            <Animated.View style={[styles.productList, { width: width }]}>
+              <Animated.FlatList
+                ref={flatListRef}
+                data={rowProductList}
+                keyExtractor={(item, idx) => {
+                  if (item.type === 'header') return `header-${item.category.id}`;
+                  if (item.type === 'products') return `products-row-${idx}`;
+                  return `row-${idx}`;
+                }}
+                renderItem={({ item }) => {
+                  if (item.type === 'header') {
+                    return (
+                      <View style={styles.categoryHeader}>
+                        <Text style={styles.categoryHeaderText}>{item.category.name}</Text>
+                      </View>
+                    );
+                  } else if (item.type === 'products') {
+                    return (
+                      <View style={styles.productRow}>
+                        {item.products.map((product: Product) => (
+                          <ProductCard
+                            key={product.sku}
+                            image={Images.bg1}
+                            name={product.name}
+                            price={product.sellingPrice}
+                            mrp={product.mrp}
+                            rating={0}
+                            onAdd={() => handleAddToCart(product)}
+                            onIncrement={() => handleIncrement(product.sku)}
+                            onDecrement={() => handleDecrement(product.sku)}
+                            quantity={getProductQuantity(product.sku)}
+                            disabled={!vendor.storeActive}
+                            numberOfVariants={product.numberOfVariants}
+                            showVariantsCount={true}
+                            onPress={() => {
+                              setSelectedProductForDetail(product);
+                              setProductDetailModalVisible(true);
+                            }}
+                          />
+                        ))}
+                        {/* Fill empty columns if needed */}
+                        {item.products.length < numColumns &&
+                          Array.from({ length: numColumns - item.products.length }).map(
+                            (_, idx) => (
+                              <View key={`empty-${idx}`} style={styles.emptyProductCell} />
+                            )
+                          )}
+                      </View>
+                    );
+                  }
+                  return null;
+                }}
+                numColumns={1}
+                key={'row-based'}
+                showsVerticalScrollIndicator={false}
+                getItemLayout={undefined}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
+                onViewableItemsChanged={onViewableItemsChanged}
+                viewabilityConfig={viewabilityConfig}
+              />
+              {/* Show button to unhide category when hidden */}
+              {hideCategory && (
+                <TouchableOpacity
+                  style={styles.unhideCategoryButton}
+                  onPress={() => setHideCategory(false)}
+                >
+                  <Text style={styles.unhideCategoryText}>{selectedCategory}</Text>
+                  <MaterialCommunityIcons
+                    name="chevron-right"
+                    size={24}
+                    color={getColor('background')}
+                  />
+                </TouchableOpacity>
+              )}
+            </Animated.View>
+          </View>
+          {/* CartBar at the bottom */}
+          {itemCount > 0 && (
+            <CartBar
+              itemCount={itemCount}
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 30,
+              }}
+              shopId={vendor.shopId}
+              cartId={cartId}
+            />
+          )}
+
+          {/* Variants Modal */}
+          {selectedProductForVariants && (
+            <VariantsModal
+              visible={variantsModalVisible}
+              onClose={() => {
+                setVariantsModalVisible(false);
+                setSelectedProductForVariants(null);
+              }}
+              product={selectedProductForVariants}
+              onVariantSelect={handleVariantSelect}
+            />
+          )}
         </View>
-        {/* CartBar at the bottom */}
-        {itemCount > 0 && (
-          <CartBar
-            itemCount={itemCount}
-            style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              bottom: 30,
-            }}
-            shopId={vendor.shopId}
-            cartId={cartId}
-          />
-        )}
-      </View>
-    </SafeAreaView>
+        {/* Product Detail Modal */}
+      </SafeAreaView>
+      {selectedProductForDetail && (
+        <ProductDetailModal
+          visible={productDetailModalVisible}
+          onClose={() => {
+            setProductDetailModalVisible(false);
+            setSelectedProductForDetail(null);
+          }}
+          product={selectedProductForDetail}
+          vendor={vendor}
+        />
+      )}
+    </>
   );
 };
 

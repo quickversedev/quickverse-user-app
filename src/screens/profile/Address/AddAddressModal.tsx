@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Dimensions,
+  Image,
   Modal,
   Platform,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { Icons } from '../../../assets';
 import { useAddress } from '../../../hooks';
 import { AddressComponents } from '../../../services/api/olaLocationService';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -203,7 +205,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
             }
             activeOpacity={0.7}
           >
-            <Text style={themedStyles.backButton}>{step === 1 ? 'Cancel' : 'Back'}</Text>
+            <Image source={Icons.backArrow} style={{ width: 25, height: 25 }} />
           </TouchableOpacity>
           <Text
             style={themedStyles.title}

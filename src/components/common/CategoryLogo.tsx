@@ -11,7 +11,25 @@ interface CategoryLogoProps extends Omit<ImageProps, 'source'> {
 const CategoryLogo: React.FC<CategoryLogoProps> = ({ category, style, ...rest }) => {
   const categoryImages = useThemeStore(state => state.getCategoryImages());
   const imageUrl = categoryImages[category];
-  const fallbackImage = Images.homeBackground;
+
+  // Get category-specific fallback image
+  const getFallbackImage = (category: string) => {
+    switch (category.toLowerCase()) {
+      case 'food':
+        return Images.food;
+      case 'grocery':
+        return Images.grocery;
+      case 'pharmacy':
+        return Images.pharmacy;
+      case 'for you':
+      case 'foryou':
+        return Images.forYou;
+      default:
+        return Images.homeBackground;
+    }
+  };
+
+  const fallbackImage = getFallbackImage(category);
 
   if (imageUrl) {
     return <Image source={{ uri: imageUrl }} style={style} {...rest} />;

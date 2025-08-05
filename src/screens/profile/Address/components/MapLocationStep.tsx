@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Images } from '../../../../assets';
+import { Icons, Images } from '../../../../assets';
 import SectionDivider from '../../../../components/common/SectionDivider';
 import { useLocation } from '../../../../hooks/Permissions/useLocation';
 import {
@@ -368,6 +368,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       paddingBottom: 8,
     },
     selectedLocationContainer: {
+      // alignItems: 'flex-start',
       width: '100%',
       backgroundColor: getColor('background'),
       borderRadius: theme.borderRadius.md,
@@ -613,13 +614,20 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                   <Text style={themedStyles.loadingText}>Getting address...</Text>
                 </View>
               ) : (
-                <Text style={themedStyles.selectedLocationText} numberOfLines={3}>
-                  {selectedAddressDescription.formatted_address ||
-                    selectedAddressDescription.city ||
-                    selectedAddressDescription.state ||
-                    selectedAddressDescription.country ||
-                    'Location selected'}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Image
+                    source={Icons.selectedAddress}
+                    style={{ width: 25, height: 25, marginRight: 5 }}
+                  />
+
+                  <Text style={themedStyles.selectedLocationText} numberOfLines={3}>
+                    {selectedAddressDescription.formatted_address ||
+                      selectedAddressDescription.city ||
+                      selectedAddressDescription.state ||
+                      selectedAddressDescription.country ||
+                      'Location selected'}
+                  </Text>
+                </View>
               )}
             </View>
           )}

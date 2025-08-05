@@ -6,7 +6,7 @@ interface QuantitySelectorProps {
   quantity: number;
   onIncrement: () => void;
   onDecrement: () => void;
-  size?: 'small' | 'regular';
+  size?: 'xs' | 'small' | 'regular';
 }
 
 const QuantitySelector: React.FC<QuantitySelectorProps> = ({
@@ -24,9 +24,14 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       bottom: 2,
       borderWidth: 1,
       borderColor: getColor('primary'),
-      borderRadius: size === 'small' ? getTypography('small') : getTypography('caption'),
-      minWidth: size === 'small' ? 60 : 80,
-      height: size === 'small' ? 28 : 36,
+      borderRadius:
+        size === 'xs'
+          ? getTypography('small') - 2
+          : size === 'small'
+          ? getTypography('small')
+          : getTypography('caption'),
+      minWidth: size === 'xs' ? 50 : size === 'small' ? 60 : 80,
+      height: size === 'xs' ? 24 : size === 'small' ? 28 : 36,
       paddingHorizontal: 0,
       paddingVertical: 0,
       flexDirection: 'row',
@@ -41,22 +46,32 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       elevation: 2,
     },
     qtyBtn: {
-      paddingHorizontal: size === 'small' ? 2 : 4,
-      paddingVertical: size === 'small' ? 1 : 2,
+      paddingHorizontal: size === 'xs' ? 1 : size === 'small' ? 2 : 4,
+      paddingVertical: size === 'xs' ? 1 : size === 'small' ? 1 : 2,
     },
     qtyText: {
       color: getColor('primary'),
-      fontSize: size === 'small' ? getTypography('small') : getTypography('caption'),
+      fontSize:
+        size === 'xs'
+          ? getTypography('small') - 2
+          : size === 'small'
+          ? getTypography('small')
+          : getTypography('caption'),
       fontWeight: 'bold',
-      minWidth: size === 'small' ? 12 : 15,
+      minWidth: size === 'xs' ? 10 : size === 'small' ? 12 : 15,
       textAlign: 'center',
       fontFamily: 'BricolageGrotesque-Regular',
     },
     qtyNum: {
       color: getColor('text'),
-      fontSize: size === 'small' ? getTypography('small') : getTypography('caption'),
-      marginHorizontal: size === 'small' ? 2 : 4,
-      minWidth: size === 'small' ? 14 : 18,
+      fontSize:
+        size === 'xs'
+          ? getTypography('small') - 2
+          : size === 'small'
+          ? getTypography('small')
+          : getTypography('caption'),
+      marginHorizontal: size === 'xs' ? 1 : size === 'small' ? 2 : 4,
+      minWidth: size === 'xs' ? 12 : size === 'small' ? 14 : 18,
       textAlign: 'center',
       fontFamily: 'BricolageGrotesque-Regular',
     },

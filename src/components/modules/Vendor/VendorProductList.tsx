@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import useCartStore from '../../../store/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
+import ProductDetailModal from '../Product/ProductDetailModal';
 import VendorProductCard from './VendorProductCard';
 
 interface VendorProductListProps {
@@ -19,6 +20,9 @@ const VendorProductList: React.FC<VendorProductListProps> = ({
 }) => {
   const { getColor } = useTheme();
   const addToCart = useCartStore(state => state.addToCart);
+  const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
+  const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
+  const [selectedVendorForDetail, setSelectedVendorForDetail] = useState<Vendor | null>(null);
 
   const handleAddToCart = (product: Product, vendor: Vendor) => {
     const cartId = `vendor_${vendor.shopId}`;
@@ -31,6 +35,12 @@ const VendorProductList: React.FC<VendorProductListProps> = ({
       image: product.image,
       // quantity is handled by the store
     });
+  };
+
+  const handleProductPress = (product: Product, vendor: Vendor) => {
+    setSelectedProductForDetail(product);
+    setSelectedVendorForDetail(vendor);
+    setProductDetailModalVisible(true);
   };
 
   const styles = StyleSheet.create({
@@ -46,11 +56,25 @@ const VendorProductList: React.FC<VendorProductListProps> = ({
           <VendorProductCard
             vendor={vendor}
             onVendorPress={onVendorPress}
-            onProductPress={onProductPress}
+            onProductPress={product => handleProductPress(product, vendor)}
             onAddToCart={product => handleAddToCart(product, vendor)}
           />
         </View>
       ))}
+
+      {/* Product Detail Modal */}
+      {selectedProductForDetail && selectedVendorForDetail && (
+        <ProductDetailModal
+          visible={productDetailModalVisible}
+          onClose={() => {
+            setProductDetailModalVisible(false);
+            setSelectedProductForDetail(null);
+            setSelectedVendorForDetail(null);
+          }}
+          product={selectedProductForDetail}
+          vendor={selectedVendorForDetail}
+        />
+      )}
     </View>
   );
 };
