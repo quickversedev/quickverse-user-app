@@ -1,5 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import debounce from 'lodash.debounce';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   Modal,
@@ -13,9 +15,15 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useAddress } from '../../../hooks/useAddress';
 import AddAddressModal from '../../../screens/profile/Address/AddAddressModal';
 import AddressCard from '../../../screens/profile/Address/AddressCard';
+import {
+  getAutocompleteSuggestions,
+  type Location,
+  type SearchResult,
+} from '../../../services/api/olaLocationService';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Address } from '../../../types/address';
 import SectionDivider from '../../common/SectionDivider';
@@ -38,11 +46,21 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
 }) => {
   const { getColor, getTypography, theme } = useTheme();
   const { addresses, loading } = useAddress();
+  const { setSelectedAddress } = useAuth();
   const [showAddModal, setShowAddModal] = React.useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(MODAL_HEIGHT)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
+
+  // Default location (Pune, India)
+  const defaultLocation: Location = {
+    latitude: 18.5204,
+    longitude: 73.8567,
+  };
 
   useEffect(() => {
     if (visible) {
@@ -106,15 +124,83 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     setShowAddModal(false);
   };
 
-  const handleEditAddresses = () => {
-    // TODO: Navigate to address management screen
+  // Debounced search function
+  const fetchAutocompleteSuggestions = useMemo(
+    () =>
+      debounce(async (currentSearchQuery: string) => {
+        if (!currentSearchQuery.trim()) {
+          setSearchResults([]);
+          setSearchLoading(false);
+          setShowSearchResults(false);
+          return;
+        }
+
+        setSearchLoading(true);
+        setShowSearchResults(true);
+
+        try {
+          const results = await getAutocompleteSuggestions(currentSearchQuery, defaultLocation);
+          setSearchResults(results);
+        } catch (err: unknown) {
+          const error = err as { response?: { data?: unknown }; message?: string };
+          console.warn(
+            'Error during Ola Maps autocomplete:',
+            error.response?.data || error.message || err
+          );
+          setSearchResults([]);
+        } finally {
+          setSearchLoading(false);
+        }
+      }, 400), // 400ms debounce
+    []
+  );
+
+  const handleSearchInputChange = (text: string) => {
+    setSearchQuery(text);
+    fetchAutocompleteSuggestions(text);
   };
 
-  const filteredAddresses = addresses.filter(
-    address =>
-      (address.address?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-      (address.city?.toLowerCase() || '').includes(searchQuery.toLowerCase())
-  );
+  const handleSearchResultSelect = (result: SearchResult) => {
+    setSearchQuery(result.structured_formatting.main_text);
+    setSearchResults([]);
+    setShowSearchResults(false);
+
+    // Parse the secondary text to extract components
+    const secondaryParts = result.structured_formatting.secondary_text.split(',');
+    const city = result.structured_formatting.main_text;
+    const state = secondaryParts[1]?.trim() || '';
+    const postalCode = secondaryParts[2]?.trim() || '';
+    const country = secondaryParts[3]?.trim() || '';
+
+    // Convert search result to Address object
+    const newAddress: Address = {
+      id: result.place_id || `search_${Date.now()}`,
+      // name: city,
+      address: result.structured_formatting.secondary_text,
+      city: city,
+      state: state,
+      postalCode: postalCode,
+      pincode: postalCode,
+      country: country,
+      isDefault: false,
+      tag: 'home',
+    };
+
+    // Update selected address through AuthProvider
+    setSelectedAddress(newAddress);
+
+    // Close the modal
+    handleClose();
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowSearchResults(false);
+  };
+
+  // Always show all saved addresses - no filtering
+  const filteredAddresses = addresses;
 
   const themedStyles = StyleSheet.create({
     backdrop: {
@@ -152,12 +238,8 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       backgroundColor: 'transparent',
       alignItems: 'center',
       paddingHorizontal: 20,
-      // paddingTop: 20,
-      // paddingBottom: 16,
       borderBottomWidth: 1,
-      // borderBottomColor: getColor('border'),
     },
-
     closeButton: {
       padding: 8,
       borderRadius: theme.borderRadius.full,
@@ -174,6 +256,8 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     searchContainer: {
       marginTop: 16,
       marginBottom: 20,
+      position: 'relative',
+      zIndex: 10,
     },
     searchBar: {
       flexDirection: 'row',
@@ -194,16 +278,48 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       color: getColor('text'),
       includeFontPadding: false,
     },
+    searchResultsContainer: {
+      position: 'absolute',
+      top: '100%',
+      left: 0,
+      right: 0,
+      backgroundColor: getColor('card'),
+      borderRadius: theme.borderRadius.md,
+      maxHeight: 200,
+      elevation: 8,
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: theme.colors.shadow.offset,
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
+      zIndex: 20,
+      overflow: 'hidden',
+    },
+    searchResultItem: {
+      padding: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: getColor('border'),
+      backgroundColor: 'transparent',
+    },
+    searchResultMainText: {
+      color: getColor('text'),
+      fontSize: getTypography('body'),
+      fontWeight: '500',
+      includeFontPadding: false,
+    },
+    searchResultSecondaryText: {
+      color: getColor('subText'),
+      fontSize: getTypography('caption'),
+      includeFontPadding: false,
+      marginTop: 2,
+    },
     sectionDividerContainer: {
       // marginVertical: 20,
     },
     addressesContainer: {
       flex: 1,
-      // backgroundColor: getColor('card'),
       borderRadius: theme.borderRadius.md,
       padding: 20,
-      // marginBottom: 20,
-      maxHeight: MODAL_HEIGHT * 0.6, // Limit height to prevent overflow
+      maxHeight: MODAL_HEIGHT * 0.6,
     },
     addressCardContainer: {
       // marginBottom: 4,
@@ -232,7 +348,6 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       paddingHorizontal: 20,
       paddingVertical: 6,
       borderRadius: theme.borderRadius.md,
-      // marginBottom: 20,
       minHeight: 56,
     },
     addButtonText: {
@@ -321,15 +436,85 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                 />
                 <TextInput
                   style={themedStyles.searchInput}
-                  placeholder="Search Locality"
+                  placeholder="Search for locations worldwide..."
                   placeholderTextColor={getColor('placeholder')}
                   value={searchQuery}
-                  onChangeText={setSearchQuery}
+                  onChangeText={handleSearchInputChange}
                   accessible={true}
                   accessibilityRole="search"
-                  accessibilityLabel="Search for addresses"
+                  accessibilityLabel="Search for locations worldwide"
+                  returnKeyType="search"
+                  autoCapitalize="words"
                 />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={handleClearSearch}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear search"
+                    accessibilityHint="Clears the search input"
+                    activeOpacity={0.7}
+                  >
+                    <MaterialCommunityIcons
+                      name="close-circle"
+                      size={22}
+                      color={getColor('subText')}
+                    />
+                  </TouchableOpacity>
+                )}
+                {searchLoading && (
+                  <ActivityIndicator
+                    size="small"
+                    color={getColor('primary')}
+                    style={{ marginLeft: 8 }}
+                  />
+                )}
               </View>
+
+              {/* Search Results Dropdown */}
+              {showSearchResults && searchResults.length > 0 && (
+                <View
+                  style={themedStyles.searchResultsContainer}
+                  pointerEvents="box-none"
+                  onStartShouldSetResponder={() => true}
+                  onTouchStart={e => e.stopPropagation()}
+                  onTouchMove={e => e.stopPropagation()}
+                >
+                  <ScrollView
+                    style={{ maxHeight: 200 }}
+                    contentContainerStyle={{ paddingVertical: 4 }}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true}
+                    scrollEnabled={true}
+                    onScroll={event => {
+                      // Prevent scroll events from propagating to parent scrollable components
+                      event.stopPropagation();
+                    }}
+                    scrollEventThrottle={16}
+                  >
+                    {searchResults.map((result, index) => (
+                      <TouchableOpacity
+                        key={result.place_id || index}
+                        style={themedStyles.searchResultItem}
+                        onPress={() => handleSearchResultSelect(result)}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Select ${result.structured_formatting.main_text}`}
+                        accessibilityHint={`Selects ${result.structured_formatting.main_text} as the location`}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={themedStyles.searchResultMainText}>
+                          {result.structured_formatting.main_text}
+                        </Text>
+                        <Text style={themedStyles.searchResultSecondaryText}>
+                          {result.structured_formatting.secondary_text}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
             </View>
 
             {/* Section Divider */}
@@ -359,8 +544,10 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                 <>
                   <ScrollView
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 20 }} // Space for edit button
+                    contentContainerStyle={{ paddingBottom: 20 }}
                     style={{ flex: 1 }}
+                    scrollEnabled={!showSearchResults}
+                    nestedScrollEnabled={true}
                   >
                     {filteredAddresses.map((address, index) => (
                       <View key={address.id || index} style={themedStyles.addressCardContainer}>

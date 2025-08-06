@@ -57,7 +57,20 @@ export const LocationSelector = () => {
 
   const getDisplayAddress = () => {
     if (selectedAddress) {
-      return `${selectedAddress.city} - ${selectedAddress.postalCode}`;
+      // For searched addresses, show city and state if available
+      if (selectedAddress.city && selectedAddress.state) {
+        return `${selectedAddress.city}, ${selectedAddress.state}`;
+      }
+      // Fallback to city and postal code
+      if (selectedAddress.city && selectedAddress.postalCode) {
+        return `${selectedAddress.city} - ${selectedAddress.postalCode}`;
+      }
+      // Just show city if available
+      if (selectedAddress.city) {
+        return selectedAddress.city;
+      }
+      // Fallback to address
+      return selectedAddress.address || 'Selected Address';
     }
     return 'Select Address';
   };
