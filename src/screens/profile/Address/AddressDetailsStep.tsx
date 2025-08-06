@@ -397,14 +397,14 @@ const AddressDetailsStep = ({
       textAlignVertical: 'center',
     },
     saveButton: {
-      padding: Math.max(18, height * 0.025),
-      borderRadius: theme.borderRadius.md,
+      padding: 16,
+      borderRadius: theme.borderRadius.sm,
       alignItems: 'center',
       backgroundColor:
         isFormValid() && !isLoading ? getColor('primary') : getColor('button').disabled.background,
-      minHeight: 56,
+      minHeight: 26,
       justifyContent: 'center',
-      marginTop: 24,
+
       opacity: isLoading ? 0.7 : 1,
       shadowColor: theme.colors.shadow.color,
       shadowOffset: { width: 0, height: 2 },
@@ -424,7 +424,7 @@ const AddressDetailsStep = ({
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 28,
+
       minHeight: 48,
       paddingHorizontal: 4,
     },

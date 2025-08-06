@@ -1,22 +1,24 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
-  FlatList,
   Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useAddress } from '../../../hooks/useAddress';
 import AddAddressModal from '../../../screens/profile/Address/AddAddressModal';
+import AddressCard from '../../../screens/profile/Address/AddressCard';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Address } from '../../../types/address';
+import SectionDivider from '../../common/SectionDivider';
 
 const { height: screenHeight } = Dimensions.get('window');
 const MODAL_HEIGHT = screenHeight * 0.6;
@@ -35,9 +37,9 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   selectedAddress,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
-  const { addresses, loading, fetchAddresses } = useAddress();
-  const insets = useSafeAreaInsets();
+  const { addresses, loading } = useAddress();
   const [showAddModal, setShowAddModal] = React.useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const slideAnim = useRef(new Animated.Value(MODAL_HEIGHT)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
@@ -104,52 +106,15 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     setShowAddModal(false);
   };
 
-  const renderAddressItem = ({ item }: { item: Address }) => {
-    const isSelected = selectedAddress?.id === item.id;
-
-    return (
-      <TouchableOpacity
-        style={[themedStyles.addressItem, isSelected && themedStyles.selectedAddressItem]}
-        onPress={() => handleAddressSelect(item)}
-        accessible={true}
-        accessibilityRole="button"
-        accessibilityLabel={`Select address: ${item.address}`}
-        accessibilityHint="Selects this address as your current location"
-        activeOpacity={0.7}
-      >
-        <View style={themedStyles.addressContent}>
-          <View style={themedStyles.addressHeader}>
-            <MaterialCommunityIcons
-              name="map-marker"
-              size={20}
-              color={isSelected ? getColor('white') : getColor('primary')}
-              style={themedStyles.addressIcon}
-            />
-            <Text
-              style={[themedStyles.addressText, isSelected && themedStyles.selectedAddressText]}
-              numberOfLines={2}
-            >
-              {item.address}
-            </Text>
-          </View>
-          <Text
-            style={[themedStyles.addressDetails, isSelected && themedStyles.selectedAddressDetails]}
-            numberOfLines={1}
-          >
-            {item.city}, {item.state} - {item.zipCode}
-          </Text>
-          {isSelected && (
-            <MaterialCommunityIcons
-              name="check-circle"
-              size={20}
-              color={getColor('white')}
-              style={themedStyles.checkIcon}
-            />
-          )}
-        </View>
-      </TouchableOpacity>
-    );
+  const handleEditAddresses = () => {
+    // TODO: Navigate to address management screen
   };
+
+  const filteredAddresses = addresses.filter(
+    address =>
+      (address.address?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (address.city?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+  );
 
   const themedStyles = StyleSheet.create({
     backdrop: {
@@ -183,20 +148,16 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     },
     header: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      justifyContent: 'center',
+      backgroundColor: 'transparent',
       alignItems: 'center',
-      paddingHorizontal: Math.max(16, screenHeight * 0.02),
-      paddingTop: Math.max(16, screenHeight * 0.02),
-      paddingBottom: Math.max(12, screenHeight * 0.015),
+      paddingHorizontal: 20,
+      // paddingTop: 20,
+      // paddingBottom: 16,
       borderBottomWidth: 1,
-      borderBottomColor: getColor('border'),
+      // borderBottomColor: getColor('border'),
     },
-    headerTitle: {
-      fontSize: getTypography('h2'),
-      fontWeight: 'bold',
-      color: getColor('text'),
-      includeFontPadding: false,
-    },
+
     closeButton: {
       padding: 8,
       borderRadius: theme.borderRadius.full,
@@ -208,102 +169,84 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     },
     content: {
       flex: 1,
-      paddingHorizontal: Math.max(16, screenHeight * 0.02),
+      paddingHorizontal: 20,
+    },
+    searchContainer: {
+      marginTop: 16,
+      marginBottom: 20,
+    },
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: getColor('card'),
+      borderRadius: theme.borderRadius.sm,
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: getColor('border'),
+    },
+    searchIcon: {
+      marginRight: 12,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: getTypography('body'),
+      color: getColor('text'),
+      includeFontPadding: false,
+    },
+    sectionDividerContainer: {
+      // marginVertical: 20,
+    },
+    addressesContainer: {
+      flex: 1,
+      // backgroundColor: getColor('card'),
+      borderRadius: theme.borderRadius.md,
+      padding: 20,
+      // marginBottom: 20,
+      maxHeight: MODAL_HEIGHT * 0.6, // Limit height to prevent overflow
+    },
+    addressCardContainer: {
+      // marginBottom: 4,
+    },
+    editButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-end',
+      marginTop: 8,
+      marginBottom: 16,
+    },
+    editButtonText: {
+      fontSize: getTypography('body'),
+      color: getColor('primary'),
+      fontWeight: '500',
+      marginLeft: 4,
+      includeFontPadding: false,
     },
     addButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: getColor('primary'),
-      paddingHorizontal: Math.max(16, screenHeight * 0.02),
-      paddingVertical: Math.max(12, screenHeight * 0.015),
-      borderRadius: theme.borderRadius.md,
-      marginBottom: Math.max(16, screenHeight * 0.02),
-      minHeight: 48,
       justifyContent: 'center',
-      ...Platform.select({
-        android: {
-          elevation: 4,
-        },
-        ios: {
-          shadowColor: theme.colors.shadow.color,
-          shadowOffset: theme.colors.shadow.offset,
-          shadowOpacity: theme.colors.shadow.opacity,
-          shadowRadius: theme.colors.shadow.radius,
-        },
-      }),
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: getColor('primary'),
+      paddingHorizontal: 20,
+      paddingVertical: 6,
+      borderRadius: theme.borderRadius.md,
+      // marginBottom: 20,
+      minHeight: 56,
     },
     addButtonText: {
-      color: getColor('white'),
+      color: getColor('primary'),
       fontSize: getTypography('body'),
       fontWeight: '600',
       marginLeft: 8,
       includeFontPadding: false,
     },
-    addressItem: {
-      backgroundColor: getColor('card'),
-      borderRadius: theme.borderRadius.md,
-      padding: Math.max(12, screenHeight * 0.015),
-      marginBottom: Math.max(8, screenHeight * 0.01),
-      borderWidth: 1,
-      borderColor: getColor('border'),
-      ...Platform.select({
-        android: {
-          elevation: 2,
-        },
-        ios: {
-          shadowColor: theme.colors.shadow.color,
-          shadowOffset: theme.colors.shadow.offset,
-          shadowOpacity: theme.colors.shadow.opacity * 0.5,
-          shadowRadius: theme.colors.shadow.radius * 0.5,
-        },
-      }),
-    },
-    selectedAddressItem: {
-      backgroundColor: getColor('primary'),
-      borderColor: getColor('primary'),
-    },
-    addressContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    addressHeader: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-    },
-    addressIcon: {
-      marginRight: 8,
-      marginTop: 2,
-    },
-    addressText: {
-      flex: 1,
-      fontSize: getTypography('body'),
-      fontWeight: '500',
-      color: getColor('text'),
-      includeFontPadding: false,
-      lineHeight: getTypography('body') * 1.2,
-    },
-    selectedAddressText: {
-      color: getColor('white'),
-    },
-    addressDetails: {
-      fontSize: getTypography('caption'),
-      color: getColor('subText'),
-      marginTop: 4,
-      includeFontPadding: false,
-    },
-    selectedAddressDetails: {
-      color: getColor('white'),
-      opacity: 0.8,
-    },
-    checkIcon: {
-      marginLeft: 8,
-    },
     emptyContainer: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: Math.max(40, screenHeight * 0.05),
+      paddingVertical: 40,
     },
     emptyText: {
       fontSize: getTypography('body'),
@@ -319,7 +262,14 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   });
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      hardwareAccelerated={true}
+      statusBarTranslucent={true}
+      onRequestClose={handleClose}
+    >
       <View style={StyleSheet.absoluteFill}>
         {/* Backdrop */}
         <Animated.View
@@ -347,14 +297,6 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
           ]}
         >
           <View style={themedStyles.header}>
-            <Text
-              style={themedStyles.headerTitle}
-              accessible={true}
-              accessibilityRole="header"
-              accessibilityLabel="Select delivery address"
-            >
-              Select Address
-            </Text>
             <TouchableOpacity
               style={themedStyles.closeButton}
               onPress={handleClose}
@@ -368,6 +310,76 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
           </View>
 
           <View style={themedStyles.content}>
+            {/* Search Bar */}
+            <View style={themedStyles.searchContainer}>
+              <View style={themedStyles.searchBar}>
+                <MaterialCommunityIcons
+                  name="magnify"
+                  size={20}
+                  color={getColor('subText')}
+                  style={themedStyles.searchIcon}
+                />
+                <TextInput
+                  style={themedStyles.searchInput}
+                  placeholder="Search Locality"
+                  placeholderTextColor={getColor('placeholder')}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  accessible={true}
+                  accessibilityRole="search"
+                  accessibilityLabel="Search for addresses"
+                />
+              </View>
+            </View>
+
+            {/* Section Divider */}
+            <View style={themedStyles.sectionDividerContainer}>
+              <SectionDivider text="CHOOSE DELIVERY ADDRESS" fontSize={16} />
+            </View>
+
+            {/* Addresses Container */}
+            <View style={themedStyles.addressesContainer}>
+              {loading ? (
+                <View style={themedStyles.loadingContainer}>
+                  <Text style={themedStyles.emptyText}>Loading addresses...</Text>
+                </View>
+              ) : filteredAddresses.length === 0 ? (
+                <View style={themedStyles.emptyContainer}>
+                  <MaterialCommunityIcons
+                    name="map-marker-off"
+                    size={48}
+                    color={getColor('subText')}
+                    style={{ marginBottom: 16 }}
+                  />
+                  <Text style={themedStyles.emptyText}>
+                    No addresses found.{'\n'}Add your first address to get started.
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 20 }} // Space for edit button
+                    style={{ flex: 1 }}
+                  >
+                    {filteredAddresses.map((address, index) => (
+                      <View key={address.id || index} style={themedStyles.addressCardContainer}>
+                        <AddressCard
+                          address={address}
+                          size="small"
+                          onPress={() => handleAddressSelect(address)}
+                          isSelected={selectedAddress?.id === address.id}
+                        />
+                      </View>
+                    ))}
+                  </ScrollView>
+
+                  {/* Edit Button */}
+                </>
+              )}
+            </View>
+
+            {/* Add Address Button */}
             <TouchableOpacity
               style={themedStyles.addButton}
               onPress={handleAddNewAddress}
@@ -377,37 +389,9 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
               accessibilityHint="Opens the add address form"
               activeOpacity={0.8}
             >
-              <MaterialCommunityIcons name="plus" size={20} color={getColor('white')} />
-              <Text style={themedStyles.addButtonText}>Add New Address</Text>
+              <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
+              <Text style={themedStyles.addButtonText}>Add Address Details</Text>
             </TouchableOpacity>
-
-            {loading ? (
-              <View style={themedStyles.loadingContainer}>
-                <Text style={themedStyles.emptyText}>Loading addresses...</Text>
-              </View>
-            ) : addresses.length === 0 ? (
-              <View style={themedStyles.emptyContainer}>
-                <MaterialCommunityIcons
-                  name="map-marker-off"
-                  size={48}
-                  color={getColor('subText')}
-                  style={{ marginBottom: 16 }}
-                />
-                <Text style={themedStyles.emptyText}>
-                  No addresses saved yet.{'\n'}Add your first address to get started.
-                </Text>
-              </View>
-            ) : (
-              <FlatList
-                data={addresses}
-                renderItem={renderAddressItem}
-                keyExtractor={(item, index) => item.id || `address-${index}`}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
-                accessible={true}
-                accessibilityLabel="List of saved addresses"
-              />
-            )}
           </View>
         </Animated.View>
 

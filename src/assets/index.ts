@@ -41,6 +41,7 @@ export const Icons = {
   bottle: require('./images/icons/Bottle.png'),
   addressPin: require('./images/icons/addressPin.png'),
   explore: require('./images/icons/explore.png'),
+  man: require('./images/icons/man.png'),
 } as const;
 
 // Fonts
