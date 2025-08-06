@@ -3,7 +3,6 @@ import React from 'react';
 import { NativeScrollEvent, NativeSyntheticEvent, ScrollView, ViewStyle } from 'react-native';
 
 import AutoScrollBanner from '../../../../components/common/AutoScrollBanner';
-import BadgeTagDemo from '../../../../components/common/BadgeTagDemo';
 import SectionDivider from '../../../../components/common/SectionDivider';
 import VendorList from '../../../../components/modules/Vendor/VendorList';
 import VendorProductList from '../../../../components/modules/Vendor/VendorProductList';
@@ -64,7 +63,7 @@ export const ForYouContent: React.FC<ForYouContentProps> = ({
 
       <SectionDivider text="RESTAURANTS" fontSize={16} />
       <VendorList />
-      <BadgeTagDemo />
+      {/* <BadgeTagDemo /> */}
       <SectionDivider text="BESTSELLERS" fontSize={16} />
       <VendorProductList
         vendors={vendors}

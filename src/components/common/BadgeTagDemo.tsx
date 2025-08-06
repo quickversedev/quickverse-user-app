@@ -12,7 +12,7 @@ const BadgeTagDemo: React.FC = () => {
       backgroundColor: getColor('background'),
     },
     title: {
-      fontSize: getTypography('title'),
+      fontSize: getTypography('body'),
       fontWeight: 'bold',
       color: getColor('text'),
       marginBottom: 16,

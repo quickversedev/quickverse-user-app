@@ -8,14 +8,28 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import useCartStore from '../../../store/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
+import AddButton from './AddButton';
 import ProductImageCarousel from './ProductImageCarousel';
 import ProductInfo from './ProductInfo';
+import QuantitySelector from './QuantitySelector';
 import SuggestedItems from './SuggestedItems';
 
-const { height } = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');
+
+// Responsive design constants
+const isSmallScreen = width < 375;
+const isMediumScreen = width >= 375 && width < 414;
+
+// Calculate responsive values
+const getResponsiveValue = (small: number, medium: number, large: number) => {
+  if (isSmallScreen) return small;
+  if (isMediumScreen) return medium;
+  return large;
+};
 
 interface Product {
   sku: string;
@@ -69,6 +83,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   vendor,
 }) => {
   const { getColor, getTypography } = useTheme();
+  const insets = useSafeAreaInsets();
   const [selectedVariantId, setSelectedVariantId] = useState('variant_1');
   const { addToCart, increment, decrement, carts } = useCartStore();
 
@@ -155,31 +170,28 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     },
     modal: {
       backgroundColor: getColor('background'),
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      maxHeight: height * 0.95,
-      minHeight: height * 0.8,
-      // marginBottom: 20,
-      // height: height * 0.9,
+      borderTopLeftRadius: getResponsiveValue(16, 20, 24),
+      borderTopRightRadius: getResponsiveValue(16, 20, 24),
+      maxHeight: height * (isSmallScreen ? 0.9 : 0.95),
+      minHeight: height * (isSmallScreen ? 0.75 : 0.8),
     },
     dragIndicator: {
-      width: 40,
+      width: getResponsiveValue(32, 40, 48),
       height: 4,
       backgroundColor: getColor('border'),
       borderRadius: 2,
       alignSelf: 'center',
-      marginTop: 12,
-      // marginBottom: 8,
+      marginTop: getResponsiveValue(8, 12, 16),
     },
     closeButton: {
       position: 'absolute',
-      top: 20,
-      right: 20,
+      top: getResponsiveValue(16, 20, 24),
+      right: getResponsiveValue(16, 20, 24),
       zIndex: 10,
       backgroundColor: getColor('card'),
-      borderRadius: 20,
-      width: 40,
-      height: 40,
+      borderRadius: getResponsiveValue(16, 20, 24),
+      width: getResponsiveValue(32, 40, 48),
+      height: getResponsiveValue(32, 40, 48),
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: getColor('shadow').color,
@@ -190,12 +202,11 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     },
     content: {
       flex: 1,
-      paddingBottom: 80, // Space for fixed bottom bar
+      paddingBottom: getResponsiveValue(70, 80, 90), // Space for fixed bottom bar
     },
     mainCard: {
       backgroundColor: getColor('background'),
-      // margin: 16,
-      borderRadius: 16,
+      borderRadius: getResponsiveValue(12, 16, 20),
       overflow: 'hidden',
     },
     bottomBar: {
@@ -206,56 +217,32 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       backgroundColor: getColor('card'),
       borderTopWidth: 1,
       borderTopColor: getColor('border'),
-      paddingHorizontal: 20,
-      paddingVertical: 16,
+      paddingHorizontal: getResponsiveValue(16, 20, 24),
+      paddingVertical: getResponsiveValue(12, 16, 20),
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      paddingBottom: Math.max(getResponsiveValue(12, 16, 20), insets.bottom),
     },
     priceContainer: {
       flex: 1,
+      marginRight: getResponsiveValue(8, 12, 16),
     },
     mrpText: {
       fontSize: getTypography('caption'),
       color: getColor('subText'),
       textDecorationLine: 'line-through',
-      marginBottom: 2,
+      marginBottom: getResponsiveValue(1, 2, 3),
     },
     sellingPriceText: {
       fontSize: getTypography('h2'),
       fontWeight: 'bold',
       color: getColor('text'),
     },
-    addButtonContainer: {
-      backgroundColor: getColor('primary'),
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: 8,
-      minWidth: 100,
-      alignItems: 'center',
-    },
-    addButtonText: {
-      color: getColor('white'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-    },
-    quantityContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    quantityButton: {
-      backgroundColor: getColor('primary'),
-      borderRadius: 20,
-      width: 40,
-      height: 40,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    quantityText: {
-      color: getColor('text'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-      marginHorizontal: 16,
+    buttonContainer: {
+      position: 'relative',
+      minWidth: getResponsiveValue(70, 80, 90),
+      height: getResponsiveValue(32, 36, 40),
     },
   });
 
@@ -271,9 +258,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     // Product info functionality
   };
 
-  const handleSuggestedItemPress = (item: SuggestedItem) => {
+  const handleSuggestedItemPress = (_item: SuggestedItem) => {
     // Handle suggested item press - could open product detail modal for this item
-    console.log('Suggested item pressed:', item);
   };
 
   const handleSuggestedItemAdd = (item: SuggestedItem) => {
@@ -306,7 +292,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       visible={visible}
       transparent
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle={isSmallScreen ? 'pageSheet' : 'formSheet'}
       hardwareAccelerated={true}
       statusBarTranslucent={true}
       onRequestClose={onClose}
@@ -356,21 +342,18 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <Text style={styles.sellingPriceText}>₹{product.sellingPrice}</Text>
             </View>
 
-            {currentQuantity === 0 ? (
-              <TouchableOpacity style={styles.addButtonContainer} onPress={handleAddToCart}>
-                <Text style={styles.addButtonText}>ADD +</Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.quantityContainer}>
-                <TouchableOpacity style={styles.quantityButton} onPress={handleDecrement}>
-                  <MaterialCommunityIcons name="minus" size={20} color={getColor('white')} />
-                </TouchableOpacity>
-                <Text style={styles.quantityText}>{currentQuantity}</Text>
-                <TouchableOpacity style={styles.quantityButton} onPress={handleIncrement}>
-                  <MaterialCommunityIcons name="plus" size={20} color={getColor('white')} />
-                </TouchableOpacity>
-              </View>
-            )}
+            <View style={styles.buttonContainer}>
+              {currentQuantity === 0 ? (
+                <AddButton onPress={handleAddToCart} size="regular" />
+              ) : (
+                <QuantitySelector
+                  quantity={currentQuantity}
+                  onIncrement={handleIncrement}
+                  onDecrement={handleDecrement}
+                  size="regular"
+                />
+              )}
+            </View>
           </View>
         </View>
       </View>

@@ -101,11 +101,18 @@ const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const validateTheme = (apiTheme: any): Theme => {
+  const _validateTheme = (apiTheme: unknown): Theme => {
     // Basic validation - expand according to your API contract
-    const isValid = apiTheme?.colors?.button?.default?.background && apiTheme?.typography?.h1;
+    const isValid =
+      apiTheme &&
+      typeof apiTheme === 'object' &&
+      apiTheme !== null &&
+      'colors' in apiTheme &&
+      'typography' in apiTheme &&
+      typeof (apiTheme as Partial<Theme>)?.colors?.button?.default?.background === 'string' &&
+      typeof (apiTheme as Partial<Theme>)?.typography?.h1 === 'number';
 
-    return isValid ? apiTheme : DefaultTheme;
+    return isValid ? (apiTheme as Theme) : DefaultTheme;
   };
 
   const getColor = <T extends keyof Colors>(colorKey: T): Colors[T] => {

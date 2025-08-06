@@ -139,7 +139,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <RatingBadge rating={rating} size={size === 'regular' ? 'medium' : size} />
           )}
         </View>
-        {discount && discount > 0 && (
+        {discount > 0 && (
           <View style={styles.BadgeTag}>
             <BadgeTag
               value={discount}
@@ -152,7 +152,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {quantity === 0 ? (
           <AddButton
             onPress={onAdd}
-            size={size === 'xs' ? 'small' : size}
+            size={size === 'xs' ? 'extra-small' : size}
             numberOfVariants={numberOfVariants}
             showVariantsCount={showVariantsCount}
           />

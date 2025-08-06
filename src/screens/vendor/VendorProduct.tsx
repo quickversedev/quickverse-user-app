@@ -583,35 +583,7 @@ const VendorProduct: React.FC = () => {
             </TouchableOpacity>
             <Text style={styles.headerTitle}>{vendor.name}</Text>
             <View style={{ flex: 1 }} />
-            <TouchableOpacity
-              style={{ marginRight: 12 }}
-              onPress={() => {
-                const mockProduct: Product = {
-                  sku: 'SKU_1',
-                  shopId: vendor.shopId,
-                  name: 'Kurkure Puffcorn Yummy Cheese',
-                  mrp: 79,
-                  sellingPrice: 69,
-                  gst: 5,
-                  category: 'snacks',
-                  division: 'Food',
-                  subDivision: 'Snacks',
-                  brand: 'Kurkure',
-                  description: 'Delicious cheese flavored puffcorn',
-                  imageUrl: '',
-                  discount: 12.7,
-                  numberOfVariants: 2,
-                  currentStock: 10,
-                  inStock: true,
-                  primarySKU: 'SKU_1',
-                  tags: [{ tagName: 'Popular' }],
-                };
-                setSelectedProductForDetail(mockProduct);
-                setProductDetailModalVisible(true);
-              }}
-            >
-              <MaterialCommunityIcons name="eye" size={24} color={getColor('primary')} />
-            </TouchableOpacity>
+
             <MaterialCommunityIcons name="heart-outline" size={24} color={getColor('primary')} />
           </View>
 
@@ -789,6 +761,7 @@ const VendorProduct: React.FC = () => {
                 setSelectedProductForVariants(null);
               }}
               product={selectedProductForVariants}
+              vendor={vendor}
               onVariantSelect={handleVariantSelect}
             />
           )}

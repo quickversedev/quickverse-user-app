@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
+  GestureResponderEvent,
   Modal,
   ScrollView,
   StyleSheet,
@@ -12,8 +13,13 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Product } from '../../../assets/mock/products';
 import { useVariants } from '../../../hooks/useVariants';
+import { Variant } from '../../../services/api/variantsService';
+import useCartStore from '../../../store/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
+import { Vendor } from '../../../types/vendor';
 import SectionDivider from '../../common/SectionDivider';
+import AddButton from './AddButton';
+import QuantitySelector from './QuantitySelector';
 
 const { height } = Dimensions.get('window');
 
@@ -21,18 +27,25 @@ interface VariantsModalProps {
   visible: boolean;
   onClose: () => void;
   product: Product;
-  onVariantSelect: (variant: any) => void;
+  vendor: Vendor;
+  onVariantSelect?: (variant: Variant) => void;
 }
 
 const VariantsModal: React.FC<VariantsModalProps> = ({
   visible,
   onClose,
   product,
+  vendor,
   onVariantSelect,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
   const { variants, loading, error, hasData, fetchVariants, clearError, reset } = useVariants();
-  console.log('product', product);
+  const { addToCart, increment, decrement, carts } = useCartStore();
+
+  // Create vendor-specific cart ID
+  const cartId = `vendor_${vendor.shopId}`;
+  const cart = carts[cartId];
+
   useEffect(() => {
     if (visible && product.sku) {
       fetchVariants(product.sku);
@@ -45,15 +58,46 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
     }
   }, [visible, reset]);
 
-  const handleVariantSelect = (variant: any) => {
-    onVariantSelect(variant);
-    onClose();
+  const _handleVariantSelect = (variant: Variant) => {
+    if (onVariantSelect) {
+      onVariantSelect(variant);
+    }
+  };
+
+  const handleAddToCart = (variant: Variant) => {
+    addToCart(cartId, {
+      sku: variant.id,
+      shopId: vendor.shopId,
+      name: variant.name,
+      price: variant.price,
+      mrp: variant.mrp,
+      image: product.imageUrl,
+    });
+  };
+
+  const handleIncrement = (variantId: string) => {
+    increment(cartId, variantId);
+  };
+
+  const handleDecrement = (variantId: string) => {
+    decrement(cartId, variantId);
+  };
+
+  const getVariantQuantity = (variantId: string) => {
+    return cart?.products[variantId]?.quantity || 0;
   };
 
   const handleRetry = () => {
     if (product.sku) {
       clearError();
       fetchVariants(product.sku);
+    }
+  };
+
+  const handleModalPress = (event: GestureResponderEvent) => {
+    // Close modal when clicking on overlay
+    if (event.target === event.currentTarget) {
+      onClose();
     }
   };
 
@@ -64,21 +108,13 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       justifyContent: 'flex-end',
     },
     modal: {
-      backgroundColor: getColor('card'),
+      backgroundColor: getColor('background'),
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       maxHeight: height * 0.85,
       paddingBottom: 20,
     },
-    dragIndicator: {
-      width: 40,
-      height: 4,
-      backgroundColor: getColor('border'),
-      borderRadius: 2,
-      alignSelf: 'center',
-      marginTop: 12,
-      marginBottom: 8,
-    },
+
     closeButton: {
       position: 'absolute',
       top: 20,
@@ -100,33 +136,26 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       paddingHorizontal: 20,
     },
     productName: {
-      fontSize: getTypography('h1'),
+      fontSize: getTypography('h2'),
       fontWeight: 'bold',
       color: getColor('text'),
-      textAlign: 'center',
+      textAlign: 'left',
       marginTop: 20,
-      marginBottom: 8,
-    },
-    productDescription: {
-      fontSize: getTypography('body'),
-      color: getColor('subText'),
-      textAlign: 'center',
-      lineHeight: 20,
-      marginBottom: 24,
-      paddingHorizontal: 20,
+      // marginBottom: 24,
     },
     sectionDivider: {
-      marginVertical: 20,
+      marginVertical: 16,
     },
     variantsContainer: {
-      marginTop: 16,
+      marginTop: 8,
     },
     variantItem: {
       flexDirection: 'row',
+      justifyContent: 'space-between',
       alignItems: 'center',
-      backgroundColor: getColor('background'),
+      backgroundColor: getColor('card'),
       borderRadius: theme.borderRadius.md,
-      padding: 16,
+      padding: 8,
       marginBottom: 12,
       shadowColor: getColor('shadow').color,
       shadowOffset: getColor('shadow').offset,
@@ -154,10 +183,16 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       fontSize: getTypography('caption'),
       color: getColor('subText'),
     },
+    variantRightContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: 40,
+    },
     variantPriceContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginRight: 16,
+      marginBottom: 8,
     },
     currentPrice: {
       fontSize: getTypography('body'),
@@ -169,28 +204,6 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       fontSize: getTypography('caption'),
       color: getColor('subText'),
       textDecorationLine: 'line-through',
-    },
-    addButton: {
-      backgroundColor: getColor('white'),
-      borderWidth: 2,
-      borderColor: '#FFD700',
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: theme.borderRadius.md,
-      minWidth: 80,
-      alignItems: 'center',
-    },
-    addButtonText: {
-      color: getColor('text'),
-      fontSize: getTypography('caption'),
-      fontWeight: 'bold',
-    },
-    addButtonDisabled: {
-      backgroundColor: getColor('border'),
-      borderColor: getColor('border'),
-    },
-    addButtonTextDisabled: {
-      color: getColor('subText'),
     },
     loadingContainer: {
       padding: 40,
@@ -270,46 +283,54 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       );
     }
 
-    return variants.map(variant => (
-      <View key={variant.id} style={styles.variantItem}>
-        <View style={styles.variantImage} />
-        <View style={styles.variantInfo}>
-          <Text style={styles.variantName}>{variant.name}</Text>
-          <Text style={styles.variantPrice}>{variant.description}</Text>
+    return variants.map(variant => {
+      const quantity = getVariantQuantity(variant.id);
+
+      return (
+        <View key={variant.id} style={styles.variantItem}>
+          <View style={styles.variantImage} />
+          <View style={styles.variantInfo}>
+            <Text style={styles.variantName}>{variant.name}</Text>
+            <View style={styles.variantPriceContainer}>
+              <Text style={styles.currentPrice}>₹{variant.price}</Text>
+              <Text style={styles.originalPrice}>₹{variant.mrp}</Text>
+            </View>
+          </View>
+          <View style={styles.variantRightContainer}>
+            {quantity > 0 ? (
+              <QuantitySelector
+                quantity={quantity}
+                onIncrement={() => handleIncrement(variant.id)}
+                onDecrement={() => handleDecrement(variant.id)}
+                size="regular"
+              />
+            ) : (
+              <AddButton onPress={() => handleAddToCart(variant)} size="regular" />
+            )}
+          </View>
         </View>
-        <View style={styles.variantPriceContainer}>
-          <Text style={styles.currentPrice}>₹{variant.price}</Text>
-          <Text style={styles.originalPrice}>₹{variant.mrp}</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.addButton, !variant.inStock && styles.addButtonDisabled]}
-          onPress={() => handleVariantSelect(variant)}
-          disabled={!variant.inStock}
-        >
-          <Text style={[styles.addButtonText, !variant.inStock && styles.addButtonTextDisabled]}>
-            {variant.inStock ? 'ADD +' : 'NA'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    ));
+      );
+    });
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      // presentationStyle="pageSheet"
+      hardwareAccelerated={true}
+      statusBarTranslucent={true}
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity style={styles.modalOverlay} onPress={handleModalPress} activeOpacity={1}>
         <View style={styles.modal}>
-          <View style={styles.dragIndicator} />
-
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <MaterialCommunityIcons name="close" size={20} color={getColor('text')} />
           </TouchableOpacity>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             <Text style={styles.productName}>{product.name}</Text>
-            <Text style={styles.productDescription}>
-              A rich swirl of velvety dark chocolate ice cream, studded with gooey chunks of freshly
-              baked fudge brownies.
-            </Text>
 
             <View style={styles.sectionDivider}>
               <SectionDivider text="SELECT UNIT" fontSize={16} />
@@ -317,10 +338,8 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
 
             <View style={styles.variantsContainer}>{renderContent()}</View>
           </ScrollView>
-
-          <View style={styles.bottomIndicator} />
         </View>
-      </View>
+      </TouchableOpacity>
     </Modal>
   );
 };

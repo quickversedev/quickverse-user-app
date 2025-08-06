@@ -349,6 +349,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
             setSelectedProduct(null);
           }}
           product={convertProductForVariantsModal(selectedProduct)}
+          vendor={vendor}
           onVariantSelect={handleVariantSelect}
         />
       )}
