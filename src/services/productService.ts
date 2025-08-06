@@ -38,7 +38,7 @@ class ProductService {
       // return data;
 
       // Mock response for now
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 10000)); // Simulate network delay
 
       const mockProducts: Product[] = [
         {

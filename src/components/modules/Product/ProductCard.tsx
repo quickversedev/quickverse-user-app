@@ -1,7 +1,8 @@
 import React from 'react';
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
+import { BadgeTag } from '../../common';
+import RatingBadge from '../../common/RatingBadge';
 import AddButton from './AddButton';
 import QuantitySelector from './QuantitySelector';
 
@@ -16,6 +17,7 @@ interface ProductCardProps {
   price: number;
   mrp: number;
   rating: number;
+  discount: number;
   quantity: number;
   onAdd: () => void;
   onIncrement: () => void;
@@ -33,6 +35,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   price,
   mrp,
   rating,
+  discount,
   quantity,
   onAdd,
   onIncrement,
@@ -79,19 +82,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
       position: 'absolute',
       top: size === 'xs' ? 4 : 8,
       right: size === 'xs' ? 4 : 8,
-      backgroundColor: '#1ec28b',
-      borderRadius: size === 'xs' ? 6 : 8,
-      paddingHorizontal: size === 'xs' ? 6 : 8,
-      paddingVertical: size === 'xs' ? 1 : 2,
-      flexDirection: 'row',
-      alignItems: 'center',
       zIndex: 2,
     },
-    ratingText: {
-      color: '#fff',
-      fontWeight: 'bold',
-      fontSize: size === 'xs' ? getTypography('caption') - 2 : getTypography('caption'),
-      marginLeft: size === 'xs' ? 1 : 2,
+    BadgeTag: {
+      position: 'absolute',
+      top: 0,
+      left: -1,
+      zIndex: 2,
     },
 
     name: {
@@ -138,9 +135,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <View style={styles.imageContainer}>
         <Image source={image} style={styles.image} resizeMode="cover" />
         <View style={styles.ratingBadge}>
-          <MaterialCommunityIcons name="star" size={size === 'xs' ? 10 : 14} color="#fff" />
-          <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+          {size !== 'xs' && (
+            <RatingBadge rating={rating} size={size === 'regular' ? 'medium' : size} />
+          )}
         </View>
+        {discount && discount > 0 && (
+          <View style={styles.BadgeTag}>
+            <BadgeTag
+              value={discount}
+              color="#F44336"
+              size={size === 'xs' ? 'small' : size === 'regular' ? 'medium' : size}
+              orientation="vertical"
+            />
+          </View>
+        )}
         {quantity === 0 ? (
           <AddButton
             onPress={onAdd}

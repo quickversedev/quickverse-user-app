@@ -9,13 +9,14 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Icons } from '../../../assets';
 import productService from '../../../services/productService';
 import useCartStore from '../../../store/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
-import AddButton from '../Product/AddButton';
-import QuantitySelector from '../Product/QuantitySelector';
+import { RatingBadge } from '../../common';
+import ProductCard from '../Product/ProductCard';
 import VariantsModal from '../Product/VariantsModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -54,7 +55,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
     try {
       setLoading(true);
       const response = await productService.getFeaturedProducts(vendor.shopId, 5);
-
+      console.log('response', response);
       if (response.success) {
         setFeaturedProducts(response.data);
       } else {
@@ -66,7 +67,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       setLoading(false);
     }
   };
-
+  console.log('featuredProducts', featuredProducts);
   const handleAddToCart = (product: Product) => {
     // If product has multiple variants, show variants modal
     if ((product.numberOfVariants || 1) > 1) {
@@ -105,54 +106,24 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
   const renderProductItem = ({ item }: { item: Product }) => {
     const quantity = cart?.products[item.sku || item.id]?.quantity || 0;
     const isStoreClosed = !vendor.storeActive;
-
-    // Debug logging
-    console.log(
-      'Vendor:',
-      vendor.name,
-      'storeActive:',
-      vendor.storeActive,
-      'isStoreClosed:',
-      isStoreClosed
-    );
-
+    console.log('item', item);
     return (
-      <TouchableOpacity
-        style={[styles.productCard, isStoreClosed && styles.productDisabled]}
+      <ProductCard
+        image={item.image}
+        name={item.name}
+        price={item.price}
+        mrp={item.mrp}
+        discount={item.discount}
+        rating={item.rating || 0}
+        quantity={quantity}
+        onAdd={() => !isStoreClosed && handleAddToCart(item)}
+        onIncrement={() => !isStoreClosed && increment(cartId, item.sku || item.id)}
+        onDecrement={() => !isStoreClosed && decrement(cartId, item.sku || item.id)}
+        size="xs"
+        disabled={isStoreClosed}
+        numberOfVariants={item.numberOfVariants || 1}
         onPress={() => !isStoreClosed && onProductPress(item)}
-        activeOpacity={isStoreClosed ? 0.3 : 0.8}
-      >
-        <View style={styles.productImageContainer}>
-          <Image source={item.image} style={styles.productImage} resizeMode="cover" />
-          {item.discount > 0 && (
-            <View style={styles.discountTag}>
-              <Text style={styles.discountText}>{item.discount}% OFF</Text>
-            </View>
-          )}
-          {!isStoreClosed &&
-            (quantity > 0 ? (
-              <QuantitySelector
-                quantity={quantity}
-                onIncrement={() => increment(cartId, item.sku || item.id)}
-                onDecrement={() => decrement(cartId, item.sku || item.id)}
-                size="small"
-              />
-            ) : (
-              <AddButton
-                onPress={() => handleAddToCart(item)}
-                size="small"
-                numberOfVariants={item.numberOfVariants || 1}
-              />
-            ))}
-        </View>
-        <Text style={[styles.productName, isStoreClosed && styles.textDisabled]} numberOfLines={1}>
-          {item.name}
-        </Text>
-        <View style={styles.priceContainer}>
-          <Text style={[styles.mrp, isStoreClosed && styles.textDisabled]}>₹{item.mrp}</Text>
-          <Text style={[styles.price, isStoreClosed && styles.textDisabled]}>₹{item.price}</Text>
-        </View>
-      </TouchableOpacity>
+      />
     );
   };
 
@@ -221,9 +192,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       marginLeft: 4,
       fontFamily: 'BricolageGrotesque-Regular',
     },
-    productsContainer: {
-      marginBottom: 16,
-    },
+
     productsList: {
       paddingLeft: 0,
     },
@@ -287,17 +256,17 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       // backgroundColor: getColor('primary'),
       borderRadius: 12,
       paddingHorizontal: 20,
-      // paddingVertical: 14,
+
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       alignSelf: 'center',
     },
     exploreButtonText: {
-      color: getColor('white'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-      marginRight: 6,
+      color: getColor('primary'),
+      fontSize: getTypography('caption'),
+      // fontWeight: 'bold',
+      // marginRight: 6,
       fontFamily: 'BricolageGrotesque-Regular',
     },
     closedBanner: {
@@ -334,27 +303,14 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
         <View style={styles.vendorInfo}>
           <Text style={styles.vendorName}>{vendor.name}</Text>
           <View style={styles.vendorMeta}>
+            <Image source={Icons.lightning} />
             <Text style={styles.deliveryTime}>30 mins</Text>
             <Text style={styles.location}>• {vendor.shopAddress?.city || 'Location'}</Text>
           </View>
         </View>
-        <View style={styles.ratingContainer}>
-          <MaterialCommunityIcons name="star" size={14} color={getColor('white')} />
-          <Text style={styles.ratingText}>{vendor.rating?.toFixed(1) || 'N/A'}</Text>
-          <Text style={styles.reviewsText}>(242)</Text>
-        </View>
+        <RatingBadge rating={vendor.rating || 0} size="small" />
       </TouchableOpacity>
 
-      {/* Store Status Banner */}
-      {(() => {
-        console.log(
-          'Banner check - vendor.storeActive:',
-          vendor.storeActive,
-          '!vendor.storeActive:',
-          !vendor.storeActive
-        );
-        return null;
-      })()}
       {!vendor.storeActive && (
         <View style={styles.closedBanner}>
           <Text style={styles.closedText}>WE ARE CLOSED</Text>
@@ -362,7 +318,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       )}
 
       {/* Featured Products */}
-      <View style={[styles.productsContainer, !vendor.storeActive && styles.productsDisabled]}>
+      <View style={[!vendor.storeActive && styles.productsDisabled]}>
         <FlatList
           data={featuredProducts}
           renderItem={renderProductItem}
@@ -376,7 +332,12 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       {/* Explore More Button */}
       <TouchableOpacity style={styles.exploreButton} onPress={() => onVendorPress(vendor)}>
         <Text style={styles.exploreButtonText}>Explore More</Text>
-        <MaterialCommunityIcons name="arrow-right" size={18} color={getColor('white')} />
+        <MaterialCommunityIcons
+          name="chevron-right"
+          size={16}
+          color={getColor('primary')}
+          style={{ alignSelf: 'center', marginTop: 1 }}
+        />
       </TouchableOpacity>
 
       {/* Variants Modal */}

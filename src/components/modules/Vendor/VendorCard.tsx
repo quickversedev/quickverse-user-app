@@ -1,8 +1,9 @@
 import React from 'react';
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Icons } from '../../../assets';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
+import { RatingBadge } from '../../common';
 
 const { width } = Dimensions.get('window');
 
@@ -45,7 +46,7 @@ const VendorCard: React.FC<VendorCardProps> = ({
   // Calculate image height based on card width
   const getImageHeight = (): number => {
     const cardWidth = typeof size === 'number' ? size : getCardWidth();
-    return cardWidth * 0.6; // 60% of card width for aspect ratio
+    return cardWidth * 0.7; // 60% of card width for aspect ratio
   };
 
   const cardWidth = typeof size === 'number' ? size : getCardWidth();
@@ -139,11 +140,7 @@ const VendorCard: React.FC<VendorCardProps> = ({
         )}
         <Image source={{ uri: vendor.banner || vendor.logo }} style={styles.vendorImage} />
         <TouchableOpacity style={styles.favoriteButton} onPress={() => onFavoritePress?.(vendor)}>
-          <MaterialCommunityIcons
-            name={isFavorite ? 'heart' : 'heart-outline'}
-            size={size === 'small' ? 12 : 16}
-            color={favoriteColor}
-          />
+          <Image source={Icons.heart} style={{ width: 20, height: 20 }} />
         </TouchableOpacity>
       </View>
       <View style={styles.vendorInfo}>
@@ -151,15 +148,10 @@ const VendorCard: React.FC<VendorCardProps> = ({
           {vendor.name}
         </Text>
         <View style={styles.vendorRating}>
-          <MaterialCommunityIcons name="star" size={size === 'small' ? 10 : 14} color="#1ec28b" />
-          <Text style={styles.ratingText}>4.3 (242)</Text>
+          <RatingBadge rating={vendor.rating || 0} size="small" />
         </View>
         <View style={styles.vendorMeta}>
-          <MaterialCommunityIcons
-            name="diamond"
-            size={size === 'small' ? 8 : 12}
-            color={getColor('subText')}
-          />
+          <Image source={Icons.lightning} />
           <Text style={styles.metaText} numberOfLines={1}>
             30 mins • FC Road
           </Text>

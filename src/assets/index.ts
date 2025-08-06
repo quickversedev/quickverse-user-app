@@ -30,6 +30,7 @@ export const Icons = {
   bookmark: require('./images/icons/bookmark.png'),
   lightning: require('./images/icons/lightning.png'),
   selectedAddress: require('./images/icons/selectedAddress.png'),
+  heart: require('./images/icons/heart.png'),
 
   // Category Icons
   foodIcon: require('./images/icons/food.png'),

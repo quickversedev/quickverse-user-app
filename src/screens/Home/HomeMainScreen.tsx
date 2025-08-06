@@ -36,7 +36,7 @@ const HomeMainScreen = () => {
         return <ForYouContent {...contentProps} />;
     }
   };
-
+  console.log('HomeScreen', selectedTab);
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>

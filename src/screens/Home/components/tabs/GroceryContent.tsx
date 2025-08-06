@@ -1,19 +1,18 @@
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import {
   Animated,
   Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  ScrollView,
   StyleSheet,
   Text,
   View,
   ViewStyle,
 } from 'react-native';
+import AutoScrollBanner from '../../../../components/common/AutoScrollBanner';
 import CategoryLogo from '../../../../components/common/CategoryLogo';
-import PromoBanner from '../../../../components/common/promo/PromoBanner';
 import VendorEmptyState from '../../../../components/common/VendorEmptyState';
 import VendorCard from '../../../../components/modules/Vendor/VendorCard';
 import { RootStackParamList } from '../../../../routes/AppStack';
@@ -41,8 +40,6 @@ export const GroceryContent: React.FC<GroceryContentProps> = ({
   const { getVendorsByCategory } = useVendorStore();
   const groceryVendors = getVendorsByCategory('Grocery');
 
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const bannerData = [
     {
       promo: 'groceryPromo',
@@ -68,22 +65,6 @@ export const GroceryContent: React.FC<GroceryContentProps> = ({
       isBannerImage: true,
     },
   ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex(prevIndex => {
-        const nextIndex = (prevIndex + 1) % bannerData.length;
-        const bannerWidth = width - 32 + 12; // Full width minus padding plus margin
-        scrollViewRef.current?.scrollTo({
-          x: nextIndex * bannerWidth,
-          animated: true,
-        });
-        return nextIndex;
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [bannerData.length]);
 
   const styles = StyleSheet.create({
     container: {
@@ -250,28 +231,7 @@ export const GroceryContent: React.FC<GroceryContentProps> = ({
           </View>
 
           {/* Promotional Banner */}
-          <ScrollView
-            ref={scrollViewRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.bannerScrollContainer}
-            pagingEnabled
-            scrollEventThrottle={16}
-          >
-            {bannerData.map((banner, index) => (
-              <PromoBanner
-                key={index}
-                promo={banner.promo}
-                title={banner.title}
-                subtitle={banner.subtitle}
-                bannerButton={banner.bannerButton}
-                size="large"
-                style={styles.bannerContainer}
-                backgroundColor={banner.backgroundColor}
-                isBannerImage={banner.isBannerImage}
-              />
-            ))}
-          </ScrollView>
+          <AutoScrollBanner bannerData={bannerData} />
 
           {/* Vendors Grid */}
           <Text style={styles.sectionTitle}>Grocery Delivery</Text>
