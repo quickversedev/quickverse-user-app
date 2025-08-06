@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import {
   Animated,
   Dimensions,
@@ -47,6 +47,50 @@ const CartBar: React.FC<CartBarProps> = ({
   const vendorName = getVendorNameById(shopId) || shopId;
   const { navigate } = useNavigation<StackNavigationProp<RootStackParamList>>();
   const clearCart = useCartStore(state => state.clearCart);
+
+  // Dynamic styles using theme values
+  const dynamicStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        cartBar: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 12,
+          paddingHorizontal: 18,
+          width: width - 30,
+          minHeight: 56,
+          alignSelf: 'center',
+          backgroundColor: getColor('primary'),
+          borderRadius: 16,
+        },
+        divider: {
+          width: 1,
+          height: 28,
+          marginHorizontal: 10,
+          borderRadius: 1,
+          backgroundColor: getColor('border'),
+        },
+        removeButton: {
+          width: 30,
+          height: 30,
+          borderRadius: 20,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: getColor('error'),
+        },
+        removeButtonPositioned: {
+          position: 'absolute',
+          left: 50,
+          top: 0,
+          bottom: -10,
+          zIndex: 1,
+        },
+        cartContainer: {
+          zIndex: 2,
+        },
+      }),
+    [getColor]
+  );
 
   const panResponder = useRef(
     PanResponder.create({
@@ -109,13 +153,9 @@ const CartBar: React.FC<CartBarProps> = ({
       {/* Remove button (hidden behind cart) */}
       <Animated.View
         style={[
-          styles.removeButton,
+          dynamicStyles.removeButton,
+          dynamicStyles.removeButtonPositioned,
           {
-            position: 'absolute',
-            left: 50,
-            top: 0,
-            bottom: -10,
-            zIndex: 1,
             opacity: translateX.interpolate({
               inputRange: [0, 40, 80],
               outputRange: [0, 0.5, 1],
@@ -143,9 +183,17 @@ const CartBar: React.FC<CartBarProps> = ({
         </TouchableOpacity>
       </Animated.View>
 
-      <Animated.View {...panResponder.panHandlers} pointerEvents="box-none" style={{ zIndex: 2 }}>
+      <Animated.View
+        {...panResponder.panHandlers}
+        pointerEvents="box-none"
+        style={dynamicStyles.cartContainer}
+      >
         <Animated.View style={{ transform: [{ translateX }] }}>
-          <TouchableOpacity style={styles.cartBar} activeOpacity={0.92} onPress={handleCartPress}>
+          <TouchableOpacity
+            style={dynamicStyles.cartBar}
+            activeOpacity={0.92}
+            onPress={handleCartPress}
+          >
             {/* Cross icon to trigger swipe reveal */}
             <TouchableOpacity
               onPress={() => {
@@ -172,23 +220,23 @@ const CartBar: React.FC<CartBarProps> = ({
             <MaterialCommunityIcons
               name="cart-outline"
               size={26}
-              color={getColor('text')}
+              color={getColor('background')}
               style={styles.cartIcon}
             />
-            <View style={styles.divider} />
+            <View style={dynamicStyles.divider} />
             <Text
               style={[
                 styles.cartText,
-                { fontSize: getTypography('subtitle'), color: getColor('text') },
+                { fontSize: getTypography('subtitle'), color: getColor('background') },
               ]}
             >
               {vendorName}
             </Text>
-            <View style={{ flex: 1 }} />
+            <View style={styles.flexSpacer} />
             <Text
               style={[
                 styles.itemCount,
-                { color: getColor('text'), fontSize: getTypography('body') },
+                { color: getColor('background'), fontSize: getTypography('body') },
               ]}
             >
               {itemCount} Item{itemCount > 1 ? 's' : ''}{' '}
@@ -196,7 +244,7 @@ const CartBar: React.FC<CartBarProps> = ({
             <MaterialCommunityIcons
               name="chevron-right"
               size={22}
-              color={getColor('text')}
+              color={getColor('background')}
               style={styles.chevronIcon}
             />
           </TouchableOpacity>
@@ -213,24 +261,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'visible',
   },
-  cartBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFD600', // This should be replaced with theme color if available
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 18,
-    width: width - 30,
-    minHeight: 56,
-    alignSelf: 'center',
-  },
-  divider: {
-    width: 1,
-    height: 28,
-    backgroundColor: '#E0E0E0', // This should be replaced with theme color if available
-    marginHorizontal: 10,
-    borderRadius: 1,
-  },
   cartText: {
     fontWeight: 'bold',
     letterSpacing: 0.2,
@@ -238,14 +268,6 @@ const styles = StyleSheet.create({
   itemCount: {
     fontWeight: 'bold',
     marginRight: 2,
-  },
-  removeButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 20,
-    backgroundColor: '#FF4444',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   removeButtonContent: {
     justifyContent: 'center',
@@ -263,6 +285,9 @@ const styles = StyleSheet.create({
   },
   chevronIcon: {
     marginLeft: 2,
+  },
+  flexSpacer: {
+    flex: 1,
   },
 });
 

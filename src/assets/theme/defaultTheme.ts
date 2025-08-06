@@ -2,7 +2,7 @@ import { Theme } from '../../theme/ThemeContext';
 
 export const DefaultTheme: Theme = {
   colors: {
-    primary: '#FAE588', // used in shadowColor
+    primary: '#FEDB51', // used in shadowColor
     secondary: '#FFE885', // used in otpButton background
     background: '#111827', // screen background
     tabBackground: '#1F2937',

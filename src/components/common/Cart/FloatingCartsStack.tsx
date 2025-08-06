@@ -13,7 +13,7 @@ const FloatingCartsStack: React.FC = () => {
   const allCarts = Object.values(carts);
   const activeCartId = useCartStore(state => state.activeCartId);
   const [expanded, setExpanded] = useState(false);
-  const { getColor } = useTheme();
+  const { getColor, theme } = useTheme();
 
   // Sort carts: most recently active at the top
   const sortedCarts = [...allCarts].sort((a, b) => {
@@ -60,6 +60,39 @@ const FloatingCartsStack: React.FC = () => {
 
   // No need for animatedValues sync effect, handled by useMemo
 
+  // Dynamic styles using theme
+  const dynamicStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        cartShadow: {
+          borderRadius: theme.borderRadius.md,
+          backgroundColor: getColor('primary'),
+          shadowColor: theme.colors.shadow.color,
+          shadowOpacity: theme.colors.shadow.opacity,
+          shadowOffset: theme.colors.shadow.offset,
+          shadowRadius: theme.colors.shadow.radius,
+          elevation: 4,
+        },
+        cartBarWrapperMain: {
+          borderRadius: theme.borderRadius.md,
+          shadowColor: theme.colors.shadow.color,
+          shadowOpacity: theme.colors.shadow.opacity,
+          shadowOffset: theme.colors.shadow.offset,
+          shadowRadius: theme.colors.shadow.radius,
+          elevation: 4,
+          zIndex: 1,
+        },
+        cartSecondBehind: {
+          position: 'absolute',
+          top: 8,
+          left: -20,
+          right: 0,
+          zIndex: 0,
+        },
+      }),
+    [theme, getColor]
+  );
+
   if (allCarts.length === 0) return null;
 
   // Show a hint of the next cart behind the first when collapsed
@@ -105,15 +138,8 @@ const FloatingCartsStack: React.FC = () => {
             <View
               style={[
                 styles.cartBarWrapper,
-                styles.cartShadow,
-                {
-                  position: 'absolute',
-                  top: 8,
-                  left: -20,
-                  right: 0,
-                  zIndex: 0,
-                  backgroundColor: getColor('primary'),
-                },
+                dynamicStyles.cartShadow,
+                dynamicStyles.cartSecondBehind,
               ]}
               pointerEvents="none"
             />
@@ -130,6 +156,7 @@ const FloatingCartsStack: React.FC = () => {
                 key={cart.cartId}
                 style={[
                   styles.cartBarWrapper,
+                  dynamicStyles.cartBarWrapperMain,
                   {
                     opacity: animatedValues[idx],
                     transform: [
@@ -140,7 +167,6 @@ const FloatingCartsStack: React.FC = () => {
                         }),
                       },
                     ],
-                    zIndex: 1,
                   },
                 ]}
               >
