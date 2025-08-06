@@ -1,26 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Dimensions,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useState } from 'react';
+import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Icons } from '../../../assets';
-import productService from '../../../services/productService';
+import useFeaturedProducts from '../../../hooks/useFeaturedProducts';
 import useCartStore from '../../../store/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
 import { RatingBadge } from '../../common';
+import FeaturedProductsError from '../../common/FeaturedProductsError';
+import FeaturedProductsSkeleton from '../../common/FeaturedProductsSkeleton';
 import ProductCard from '../Product/ProductCard';
 import VariantsModal from '../Product/VariantsModal';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH - 32; // Full width minus margins
 const PRODUCT_CARD_WIDTH = 110;
 
 interface VendorProductCardProps {
@@ -37,37 +29,21 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
   onAddToCart,
 }) => {
   const { getColor, getTypography } = useTheme();
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showVariantsModal, setShowVariantsModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  // Use the new hook for featured products
+  const { featuredProducts, loading, error, refetch } = useFeaturedProducts({
+    shopId: vendor.shopId,
+    limit: 5,
+    autoFetch: true,
+  });
 
   const cartId = `vendor_${vendor.shopId}`;
   const cart = useCartStore(state => state.carts[cartId]);
   const increment = useCartStore(state => state.increment);
   const decrement = useCartStore(state => state.decrement);
 
-  useEffect(() => {
-    fetchFeaturedProducts();
-  }, [vendor.shopId]);
-
-  const fetchFeaturedProducts = async () => {
-    try {
-      setLoading(true);
-      const response = await productService.getFeaturedProducts(vendor.shopId, 5);
-      console.log('response', response);
-      if (response.success) {
-        setFeaturedProducts(response.data);
-      } else {
-        console.error('Failed to fetch featured products:', response.message);
-      }
-    } catch (error) {
-      console.error('Error fetching featured products:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  console.log('featuredProducts', featuredProducts);
   const handleAddToCart = (product: Product) => {
     // If product has multiple variants, show variants modal
     if ((product.numberOfVariants || 1) > 1) {
@@ -106,7 +82,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
   const renderProductItem = ({ item }: { item: Product }) => {
     const quantity = cart?.products[item.sku || item.id]?.quantity || 0;
     const isStoreClosed = !vendor.storeActive;
-    console.log('item', item);
+
     return (
       <ProductCard
         image={item.image}
@@ -123,6 +99,35 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
         disabled={isStoreClosed}
         numberOfVariants={item.numberOfVariants || 1}
         onPress={() => !isStoreClosed && onProductPress(item)}
+      />
+    );
+  };
+
+  const renderFeaturedProducts = () => {
+    if (loading) {
+      return <FeaturedProductsSkeleton count={5} />;
+    }
+
+    if (error) {
+      return <FeaturedProductsError error={error} onRetry={refetch} loading={loading} />;
+    }
+
+    if (featuredProducts.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No featured products available</Text>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        data={featuredProducts}
+        renderItem={renderProductItem}
+        keyExtractor={item => item.id}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.productsList}
       />
     );
   };
@@ -152,13 +157,11 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       color: getColor('text'),
       fontSize: getTypography('subtitle'),
       fontWeight: 'bold',
-      // marginBottom: 4,
       fontFamily: 'BricolageGrotesque-Regular',
     },
     vendorMeta: {
       flexDirection: 'row',
       alignItems: 'center',
-      // marginBottom: 4,
     },
     deliveryTime: {
       color: getColor('subText'),
@@ -192,7 +195,6 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       marginLeft: 4,
       fontFamily: 'BricolageGrotesque-Regular',
     },
-
     productsList: {
       paddingLeft: 0,
     },
@@ -253,10 +255,8 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       fontFamily: 'BricolageGrotesque-Regular',
     },
     exploreButton: {
-      // backgroundColor: getColor('primary'),
       borderRadius: 12,
       paddingHorizontal: 20,
-
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -265,8 +265,6 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
     exploreButtonText: {
       color: getColor('primary'),
       fontSize: getTypography('caption'),
-      // fontWeight: 'bold',
-      // marginRight: 6,
       fontFamily: 'BricolageGrotesque-Regular',
     },
     closedBanner: {
@@ -294,6 +292,16 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
     textDisabled: {
       opacity: 0.5,
     },
+    emptyContainer: {
+      paddingVertical: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyText: {
+      color: getColor('subText'),
+      fontSize: getTypography('caption'),
+      fontFamily: 'BricolageGrotesque-Regular',
+    },
   });
 
   return (
@@ -319,14 +327,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
 
       {/* Featured Products */}
       <View style={[!vendor.storeActive && styles.productsDisabled]}>
-        <FlatList
-          data={featuredProducts}
-          renderItem={renderProductItem}
-          keyExtractor={item => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.productsList}
-        />
+        {renderFeaturedProducts()}
       </View>
 
       {/* Explore More Button */}
