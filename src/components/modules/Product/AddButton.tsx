@@ -5,7 +5,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 
 interface AddButtonProps {
   onPress: () => void;
-  size?: 'extra-small' | 'small' | 'regular';
+  size?: 'xs' | 'small' | 'regular';
   numberOfVariants?: number;
   showVariantsCount?: boolean;
 }
@@ -19,7 +19,7 @@ const AddButton: React.FC<AddButtonProps> = ({
   const { getColor, getTypography } = useTheme();
 
   const hasMultipleVariants = numberOfVariants > 1;
-  const shouldShowBadge = (size === 'small' || size === 'extra-small') && hasMultipleVariants;
+  const shouldShowBadge = (size === 'small' || size === 'xs') && hasMultipleVariants;
   const shouldShowVariantsCount = size === 'regular' && showVariantsCount && hasMultipleVariants;
 
   const styles = StyleSheet.create({
@@ -30,13 +30,13 @@ const AddButton: React.FC<AddButtonProps> = ({
       borderWidth: 1,
       borderColor: getColor('primary'),
       borderRadius:
-        size === 'extra-small'
+        size === 'xs'
           ? getTypography('small') - 2
           : size === 'small'
           ? getTypography('small')
           : getTypography('caption'),
-      minWidth: size === 'extra-small' ? 40 : size === 'small' ? 50 : 70,
-      height: size === 'extra-small' ? 24 : size === 'small' ? 28 : 36,
+      minWidth: size === 'xs' ? 40 : size === 'small' ? 50 : 70,
+      height: size === 'xs' ? 24 : size === 'small' ? 28 : 36,
       paddingHorizontal: 0,
       paddingVertical: 0,
       flexDirection: 'row',
@@ -60,7 +60,7 @@ const AddButton: React.FC<AddButtonProps> = ({
       color: getColor('primary'),
       fontWeight: 'bold',
       fontSize:
-        size === 'extra-small'
+        size === 'xs'
           ? getTypography('small') - 2
           : size === 'small'
           ? getTypography('small')
@@ -72,7 +72,7 @@ const AddButton: React.FC<AddButtonProps> = ({
       marginLeft: 0,
       // marginBottom: 2,
       fontSize:
-        size === 'extra-small'
+        size === 'xs'
           ? getTypography('small') - 5
           : size === 'small'
           ? getTypography('small') - 3
@@ -81,7 +81,7 @@ const AddButton: React.FC<AddButtonProps> = ({
     variantsText: {
       color: getColor('subText'),
       fontSize:
-        size === 'extra-small'
+        size === 'xs'
           ? getTypography('small') - 8
           : size === 'small'
           ? getTypography('small') - 6
@@ -146,7 +146,7 @@ const AddButton: React.FC<AddButtonProps> = ({
   // Default buttons (no variants or single variant)
   return (
     <TouchableOpacity style={styles.addButton} onPress={onPress}>
-      {size === 'small' ? (
+      {size === 'xs' || size === 'small' ? (
         <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
       ) : (
         <Text style={styles.addButtonText}>ADD +</Text>
