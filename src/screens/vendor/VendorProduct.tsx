@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Images } from '../../assets';
 import { Product } from '../../assets/mock/products';
@@ -25,6 +26,7 @@ import ProductCard from '../../components/modules/Product/ProductCard';
 import ProductDetailModal from '../../components/modules/Product/ProductDetailModal';
 import VariantsModal from '../../components/modules/Product/VariantsModal';
 import { RootStackParamList } from '../../routes/AppStack';
+import { Variant } from '../../services/api/variantsService';
 import useCartStore from '../../store/cartStore';
 import { useProductsStore } from '../../store/productsStore';
 import { useTheme } from '../../theme/ThemeContext';
@@ -148,6 +150,34 @@ const VendorProduct: React.FC = () => {
   );
   const scrollY = useRef(new Animated.Value(0)).current;
   const categoryScrollRef = useRef<ScrollView>(null);
+
+  // Animated value for timing section opacity
+  const timingOpacity = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  // Animated value for timing section height
+  const timingHeight = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [40, 0],
+    extrapolate: 'clamp',
+  });
+
+  // Animated value for category images opacity
+  const categoryImageOpacity = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  // Animated value for category images height
+  const categoryImageHeight = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [32, 0],
+    extrapolate: 'clamp',
+  });
 
   // Auto-scroll to selected category when categories are loaded
   useEffect(() => {
@@ -280,7 +310,7 @@ const VendorProduct: React.FC = () => {
     });
   };
 
-  const handleVariantSelect = (variant: any) => {
+  const handleVariantSelect = (variant: Variant) => {
     if (!selectedProductForVariants) return;
 
     addToCart(cartId, {
@@ -411,18 +441,19 @@ const VendorProduct: React.FC = () => {
     },
     categoryContainer: {
       backgroundColor: getColor('background'),
-      paddingVertical: 12,
+      // paddingVertical: 12,
       paddingHorizontal: 16,
-      borderBottomWidth: 1,
+      borderBottomWidth: 2,
       borderBottomColor: getColor('border'),
     },
     categoryItem: {
       alignItems: 'center',
       marginRight: 24,
-      paddingVertical: 8,
+      paddingVertical: 4,
       paddingHorizontal: 12,
       borderBottomWidth: 3,
       borderBottomColor: 'transparent',
+      minHeight: 40, // Ensure consistent height even when image disappears
     },
     categoryItemActive: {
       borderBottomColor: getColor('primary'),
@@ -438,6 +469,7 @@ const VendorProduct: React.FC = () => {
       height: 32,
       marginBottom: 4,
       borderRadius: 16,
+      overflow: 'hidden', // Ensure smooth scaling
     },
     productList: {
       flex: 1,
@@ -530,12 +562,21 @@ const VendorProduct: React.FC = () => {
     categoryHeader: {
       width: '100%',
       backgroundColor: getColor('background'),
-      paddingVertical: 18,
+      // paddingVertical: 18,
       paddingHorizontal: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: getColor('border'),
+      // borderBottomWidth: 1,
+      // borderBottomColor: getColor('border'),
       marginTop: 16,
       marginBottom: 4,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    line: {
+      flex: 1,
+      height: 2,
+      marginHorizontal: 8,
+      opacity: 0.5,
     },
     categoryHeaderText: {
       color: getColor('primary'),
@@ -644,10 +685,18 @@ const VendorProduct: React.FC = () => {
           <View style={styles.mainContent}>
             {/* Category List (absolute overlay with animation) */}
 
-            <SectionDivider
-              text={`${vendor.openingTime} - ${vendor.closingTime}`}
-              textStyle={{ fontSize: 14, fontWeight: 'normal' }}
-            />
+            <Animated.View
+              style={{
+                opacity: timingOpacity,
+                height: timingHeight,
+                overflow: 'hidden',
+              }}
+            >
+              <SectionDivider
+                text={`${vendor.openingTime} - ${vendor.closingTime}`}
+                textStyle={{ fontSize: 14, fontWeight: 'normal' }}
+              />
+            </Animated.View>
 
             <View style={styles.categoryContainer}>
               <ScrollView
@@ -669,7 +718,17 @@ const VendorProduct: React.FC = () => {
                       style={{ alignItems: 'center' }}
                       onPress={() => handleCategorySelect(cat.id)}
                     >
-                      <Image source={cat.icon} style={styles.categoryIcon} />
+                      <Animated.Image
+                        source={cat.icon}
+                        style={[
+                          styles.categoryIcon,
+                          {
+                            opacity: categoryImageOpacity,
+                            height: categoryImageHeight,
+                            width: categoryImageHeight,
+                          },
+                        ]}
+                      />
                       <Text
                         style={{
                           color: !vendor.storeActive
@@ -703,6 +762,12 @@ const VendorProduct: React.FC = () => {
                     return (
                       <View style={styles.categoryHeader}>
                         <Text style={styles.categoryHeaderText}>{item.category.name}</Text>
+                        <LinearGradient
+                          colors={['transparent', '#888C99', 'transparent']}
+                          style={styles.line}
+                          start={{ x: 0, y: 0.5 }}
+                          end={{ x: 1, y: 0.5 }}
+                        />
                       </View>
                     );
                   } else if (item.type === 'products') {

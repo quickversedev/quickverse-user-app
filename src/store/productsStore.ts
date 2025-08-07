@@ -39,7 +39,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
     set({ loading: true, fullyLoaded: false, error: null });
     if (USE_PRODUCTS_MOCKS) {
       // Simulate network delay
-      await new Promise(res => setTimeout(res, 5500));
+      await new Promise(res => setTimeout(res, 500));
       const currentOffset = offset !== undefined ? offset : get().offset;
       const currentLimit = limit !== undefined ? limit : get().limit;
       const shopId = get().shopId;
