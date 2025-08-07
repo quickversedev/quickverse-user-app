@@ -1,10 +1,52 @@
 // mock/products.ts
 
-const categories = ['scoops', 'sundaes', 'cone', 'family'];
+const categories = [
+  'scoops',
+  'sundaes',
+  'cones',
+  'family',
+  'milkshakes',
+  'smoothies',
+  'icecream_cakes',
+  'frozen_yogurt',
+  'ice_pops',
+  'gelato',
+];
 const divisions = ['Cold', 'Hot', 'Ambient'];
-const subDivisions = ['Coffee', 'Tea', 'Juice', 'Biscuits', 'Ice Cream', 'Milk'];
-const brands = ['Nescafe', 'Amul', 'Parle', 'Nestle', 'Britannia', 'Haldiram'];
-const tags = ['BestSeller', 'New', 'Trending', 'Limited Offer', 'Popular'];
+const subDivisions = [
+  'Coffee',
+  'Tea',
+  'Juice',
+  'Biscuits',
+  'Ice Cream',
+  'Milk',
+  'Chocolate',
+  'Vanilla',
+  'Strawberry',
+  'Mint',
+];
+const brands = [
+  'Nescafe',
+  'Amul',
+  'Parle',
+  'Nestle',
+  'Britannia',
+  'Haldiram',
+  'Meridian',
+  'Kwality',
+  'Vadilal',
+  'Mother Dairy',
+];
+const tags = [
+  'BestSeller',
+  'New',
+  'Trending',
+  'Limited Offer',
+  'Popular',
+  'Premium',
+  'Organic',
+  'Sugar Free',
+];
 
 export type Product = {
   sku: string;
@@ -38,14 +80,86 @@ const generateProducts = (shopId: string, count: number, startIndex: number = 0)
     const division = divisions[index % divisions.length];
     const subDivision = subDivisions[index % subDivisions.length];
     const tag = tags[index % tags.length];
-    const name = `${brand} ${subDivision} ${index + 1}`;
 
-    const mrp = +(20 + Math.random() * 80).toFixed(2);
+    // Generate category-specific product names
+    let name = '';
+    switch (category) {
+      case 'scoops':
+        name = `${subDivision} Ice Cream Scoop`;
+        break;
+      case 'sundaes':
+        name = `${subDivision} Sundae Delight`;
+        break;
+      case 'cones':
+        name = `${subDivision} Cone`;
+        break;
+      case 'family':
+        name = `${subDivision} Family Pack`;
+        break;
+      case 'milkshakes':
+        name = `${subDivision} Milkshake`;
+        break;
+      case 'smoothies':
+        name = `${subDivision} Smoothie`;
+        break;
+      case 'icecream_cakes':
+        name = `${subDivision} Ice Cream Cake`;
+        break;
+      case 'frozen_yogurt':
+        name = `${subDivision} Frozen Yogurt`;
+        break;
+      case 'ice_pops':
+        name = `${subDivision} Ice Pop`;
+        break;
+      case 'gelato':
+        name = `${subDivision} Gelato`;
+        break;
+      default:
+        name = `${brand} ${subDivision} ${index + 1}`;
+    }
+
+    // Category-specific pricing
+    let basePrice = 20;
+    switch (category) {
+      case 'scoops':
+        basePrice = 30;
+        break;
+      case 'sundaes':
+        basePrice = 80;
+        break;
+      case 'cones':
+        basePrice = 40;
+        break;
+      case 'family':
+        basePrice = 150;
+        break;
+      case 'milkshakes':
+        basePrice = 60;
+        break;
+      case 'smoothies':
+        basePrice = 70;
+        break;
+      case 'icecream_cakes':
+        basePrice = 200;
+        break;
+      case 'frozen_yogurt':
+        basePrice = 50;
+        break;
+      case 'ice_pops':
+        basePrice = 25;
+        break;
+      case 'gelato':
+        basePrice = 45;
+        break;
+    }
+
+    const mrp = +(basePrice + Math.random() * 50).toFixed(2);
     const discount = +(Math.random() * 30).toFixed(2);
     const sellingPrice = +(mrp - (mrp * discount) / 100).toFixed(2);
     const gst = +(5 + Math.random() * 10).toFixed(2);
     const stock = Math.floor(Math.random() * 10);
     const numberOfVariants = Math.floor(Math.random() * 4) + 1;
+
     return {
       sku,
       shopId,
@@ -74,8 +188,8 @@ const generateProducts = (shopId: string, count: number, startIndex: number = 0)
   });
 };
 
-// Create 50 products for each shop
+// Create 100 products for each shop to ensure good distribution across 10 categories
 export const mockProducts: Product[] = [
-  ...generateProducts('4512', 50),
-  ...generateProducts('7890', 50, 50), // startIndex 50 to keep names unique
+  ...generateProducts('4512', 100),
+  ...generateProducts('7890', 100, 100), // startIndex 100 to keep names unique
 ];

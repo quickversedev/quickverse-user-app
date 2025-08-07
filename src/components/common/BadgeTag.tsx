@@ -68,7 +68,7 @@ const BadgeTag: React.FC<BadgeTagProps> = ({
 
   const formatValue = (value: string | number): string => {
     if (typeof value === 'number') {
-      return `${value}%`;
+      return `${Math.floor(value)}%`;
     }
     return value.toString();
   };

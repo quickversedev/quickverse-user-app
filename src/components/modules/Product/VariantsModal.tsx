@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import {
-  ActivityIndicator,
   Dimensions,
   GestureResponderEvent,
   Modal,
@@ -18,6 +17,7 @@ import useCartStore from '../../../store/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
 import SectionDivider from '../../common/SectionDivider';
+import VariantsModalSkeleton from '../../common/VariantsModalSkeleton';
 import AddButton from './AddButton';
 import QuantitySelector from './QuantitySelector';
 
@@ -205,15 +205,6 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       color: getColor('subText'),
       textDecorationLine: 'line-through',
     },
-    loadingContainer: {
-      padding: 40,
-      alignItems: 'center',
-    },
-    loadingText: {
-      color: getColor('text'),
-      fontSize: getTypography('body'),
-      marginTop: 12,
-    },
     errorContainer: {
       padding: 40,
       alignItems: 'center',
@@ -256,12 +247,7 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
 
   const renderContent = () => {
     if (loading) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={getColor('primary')} />
-          <Text style={styles.loadingText}>Loading variants...</Text>
-        </View>
-      );
+      return <VariantsModalSkeleton variantCount={3} />;
     }
 
     if (error) {

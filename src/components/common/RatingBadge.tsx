@@ -72,6 +72,11 @@ const RatingBadge: React.FC<RatingBadgeProps> = ({
     return Math.round(rating).toString();
   };
 
+  // Don't render badge if rating is 0 or less
+  if (rating <= 0) {
+    return null;
+  }
+
   return (
     <View style={[styles.container, style]}>
       <MaterialCommunityIcons

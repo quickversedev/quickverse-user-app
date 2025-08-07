@@ -10,3 +10,5 @@ export { default as PromoImage } from './promo/PromoImage';
 export { default as RatingBadge } from './RatingBadge';
 export { default as SectionDivider } from './SectionDivider';
 export { ThemeText } from './theme/ThemeText';
+export { default as VariantsModalSkeleton } from './VariantsModalSkeleton';
+export { default as VendorProductSkeleton } from './VendorProductSkeleton';

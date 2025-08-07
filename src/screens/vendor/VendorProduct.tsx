@@ -20,6 +20,7 @@ import { Images } from '../../assets';
 import { Product } from '../../assets/mock/products';
 import CartBar from '../../components/common/Cart/CartBar';
 import SectionDivider from '../../components/common/SectionDivider';
+import VendorProductSkeleton from '../../components/common/VendorProductSkeleton';
 import ProductCard from '../../components/modules/Product/ProductCard';
 import ProductDetailModal from '../../components/modules/Product/ProductDetailModal';
 import VariantsModal from '../../components/modules/Product/VariantsModal';
@@ -43,6 +44,12 @@ const allCategories: Category[] = [
   { id: 'sundaes', name: 'Sundaes', icon: Images.bg1 },
   { id: 'cones', name: 'Cones', icon: Images.bg1 },
   { id: 'family', name: 'Family Packs', icon: Images.bg1 },
+  { id: 'milkshakes', name: 'Milkshakes', icon: Images.bg1 },
+  { id: 'smoothies', name: 'Smoothies', icon: Images.bg1 },
+  { id: 'icecream_cakes', name: 'Ice Cream Cakes', icon: Images.bg1 },
+  { id: 'frozen_yogurt', name: 'Frozen Yogurt', icon: Images.bg1 },
+  { id: 'ice_pops', name: 'Ice Pops', icon: Images.bg1 },
+  { id: 'gelato', name: 'Gelato', icon: Images.bg1 },
 ];
 
 // Categories will be filtered based on fetched products
@@ -56,7 +63,6 @@ type VendorProductRouteProp = RouteProp<
 >;
 
 const { width } = Dimensions.get('window');
-const CATEGORY_WIDTH = 90;
 
 // Helper: create a row-based list with headers and product rows
 const getRowBasedProductList = (
@@ -95,10 +101,10 @@ const VendorProduct: React.FC = () => {
   // Fetch products on mount or when vendor.shopId changes
   useEffect(() => {
     resetProducts();
-    fetchProducts({ offset: 0, limit: 30 });
+    fetchProducts({ offset: 0, limit: 50 });
     // Optionally, setShopId(vendor.shopId) if you want to support dynamic shop switching
     // setShopId(vendor.shopId);
-    // fetchProducts({ offset: 0, limit: 30 });
+    // fetchProducts({ offset: 0, limit: 50 });
   }, [vendor.shopId]);
 
   // Only include categories that have at least one product (from fetched products)
@@ -141,8 +147,30 @@ const VendorProduct: React.FC = () => {
     filteredCategories.length > 0 ? filteredCategories[0].id : ''
   );
   const scrollY = useRef(new Animated.Value(0)).current;
-  const [hideCategory, setHideCategory] = useState(false);
-  const categoryAnim = useRef(new Animated.Value(0)).current; // 0: shown, -CATEGORY_WIDTH: hidden
+  const categoryScrollRef = useRef<ScrollView>(null);
+
+  // Auto-scroll to selected category when categories are loaded
+  useEffect(() => {
+    if (filteredCategories.length > 0 && selectedCategory && categoryScrollRef.current) {
+      const categoryIndex = filteredCategories.findIndex(cat => cat.id === selectedCategory);
+      if (categoryIndex !== -1) {
+        // Small delay to ensure the ScrollView is rendered
+        setTimeout(() => {
+          const categoryWidth = 120; // Approximate width of each category item
+          const screenWidth = width;
+          const scrollToX = Math.max(
+            0,
+            categoryIndex * categoryWidth - screenWidth / 2 + categoryWidth / 2
+          );
+
+          categoryScrollRef.current?.scrollTo({
+            x: scrollToX,
+            animated: true,
+          });
+        }, 100);
+      }
+    }
+  }, [filteredCategories, selectedCategory]);
 
   // Variants state
   const [variantsModalVisible, setVariantsModalVisible] = useState(false);
@@ -188,30 +216,39 @@ const VendorProduct: React.FC = () => {
   ).current;
   // --- End viewability ---
 
-  // On category select, scroll to its header
+  // On category select, scroll to its header and center the category
   const handleCategorySelect = (catId: string) => {
     setSelectedCategory(catId);
+
+    // Scroll to the category in the horizontal scroll view
+    const categoryIndex = filteredCategories.findIndex(cat => cat.id === catId);
+    if (categoryIndex !== -1 && categoryScrollRef.current) {
+      // Calculate the position to center the selected category
+      const categoryWidth = 120; // Approximate width of each category item
+      const screenWidth = width;
+      const scrollToX = Math.max(
+        0,
+        categoryIndex * categoryWidth - screenWidth / 2 + categoryWidth / 2
+      );
+
+      categoryScrollRef.current.scrollTo({
+        x: scrollToX,
+        animated: true,
+      });
+    }
+
+    // Scroll to the category header in the product list
     const idx = categoryIndexMap[catId];
     if (idx !== undefined && flatListRef.current) {
       flatListRef.current.scrollToIndex({ index: idx, animated: true });
     }
   };
 
-  // Animate category section in/out
-  useEffect(() => {
-    Animated.timing(categoryAnim, {
-      toValue: hideCategory ? -CATEGORY_WIDTH : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [hideCategory]);
-
-  // Listen to scroll and hide category when scrolling down (do not unhide on scroll up)
+  // Listen to scroll for category selection
   const handleScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
     useNativeDriver: false,
     listener: (event: { nativeEvent: { contentOffset: { y: number } } }) => {
       const offsetY = event.nativeEvent.contentOffset.y;
-      if (!hideCategory && offsetY > 10) setHideCategory(true);
       if (offsetY <= 0) {
         // At the very top, force select the first category
         if (filteredCategories.length > 0 && selectedCategory !== filteredCategories[0].id) {
@@ -274,24 +311,32 @@ const VendorProduct: React.FC = () => {
   // If there are no categories or products, show a message
   if (!productsLoading && filteredCategories.length === 0) {
     return (
-      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>No products available for this vendor.</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background') }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: getColor('text'), fontSize: 16 }}>
+            No products available for this vendor.
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   if (productsLoading) {
     return (
-      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Loading products...</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background') }}>
+        <VendorProductSkeleton showVendorCard={true} />
       </SafeAreaView>
     );
   }
 
   if (productsError) {
     return (
-      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Error loading products: {productsError}</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background') }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: getColor('error'), fontSize: 16, textAlign: 'center' }}>
+            Error loading products: {productsError}
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -365,36 +410,34 @@ const VendorProduct: React.FC = () => {
       marginLeft: 2,
     },
     categoryContainer: {
-      width: CATEGORY_WIDTH,
       backgroundColor: getColor('background'),
-      paddingTop: 8,
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      bottom: 0,
-      zIndex: 20,
-      elevation: 10,
-      shadowColor: '#000',
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: getColor('border'),
     },
     categoryItem: {
       alignItems: 'center',
-      marginBottom: 16,
+      marginRight: 24,
       paddingVertical: 8,
-      borderLeftWidth: 4,
-      borderLeftColor: 'transparent',
+      paddingHorizontal: 12,
+      borderBottomWidth: 3,
+      borderBottomColor: 'transparent',
     },
     categoryItemActive: {
-      borderLeftColor: getColor('primary'),
+      borderBottomColor: getColor('primary'),
       backgroundColor: getColor('card'),
-      borderRadius: 12,
+      borderRadius: 8,
+      shadowColor: getColor('primary'),
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 2,
     },
     categoryIcon: {
-      width: 40,
-      height: 40,
+      width: 32,
+      height: 32,
       marginBottom: 4,
-      borderRadius: 20,
+      borderRadius: 16,
     },
     productList: {
       flex: 1,
@@ -509,25 +552,7 @@ const VendorProduct: React.FC = () => {
       margin: 8,
       backgroundColor: 'transparent',
     },
-    unhideCategoryButton: {
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      backgroundColor: getColor('primary'),
-      borderTopRightRadius: 16,
-      borderBottomRightRadius: 16,
-      paddingVertical: 10,
-      paddingHorizontal: 8,
-      zIndex: 30,
-      elevation: 4,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    unhideCategoryText: {
-      color: getColor('background'),
-      fontSize: getTypography('body'),
-      marginRight: 4,
-    },
+
     closedBanner: {
       backgroundColor: getColor('error'),
       paddingVertical: 12,
@@ -624,43 +649,47 @@ const VendorProduct: React.FC = () => {
               textStyle={{ fontSize: 14, fontWeight: 'normal' }}
             />
 
-            <Animated.View
-              style={[
-                styles.categoryContainer,
-                { transform: [{ translateX: categoryAnim }] },
-                // Removed display logic using __getValue
-              ]}
-            >
-              <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.categoryContainer}>
+              <ScrollView
+                ref={categoryScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 8 }}
+              >
                 {filteredCategories.map(cat => (
-                  <TouchableOpacity
+                  <Animated.View
                     key={cat.id}
                     style={[
                       styles.categoryItem,
                       selectedCategory === cat.id && styles.categoryItemActive,
                       !vendor.storeActive && { opacity: 0.6 },
                     ]}
-                    onPress={() => handleCategorySelect(cat.id)}
                   >
-                    <Image source={cat.icon} style={styles.categoryIcon} />
-                    <Text
-                      style={{
-                        color: !vendor.storeActive
-                          ? getColor('subText')
-                          : selectedCategory === cat.id
-                          ? getColor('primary')
-                          : getColor('subText'),
-                        fontWeight: selectedCategory === cat.id ? 'bold' : 'normal',
-                      }}
+                    <TouchableOpacity
+                      style={{ alignItems: 'center' }}
+                      onPress={() => handleCategorySelect(cat.id)}
                     >
-                      {cat.name}
-                    </Text>
-                  </TouchableOpacity>
+                      <Image source={cat.icon} style={styles.categoryIcon} />
+                      <Text
+                        style={{
+                          color: !vendor.storeActive
+                            ? getColor('subText')
+                            : selectedCategory === cat.id
+                            ? getColor('primary')
+                            : getColor('subText'),
+                          fontWeight: selectedCategory === cat.id ? 'bold' : 'normal',
+                          fontSize: getTypography('caption'),
+                        }}
+                      >
+                        {cat.name}
+                      </Text>
+                    </TouchableOpacity>
+                  </Animated.View>
                 ))}
               </ScrollView>
-            </Animated.View>
+            </View>
             {/* Product List with headers */}
-            <Animated.View style={[styles.productList, { width: width }]}>
+            <Animated.View style={[styles.productList, { width: '100%' }]}>
               <Animated.FlatList
                 ref={flatListRef}
                 data={rowProductList}
@@ -686,6 +715,7 @@ const VendorProduct: React.FC = () => {
                             name={product.name}
                             price={product.sellingPrice}
                             mrp={product.mrp}
+                            discount={product.discount || 0}
                             rating={0}
                             onAdd={() => handleAddToCart(product)}
                             onIncrement={() => handleIncrement(product.sku)}
@@ -721,20 +751,6 @@ const VendorProduct: React.FC = () => {
                 onViewableItemsChanged={onViewableItemsChanged}
                 viewabilityConfig={viewabilityConfig}
               />
-              {/* Show button to unhide category when hidden */}
-              {hideCategory && (
-                <TouchableOpacity
-                  style={styles.unhideCategoryButton}
-                  onPress={() => setHideCategory(false)}
-                >
-                  <Text style={styles.unhideCategoryText}>{selectedCategory}</Text>
-                  <MaterialCommunityIcons
-                    name="chevron-right"
-                    size={24}
-                    color={getColor('background')}
-                  />
-                </TouchableOpacity>
-              )}
             </Animated.View>
           </View>
           {/* CartBar at the bottom */}
