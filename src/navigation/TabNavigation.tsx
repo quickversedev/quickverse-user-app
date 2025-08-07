@@ -2,7 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React, { createContext, useEffect, useRef } from 'react';
 import { Animated, Image, StyleSheet } from 'react-native';
 import { Icons } from '../assets';
-import DummyScreen2 from '../screens/Home/DummyScreen2';
+import ExploreScreen from '../screens/Explore/ExploreScreen';
 import HomeScreen from '../screens/Home/HomeScreen';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -117,7 +117,7 @@ const TabNavigation = () => {
 
         <Tab.Screen
           name="Explore"
-          component={DummyScreen2}
+          component={ExploreScreen}
           options={{
             tabBarIcon: ({ color }) => (
               <Image
