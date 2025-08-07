@@ -247,9 +247,64 @@ const PaymentSummary: React.FC<{ expanded: boolean; onToggle: () => void }> = ({
       backgroundColor: getColor('card'),
       borderRadius: theme.borderRadius.md,
       margin: 16,
-      padding: 12,
+      padding: 16,
     },
-    paymentSummaryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+    billDetailsTitle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    titleLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: getColor('border'),
+    },
+    titleText: {
+      color: getColor('text'),
+      fontWeight: 'bold',
+      fontSize: getTypography('subtitle'),
+      marginHorizontal: 12,
+      textTransform: 'uppercase',
+    },
+    billBreakdown: {
+      backgroundColor: getColor('background'),
+      borderRadius: theme.borderRadius.sm,
+      padding: 16,
+    },
+    billRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    billRowLast: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 0,
+    },
+    billLabel: {
+      color: getColor('text'),
+      fontSize: getTypography('body'),
+      fontWeight: '500',
+    },
+    billAmount: {
+      color: getColor('text'),
+      fontSize: getTypography('body'),
+      fontWeight: 'bold',
+    },
+    dottedLine: {
+      borderStyle: 'dashed',
+      borderWidth: 1,
+      borderColor: getColor('border'),
+      marginVertical: 8,
+    },
+    paymentSummaryHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
     paymentSummaryTitle: {
       color: getColor('button').default.background,
       fontWeight: 'bold',
@@ -280,7 +335,7 @@ const PaymentSummary: React.FC<{ expanded: boolean; onToggle: () => void }> = ({
         />
         <Text style={summaryStyles.paymentSummaryTitle}>Total Bill (Inc. Taxes and Charges)</Text>
         <View style={{ flex: 1 }} />
-        <Text style={summaryStyles.paymentSummaryAmount}>INR 232</Text>
+        <Text style={summaryStyles.paymentSummaryAmount}>₹186</Text>
         <MaterialCommunityIcons
           name={expanded ? 'chevron-up' : 'chevron-down'}
           size={22}
@@ -289,8 +344,27 @@ const PaymentSummary: React.FC<{ expanded: boolean; onToggle: () => void }> = ({
       </TouchableOpacity>
       {expanded && (
         <View style={summaryStyles.paymentSummaryDetails}>
-          <Text style={summaryStyles.paymentSummaryDetailText}>Subtotal: ₹200</Text>
-          <Text style={summaryStyles.paymentSummaryDetailText}>Tax: ₹32</Text>
+          <View style={summaryStyles.billDetailsTitle}>
+            <View style={summaryStyles.titleLine} />
+            <Text style={summaryStyles.titleText}>Bill Details</Text>
+            <View style={summaryStyles.titleLine} />
+          </View>
+          <View style={summaryStyles.billBreakdown}>
+            <View style={summaryStyles.billRow}>
+              <Text style={summaryStyles.billLabel}>Sub Total</Text>
+              <Text style={summaryStyles.billAmount}>₹158</Text>
+            </View>
+            <View style={summaryStyles.dottedLine} />
+            <View style={summaryStyles.billRow}>
+              <Text style={summaryStyles.billLabel}>Delivery Fee</Text>
+              <Text style={summaryStyles.billAmount}>₹28</Text>
+            </View>
+            <View style={summaryStyles.dottedLine} />
+            <View style={summaryStyles.billRowLast}>
+              <Text style={summaryStyles.billLabel}>Total Pay</Text>
+              <Text style={summaryStyles.billAmount}>₹186</Text>
+            </View>
+          </View>
         </View>
       )}
     </View>
