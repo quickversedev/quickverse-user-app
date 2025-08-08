@@ -1,5 +1,10 @@
-import { createStackNavigator } from '@react-navigation/stack';
+import {
+  CardStyleInterpolators,
+  createStackNavigator,
+  TransitionSpecs,
+} from '@react-navigation/stack';
 import React, { useState } from 'react';
+import { Platform } from 'react-native';
 import { AppInitializer } from '../components/common';
 import { useAuth } from '../contexts/login/AuthProvider';
 import ProfileStack from '../navigation/profileNavigation';
@@ -9,6 +14,7 @@ import CouponsScreen from '../screens/cart/CouponsScreen';
 import Registration from '../screens/login/Registration';
 import OrderDetailsScreen from '../screens/orders/OrderDetailsScreen';
 import PermissionsScreen from '../screens/permission/PermissionsScreen';
+import SearchScreen from '../screens/search/SearchScreen';
 import ProductDetailDemo from '../screens/vendor/ProductDetailDemo';
 import VendorProduct from '../screens/vendor/VendorProduct';
 import VendorProfile from '../screens/vendor/VendorProfile';
@@ -24,6 +30,7 @@ export type RootStackParamList = {
   Orders: undefined;
   OrderDetails: { orderId: string };
   Coupons: undefined;
+  Search: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -57,6 +64,35 @@ export const AppStack = () => {
         <Stack.Screen name="Cart" component={CartScreen} />
         <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
         <Stack.Screen name="Coupons" component={CouponsScreen} />
+        <Stack.Screen
+          name="Search"
+          component={SearchScreen}
+          options={{
+            animationEnabled: true,
+            gestureEnabled: true,
+            gestureDirection: 'vertical',
+            // Platform-specific card animations
+            cardStyleInterpolator: Platform.select({
+              ios: CardStyleInterpolators.forVerticalIOS,
+              android: CardStyleInterpolators.forFadeFromBottomAndroid,
+              default: CardStyleInterpolators.forFadeFromBottomAndroid,
+            }),
+            transitionSpec: Platform.select({
+              ios: {
+                open: TransitionSpecs.TransitionIOSSpec,
+                close: TransitionSpecs.TransitionIOSSpec,
+              },
+              android: {
+                open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+                close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+              },
+              default: {
+                open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+                close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+              },
+            }),
+          }}
+        />
       </Stack.Navigator>
     </AppInitializer>
   );

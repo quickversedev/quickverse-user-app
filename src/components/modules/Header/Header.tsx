@@ -1,3 +1,4 @@
+import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import {
   Animated,
@@ -23,6 +24,11 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ translateY, hiddenSectionsOpacity }) => {
   const { theme } = useTheme();
+  const navigation = useNavigation();
+
+  const handleSearchPress = () => {
+    navigation.navigate('Search' as never);
+  };
 
   return (
     <Animated.View
@@ -62,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({ translateY, hiddenSectionsOpacit
         <View style={styles.visibleSections}>
           {/* Section 2: Search Bar */}
           <View style={styles.searchSection}>
-            <SearchBar />
+            <SearchBar onPress={handleSearchPress} />
           </View>
 
           {/* Section 4: Navigation Tabs */}

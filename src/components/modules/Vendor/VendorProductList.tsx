@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import useCartStore from '../../../store/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -16,13 +16,21 @@ interface VendorProductListProps {
 const VendorProductList: React.FC<VendorProductListProps> = ({
   vendors,
   onVendorPress,
-  onProductPress,
+  onProductPress: _onProductPress,
 }) => {
   const { getColor } = useTheme();
   const addToCart = useCartStore(state => state.addToCart);
   const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
   const [selectedVendorForDetail, setSelectedVendorForDetail] = useState<Vendor | null>(null);
+
+  const sortedVendors = useMemo(() => {
+    // Active stores first, inactive at the bottom
+    return [...vendors].sort((a, b) => {
+      if (a.storeActive === b.storeActive) return 0;
+      return a.storeActive ? -1 : 1;
+    });
+  }, [vendors]);
 
   const handleAddToCart = (product: Product, vendor: Vendor) => {
     const cartId = `vendor_${vendor.shopId}`;
@@ -51,7 +59,7 @@ const VendorProductList: React.FC<VendorProductListProps> = ({
 
   return (
     <View style={styles.container}>
-      {vendors.map(vendor => (
+      {sortedVendors.map(vendor => (
         <View key={vendor.shopId}>
           <VendorProductCard
             vendor={vendor}
