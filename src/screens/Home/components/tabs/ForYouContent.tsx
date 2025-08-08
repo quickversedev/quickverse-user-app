@@ -69,6 +69,7 @@ export const ForYouContent: React.FC<ForYouContentProps> = ({
         vendors={vendors}
         onVendorPress={vendor => navigation.navigate('VendorProduct', { vendor })}
         onProductPress={_product => {}}
+        useFlatList={false} // Disable FlatList when nested in ScrollView
       />
     </ScrollView>
   );

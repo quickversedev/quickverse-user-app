@@ -81,6 +81,7 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
       onDecrement={() => onDecrement(item)}
       size="xs"
       onPress={() => onItemPress(item)}
+      backgroundColor={getColor('card')}
     />
   );
 

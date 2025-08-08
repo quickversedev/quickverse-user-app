@@ -702,6 +702,7 @@ const VendorProduct: React.FC = () => {
                               setSelectedProductForDetail(product);
                               setProductDetailModalVisible(true);
                             }}
+                            backgroundColor={getColor('background')}
                           />
                         ))}
                         {/* Fill empty columns if needed */}

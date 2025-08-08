@@ -190,6 +190,16 @@ const generateProducts = (shopId: string, count: number, startIndex: number = 0)
 
 // Create 100 products for each shop to ensure good distribution across 10 categories
 export const mockProducts: Product[] = [
-  ...generateProducts('4512', 100),
-  ...generateProducts('7890', 100, 100), // startIndex 100 to keep names unique
+  ...generateProducts('4512', 100), // BCRoy-713206 (Food)
+  ...generateProducts('7890', 100, 100), // Daily Mart (Grocery)
+  ...generateProducts('4514', 100, 200), // MediCare Pharmacy (Pharmacy)
+  ...generateProducts('4519', 100, 300), // Medi Pharma (Pharmacy)
+  ...generateProducts('4520', 100, 400), // Spice Garden (Food)
+  ...generateProducts('4521', 100, 500), // Fresh Basket (Grocery)
+  ...generateProducts('4522', 100, 600), // Health First (Pharmacy)
+  ...generateProducts('4523', 100, 700), // Taste of Punjab (Food)
+  ...generateProducts('4524', 100, 800), // Super Mart (Grocery)
+  ...generateProducts('4525', 100, 900), // Quick Meds (Pharmacy)
+  ...generateProducts('4526', 100, 1000), // South Indian Delights (Food)
+  ...generateProducts('4527', 100, 1100), // Organic Corner (Grocery)
 ];

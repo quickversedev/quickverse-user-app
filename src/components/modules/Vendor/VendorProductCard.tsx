@@ -99,6 +99,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
         disabled={isStoreClosed}
         numberOfVariants={item.numberOfVariants || 1}
         onPress={() => !isStoreClosed && onProductPress(item)}
+        backgroundColor={getColor('card')}
       />
     );
   };

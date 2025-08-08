@@ -413,6 +413,7 @@ const SuggestedItems: React.FC<{ items: SuggestedItem[]; onAdd: (idx: number) =>
             size="xs"
             numberOfVariants={1}
             showVariantsCount={false}
+            backgroundColor={getColor('card')}
           />
         ))}
       </ScrollView>

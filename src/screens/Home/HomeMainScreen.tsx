@@ -24,7 +24,6 @@ const HomeMainScreen = () => {
       contentContainerStyle: styles.scrollContent,
       showsVerticalScrollIndicator: false,
     };
-    console.log('selectedTab', selectedTab);
     switch (selectedTab || 'ForYou') {
       case 'food':
         return <FoodContent {...contentProps} />;
@@ -36,7 +35,6 @@ const HomeMainScreen = () => {
         return <ForYouContent {...contentProps} />;
     }
   };
-  console.log('HomeScreen', selectedTab);
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -61,7 +59,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: HEADER_HEIGHT,
-    paddingBottom: 20,
+    paddingBottom: 160, // Tab bar (60px) + floating cart stack (56px) + extra space for comfort
   },
 });
 

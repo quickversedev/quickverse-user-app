@@ -27,6 +27,7 @@ interface ProductCardProps {
   numberOfVariants?: number;
   showVariantsCount?: boolean;
   onPress?: () => void;
+  backgroundColor?: string;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
@@ -45,12 +46,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
   numberOfVariants = 1,
   showVariantsCount = false,
   onPress,
+  backgroundColor,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
 
   const styles = StyleSheet.create({
     card: {
-      backgroundColor: getColor('background'),
+      backgroundColor: backgroundColor || getColor('background'),
       borderRadius: theme.borderRadius.sm,
       // padding: 12,
       margin: CARD_MARGIN,
