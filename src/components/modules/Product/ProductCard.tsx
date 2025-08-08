@@ -46,12 +46,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
   showVariantsCount = false,
   onPress,
 }) => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor, getTypography, theme } = useTheme();
 
   const styles = StyleSheet.create({
     card: {
-      backgroundColor: getColor('card'),
-      borderRadius: size === 'xs' ? 12 : 18,
+      backgroundColor: getColor('background'),
+      borderRadius: theme.borderRadius.sm,
       // padding: 12,
       margin: CARD_MARGIN,
       width: size === 'xs' ? EXTRA_SMALL_CARD_WIDTH : CARD_WIDTH,
@@ -66,7 +66,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     imageContainer: {
       width: '100%',
       aspectRatio: 1,
-      borderRadius: size === 'xs' ? 10 : 16,
+      borderRadius: theme.borderRadius.sm,
       overflow: 'hidden',
       marginBottom: size === 'xs' ? 4 : 8,
       position: 'relative',
@@ -76,7 +76,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     image: {
       width: '100%',
       height: '100%',
-      borderRadius: size === 'xs' ? 10 : 16,
+      borderRadius: theme.borderRadius.sm,
     },
     ratingBadge: {
       position: 'absolute',

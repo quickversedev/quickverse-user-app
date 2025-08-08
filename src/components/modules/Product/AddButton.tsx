@@ -16,7 +16,7 @@ const AddButton: React.FC<AddButtonProps> = ({
   numberOfVariants = 1,
   showVariantsCount = false,
 }) => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor, getTypography, theme } = useTheme();
 
   const hasMultipleVariants = numberOfVariants > 1;
   const shouldShowBadge = (size === 'small' || size === 'xs') && hasMultipleVariants;
@@ -29,16 +29,10 @@ const AddButton: React.FC<AddButtonProps> = ({
       bottom: 2,
       borderWidth: 1,
       borderColor: getColor('primary'),
-      borderRadius:
-        size === 'xs'
-          ? getTypography('small') - 2
-          : size === 'small'
-          ? getTypography('small')
-          : getTypography('caption'),
-      minWidth: size === 'xs' ? 40 : size === 'small' ? 50 : 70,
+      borderRadius: theme.borderRadius.sm,
+      minWidth: size === 'xs' ? 40 : size === 'small' ? 40 : 60,
       height: size === 'xs' ? 24 : size === 'small' ? 28 : 36,
-      paddingHorizontal: 0,
-      paddingVertical: 0,
+
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -52,9 +46,6 @@ const AddButton: React.FC<AddButtonProps> = ({
     },
     addButtonWithVariants: {
       flexDirection: 'column',
-      // height: size === 'small' ? 40 : 48,
-      // minWidth: size === 'small' ? 60 : 80,
-      // paddingVertical: 4,
     },
     addButtonText: {
       color: getColor('primary'),

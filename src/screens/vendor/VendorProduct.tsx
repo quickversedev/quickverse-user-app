@@ -763,7 +763,7 @@ const VendorProduct: React.FC = () => {
                       <View style={styles.categoryHeader}>
                         <Text style={styles.categoryHeaderText}>{item.category.name}</Text>
                         <LinearGradient
-                          colors={['transparent', '#888C99', 'transparent']}
+                          colors={[getColor('primary'), 'transparent']}
                           style={styles.line}
                           start={{ x: 0, y: 0.5 }}
                           end={{ x: 1, y: 0.5 }}
