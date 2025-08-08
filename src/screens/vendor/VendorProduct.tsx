@@ -5,18 +5,14 @@ import {
   Animated,
   Dimensions,
   FlatList,
-  Image,
   Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Images } from '../../assets';
 import { Product } from '../../assets/mock/products';
 import CartBar from '../../components/common/Cart/CartBar';
@@ -25,6 +21,10 @@ import VendorProductSkeleton from '../../components/common/VendorProductSkeleton
 import ProductCard from '../../components/modules/Product/ProductCard';
 import ProductDetailModal from '../../components/modules/Product/ProductDetailModal';
 import VariantsModal from '../../components/modules/Product/VariantsModal';
+import CategoryHeader from '../../components/vendor/CategoryHeader';
+import CategoryTabs, { CategoryItem } from '../../components/vendor/CategoryTabs';
+import VendorHeaderCard from '../../components/vendor/VendorHeaderCard';
+import VendorTopBar from '../../components/vendor/VendorTopBar';
 import { RootStackParamList } from '../../routes/AppStack';
 import { Variant } from '../../services/api/variantsService';
 import useCartStore from '../../store/cartStore';
@@ -33,11 +33,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
 
 // Category type for local use
-type Category = {
-  id: string;
-  name: string;
-  icon: number;
-};
+type Category = CategoryItem;
 
 // Category type remains, Product is now imported from mock data
 // Mock categories
@@ -130,20 +126,6 @@ const VendorProduct: React.FC = () => {
     (sum, p) => sum + p.quantity,
     0
   );
-
-  const renderRating = () => {
-    if (!vendor.rating || vendor.rating === 0) {
-      return <Text style={styles.ratingText}>Not Rated</Text>;
-    }
-    return <Text style={styles.ratingText}>{vendor.rating}</Text>;
-  };
-
-  const formatAddress = () => {
-    if (vendor.shopAddress) {
-      return vendor.shopAddress.city;
-    }
-    return 'Location';
-  };
 
   const [selectedCategory, setSelectedCategory] = useState(
     filteredCategories.length > 0 ? filteredCategories[0].id : ''
@@ -389,7 +371,7 @@ const VendorProduct: React.FC = () => {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: getColor('card'),
-      borderRadius: 16,
+      borderRadius: 12,
       margin: 16,
       // marginBottom: 12,
       padding: 12,
@@ -402,7 +384,7 @@ const VendorProduct: React.FC = () => {
     vendorLogo: {
       width: 48,
       height: 48,
-      borderRadius: 24,
+      borderRadius: 12,
       marginRight: 12,
       backgroundColor: getColor('border'),
     },
@@ -483,8 +465,8 @@ const VendorProduct: React.FC = () => {
       marginBottom: 16,
       padding: 12,
       shadowColor: getColor('shadow').color,
-      shadowOpacity: 0.08,
-      shadowRadius: 4,
+      shadowOpacity: getColor('shadow').opacity,
+      shadowRadius: getColor('shadow').radius,
       elevation: 2,
     },
     productImage: {
@@ -643,36 +625,14 @@ const VendorProduct: React.FC = () => {
       >
         <View style={styles.container}>
           {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>{vendor.name}</Text>
-            <View style={{ flex: 1 }} />
-
-            <MaterialCommunityIcons name="heart-outline" size={24} color={getColor('primary')} />
-          </View>
+          <VendorTopBar title={vendor.name} onBack={() => navigation.goBack()} />
 
           {/* Vendor Card */}
-          <TouchableOpacity
-            style={[styles.vendorCard, !vendor.storeActive && styles.vendorCardClosed]}
+          <VendorHeaderCard
+            vendor={vendor}
             onPress={() => navigation.navigate('VendorProfile', { vendor })}
-          >
-            <Image source={{ uri: vendor.logo }} style={styles.vendorLogo} />
-            <View style={styles.vendorInfo}>
-              <Text style={styles.vendorName}>{vendor.name}</Text>
-              <View style={styles.vendorMeta}>
-                <Text style={styles.vendorMetaText}>⏱ {vendor.preparationTime}</Text>
-                <Text style={styles.vendorMetaText}>| {formatAddress()}</Text>
-                <View style={styles.ratingBox}>
-                  <MaterialCommunityIcons name="star" size={14} color="#fff" />
-                  {renderRating()}
-                </View>
-                <Text style={styles.vendorMetaText}>(242+)</Text>
-              </View>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={28} color={getColor('primary')} />
-          </TouchableOpacity>
+            style={!vendor.storeActive ? styles.vendorCardClosed : undefined}
+          />
 
           {/* Store Status Banner */}
           {!vendor.storeActive && (
@@ -698,55 +658,14 @@ const VendorProduct: React.FC = () => {
               />
             </Animated.View>
 
-            <View style={styles.categoryContainer}>
-              <ScrollView
-                ref={categoryScrollRef}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 8 }}
-              >
-                {filteredCategories.map(cat => (
-                  <Animated.View
-                    key={cat.id}
-                    style={[
-                      styles.categoryItem,
-                      selectedCategory === cat.id && styles.categoryItemActive,
-                      !vendor.storeActive && { opacity: 0.6 },
-                    ]}
-                  >
-                    <TouchableOpacity
-                      style={{ alignItems: 'center' }}
-                      onPress={() => handleCategorySelect(cat.id)}
-                    >
-                      <Animated.Image
-                        source={cat.icon}
-                        style={[
-                          styles.categoryIcon,
-                          {
-                            opacity: categoryImageOpacity,
-                            height: categoryImageHeight,
-                            width: categoryImageHeight,
-                          },
-                        ]}
-                      />
-                      <Text
-                        style={{
-                          color: !vendor.storeActive
-                            ? getColor('subText')
-                            : selectedCategory === cat.id
-                            ? getColor('primary')
-                            : getColor('subText'),
-                          fontWeight: selectedCategory === cat.id ? 'bold' : 'normal',
-                          fontSize: getTypography('caption'),
-                        }}
-                      >
-                        {cat.name}
-                      </Text>
-                    </TouchableOpacity>
-                  </Animated.View>
-                ))}
-              </ScrollView>
-            </View>
+            <CategoryTabs
+              categories={filteredCategories}
+              selectedCategoryId={selectedCategory}
+              onSelect={handleCategorySelect}
+              iconOpacity={categoryImageOpacity}
+              iconSize={categoryImageHeight}
+              disabled={!vendor.storeActive}
+            />
             {/* Product List with headers */}
             <Animated.View style={[styles.productList, { width: '100%' }]}>
               <Animated.FlatList
@@ -759,17 +678,7 @@ const VendorProduct: React.FC = () => {
                 }}
                 renderItem={({ item }) => {
                   if (item.type === 'header') {
-                    return (
-                      <View style={styles.categoryHeader}>
-                        <Text style={styles.categoryHeaderText}>{item.category.name}</Text>
-                        <LinearGradient
-                          colors={[getColor('primary'), 'transparent']}
-                          style={styles.line}
-                          start={{ x: 0, y: 0.5 }}
-                          end={{ x: 1, y: 0.5 }}
-                        />
-                      </View>
-                    );
+                    return <CategoryHeader title={item.category.name} />;
                   } else if (item.type === 'products') {
                     return (
                       <View style={styles.productRow}>

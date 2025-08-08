@@ -16,6 +16,7 @@ import OrderDetailsScreen from '../screens/orders/OrderDetailsScreen';
 import PermissionsScreen from '../screens/permission/PermissionsScreen';
 import SearchScreen from '../screens/search/SearchScreen';
 import ProductDetailDemo from '../screens/vendor/ProductDetailDemo';
+import VendorDetails from '../screens/vendor/VendorDetails';
 import VendorProduct from '../screens/vendor/VendorProduct';
 import VendorProfile from '../screens/vendor/VendorProfile';
 import { Vendor } from '../types/vendor';
@@ -25,6 +26,7 @@ export type RootStackParamList = {
   Profile: undefined;
   VendorProduct: { vendor: Vendor };
   VendorProfile: { vendor: Vendor };
+  VendorDetails: { vendor: Vendor };
   ProductDetailDemo: undefined;
   Cart: { cartId: string } | undefined;
   Orders: undefined;
@@ -60,6 +62,38 @@ export const AppStack = () => {
         <Stack.Screen name="Profile" component={ProfileStack} />
         <Stack.Screen name="VendorProduct" component={VendorProduct} />
         <Stack.Screen name="VendorProfile" component={VendorProfile} />
+        <Stack.Screen
+          name="VendorDetails"
+          component={VendorDetails}
+          options={{
+            presentation: 'modal',
+            animationEnabled: true,
+            gestureEnabled: true,
+            gestureDirection: 'vertical-inverted',
+            cardStyleInterpolator: ({ current, layouts }) => ({
+              cardStyle: {
+                transform: [
+                  {
+                    translateY: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-layouts.screen.height, 0],
+                    }),
+                  },
+                ],
+              },
+              overlayStyle: {
+                opacity: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 0.1],
+                }),
+              },
+            }),
+            transitionSpec: {
+              open: { animation: 'timing', config: { duration: 280 } },
+              close: { animation: 'timing', config: { duration: 240 } },
+            },
+          }}
+        />
         <Stack.Screen name="ProductDetailDemo" component={ProductDetailDemo} />
         <Stack.Screen name="Cart" component={CartScreen} />
         <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
@@ -71,7 +105,6 @@ export const AppStack = () => {
             animationEnabled: true,
             gestureEnabled: true,
             gestureDirection: 'vertical',
-            // Platform-specific card animations
             cardStyleInterpolator: Platform.select({
               ios: CardStyleInterpolators.forVerticalIOS,
               android: CardStyleInterpolators.forFadeFromBottomAndroid,

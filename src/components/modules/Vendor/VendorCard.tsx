@@ -28,7 +28,7 @@ const VendorCard: React.FC<VendorCardProps> = ({
   size = 'medium',
   disabled = false,
 }) => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor, getTypography, theme } = useTheme();
 
   // Calculate card width based on size
   const getCardWidth = (): number => {
@@ -46,7 +46,7 @@ const VendorCard: React.FC<VendorCardProps> = ({
   // Calculate image height based on card width
   const getImageHeight = (): number => {
     const cardWidth = typeof size === 'number' ? size : getCardWidth();
-    return cardWidth * 0.7; // 60% of card width for aspect ratio
+    return cardWidth * (7 / 10); // 10:7 aspect ratio (width:height)
   };
 
   const cardWidth = typeof size === 'number' ? size : getCardWidth();
@@ -56,14 +56,14 @@ const VendorCard: React.FC<VendorCardProps> = ({
     vendorCard: {
       width: cardWidth,
       backgroundColor: getColor('card'),
-      borderRadius: 12,
+      borderRadius: theme.borderRadius.md,
       marginBottom: 16,
       overflow: 'hidden',
       elevation: 3,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
+      shadowColor: getColor('shadow').color,
+      shadowOffset: getColor('shadow').offset,
+      shadowOpacity: getColor('shadow').opacity,
+      shadowRadius: getColor('shadow').radius,
     },
     vendorImage: {
       width: '100%',
