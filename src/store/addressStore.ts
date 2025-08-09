@@ -19,7 +19,7 @@ const useAddressStore = create<AddressStore>((set, get) => ({
       const response = await axiosInstance.get('/v2/getLocalAddress', {
         headers: {
           SessionKey:
-            'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJtb2JpbGUiOiI5MTk3NjUwMDgxMTAiLCJpYXQiOjE3NTIzOTcwNTgsImV4cCI6MTc4MzkzMzA1OH0.vW0upVYdLBWCuy7Qinxgoz2a68TSdyEidjJtZDDCeaU',
+            'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjdXN0b21lcklkIjoiNzMwMTIzMzQzMjA4NjYiLCJ1c2VyVHlwZSI6IkNVU1RPTUVSIiwiaWF0IjoxNzU0NjYyNjc1LCJleHAiOjE3ODYxOTg2NzV9.xomsHlGlBa3dady6jvKe2cEkrJDYKpFvjh0w2Up5TAM',
         },
       });
       console.log('response', response.data);

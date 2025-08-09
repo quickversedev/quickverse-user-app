@@ -1,4 +1,9 @@
-import axios, { AxiosResponse, CancelTokenSource, InternalAxiosRequestConfig } from 'axios';
+import axios, {
+  AxiosError,
+  AxiosResponse,
+  CancelTokenSource,
+  InternalAxiosRequestConfig,
+} from 'axios';
 import { ApiError, RetryConfig } from './axios.types';
 
 // API Configuration
@@ -9,7 +14,7 @@ const API_CONFIG = {
   timeoutMessage: 'Request timed out. Please check your internet connection and try again.',
   headers: {
     'Content-Type': 'application/json',
-    Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+    'Request-Origin': 'CUSTOMER',
   },
 } as const;
 
@@ -77,7 +82,7 @@ axiosInstance.interceptors.response.use(
     }
     return response;
   },
-  async (error: any) => {
+  async (error: unknown) => {
     // Don't retry cancelled requests
     if (axios.isCancel(error)) {
       return Promise.reject({
@@ -87,7 +92,8 @@ axiosInstance.interceptors.response.use(
       });
     }
 
-    const config = error?.config as RetryConfig | undefined;
+    const axiosError = error as AxiosError;
+    const config = axiosError?.config as RetryConfig | undefined;
 
     // Clean up cancel token after error
     if (config) {
@@ -97,16 +103,61 @@ axiosInstance.interceptors.response.use(
 
     // If no config exists or retry count exceeded, reject with error
     if (!config || !API_CONFIG.retries || (config.retryCount ?? 0) >= API_CONFIG.retries) {
-      if (error?.code === 'ECONNABORTED' && error?.message?.includes('timeout')) {
+      if (axiosError?.code === 'ECONNABORTED' && axiosError?.message?.includes('timeout')) {
         return Promise.reject({
           status: 408,
           message: API_CONFIG.timeoutMessage,
           isCancelled: false,
         });
       }
+
+      // Handle network errors
+      if (axiosError?.code === 'ERR_NETWORK') {
+        return Promise.reject({
+          status: 0,
+          message: 'Network error. Please check your internet connection.',
+          isCancelled: false,
+        });
+      }
+
+      // Handle server errors (5xx)
+      if (axiosError?.response?.status && axiosError.response.status >= 500) {
+        return Promise.reject({
+          status: axiosError.response.status,
+          message: 'Server error. Please try again later.',
+          isCancelled: false,
+        });
+      }
+
+      // Handle client errors (4xx)
+      if (
+        axiosError?.response?.status &&
+        axiosError.response.status >= 400 &&
+        axiosError.response.status < 500
+      ) {
+        const responseData = axiosError.response.data as { message?: string } | undefined;
+        const errorMessage =
+          responseData?.message ||
+          (axiosError.response.status === 401
+            ? 'Unauthorized. Please login again.'
+            : axiosError.response.status === 403
+            ? 'Access forbidden.'
+            : axiosError.response.status === 404
+            ? 'Resource not found.'
+            : axiosError.response.status === 422
+            ? 'Invalid data provided.'
+            : 'Client error occurred.');
+
+        return Promise.reject({
+          status: axiosError.response.status,
+          message: errorMessage,
+          isCancelled: false,
+        });
+      }
+
       return Promise.reject({
-        status: error?.response?.status || 500,
-        message: error?.response?.data?.message || 'An error occurred',
+        status: axiosError?.response?.status || 500,
+        message: 'An unexpected error occurred',
         isCancelled: false,
       });
     }
@@ -146,7 +197,18 @@ export const apiCall = async <T>(
         }, customTimeout || API_CONFIG.timeout);
       }),
     ]);
-    return (response as AxiosResponse<T>)?.data;
+
+    // Validate response data
+    const responseData = (response as AxiosResponse<T>)?.data;
+    if (responseData === undefined || responseData === null) {
+      throw {
+        status: 500,
+        message: 'Invalid response data received from server',
+        isCancelled: false,
+      };
+    }
+
+    return responseData;
   } catch (error: unknown) {
     if (axios.isCancel(error)) {
       // Handle cancelled request
@@ -158,6 +220,7 @@ export const apiCall = async <T>(
     }
 
     const apiError = error as ApiError;
+    console.log('apiError', apiError);
     if (apiError?.status === 408) {
       throw apiError;
     }
@@ -167,6 +230,33 @@ export const apiCall = async <T>(
       isCancelled: apiError?.isCancelled || false,
     };
   }
+};
+
+// Helper function to add extra headers to requests
+export const withHeaders = (extraHeaders: Record<string, string>) => {
+  return {
+    headers: extraHeaders,
+  };
+};
+
+// Helper function to create a request with custom headers
+export const createRequestWithHeaders = (
+  method: 'get' | 'post' | 'put' | 'delete' | 'patch',
+  url: string,
+  data?: unknown,
+  extraHeaders?: Record<string, string>
+) => {
+  const config: { headers?: Record<string, string> } = {};
+
+  if (extraHeaders) {
+    config.headers = extraHeaders;
+  }
+
+  if (data && method !== 'get') {
+    return axiosInstance[method](url, data, config);
+  }
+
+  return axiosInstance[method](url, config);
 };
 
 // Cleanup function to remove all cancel tokens

@@ -1,10 +1,11 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import authService from '../../services/api/authService';
 import {
-  getAuthToken,
+  AuthSession,
+  getAuthSession,
   getNewUser,
   getSkipLoginFlow,
-  setAuthToken,
+  setAuthSession,
   setNewUser,
   setSkipLoginFlow,
   StorageService,
@@ -12,7 +13,7 @@ import {
 import { Address } from '../../types/address';
 
 type AuthContextData = {
-  authData?: string;
+  authData?: AuthSession;
   loading: boolean;
   skipUserLogin?: boolean;
   isNewUser: boolean | undefined;
@@ -23,7 +24,8 @@ type AuthContextData = {
   verifyOtp(phoneNumber: string, otp: string, verificationId: string): Promise<void>;
   signOut(): void;
   signUp(fullName: string, campusId: string, email: string, dob: string): Promise<void>;
-  setAuthData(token: string): void;
+  setAuthData(data: AuthSession): void;
+  resetAuthState(): void;
 };
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -33,7 +35,7 @@ type AuthProviderProps = {
 };
 
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [authData, setAuthData] = useState<string | undefined>();
+  const [authData, setAuthData] = useState<AuthSession | undefined>();
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState<boolean | undefined>();
   const [skipUserLogin, setSkipUserLogin] = useState<boolean | undefined>(false);
@@ -42,15 +44,14 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const loadStorageData = async () => {
       try {
-        const storedToken = getAuthToken();
-        if (storedToken) {
-          setAuthData(storedToken);
+        const storedSession = getAuthSession();
+        if (storedSession) {
+          setAuthData(storedSession);
         }
         const skipLoginFlow = getSkipLoginFlow();
         setSkipUserLogin(skipLoginFlow);
-        const isNewUser = getNewUser();
-        setIsNewUser(isNewUser);
-
+        const storedIsNewUser = getNewUser();
+        setIsNewUser(storedIsNewUser);
         // Load selected address from storage
         const storedAddress = StorageService.getItem('selectedAddress');
         if (storedAddress) {
@@ -76,9 +77,9 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setSkipUserLogin(skipLogin);
   };
 
-  const setAuth = (token: string): void => {
-    setAuthData(token);
-    setAuthToken(token);
+  const setAuth = (data: AuthSession): void => {
+    setAuthData(data);
+    setAuthSession(data);
   };
 
   const setNewUserstate = (newUser: boolean): void => {
@@ -112,32 +113,27 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     verificationId: string
   ): Promise<void> => {
     const response = await authService.verifyOtp(phoneNumber, otp, verificationId);
-    // const token = response?.session?.token;
-    const { token, newUser } = response?.session;
+    const { token, phoneNumber: phone, name, newUser } = response?.session;
 
-    if (token) {
-      setAuth(token);
+    if (token && phone) {
+      setAuth({ jwt: token, phone, username: name || '' });
     }
     if (newUser) setNewUserstate(newUser);
   };
 
   const signUp = async (
-    _fullName: string,
-    _campusId: string,
-    _email: string,
-    _dob: string
+    fullName: string,
+    gender: string,
+    email: string,
+    dob: string
   ): Promise<void> => {
     try {
-      // const registration = await authService.signUp(
-      //   fullName,
-      //   dob,
-      //   campusId,
-      //   email,
-      // );
-      // console.log('registration', registration);
+      if (authData) {
+        await authService.signUp(fullName, dob, gender, email, authData.jwt, authData.phone);
+      }
       setNewUserstate(false);
     } catch (error) {
-      console.error('error while registration', error);
+      throw error;
     }
   };
 
@@ -160,7 +156,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         verifyOtp,
         signOut,
         signUp,
-        setAuthData,
+        setAuthData: setAuth,
+        resetAuthState,
       }}
     >
       {children}

@@ -19,7 +19,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { Images } from '../../assets';
+import { Icons, Images } from '../../assets';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { LoginStackParamList } from '../../navigation/LoginNavigation';
@@ -29,7 +29,7 @@ const { height } = Dimensions.get('window');
 type LoginScreenNavigationProp = StackNavigationProp<LoginStackParamList, 'LoginScreen'>;
 
 const Registration: React.FC = () => {
-  const navigation = useNavigation<LoginScreenNavigationProp>();
+  const _navigation = useNavigation<LoginScreenNavigationProp>();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [gender, setGender] = useState('');
@@ -46,7 +46,7 @@ const Registration: React.FC = () => {
   const auth = useAuth();
   const { theme } = useTheme();
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
+  const handleDateChange = (event: { type: string }, selectedDate?: Date) => {
     const currentDate = selectedDate || dateOfBirth;
 
     if (Platform.OS === 'android') {
@@ -66,6 +66,10 @@ const Registration: React.FC = () => {
       month: '2-digit',
       year: 'numeric',
     });
+  };
+
+  const formatDateForAPI = (date: Date): string => {
+    return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
   };
 
   const validateFields = () => {
@@ -113,23 +117,53 @@ const Registration: React.FC = () => {
     return valid;
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!validateFields()) {
       return;
     }
 
     setLoading(true);
-    if (fullName && email && gender && dateOfBirth) {
-      try {
-        auth.signUp(fullName, gender, email, dateOfBirth.toDateString());
-      } catch (error) {
-        // Handle error appropriately
-        console.error('Registration error:', error);
-        Alert.alert('Error', 'Failed to create account. Please try again.');
-      } finally {
-        setLoading(false);
+
+    try {
+      if (fullName && email && gender && dateOfBirth) {
+        // Format date as YYYY-MM-DD
+        const formattedDate = formatDateForAPI(dateOfBirth);
+        await auth.signUp(fullName, gender, email, formattedDate);
+        // Optional success feedback
       }
+    } catch (error: unknown) {
+      // Map to friendly error
+      const err = error as { status?: number; message?: string; code?: string };
+      let title = 'Registration Failed';
+      let message = 'Failed to create account. Please try again.';
+
+      if (err?.code === 'ERR_NETWORK' || err?.status === 0) {
+        title = 'Network Error';
+        message = 'Please check your internet connection and try again.';
+      } else if (err?.status === 400) {
+        title = 'Invalid Information';
+        message = err.message || 'Please check your information and try again.';
+      } else if (err?.status === 409) {
+        title = 'Account Already Exists';
+        message = 'An account with this information already exists.';
+      } else if (err?.status === 422) {
+        title = 'Invalid Data';
+        message = err.message || 'Please check your information and try again.';
+      } else if (err?.status && err.status >= 500) {
+        title = 'Server Error';
+        message = 'Our servers are experiencing issues. Please try again later.';
+      } else if (err?.message) {
+        message = err.message;
+      }
+
+      Alert.alert(title, message, [{ text: 'OK' }]);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleBack = () => {
+    auth.resetAuthState();
   };
 
   const dismissKeyboard = () => {
@@ -186,6 +220,19 @@ const Registration: React.FC = () => {
       top: Platform.OS === 'ios' ? 60 : 80,
       alignItems: 'center',
       width: '100%',
+    },
+    backButton: {
+      position: 'absolute',
+      left: 16,
+      top: Platform.OS === 'ios' ? -10 : -30,
+      padding: 8,
+      zIndex: 10,
+    },
+    backIcon: {
+      width: 24,
+      height: 24,
+      resizeMode: 'contain',
+      tintColor: theme.colors.text,
     },
     topLogo: {
       width: 100,
@@ -280,6 +327,9 @@ const Registration: React.FC = () => {
       paddingVertical: 14,
       marginTop: 24,
     },
+    registerButtonLoading: {
+      opacity: 0.7,
+    },
     registerText: {
       textAlign: 'center',
       fontWeight: 'bold',
@@ -301,6 +351,9 @@ const Registration: React.FC = () => {
                 resizeMode="cover"
               />
               <View style={styles.logoContainer}>
+                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                  <Image source={Icons.backArrow} style={styles.backIcon} />
+                </TouchableOpacity>
                 <Image style={styles.topLogo} source={Images.logoQv} />
               </View>
 
@@ -378,16 +431,16 @@ const Registration: React.FC = () => {
                     <TouchableOpacity
                       style={[
                         styles.genderButton,
-                        gender === 'Male' && styles.genderButtonSelected,
+                        gender === 'MALE' && styles.genderButtonSelected,
                       ]}
                       onPress={() => {
-                        setGender('Male');
+                        setGender('MALE');
                         setErrors(prev => ({ ...prev, gender: '' }));
                       }}
                     >
                       <ThemeText
                         variant="body"
-                        color={gender === 'Male' ? theme.colors.background : theme.colors.text}
+                        color={gender === 'MALE' ? theme.colors.background : theme.colors.text}
                       >
                         Male
                       </ThemeText>
@@ -395,16 +448,16 @@ const Registration: React.FC = () => {
                     <TouchableOpacity
                       style={[
                         styles.genderButton,
-                        gender === 'Female' && styles.genderButtonSelected,
+                        gender === 'FEMALE' && styles.genderButtonSelected,
                       ]}
                       onPress={() => {
-                        setGender('Female');
+                        setGender('FEMALE');
                         setErrors(prev => ({ ...prev, gender: '' }));
                       }}
                     >
                       <ThemeText
                         variant="body"
-                        color={gender === 'Female' ? theme.colors.background : theme.colors.text}
+                        color={gender === 'FEMALE' ? theme.colors.background : theme.colors.text}
                       >
                         Female
                       </ThemeText>
@@ -412,16 +465,16 @@ const Registration: React.FC = () => {
                     <TouchableOpacity
                       style={[
                         styles.genderButton,
-                        gender === 'Other' && styles.genderButtonSelected,
+                        gender === 'OTHER' && styles.genderButtonSelected,
                       ]}
                       onPress={() => {
-                        setGender('Other');
+                        setGender('OTHER');
                         setErrors(prev => ({ ...prev, gender: '' }));
                       }}
                     >
                       <ThemeText
                         variant="body"
-                        color={gender === 'Other' ? theme.colors.background : theme.colors.text}
+                        color={gender === 'OTHER' ? theme.colors.background : theme.colors.text}
                       >
                         Other
                       </ThemeText>
@@ -479,7 +532,7 @@ const Registration: React.FC = () => {
                 )}
 
                 <TouchableOpacity
-                  style={[styles.registerButton, loading && { opacity: 0.7 }]}
+                  style={[styles.registerButton, loading && styles.registerButtonLoading]}
                   onPress={handleRegister}
                   disabled={loading}
                 >

@@ -81,9 +81,8 @@ const OTPScreen: React.FC = () => {
     setLoading(true);
     try {
       await auth.verifyOtp(phoneNumber, value, currentVerificationId);
-      Alert.alert('Success', 'OTP verified successfully');
     } catch (err) {
-      Alert.alert('Error', 'Login failed');
+      console.error('login otp error', err);
     } finally {
       setLoading(false);
     }

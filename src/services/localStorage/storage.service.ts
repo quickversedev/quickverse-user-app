@@ -17,26 +17,49 @@ export const getSkipLoginFlow = (): boolean | undefined => {
   return storage.getBoolean(SKIP_LOGIN_KEY);
 };
 
-/**
- * Sets auth token string in storage
- * @param token string
- */
-export const setAuthToken = (token: string): void => {
-  storage.set(AUTH_DATA_KEY, token);
+export type AuthSession = {
+  jwt: string;
+  phone: string;
+  username: string;
 };
 
 /**
- * Gets auth token string from storage
- * @returns string | undefined
+ * Stores auth session object in storage
  */
-export const getAuthToken = (): string | undefined => {
-  return storage.getString(AUTH_DATA_KEY) ?? undefined;
+export const setAuthSession = (session: AuthSession): void => {
+  try {
+    storage.set(AUTH_DATA_KEY, JSON.stringify(session));
+  } catch {
+    // noop
+  }
 };
 
 /**
- * Removes auth token from storage
+ * Loads auth session object from storage
  */
-export const removeAuthToken = (): void => {
+export const getAuthSession = (): AuthSession | undefined => {
+  const raw = storage.getString(AUTH_DATA_KEY);
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as AuthSession;
+    if (
+      parsed &&
+      typeof parsed.jwt === 'string' &&
+      typeof parsed.phone === 'string' &&
+      typeof parsed.username === 'string'
+    ) {
+      return parsed;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Removes auth session from storage
+ */
+export const removeAuthSession = (): void => {
   storage.delete(AUTH_DATA_KEY);
 };
 /**
