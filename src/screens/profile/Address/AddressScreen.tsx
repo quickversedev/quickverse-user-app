@@ -1,8 +1,10 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
   FlatList,
+  Image,
   Platform,
   StyleSheet,
   Text,
@@ -11,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Icons } from '../../../assets';
 import { useAddress } from '../../../hooks/useAddress';
 import { useTheme } from '../../../theme/ThemeContext';
 import { NewAddress } from '../../../types/address';
@@ -20,6 +23,7 @@ import AddressCard from './AddressCard';
 const { width, height } = Dimensions.get('window');
 
 const AddressScreen = () => {
+  const navigation = useNavigation();
   const { getColor, getTypography, theme } = useTheme();
   const { addresses, loading, error, addAddress, retryFetch } = useAddress();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -44,6 +48,7 @@ const AddressScreen = () => {
       paddingHorizontal: Math.max(16, width * 0.04),
       borderBottomWidth: 1,
       borderBottomColor: getColor('border'),
+      justifyContent: 'center',
       ...Platform.select({
         android: {
           elevation: 2,
@@ -56,7 +61,26 @@ const AddressScreen = () => {
         },
       }),
     },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerSide: {
+      width: 40,
+      alignItems: 'flex-start',
+      justifyContent: 'center',
+      paddingVertical: 4,
+      paddingHorizontal: 4,
+    },
+    backIcon: {
+      width: 24,
+      height: 24,
+      resizeMode: 'contain',
+      tintColor: getColor('text'),
+    },
     headerTitle: {
+      flex: 1,
       fontSize: Math.min(getTypography('h1'), 24),
       fontWeight: 'bold',
       color: getColor('text'),
@@ -157,6 +181,10 @@ const AddressScreen = () => {
     },
   });
 
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
   const renderEmptyState = () => (
     <View style={themedStyles.emptyContainer}>
       <Text
@@ -188,14 +216,22 @@ const AddressScreen = () => {
       accessibilityLabel="Saved addresses screen"
     >
       <View style={themedStyles.header}>
-        <Text
-          style={themedStyles.headerTitle}
-          accessible={true}
-          accessibilityRole="header"
-          accessibilityLabel="Saved addresses"
-        >
-          Saved Addresses
-        </Text>
+        <View style={themedStyles.headerRow}>
+          <View style={themedStyles.headerSide}>
+            <TouchableOpacity onPress={handleBack}>
+              <Image source={Icons.backArrow} style={themedStyles.backIcon} />
+            </TouchableOpacity>
+          </View>
+          <Text
+            style={themedStyles.headerTitle}
+            accessible={true}
+            accessibilityRole="header"
+            accessibilityLabel="Saved addresses"
+          >
+            Saved Addresses
+          </Text>
+          <View style={themedStyles.headerSide} />
+        </View>
       </View>
 
       <View style={themedStyles.content}>

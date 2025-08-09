@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { mockProducts, Product } from '../assets/mock/products';
-import axiosInstance from '../config/api/axios.config';
+import { mockProducts, Product } from '../../assets/mock/products';
+import axiosInstance from '../../config/api/axios.config';
 
 interface ProductsStore {
   products: Product[];

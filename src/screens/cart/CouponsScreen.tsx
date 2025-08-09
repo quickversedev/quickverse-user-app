@@ -15,8 +15,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
 
-import useCartStore from '../../store/cartStore';
-import useCouponStore, { Coupon } from '../../store/couponStore';
+import useCartStore from '../../store/cart/cartStore';
+import useCouponStore, { Coupon } from '../../store/cart/couponStore';
 
 const CouponCard: React.FC<{
   coupon: Coupon;

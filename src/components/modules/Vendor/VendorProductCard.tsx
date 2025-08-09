@@ -3,13 +3,13 @@ import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Icons } from '../../../assets';
 import useFeaturedProducts from '../../../hooks/useFeaturedProducts';
-import useCartStore from '../../../store/cartStore';
+import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
 import { RatingBadge } from '../../common';
-import FeaturedProductsError from '../../common/FeaturedProductsError';
-import FeaturedProductsSkeleton from '../../common/FeaturedProductsSkeleton';
+import FeaturedProductsError from '../../common/featuredProducts/FeaturedProductsError';
+import FeaturedProductsSkeleton from '../../common/featuredProducts/FeaturedProductsSkeleton';
 import ProductCard from '../Product/ProductCard';
 import VariantsModal from '../Product/VariantsModal';
 

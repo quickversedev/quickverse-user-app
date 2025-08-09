@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../config/api/axios.config';
-import { Coupon } from '../store/couponStore';
+import { Coupon } from '../store/cart/couponStore';
 
 export interface GetOffersResponse {
   success: boolean;

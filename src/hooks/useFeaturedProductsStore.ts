@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import useFeaturedProductsStore from '../store/featuredProductsStore';
+import useFeaturedProductsStore from '../store/products/featuredProductsStore';
 import { Product } from '../types/product';
 
 interface UseFeaturedProductsStoreHookReturn {

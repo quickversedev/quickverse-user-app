@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { mockOrders } from '../assets/mock/orders';
-import axiosInstance from '../config/api/axios.config';
-import { Order, OrderFilters, OrderResponse, OrderStore } from '../types/order';
+import { mockOrders } from '../../assets/mock/orders';
+import axiosInstance from '../../config/api/axios.config';
+import { Order, OrderFilters, OrderResponse, OrderStore } from '../../types/order';
 
 const ORDER_API_URL = '/v2/getSMZBIZOrders';
 

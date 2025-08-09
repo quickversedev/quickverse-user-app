@@ -13,11 +13,11 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { Product } from '../../../assets/mock/products';
 import { useVariants } from '../../../hooks/useVariants';
 import { Variant } from '../../../services/api/variantsService';
-import useCartStore from '../../../store/cartStore';
+import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
 import SectionDivider from '../../common/SectionDivider';
-import VariantsModalSkeleton from '../../common/VariantsModalSkeleton';
+import VariantsModalSkeleton from '../Vendor/VariantsModalSkeleton';
 import AddButton from './AddButton';
 import QuantitySelector from './QuantitySelector';
 

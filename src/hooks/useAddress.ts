@@ -1,4 +1,4 @@
-import useAddressStore from '../store/addressStore';
+import useAddressStore from '../store/address/addressStore';
 import { NewAddress } from '../types/address';
 
 export const useAddress = () => {

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { RootStackParamList } from '../../../routes/AppStack';
-import useCartStore from '../../../store/cartStore';
+import useCartStore from '../../../store/cart/cartStore';
 import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
 

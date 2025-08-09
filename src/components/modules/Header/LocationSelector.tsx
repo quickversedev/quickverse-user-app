@@ -36,7 +36,7 @@ export const LocationSelector = () => {
       };
 
       const closestAddressResult = findClosestAddressWithinRadius(currentLocation, addresses, 200);
-
+      console.log('closestAddressResult', closestAddressResult);
       if (closestAddressResult) {
         setSelectedAddress(closestAddressResult.address as Address);
       }

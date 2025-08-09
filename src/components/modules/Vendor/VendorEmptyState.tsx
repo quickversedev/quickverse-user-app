@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { Images } from '../../assets';
-import { useTheme } from '../../theme/ThemeContext';
+import { Images } from '../../../assets';
+import { useTheme } from '../../../theme/ThemeContext';
 
 interface VendorEmptyStateProps {
   category: string;

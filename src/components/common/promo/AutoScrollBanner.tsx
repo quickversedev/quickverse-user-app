@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet } from 'react-native';
-import PromoBanner from './promo/PromoBanner';
+import PromoBanner from './PromoBanner';
 
 const { width } = Dimensions.get('window');
 

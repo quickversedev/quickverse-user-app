@@ -9,11 +9,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Images } from '../../assets';
-import { useOrders } from '../../hooks/useOrders';
-import { useTheme } from '../../theme/ThemeContext';
-import { AppNavigationProp } from '../../types/navigation';
-import { Order } from '../../types/order';
+import { Images } from '../../../assets';
+import { useOrders } from '../../../hooks/useOrders';
+import { useTheme } from '../../../theme/ThemeContext';
+import { AppNavigationProp } from '../../../types/navigation';
+import { Order } from '../../../types/order';
 
 interface OrderListProps {
   onOrderPress?: (order: Order) => void;

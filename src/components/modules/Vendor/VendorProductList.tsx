@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, StyleSheet, View, ViewToken } from 'react-native';
 import useFeaturedProductsStoreHook from '../../../hooks/useFeaturedProductsStore';
-import useCartStore from '../../../store/cartStore';
+import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';

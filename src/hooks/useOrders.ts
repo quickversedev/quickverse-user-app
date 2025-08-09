@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import useOrderStore from '../store/orderStore';
+import useOrderStore from '../store/cart/orderStore';
 import { Order, OrderFilters } from '../types/order';
 
 export const useOrders = () => {

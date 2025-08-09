@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import productService from '../services/productService';
-import { Product } from '../types/product';
+import productService from '../../services/productService';
+import { Product } from '../../types/product';
 
 interface CachedFeaturedProducts {
   products: Product[];

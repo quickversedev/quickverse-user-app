@@ -11,10 +11,10 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import AutoScrollBanner from '../../../../components/common/AutoScrollBanner';
 import CategoryLogo from '../../../../components/common/CategoryLogo';
-import VendorEmptyState from '../../../../components/common/VendorEmptyState';
+import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
 import VendorCard from '../../../../components/modules/Vendor/VendorCard';
+import VendorEmptyState from '../../../../components/modules/Vendor/VendorEmptyState';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import useVendorStore from '../../../../store/vendorStore';
 import { useTheme } from '../../../../theme/ThemeContext';

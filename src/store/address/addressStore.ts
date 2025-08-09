@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import axiosInstance from '../config/api/axios.config';
-import { AddressStore, NewAddress } from '../types/address';
+import axiosInstance from '../../config/api/axios.config';
+import { AddressStore, NewAddress } from '../../types/address';
 
 const useAddressStore = create<AddressStore>((set, get) => ({
   // Initial state

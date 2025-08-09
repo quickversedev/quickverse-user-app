@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import useFeaturedProductsStoreHook from '../../hooks/useFeaturedProductsStore';
-import { useTheme } from '../../theme/ThemeContext';
-import { Product } from '../../types/product';
+import useFeaturedProductsStoreHook from '../../../hooks/useFeaturedProductsStore';
+import { useTheme } from '../../../theme/ThemeContext';
+import { Product } from '../../../types/product';
 
 interface FeaturedProductsDemoProps {
   shopIds: string[];

@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { NativeScrollEvent, NativeSyntheticEvent, ScrollView, ViewStyle } from 'react-native';
 
-import AutoScrollBanner from '../../../../components/common/AutoScrollBanner';
+import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
 import SectionDivider from '../../../../components/common/SectionDivider';
 import VendorList from '../../../../components/modules/Vendor/VendorList';
 import VendorProductList from '../../../../components/modules/Vendor/VendorProductList';

@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
-import ProductItemOnSearch from '../common/ProductItemOnSearch';
+import ProductItemOnSearch from '../common/search/ProductItemOnSearch';
 import SectionDivider from '../common/SectionDivider';
 import VendorCard from '../modules/Vendor/VendorCard';
 

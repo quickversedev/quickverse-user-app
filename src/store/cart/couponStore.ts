@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import couponService from '../services/couponService';
+import couponService from '../../services/couponService';
 
 export interface Coupon {
   id: string;

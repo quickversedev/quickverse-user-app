@@ -2,7 +2,7 @@ import React from 'react';
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { BadgeTag } from '../../common';
-import RatingBadge from '../../common/RatingBadge';
+import RatingBadge from '../../common/badges/RatingBadge';
 import AddButton from './AddButton';
 import QuantitySelector from './QuantitySelector';
 

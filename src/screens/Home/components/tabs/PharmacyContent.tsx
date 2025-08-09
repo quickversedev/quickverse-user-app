@@ -14,8 +14,8 @@ import {
 } from 'react-native';
 import CategoryLogo from '../../../../components/common/CategoryLogo';
 import PromoBanner from '../../../../components/common/promo/PromoBanner';
-import VendorEmptyState from '../../../../components/common/VendorEmptyState';
 import VendorCard from '../../../../components/modules/Vendor/VendorCard';
+import VendorEmptyState from '../../../../components/modules/Vendor/VendorEmptyState';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import useVendorStore from '../../../../store/vendorStore';
 import { useTheme } from '../../../../theme/ThemeContext';

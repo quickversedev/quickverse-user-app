@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme/ThemeContext';
+import { useTheme } from '../../../theme/ThemeContext';
 import RatingBadge from './RatingBadge';
 
 const RatingBadgeDemo: React.FC = () => {
@@ -14,7 +14,7 @@ const RatingBadgeDemo: React.FC = () => {
       backgroundColor: getColor('background'),
     },
     title: {
-      fontSize: getTypography('title'),
+      fontSize: getTypography('body'),
       fontWeight: 'bold',
       color: getColor('text'),
       marginBottom: 16,
