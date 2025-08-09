@@ -1,75 +1,52 @@
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
-import {
-  Image,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Images } from '../../assets';
+import LoginButton from '../../components/common/LoginButton';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
-
-type FeatureItem = {
-  id: string;
-  title: string;
-  icon: string;
-  onPress: () => void;
-};
-
-const FeatureButton = ({ item }: { item: FeatureItem }) => {
-  const { getColor } = useTheme();
-  return (
-    <TouchableOpacity
-      style={[styles.featureButton, { backgroundColor: getColor('card') }]}
-      onPress={item.onPress}
-    >
-      <View style={styles.featureContent}>
-        <Icon name={item.icon} size={24} color={getColor('text')} />
-        <Text style={[styles.featureText, { color: getColor('text') }]}>{item.title}</Text>
-      </View>
-      <Icon name="chevron-right" size={24} color={getColor('text')} />
-    </TouchableOpacity>
-  );
-};
+import FeatureButton, { FeatureItem } from './components/FeatureButton';
+import ProfileHeader from './components/ProfileHeader';
 
 const ProfileScreen = () => {
-  const { signOut } = useAuth();
+  const { signOut, authData } = useAuth();
   const { getColor } = useTheme();
   const navigation = useNavigation<AppNavigationProp>();
 
+  const isLoggedIn = Boolean(authData?.jwt);
+
   const features: FeatureItem[] = [
+    ...(isLoggedIn
+      ? [
+          {
+            id: 'addresses',
+            title: 'Addresses',
+            icon: 'map-marker-outline',
+            onPress: () => {
+              navigation.navigate('Orders');
+            },
+          },
+          {
+            id: 'orders',
+            title: 'Orders',
+            icon: 'package-variant',
+            onPress: () => {
+              navigation.navigate('Orders');
+            },
+          },
+        ]
+      : []),
     {
-      id: 'feature1',
-      title: 'Addresses',
-      icon: 'map-marker-outline',
-      onPress: () => {
-        navigation.navigate('Addresses');
-      },
-    },
-    {
-      id: 'feature2',
-      title: 'Orders',
-      icon: 'package-variant',
-      onPress: () => {
-        navigation.navigate('Orders');
-      },
-    },
-    {
-      id: 'feature3',
-      title: 'Feature 03',
-      icon: 'circle-outline',
+      id: 'help',
+      title: 'Help',
+      icon: 'help-circle-outline',
       onPress: () => {},
     },
     {
-      id: 'feature4',
-      title: 'Feature 04',
-      icon: 'circle-outline',
+      id: 'about',
+      title: 'About Us',
+      icon: 'information-outline',
       onPress: () => {},
     },
   ];
@@ -77,23 +54,21 @@ const ProfileScreen = () => {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: getColor('background') }]}>
       <View style={styles.container}>
-        {/* User Info Section with Logo */}
-        <View style={styles.userSection}>
-          <View style={styles.userInfoContainer}>
-            <View style={[styles.avatarContainer, { backgroundColor: getColor('card') }]}>
-              <Icon name="account" size={40} color={getColor('text')} />
-            </View>
-            <View style={styles.userInfo}>
-              <Text style={[styles.userName, { color: getColor('text') }]} numberOfLines={1}>
-                Rahul Sharma
-              </Text>
-              <Text style={[styles.userPhone, { color: getColor('subText') }]} numberOfLines={1}>
-                +91 97XXX XXXXX
-              </Text>
-            </View>
-          </View>
-          <Image source={Images.logoQv} style={styles.logo} resizeMode="contain" />
-        </View>
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: getColor('card') }]}
+          onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          activeOpacity={0.7}
+        >
+          <Icon name="arrow-left" size={24} color={getColor('text')} />
+        </TouchableOpacity>
+
+        {isLoggedIn ? (
+          <ProfileHeader username={authData?.username} phone={authData?.phone} />
+        ) : (
+          <LoginButton />
+        )}
 
         {/* Features Section */}
         <View style={[styles.featuresContainer, { backgroundColor: getColor('card') }]}>
@@ -103,16 +78,18 @@ const ProfileScreen = () => {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity
-          style={[styles.logoutButton, { backgroundColor: getColor('card') }]}
-          onPress={signOut}
-        >
-          <View style={styles.featureContent}>
-            <Icon name="logout" size={24} color="#FF4444" />
-            <Text style={[styles.logoutText]}>Logout</Text>
-          </View>
-          <Icon name="chevron-right" size={24} color="#FF4444" />
-        </TouchableOpacity>
+        {isLoggedIn && (
+          <TouchableOpacity
+            style={[styles.logoutButton, { backgroundColor: getColor('card') }]}
+            onPress={signOut}
+          >
+            <View style={styles.featureContent}>
+              <Icon name="logout" size={24} color="#FF4444" />
+              <Text style={[styles.logoutText]}>Logout</Text>
+            </View>
+            <Icon name="chevron-right" size={24} color="#FF4444" />
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -126,6 +103,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   userSection: {
     flexDirection: 'row',
@@ -169,14 +166,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 16,
-  },
-  featureButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   featureContent: {
     flexDirection: 'row',

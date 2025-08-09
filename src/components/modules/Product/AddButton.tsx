@@ -1,7 +1,9 @@
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useTheme } from '../../../theme/ThemeContext';
+import LoginButton from '../../common/LoginButton';
 
 interface AddButtonProps {
   onPress: () => void;
@@ -17,12 +19,55 @@ const AddButton: React.FC<AddButtonProps> = ({
   showVariantsCount = false,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
+  const { authData } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const hasMultipleVariants = numberOfVariants > 1;
   const shouldShowBadge = (size === 'small' || size === 'xs') && hasMultipleVariants;
   const shouldShowVariantsCount = size === 'regular' && showVariantsCount && hasMultipleVariants;
 
+  const handleSafePress = () => {
+    if (authData?.jwt) {
+      onPress();
+    } else {
+      setShowLoginModal(true);
+    }
+  };
+
   const styles = StyleSheet.create({
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+    },
+    modalCard: {
+      width: '100%',
+      borderRadius: theme.borderRadius.md,
+      padding: 16,
+    },
+    modalTitle: {
+      fontSize: getTypography('h2'),
+      fontWeight: '600',
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    modalMessage: {
+      fontSize: getTypography('body'),
+      textAlign: 'center',
+      marginBottom: 12,
+    },
+    modalCancel: {
+      marginTop: 8,
+      alignSelf: 'center',
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+    },
+    modalCancelText: {
+      fontSize: getTypography('body'),
+      fontWeight: '600',
+    },
     addButton: {
       position: 'absolute',
       right: 2,
@@ -109,40 +154,75 @@ const AddButton: React.FC<AddButtonProps> = ({
     },
   });
 
+  const renderLoginModal = () => (
+    <Modal
+      visible={showLoginModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowLoginModal(false)}
+    >
+      <View style={styles.modalBackdrop}>
+        <View style={[styles.modalCard, { backgroundColor: getColor('card') }]}>
+          <Text style={[styles.modalTitle, { color: getColor('text') }]}>Login required</Text>
+          <Text style={[styles.modalMessage, { color: getColor('subText') }]}>
+            Please log in to add items to your cart.
+          </Text>
+          <LoginButton onPress={() => setShowLoginModal(false)} />
+          <TouchableOpacity style={styles.modalCancel} onPress={() => setShowLoginModal(false)}>
+            <Text style={[styles.modalCancelText, { color: getColor('primary') }]}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
   // Small button with variants - show badge
   if (shouldShowBadge) {
     return (
-      <View style={{ position: 'relative' }}>
-        <TouchableOpacity style={styles.addButton} onPress={onPress}>
-          <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{numberOfVariants}</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
+      <>
+        <View style={{ position: 'relative' }}>
+          <TouchableOpacity style={styles.addButton} onPress={handleSafePress}>
+            <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{numberOfVariants}</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+        {renderLoginModal()}
+      </>
     );
   }
 
   // Regular button with variants - show "X OPTIONS"
   if (shouldShowVariantsCount) {
     return (
-      <TouchableOpacity style={[styles.addButton, styles.addButtonWithVariants]} onPress={onPress}>
-        <Text style={[styles.addButtonText, styles.addButtonTextWithVariants]}>ADD</Text>
-        <View style={styles.divider} />
-        <Text style={styles.variantsText}>{numberOfVariants} OPTIONS</Text>
-      </TouchableOpacity>
+      <>
+        <TouchableOpacity
+          style={[styles.addButton, styles.addButtonWithVariants]}
+          onPress={handleSafePress}
+        >
+          <Text style={[styles.addButtonText, styles.addButtonTextWithVariants]}>ADD</Text>
+          <View style={styles.divider} />
+          <Text style={styles.variantsText}>{numberOfVariants} OPTIONS</Text>
+        </TouchableOpacity>
+        {renderLoginModal()}
+      </>
     );
   }
 
   // Default buttons (no variants or single variant)
   return (
-    <TouchableOpacity style={styles.addButton} onPress={onPress}>
-      {size === 'xs' || size === 'small' ? (
-        <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
-      ) : (
-        <Text style={styles.addButtonText}>ADD +</Text>
-      )}
-    </TouchableOpacity>
+    <>
+      <TouchableOpacity style={styles.addButton} onPress={handleSafePress}>
+        {size === 'xs' || size === 'small' ? (
+          <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
+        ) : (
+          <Text style={styles.addButtonText}>ADD +</Text>
+        )}
+      </TouchableOpacity>
+
+      {renderLoginModal()}
+    </>
   );
 };
 

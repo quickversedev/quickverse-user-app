@@ -1,17 +1,18 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React from 'react';
 import { Platform, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SectionDivider } from '../../components/common';
+import { SectionDivider } from '../../../components/common';
 import {
   BillSummaryCard,
   HelpCard,
   OrderHeader,
   OrderInfoCard,
   OrderItemsSection,
-} from '../../components/common/OrderDetails';
-import { useOrders } from '../../hooks/useOrders';
-import { useTheme } from '../../theme/ThemeContext';
-import { AppNavigationProp } from '../../types/navigation';
+  OrderProgress,
+} from '../../../components/common/OrderDetails';
+import { useOrders } from '../../../hooks/useOrders';
+import { useTheme } from '../../../theme/ThemeContext';
+import { AppNavigationProp } from '../../../types/navigation';
 
 const OrderDetailsScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
@@ -86,6 +87,8 @@ const OrderDetailsScreen = () => {
           showsVerticalScrollIndicator={false}
         >
           <OrderInfoCard order={selectedOrder} getStatusColor={getStatusColor} />
+
+          {selectedOrder.status !== 'cancelled' && <OrderProgress status={selectedOrder.status} />}
 
           <SectionDivider text="Order Details" />
 

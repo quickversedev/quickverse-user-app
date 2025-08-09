@@ -24,7 +24,8 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
   const { fetchVendors, loading: vendorLoading, error: vendorError } = useVendorStore();
 
   const { fetchAddresses, loading: addressLoading, error: addressError } = useAddress();
-  const { setSelectedAddress, selectedAddress } = useAuth();
+  const { setSelectedAddress, selectedAddress, authData } = useAuth();
+  const isLoggedIn = Boolean(authData?.jwt);
 
   // Combined loading state
   const isLoading = vendorLoading || addressLoading;
@@ -34,24 +35,31 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
 
   const initializeApp = useCallback(async () => {
     try {
-      // Fetch addresses and vendors in parallel
-      await Promise.allSettled([
-        fetchAddresses().catch(addrErr => {
-          console.warn('Address fetch failed:', addrErr);
-          return null; // Allow fallback to empty addresses
-        }),
+      // Build promises conditionally based on login status
+      const tasks: Array<Promise<unknown>> = [
         fetchVendors().catch(vendorErr => {
           console.warn('Vendor fetch failed:', vendorErr);
           return null; // Allow fallback to mock data
         }),
-      ]);
+      ];
+
+      if (isLoggedIn) {
+        tasks.unshift(
+          fetchAddresses().catch(addrErr => {
+            console.warn('Address fetch failed:', addrErr);
+            return null; // Allow fallback to empty addresses
+          })
+        );
+      }
+
+      await Promise.allSettled(tasks);
 
       setIsInitialized(true);
     } catch (initErr: unknown) {
       console.error('App initialization failed:', initErr);
       // Error will be handled by the store states
     }
-  }, [fetchAddresses, fetchVendors]);
+  }, [fetchAddresses, fetchVendors, isLoggedIn]);
 
   const initializeSelectedAddress = useCallback(async (): Promise<void> => {
     try {

@@ -2,10 +2,10 @@ import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import OrderList from '../../components/common/order/OrderList';
-import { useTheme } from '../../theme/ThemeContext';
-import { AppNavigationProp } from '../../types/navigation';
-import { Order } from '../../types/order';
+import OrderList from '../../../components/common/order/OrderList';
+import { useTheme } from '../../../theme/ThemeContext';
+import { AppNavigationProp } from '../../../types/navigation';
+import { Order } from '../../../types/order';
 
 const OrdersScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();

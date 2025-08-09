@@ -26,6 +26,7 @@ import {
 } from '../../../services/api/olaLocationService';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Address } from '../../../types/address';
+import LoginButton from '../../common/LoginButton';
 import SectionDivider from '../../common/SectionDivider';
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -46,7 +47,8 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
 }) => {
   const { getColor, getTypography, theme } = useTheme();
   const { addresses, loading } = useAddress();
-  const { setSelectedAddress } = useAuth();
+  const { setSelectedAddress, authData } = useAuth();
+  const isLoggedIn = Boolean(authData?.jwt);
   const [showAddModal, setShowAddModal] = React.useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -523,63 +525,71 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
               <SectionDivider text="CHOOSE DELIVERY ADDRESS" fontSize={16} />
             </View>
 
-            {/* Addresses Container */}
-            <View style={themedStyles.addressesContainer}>
-              {loading ? (
-                <View style={themedStyles.loadingContainer}>
-                  <Text style={themedStyles.emptyText}>Loading addresses...</Text>
+            {/* Addresses Section or Login Prompt */}
+            {!isLoggedIn ? (
+              <View style={themedStyles.emptyContainer}>
+                <Text style={themedStyles.emptyText}>Please log in to manage your addresses.</Text>
+                <LoginButton />
+              </View>
+            ) : (
+              <>
+                {/* Addresses Container */}
+                <View style={themedStyles.addressesContainer}>
+                  {loading ? (
+                    <View style={themedStyles.loadingContainer}>
+                      <Text style={themedStyles.emptyText}>Loading addresses...</Text>
+                    </View>
+                  ) : filteredAddresses.length === 0 ? (
+                    <View style={themedStyles.emptyContainer}>
+                      <MaterialCommunityIcons
+                        name="map-marker-off"
+                        size={48}
+                        color={getColor('subText')}
+                        style={{ marginBottom: 16 }}
+                      />
+                      <Text style={themedStyles.emptyText}>
+                        No addresses found.{'\n'}Add your first address to get started.
+                      </Text>
+                    </View>
+                  ) : (
+                    <>
+                      <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 20 }}
+                        style={{ flex: 1 }}
+                        scrollEnabled={!showSearchResults}
+                        nestedScrollEnabled={true}
+                      >
+                        {filteredAddresses.map((address, index) => (
+                          <View key={address.id || index} style={themedStyles.addressCardContainer}>
+                            <AddressCard
+                              address={address}
+                              size="small"
+                              onPress={() => handleAddressSelect(address)}
+                              isSelected={selectedAddress?.id === address.id}
+                            />
+                          </View>
+                        ))}
+                      </ScrollView>
+                    </>
+                  )}
                 </View>
-              ) : filteredAddresses.length === 0 ? (
-                <View style={themedStyles.emptyContainer}>
-                  <MaterialCommunityIcons
-                    name="map-marker-off"
-                    size={48}
-                    color={getColor('subText')}
-                    style={{ marginBottom: 16 }}
-                  />
-                  <Text style={themedStyles.emptyText}>
-                    No addresses found.{'\n'}Add your first address to get started.
-                  </Text>
-                </View>
-              ) : (
-                <>
-                  <ScrollView
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 20 }}
-                    style={{ flex: 1 }}
-                    scrollEnabled={!showSearchResults}
-                    nestedScrollEnabled={true}
-                  >
-                    {filteredAddresses.map((address, index) => (
-                      <View key={address.id || index} style={themedStyles.addressCardContainer}>
-                        <AddressCard
-                          address={address}
-                          size="small"
-                          onPress={() => handleAddressSelect(address)}
-                          isSelected={selectedAddress?.id === address.id}
-                        />
-                      </View>
-                    ))}
-                  </ScrollView>
 
-                  {/* Edit Button */}
-                </>
-              )}
-            </View>
-
-            {/* Add Address Button */}
-            <TouchableOpacity
-              style={themedStyles.addButton}
-              onPress={handleAddNewAddress}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Add new address"
-              accessibilityHint="Opens the add address form"
-              activeOpacity={0.8}
-            >
-              <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
-              <Text style={themedStyles.addButtonText}>Add Address Details</Text>
-            </TouchableOpacity>
+                {/* Add Address Button */}
+                <TouchableOpacity
+                  style={themedStyles.addButton}
+                  onPress={handleAddNewAddress}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add new address"
+                  accessibilityHint="Opens the add address form"
+                  activeOpacity={0.8}
+                >
+                  <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
+                  <Text style={themedStyles.addButtonText}>Add Address Details</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </Animated.View>
 
