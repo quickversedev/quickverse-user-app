@@ -392,6 +392,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
             themedStyles.backdrop,
             {
               opacity: backdropAnim,
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
             },
           ]}
         >

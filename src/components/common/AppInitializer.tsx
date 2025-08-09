@@ -1,10 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAddress } from '../../hooks';
 import { useLocation } from '../../hooks/Permissions/useLocation';
 import TabNavigation from '../../navigation/TabNavigation';
+import { findClosestAddressWithinRadius } from '../../screens/profile/Address/utils/addressUtils';
+import { getAddressFromCoordinates } from '../../services/api/olaLocationService';
+import useAddressStore from '../../store/address/addressStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
+import type { Address } from '../../types/address';
 import ErrorState from './ErrorState';
 
 interface AppInitializerProps {
@@ -19,6 +24,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
   const { fetchVendors, loading: vendorLoading, error: vendorError } = useVendorStore();
 
   const { fetchAddresses, loading: addressLoading, error: addressError } = useAddress();
+  const { setSelectedAddress, selectedAddress } = useAuth();
 
   // Combined loading state
   const isLoading = vendorLoading || addressLoading;
@@ -26,28 +32,85 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
   // Combined error state
   const error = vendorError || addressError;
 
-  const initializeApp = async () => {
+  const initializeApp = useCallback(async () => {
     try {
-      // Always fetch addresses
-      await fetchAddresses().catch(error => {
-        console.warn('Address fetch failed:', error);
-        return null; // Allow fallback to empty addresses
-      });
-
-      // Only fetch vendors if location is available
-      // if (isGranted && location.latitude && location.longitude) {
-      await fetchVendors().catch(error => {
-        console.warn('Vendor fetch failed:', error);
-        return null; // Allow fallback to mock data
-      });
-      // }
+      // Fetch addresses and vendors in parallel
+      await Promise.allSettled([
+        fetchAddresses().catch(addrErr => {
+          console.warn('Address fetch failed:', addrErr);
+          return null; // Allow fallback to empty addresses
+        }),
+        fetchVendors().catch(vendorErr => {
+          console.warn('Vendor fetch failed:', vendorErr);
+          return null; // Allow fallback to mock data
+        }),
+      ]);
 
       setIsInitialized(true);
-    } catch (error: unknown) {
-      console.error('App initialization failed:', error);
+    } catch (initErr: unknown) {
+      console.error('App initialization failed:', initErr);
       // Error will be handled by the store states
     }
-  };
+  }, [fetchAddresses, fetchVendors]);
+
+  const initializeSelectedAddress = useCallback(async (): Promise<void> => {
+    try {
+      if (selectedAddress) return; // Do not override if already selected
+
+      const addresses: Address[] = useAddressStore.getState().addresses as unknown as Address[];
+
+      if (isGranted && location?.latitude && location?.longitude) {
+        // Case 1: Permission granted → try closest saved address
+        if (addresses && addresses.length > 0) {
+          const closest = findClosestAddressWithinRadius(
+            { latitude: location.latitude, longitude: location.longitude },
+            addresses as unknown as Array<{ [key: string]: unknown }>,
+            200
+          );
+          if (closest?.address) {
+            setSelectedAddress(closest.address as unknown as Address);
+            return;
+          }
+        }
+
+        // Case 2: Permission granted but no close/saved address → reverse geocode current location
+        const components = await getAddressFromCoordinates({
+          latitude: location.latitude,
+          longitude: location.longitude,
+        });
+        const currentAddress: Address = {
+          id: 'current-location',
+          address: components.formatted_address || 'Current Location',
+          city: components.city || '',
+          state: components.state || '',
+          postalCode: components.postalCode || '',
+          country: components.country || '',
+          isDefault: true,
+        };
+        setSelectedAddress(currentAddress);
+        return;
+      }
+
+      // Case 3: Permission not granted and no saved addresses → set a default location
+      if (!isGranted) {
+        const addressesLen = addresses?.length ?? 0;
+        if (addressesLen === 0) {
+          const defaultAddress: Address = {
+            id: 'default-location',
+            address: 'Connaught Place',
+            city: 'New Delhi',
+            state: 'Delhi',
+            postalCode: '110001',
+            country: 'India',
+            isDefault: true,
+          };
+          setSelectedAddress(defaultAddress);
+        }
+      }
+    } catch (e) {
+      // Fail silently; selected address remains unset
+    }
+  }, [isGranted, location?.latitude, location?.longitude, selectedAddress, setSelectedAddress]);
 
   const handleRetry = () => {
     setIsInitialized(false);
@@ -57,9 +120,9 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
   useEffect(() => {
     if (!isInitialized) {
       getCurrentLocation();
-      initializeApp();
+      initializeApp().then(() => initializeSelectedAddress());
     }
-  }, [isInitialized]);
+  }, [isInitialized, getCurrentLocation, initializeApp, initializeSelectedAddress]);
 
   // Show loading state
   if (isLoading) {

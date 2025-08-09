@@ -1,54 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
-import { useAddress } from '../../../hooks';
-import { useLocation } from '../../../hooks/Permissions/useLocation';
-import { findClosestAddressWithinRadius } from '../../../screens/profile/Address/utils/addressUtils';
 import { useTheme } from '../../../theme/ThemeContext';
-import { Address } from '../../../types/address';
+import type { Address } from '../../../types/address';
 import { ThemeText } from '../../common/theme/ThemeText';
 import { AddressSelectionModal } from './AddressSelectionModal';
 
 export const LocationSelector = () => {
   const { theme } = useTheme();
-  const { selectedAddress, setSelectedAddress } = useAuth();
+  const { selectedAddress, setSelectedAddress, authData } = useAuth();
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const { addresses } = useAddress();
-  const { location, isGranted, getCurrentLocation } = useLocation();
-
-  useEffect(() => {
-    getCurrentLocation();
-  }, []);
-
-  // Auto-select closest address within 200m radius when location is available
-  useEffect(() => {
-    if (
-      isGranted &&
-      location.latitude &&
-      location.longitude &&
-      addresses.length > 0 &&
-      !selectedAddress
-    ) {
-      const currentLocation = {
-        latitude: location.latitude,
-        longitude: location.longitude,
-      };
-
-      const closestAddressResult = findClosestAddressWithinRadius(currentLocation, addresses, 200);
-      console.log('closestAddressResult', closestAddressResult);
-      if (closestAddressResult) {
-        setSelectedAddress(closestAddressResult.address as Address);
-      }
-    }
-  }, [
-    isGranted,
-    location.latitude,
-    location.longitude,
-    addresses,
-    selectedAddress,
-    setSelectedAddress,
-  ]);
+  // Selected address is managed by AuthProvider (initialized in AppInitializer and user selection)
 
   const handleAddressSelect = (address: Address) => {
     setSelectedAddress(address);
@@ -76,8 +39,9 @@ export const LocationSelector = () => {
   };
 
   const getDisplayName = () => {
-    if (selectedAddress?.name) {
-      return `Hey, ${selectedAddress.name.split(' ')[0]}`;
+    const username = authData?.username;
+    if (username && username.trim().length > 0) {
+      return `Hey, ${username.split(' ')[0]}`;
     }
     return 'Hey, User';
   };

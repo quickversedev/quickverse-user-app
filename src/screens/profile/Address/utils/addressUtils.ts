@@ -110,7 +110,6 @@ export const getConcatenatedAddress = (address: Address): string => {
   if (address.city) locationParts.push(address.city);
   if (address.state) locationParts.push(address.state);
   if (address.pincode) locationParts.push(address.pincode);
-  else if (address.zipCode) locationParts.push(address.zipCode);
 
   if (locationParts.length > 0) {
     addressParts.push(locationParts.join(', '));
@@ -149,7 +148,6 @@ export const getFormattedAddress = (address: Address): string[] => {
   if (address.city) locationParts.push(address.city);
   if (address.state) locationParts.push(address.state);
   if (address.pincode) locationParts.push(address.pincode);
-  else if (address.zipCode) locationParts.push(address.zipCode);
 
   if (locationParts.length > 0) {
     lines.push(locationParts.join(', '));
@@ -169,7 +167,7 @@ export const isValidAddress = (address: Partial<Address>): boolean => {
     (address.addressLine1?.trim() || address.address?.trim()) &&
     address.city?.trim() &&
     address.state?.trim() &&
-    (address.pincode?.trim() || address.zipCode?.trim())
+    address.pincode?.trim()
   );
 };
 
