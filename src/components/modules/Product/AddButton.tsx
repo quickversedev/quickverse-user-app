@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useTheme } from '../../../theme/ThemeContext';
-import LoginButton from '../../common/LoginButton';
+import { triggerAddToCartHaptic, triggerErrorHaptic } from '../../../utils/haptics';
+import LoginPromptModal from '../../common/LoginPromptModal';
 
 interface AddButtonProps {
   onPress: () => void;
@@ -28,46 +29,17 @@ const AddButton: React.FC<AddButtonProps> = ({
 
   const handleSafePress = () => {
     if (authData?.jwt) {
+      // Haptic feedback for successful add intent
+      triggerAddToCartHaptic();
       onPress();
     } else {
+      // Haptic feedback for blocked action
+      triggerErrorHaptic();
       setShowLoginModal(true);
     }
   };
 
   const styles = StyleSheet.create({
-    modalBackdrop: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.6)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 24,
-    },
-    modalCard: {
-      width: '100%',
-      borderRadius: theme.borderRadius.md,
-      padding: 16,
-    },
-    modalTitle: {
-      fontSize: getTypography('h2'),
-      fontWeight: '600',
-      marginBottom: 8,
-      textAlign: 'center',
-    },
-    modalMessage: {
-      fontSize: getTypography('body'),
-      textAlign: 'center',
-      marginBottom: 12,
-    },
-    modalCancel: {
-      marginTop: 8,
-      alignSelf: 'center',
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-    },
-    modalCancelText: {
-      fontSize: getTypography('body'),
-      fontWeight: '600',
-    },
     addButton: {
       position: 'absolute',
       right: 2,
@@ -155,25 +127,12 @@ const AddButton: React.FC<AddButtonProps> = ({
   });
 
   const renderLoginModal = () => (
-    <Modal
+    <LoginPromptModal
       visible={showLoginModal}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setShowLoginModal(false)}
-    >
-      <View style={styles.modalBackdrop}>
-        <View style={[styles.modalCard, { backgroundColor: getColor('card') }]}>
-          <Text style={[styles.modalTitle, { color: getColor('text') }]}>Login required</Text>
-          <Text style={[styles.modalMessage, { color: getColor('subText') }]}>
-            Please log in to add items to your cart.
-          </Text>
-          <LoginButton onPress={() => setShowLoginModal(false)} />
-          <TouchableOpacity style={styles.modalCancel} onPress={() => setShowLoginModal(false)}>
-            <Text style={[styles.modalCancelText, { color: getColor('primary') }]}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
+      onClose={() => setShowLoginModal(false)}
+      title="Login required"
+      message="Please log in to add items to your cart."
+    />
   );
 
   // Small button with variants - show badge
