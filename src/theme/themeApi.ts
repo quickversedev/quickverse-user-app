@@ -1,22 +1,26 @@
-import axiosInstance from '../config/api/axios.config';
+import axiosInstance, { withHeaders } from '../config/api/axios.config';
 
 export interface ThemeConfigResponse {
   theme: unknown;
-  categoryImages: Record<string, string>;
-  useDefaultTheme?: boolean;
   [key: string]: unknown;
 }
 
-const THEME_CONFIG_ENDPOINT = '/theme-config'; // relative to baseURL
+const THEME_ENDPOINT = '/v3/theme';
 
 /**
  * Fetches the theme config from the backend.
- * If useDefaultTheme is true in the response, the consumer should use DefaultTheme.
+ * @param themeId - The theme ID to fetch (defaults to 'theme1')
+ * @returns Promise<ThemeConfigResponse>
  */
-export async function fetchThemeConfig(): Promise<ThemeConfigResponse> {
-  const response = await axiosInstance.get<{ config: ThemeConfigResponse }>(THEME_CONFIG_ENDPOINT);
-  if (response.data && response.data.config) {
-    return response.data.config;
-  }
-  throw new Error('Invalid theme config response');
+export async function fetchThemeConfig(themeId: string = 'theme1'): Promise<ThemeConfigResponse> {
+  const authHeaders = {
+    Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+  };
+
+  const response = await axiosInstance.get<ThemeConfigResponse>(
+    `${THEME_ENDPOINT}?themeId=${themeId}`,
+    withHeaders(authHeaders)
+  );
+
+  return response.data;
 }

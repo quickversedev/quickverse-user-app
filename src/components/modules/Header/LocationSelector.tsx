@@ -19,21 +19,33 @@ export const LocationSelector = () => {
   };
 
   const getDisplayAddress = () => {
+    console.log('🔍 [LocationSelector] Selected address:', selectedAddress);
     if (selectedAddress) {
+      let displayText = '';
+
       // For searched addresses, show city and state if available
       if (selectedAddress.city && selectedAddress.state) {
-        return `${selectedAddress.city}, ${selectedAddress.state}`;
+        displayText = `${selectedAddress.city}, ${selectedAddress.state}`;
       }
       // Fallback to city and postal code
-      if (selectedAddress.city && selectedAddress.postalCode) {
-        return `${selectedAddress.city} - ${selectedAddress.postalCode}`;
+      else if (selectedAddress.city && selectedAddress.postalCode) {
+        displayText = `${selectedAddress.city} - ${selectedAddress.postalCode}`;
       }
       // Just show city if available
-      if (selectedAddress.city) {
-        return selectedAddress.city;
+      else if (selectedAddress.city) {
+        displayText = selectedAddress.city;
       }
       // Fallback to address
-      return selectedAddress.address || 'Selected Address';
+      else {
+        displayText = selectedAddress.address || 'Selected Address';
+      }
+
+      // Add ellipsis if text is too long (more than 25 characters)
+      if (displayText.length > 25) {
+        return `${displayText.substring(0, 22)}...`;
+      }
+
+      return displayText;
     }
     return 'Select Address';
   };
@@ -43,7 +55,7 @@ export const LocationSelector = () => {
     if (username && username.trim().length > 0) {
       return `Hey, ${username.split(' ')[0]}`;
     }
-    return 'Hey, User';
+    return 'Hey, Howdy';
   };
 
   return (

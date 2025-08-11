@@ -1,18 +1,16 @@
 import React from 'react';
 import { Image, ImageProps, ImageStyle, StyleProp } from 'react-native';
 import { Images } from '../../assets';
-import useThemeStore from '../../store/themeStore';
 import { useTheme } from '../../theme/ThemeContext';
 
 interface CategoryLogoProps extends Omit<ImageProps, 'source'> {
   category: string;
+  imageUrl?: string;
   style?: StyleProp<ImageStyle>;
 }
 
-const CategoryLogo: React.FC<CategoryLogoProps> = ({ category, style, ...rest }) => {
+const CategoryLogo: React.FC<CategoryLogoProps> = ({ category, imageUrl, style, ...rest }) => {
   const { theme } = useTheme();
-  const categoryImages = useThemeStore(state => state.getCategoryImages());
-  const imageUrl = categoryImages[category];
 
   // Get category-specific fallback image
   const getFallbackImage = (category: string) => {

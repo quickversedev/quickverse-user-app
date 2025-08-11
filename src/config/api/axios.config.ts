@@ -6,22 +6,50 @@ import axios, {
 } from 'axios';
 import { ApiError, RetryConfig } from './axios.types';
 
-// API Configuration
+/**
+ * API Configuration Object
+ *
+ * Centralized configuration for all API requests including:
+ * - Base URL for the QuickVerse API
+ * - Timeout settings for request handling
+ * - Retry configuration for failed requests
+ * - Default headers for all requests
+ */
 const API_CONFIG = {
+  /** Base URL for the QuickVerse API server */
   baseURL: 'http://192.168.31.144:8080/quickVerse',
-  timeout: 15000, // 15 seconds default timeout
-  retries: 3, // number of retries for failed requests
+
+  /** Default timeout for all requests (15 seconds) */
+  timeout: 15000,
+
+  /** Maximum number of retry attempts for failed requests */
+  retries: 3,
+
+  /** User-friendly timeout error message */
   timeoutMessage: 'Request timed out. Please check your internet connection and try again.',
+
+  /** Default headers applied to all requests */
   headers: {
     'Content-Type': 'application/json',
-    'Request-Origin': 'CUSTOMER',
+    'Request-Origin': 'CUSTOMER', // Identifies this as a customer app request
   },
 } as const;
 
-// Store cancel tokens by request key
+/**
+ * Cancel Token Storage
+ *
+ * Maps request keys to their cancel tokens to enable request cancellation
+ * and prevent duplicate requests from running simultaneously
+ */
 const cancelTokens: Map<string, CancelTokenSource> = new Map();
 
-// Helper function to generate a unique key for each request
+/**
+ * Generates a unique key for each request based on method, URL, params, and data
+ * Used to identify and cancel duplicate requests
+ *
+ * @param config - Axios request configuration
+ * @returns Unique string key for the request
+ */
 const getRequestKey = (config: InternalAxiosRequestConfig): string => {
   const method = config?.method || 'get';
   const url = config?.url || '';
@@ -30,14 +58,28 @@ const getRequestKey = (config: InternalAxiosRequestConfig): string => {
   return `${method}-${url}-${JSON.stringify(params)}-${JSON.stringify(data)}`;
 };
 
-// Create axios instance with default configuration
+/**
+ * Axios Instance Configuration
+ *
+ * Creates a configured axios instance with:
+ * - Base URL pointing to QuickVerse API
+ * - Default timeout settings
+ * - Standard headers for all requests
+ */
 const axiosInstance = axios.create({
   baseURL: API_CONFIG.baseURL,
   timeout: API_CONFIG.timeout,
   headers: API_CONFIG.headers,
 });
 
-// Add a request interceptor for timeout and retries
+/**
+ * Request Interceptor
+ *
+ * Handles request preprocessing including:
+ * - Timeout enforcement
+ * - Request deduplication via cancellation
+ * - Cancel token management
+ */
 axiosInstance.interceptors.request.use(
   (config: RetryConfig) => {
     // Ensure timeout is set for each request
@@ -45,7 +87,7 @@ axiosInstance.interceptors.request.use(
       config.timeout = API_CONFIG.timeout;
     }
 
-    // Cancel any existing request with the same key
+    // Cancel any existing request with the same key to prevent duplicates
     const requestKey = getRequestKey(config);
     if (cancelTokens.has(requestKey)) {
       const existingCancelToken = cancelTokens.get(requestKey);
@@ -69,13 +111,23 @@ axiosInstance.interceptors.request.use(
       status: 500,
       message: error?.message || 'Request failed',
       isCancelled: false,
+      apiEndpoint: 'Unknown', // Request interceptor doesn't have config context
     });
   }
 );
 
-// Add a response interceptor to handle timeout errors and retries
+/**
+ * Response Interceptor
+ *
+ * Handles response processing and error management including:
+ * - Cleanup of cancel tokens on successful responses
+ * - Automatic retry with exponential backoff for failed requests
+ * - Comprehensive error categorization and messaging
+ * - Network error handling
+ */
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
+    // Clean up cancel token on successful response
     if (response?.config) {
       const requestKey = getRequestKey(response.config);
       cancelTokens.delete(requestKey);
@@ -83,17 +135,18 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   async (error: unknown) => {
-    // Don't retry cancelled requests
+    const axiosError = error as AxiosError;
+    const config = axiosError?.config as RetryConfig | undefined;
+
+    // Handle cancelled requests (don't retry)
     if (axios.isCancel(error)) {
       return Promise.reject({
         status: 499, // Client Closed Request
         message: 'Request was cancelled',
         isCancelled: true,
+        apiEndpoint: config?.url || 'Unknown',
       });
     }
-
-    const axiosError = error as AxiosError;
-    const config = axiosError?.config as RetryConfig | undefined;
 
     // Clean up cancel token after error
     if (config) {
@@ -103,20 +156,23 @@ axiosInstance.interceptors.response.use(
 
     // If no config exists or retry count exceeded, reject with error
     if (!config || !API_CONFIG.retries || (config.retryCount ?? 0) >= API_CONFIG.retries) {
+      // Handle timeout errors specifically
       if (axiosError?.code === 'ECONNABORTED' && axiosError?.message?.includes('timeout')) {
         return Promise.reject({
-          status: 408,
+          status: 408, // Request Timeout
           message: API_CONFIG.timeoutMessage,
           isCancelled: false,
+          apiEndpoint: config?.url || 'Unknown',
         });
       }
 
-      // Handle network errors
+      // Handle network connectivity errors
       if (axiosError?.code === 'ERR_NETWORK') {
         return Promise.reject({
-          status: 0,
+          status: 0, // Network Error
           message: 'Network error. Please check your internet connection.',
           isCancelled: false,
+          apiEndpoint: config?.url || 'Unknown',
         });
       }
 
@@ -126,6 +182,7 @@ axiosInstance.interceptors.response.use(
           status: axiosError.response.status,
           message: 'Server error. Please try again later.',
           isCancelled: false,
+          apiEndpoint: config?.url || 'Unknown',
         });
       }
 
@@ -152,21 +209,24 @@ axiosInstance.interceptors.response.use(
           status: axiosError.response.status,
           message: errorMessage,
           isCancelled: false,
+          apiEndpoint: config?.url || 'Unknown',
         });
       }
 
+      // Handle any other unexpected errors
       return Promise.reject({
         status: axiosError?.response?.status || 500,
         message: 'An unexpected error occurred',
         isCancelled: false,
+        apiEndpoint: config?.url || 'Unknown',
       });
     }
 
-    // Increment retry count
+    // Implement retry logic with exponential backoff
     const currentRetryCount = config.retryCount ?? 0;
     config.retryCount = currentRetryCount + 1;
 
-    // Create new promise with exponential backoff
+    // Calculate backoff delay: min(1000 * 2^retryCount, 10000ms)
     const backoff = new Promise(resolve => {
       setTimeout(() => {
         resolve(null);
@@ -179,7 +239,15 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// Helper function to handle API calls with timeout
+/**
+ * Enhanced API Call Function with Timeout Support
+ *
+ * Wraps axios promises with additional timeout handling and response validation
+ *
+ * @param promise - The axios promise to execute
+ * @param customTimeout - Optional custom timeout (overrides default)
+ * @returns Promise with validated response data
+ */
 export const apiCall = async <T>(
   promise: Promise<AxiosResponse<T>>,
   customTimeout?: number
@@ -193,6 +261,7 @@ export const apiCall = async <T>(
             status: 408,
             message: API_CONFIG.timeoutMessage,
             isCancelled: false,
+            apiEndpoint: 'Custom Timeout', // Generic for custom timeout
           });
         }, customTimeout || API_CONFIG.timeout);
       }),
@@ -205,6 +274,7 @@ export const apiCall = async <T>(
         status: 500,
         message: 'Invalid response data received from server',
         isCancelled: false,
+        apiEndpoint: (response as AxiosResponse<T>)?.config?.url || 'Unknown',
       };
     }
 
@@ -216,11 +286,11 @@ export const apiCall = async <T>(
         status: 499, // Client Closed Request
         message: 'Request was cancelled',
         isCancelled: true,
+        apiEndpoint: 'Unknown',
       };
     }
 
     const apiError = error as ApiError;
-    console.log('apiError', apiError);
     if (apiError?.status === 408) {
       throw apiError;
     }
@@ -228,6 +298,7 @@ export const apiCall = async <T>(
       status: apiError?.response?.status || 500,
       message: apiError?.response?.data?.message || 'An error occurred',
       isCancelled: apiError?.isCancelled || false,
+      apiEndpoint: apiError?.apiEndpoint || 'Unknown',
     };
   }
 };

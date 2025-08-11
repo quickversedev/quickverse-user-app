@@ -3,11 +3,8 @@ import { useLocation } from '../../hooks/Permissions/useLocation';
 import HomeMainScreen from './HomeMainScreen';
 
 const HomeScreen = () => {
-  const { isDenied, handleDeniedPermissionModal, getCurrentLocation } = useLocation();
+  const { isDenied, handleDeniedPermissionModal } = useLocation();
 
-  useEffect(() => {
-    getCurrentLocation();
-  }, []);
   useEffect(() => {
     if (isDenied) {
       handleDeniedPermissionModal();

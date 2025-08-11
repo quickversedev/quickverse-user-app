@@ -27,6 +27,8 @@ export type Address = {
   pincode?: string;
   tag?: string;
   landmark?: string;
+  latitude?: string;
+  longitude?: string;
 };
 
 export type NewAddress = AddressDetails & { isDefaultAddress?: boolean };

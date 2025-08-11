@@ -1,5 +1,6 @@
 export { default as VariantsModalSkeleton } from '../modules/Vendor/VariantsModalSkeleton';
 export { default as VendorProductSkeleton } from '../modules/Vendor/VendorProductSkeleton';
+export { default as AppBootstrap } from './AppBootstrap';
 export { default as AppInitializer } from './AppInitializer';
 export { default as BadgeTag } from './badges/BadgeTag';
 export { default as RatingBadge } from './badges/RatingBadge';

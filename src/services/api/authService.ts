@@ -6,6 +6,7 @@ export type AuthData = {
     phoneNumber: string;
     newUser: boolean;
     name: string;
+    defaultAddressId: string;
   };
 };
 
@@ -154,7 +155,7 @@ const verifyOtp = async (
       axiosInstance.post(
         '/v1/login',
         {
-          phone: phoneNumber,
+          phone: '91' + phoneNumber,
           otp: otp,
           verificationId: verificationId,
         },
@@ -266,15 +267,12 @@ const signUp = async (
     } as AuthError;
   }
 
-  console.log('signup data', fullName, dob, gender, email, jwt, phoneNumber);
-
   try {
     const data = await apiCall<SignUpResponse>(
       axiosInstance.post(
         '/v1/register/customer',
         {
           dob: dob,
-          phone: phoneNumber,
           gender: gender.toUpperCase(),
           email: email,
           fullName: fullName,
@@ -283,11 +281,12 @@ const signUp = async (
           headers: {
             Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
             SessionKey: jwt,
+            phone: phoneNumber,
           },
         }
       )
     );
-    console.log('signup data responsse', data);
+
     return data;
   } catch (error) {
     const authError = error as AuthError;

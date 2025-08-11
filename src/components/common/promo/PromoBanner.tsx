@@ -11,7 +11,6 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Images } from '../../../assets';
-import useThemeStore from '../../../store/themeStore';
 import { useTheme } from '../../../theme/ThemeContext';
 
 export type PromoBannerSize = 'small' | 'medium' | 'large' | number;
@@ -77,7 +76,8 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
   aspectRatio = 16 / 9, // Default for custom sizes
 }) => {
   const { getColor, getTypography, theme } = useTheme();
-  const promoImages = useThemeStore(state => state.getPromoImages());
+  // const promoImages = useThemeStore(state => state.getPromoImages());
+  const promoImages: Record<string, string> = {};
   const imageUrl = promoImages[promo];
   const s =
     typeof size === 'number'

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Image, ImageProps, ImageStyle, StyleProp } from 'react-native';
 import { Images } from '../../../assets';
-import useThemeStore from '../../../store/themeStore';
 
 interface PromoImageProps extends Omit<ImageProps, 'source'> {
   promo: string;
@@ -18,7 +17,7 @@ const sizeMap = {
 const fallbackPromo = Images.bg1;
 
 const PromoImage: React.FC<PromoImageProps> = ({ promo, size = 'medium', style, ...rest }) => {
-  const promoImages = useThemeStore(state => state.getPromoImages());
+  const promoImages: Record<string, string> = {};
   const imageUrl = promoImages[promo];
   let dimension: number;
   if (typeof size === 'number') {

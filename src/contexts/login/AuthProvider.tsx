@@ -53,15 +53,15 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const storedIsNewUser = getNewUser();
         setIsNewUser(storedIsNewUser);
         // Load selected address from storage
-        const storedAddress = StorageService.getItem('selectedAddress');
-        if (storedAddress) {
-          try {
-            const parsedAddress = JSON.parse(storedAddress);
-            setSelectedAddress(parsedAddress);
-          } catch (error) {
-            console.error('Failed to parse stored address', error);
-          }
-        }
+        // const storedAddress = StorageService.getItem('selectedAddress');
+        // if (storedAddress) {
+        //   try {
+        //     const parsedAddress = JSON.parse(storedAddress);
+        //     setSelectedAddress(parsedAddress);
+        //   } catch (error) {
+        //     console.error('Failed to parse stored address', error);
+        //   }
+        // }
       } catch (error) {
         console.error('Failed to load auth data from storage', error);
       } finally {
@@ -113,10 +113,10 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     verificationId: string
   ): Promise<void> => {
     const response = await authService.verifyOtp(phoneNumber, otp, verificationId);
-    const { token, phoneNumber: phone, name, newUser } = response?.session;
+    const { token, phoneNumber: phone, name, newUser, defaultAddressId } = response?.session;
 
     if (token && phone) {
-      setAuth({ jwt: token, phone, username: name || '' });
+      setAuth({ jwt: token, phone, username: name || 'Howdy', defaultAddressId });
     }
     if (newUser) setNewUserstate(newUser);
   };

@@ -21,6 +21,7 @@ export type AuthSession = {
   jwt: string;
   phone: string;
   username: string;
+  defaultAddressId?: string; // Made optional since it's not used
 };
 
 /**
@@ -46,7 +47,8 @@ export const getAuthSession = (): AuthSession | undefined => {
       parsed &&
       typeof parsed.jwt === 'string' &&
       typeof parsed.phone === 'string' &&
-      typeof parsed.username === 'string'
+      typeof parsed.username === 'string' &&
+      (parsed.defaultAddressId === undefined || typeof parsed.defaultAddressId === 'string')
     ) {
       return parsed;
     }
