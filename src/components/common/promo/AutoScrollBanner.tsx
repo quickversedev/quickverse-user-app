@@ -1,20 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet } from 'react-native';
+import { Promotion } from '../../../types/pages';
 import PromoBanner from './PromoBanner';
 
 const { width } = Dimensions.get('window');
 
-interface BannerData {
-  promo: string;
-  title: string;
-  subtitle: string;
-  bannerButton?: { label: string; onPress: () => void };
-  backgroundColor: string;
-  isBannerImage: boolean;
-}
-
 interface AutoScrollBannerProps {
-  bannerData: BannerData[];
+  bannerData: Promotion[];
   interval?: number;
 }
 
@@ -48,17 +40,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interva
       scrollEventThrottle={16}
     >
       {bannerData.map((banner, index) => (
-        <PromoBanner
-          key={index}
-          promo={banner.promo}
-          title={banner.title}
-          subtitle={banner.subtitle}
-          bannerButton={banner.bannerButton}
-          size="medium"
-          style={styles.bannerContainer}
-          backgroundColor={banner.backgroundColor}
-          isBannerImage={banner.isBannerImage}
-        />
+        <PromoBanner key={index} promo={banner} size="medium" style={styles.bannerContainer} />
       ))}
     </ScrollView>
   );

@@ -1,17 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAuth } from '../../contexts/login/AuthProvider';
-import { useAddress, useConfig } from '../../hooks';
+import { useAddress, useConfig, usePages } from '../../hooks';
 import { useLocation } from '../../hooks/Permissions/useLocation';
 import TabNavigation from '../../navigation/TabNavigation';
 import { findClosestAddressWithinRadius } from '../../screens/profile/Address/utils/addressUtils';
 import { getAddressFromCoordinates } from '../../services/api/olaLocationService';
 import useAddressStore from '../../store/address/addressStore';
+import useConfigStore from '../../store/configStore';
 import useThemeStore from '../../store/themeStore';
 import useVendorStore from '../../store/vendorStore';
-import { useTheme } from '../../theme/ThemeContext';
 import type { Address } from '../../types/address';
 import ErrorState from './ErrorState';
+import { HomeScreenSkeleton } from './skeleton';
 
 /**
  * Props for the AppInitializer component
@@ -45,8 +45,7 @@ interface AppInitializerProps {
  * 7. Hardcoded fallback (Connaught Place, Delhi)
  */
 const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
-  // Theme and UI state
-  const { getColor } = useTheme();
+  // UI state
   const [isInitialized, setIsInitialized] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
 
@@ -55,21 +54,22 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
   // console.log('AppInitializer location', location);
   // Store hooks for data fetching
   const { fetchVendors, loading: vendorLoading, error: vendorError } = useVendorStore();
-  const { fetchAddresses, loading: addressLoading, fetchError: addressError } = useAddress();
+  const { fetchAddresses, loading: addressLoading, fetchError: _addressError } = useAddress();
   const {
     fetchInitialConfig,
     loading: configLoading,
-    error: configError,
+    error: _configError,
     getDefaultLocation,
   } = useConfig();
   const { fetchTheme } = useThemeStore();
+  const { fetchPages, loading: pagesLoading } = usePages();
 
   // Authentication and address selection
   const { setSelectedAddress, selectedAddress, authData } = useAuth();
   const isLoggedIn = Boolean(authData?.jwt);
 
   // Combined loading and error states for UI
-  const isLoading = vendorLoading || addressLoading || configLoading;
+  const isLoading = vendorLoading || addressLoading || configLoading || pagesLoading;
   const error = vendorError;
 
   /**
@@ -107,7 +107,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
           );
         }
 
-        // Always fetch initial config and theme (with location if available)
+        // Always fetch initial config, theme, and pages (with location if available)
         tasks.unshift(
           fetchInitialConfig({
             longitude: location?.longitude?.toString(),
@@ -118,11 +118,21 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
               return null; // Allow fallback to default config
             })
             .finally(() => {
-              // Always fetch theme regardless of config fetch success/failure
-              return fetchTheme().catch(themeErr => {
-                console.warn('Theme fetch failed:', themeErr);
-                return null; // Allow fallback to default theme
-              });
+              // Always fetch theme and pages in parallel regardless of config fetch success/failure
+              const regionId = useConfigStore.getState().getRegionId();
+
+              return Promise.allSettled([
+                fetchTheme().catch(themeErr => {
+                  console.warn('Theme fetch failed:', themeErr);
+                  return null; // Allow fallback to default theme
+                }),
+                regionId
+                  ? fetchPages(regionId).catch(pagesErr => {
+                      console.warn('Pages fetch failed:', pagesErr);
+                      return null; // Allow fallback to empty pages
+                    })
+                  : Promise.resolve(null),
+              ]);
             })
         );
 
@@ -302,7 +312,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
     setIsInitialized(false);
     // Use optimized function to get permission and location with minimal time
     getPermissionAndLocation()
-      .then(({ permission, location: locationResult }) => {
+      .then(({ permission, location: _locationResult }) => {
         setPermissionStatus(permission);
 
         return initializeApp().then(() => {
@@ -326,7 +336,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
     if (!isInitialized) {
       // Use optimized function to get permission and location with minimal time
       getPermissionAndLocation()
-        .then(({ permission, location: locationResult }) => {
+        .then(({ permission, location: _locationResult }) => {
           setPermissionStatus(permission);
 
           // Initialize app regardless of location success/failure
@@ -356,13 +366,9 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
     }
   }, [selectedAddress, isInitialized, initializeApp]);
 
-  // Show loading spinner during initialization
+  // Show skeleton loader during initialization
   if (isLoading) {
-    return (
-      <View style={[styles.container, { backgroundColor: 'yellow' }]}>
-        <ActivityIndicator size="large" color={getColor('primary')} />
-      </View>
-    );
+    return <HomeScreenSkeleton />;
   }
 
   // Show error state with retry option if initialization failed
@@ -382,22 +388,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
   }
 
   // Fallback loading state (should rarely be reached)
-  return (
-    <View style={[styles.container, { backgroundColor: 'red' }]}>
-      <ActivityIndicator size="large" color={getColor('primary')} />
-    </View>
-  );
+  return <HomeScreenSkeleton />;
 };
-
-/**
- * Styles for the AppInitializer component
- */
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
 
 export default AppInitializer;

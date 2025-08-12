@@ -6,31 +6,20 @@ import {
   StyleProp,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   ViewStyle,
 } from 'react-native';
 import { Images } from '../../../assets';
 import { useTheme } from '../../../theme/ThemeContext';
+import { Promotion } from '../../../types/pages';
 
 export type PromoBannerSize = 'small' | 'medium' | 'large' | number;
 
-interface BannerButtonConfig {
-  label: string;
-  onPress: () => void;
-  style?: StyleProp<ViewStyle>;
-}
-
 interface PromoBannerProps {
-  promo: string;
-  title?: string;
-  subtitle?: string;
-  bannerButton?: React.ReactNode | BannerButtonConfig;
+  promo: Promotion;
   size?: PromoBannerSize;
   style?: StyleProp<ViewStyle>;
   imageStyle?: StyleProp<ImageStyle>;
-  backgroundColor?: string;
-  isBannerImage?: boolean;
   aspectRatio?: number; // width:height ratio for custom sizes (predefined sizes have their own ratios)
 }
 
@@ -65,20 +54,19 @@ const sizeMap = {
  */
 const PromoBanner: React.FC<PromoBannerProps> = ({
   promo,
-  title,
-  subtitle,
-  bannerButton,
   size = 'medium',
   style,
   imageStyle,
-  backgroundColor,
-  isBannerImage = false,
   aspectRatio = 16 / 9, // Default for custom sizes
 }) => {
   const { getColor, getTypography, theme } = useTheme();
-  // const promoImages = useThemeStore(state => state.getPromoImages());
-  const promoImages: Record<string, string> = {};
-  const imageUrl = promoImages[promo];
+
+  // Extract values from promo object
+  const imageUrl = promo.imageURL || '';
+  const title = promo.title || '';
+  const subtitle = promo.subtitle || '';
+  const backgroundColor = promo.backgroundColor || getColor('primary');
+  const isBannerImage = promo.bannerImage || false;
   const s =
     typeof size === 'number'
       ? { img: size, font: 16, subFont: 12, pad: 12, btn: 28 }
@@ -202,6 +190,10 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
         };
 
   if (isBannerImage) {
+    if (!imageUrl) {
+      return null;
+    }
+
     return (
       <View
         style={[
@@ -212,7 +204,7 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
         ]}
       >
         <Image
-          source={imageUrl ? { uri: imageUrl } : fallbackPromo}
+          source={{ uri: imageUrl }}
           style={[styles.bannerImage, imageStyle]}
           resizeMode="cover"
         />
@@ -225,7 +217,7 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
       style={[
         styles.container,
         bannerShadow,
-        { padding: s.pad, backgroundColor: backgroundColor || getColor('card') },
+        { padding: s.pad, backgroundColor: backgroundColor },
         style,
       ]}
     >
@@ -251,17 +243,6 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
             {subtitle}
           </Text>
         )}
-        {bannerButton &&
-          (typeof bannerButton === 'object' && 'label' in bannerButton ? (
-            <TouchableOpacity
-              style={[styles.button, bannerButton.style]}
-              onPress={bannerButton.onPress}
-            >
-              <Text style={[styles.buttonText, { fontSize: s.subFont }]}>{bannerButton.label}</Text>
-            </TouchableOpacity>
-          ) : (
-            bannerButton
-          ))}
       </View>
     </View>
   );
