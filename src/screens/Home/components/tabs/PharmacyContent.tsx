@@ -1,21 +1,21 @@
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   Animated,
   Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  ScrollView,
   StyleSheet,
   Text,
   View,
   ViewStyle,
 } from 'react-native';
 import CategoryLogo from '../../../../components/common/CategoryLogo';
-import PromoBanner from '../../../../components/common/promo/PromoBanner';
+import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
 import VendorCard from '../../../../components/modules/Vendor/VendorCard';
 import VendorEmptyState from '../../../../components/modules/Vendor/VendorEmptyState';
+import { usePages } from '../../../../hooks/usePages';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import useVendorStore from '../../../../store/vendorStore';
 import { useTheme } from '../../../../theme/ThemeContext';
@@ -39,51 +39,15 @@ export const PharmacyContent: React.FC<PharmacyContentProps> = ({
   const { theme } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { getVendorsByCategory } = useVendorStore();
+  const { getPromotionsByPageId } = usePages();
+
   const pharmacyVendors = getVendorsByCategory('Pharmacy');
 
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const bannerData = [
-    {
-      promo: 'pharmacyPromo',
-      title: 'Upto 30% OFF on Medicines',
-      subtitle: 'Order genuine medicines and health supplies online',
-      bannerButton: { label: 'Order Medicines', onPress: () => {} },
-      backgroundColor: 'red',
-      isBannerImage: false,
-    },
-    {
-      promo: 'pharmacyPromo',
-      title: 'Free Health Checkup',
-      subtitle: 'Get free consultation with our health experts',
-      bannerButton: { label: 'Book Now', onPress: () => {} },
-      backgroundColor: 'pink',
-      isBannerImage: false,
-    },
-    {
-      promo: 'pharmacyPromo',
-      title: '',
-      subtitle: '',
-      backgroundColor: 'purple',
-      isBannerImage: true,
-    },
-  ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex(prevIndex => {
-        const nextIndex = (prevIndex + 1) % bannerData.length;
-        const bannerWidth = width - 32 + 12; // Full width minus padding plus margin
-        scrollViewRef.current?.scrollTo({
-          x: nextIndex * bannerWidth,
-          animated: true,
-        });
-        return nextIndex;
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [bannerData.length]);
+  // Get promotions for Pharmacy page
+  const bannerData = useMemo(() => {
+    const promotions = getPromotionsByPageId('Pharmacy');
+    return promotions || [];
+  }, [getPromotionsByPageId]);
 
   const styles = StyleSheet.create({
     container: {
@@ -222,14 +186,6 @@ export const PharmacyContent: React.FC<PharmacyContentProps> = ({
       borderRadius: 12,
       padding: 4,
     },
-    bannerScrollContainer: {
-      paddingHorizontal: 16,
-    },
-    bannerContainer: {
-      width: width - 32, // Full width minus padding
-      marginVertical: 8,
-      marginRight: 12,
-    },
   });
 
   return (
@@ -250,28 +206,7 @@ export const PharmacyContent: React.FC<PharmacyContentProps> = ({
           </View>
 
           {/* Promotional Banner */}
-          <ScrollView
-            ref={scrollViewRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.bannerScrollContainer}
-            pagingEnabled
-            scrollEventThrottle={16}
-          >
-            {bannerData.map((banner, index) => (
-              <PromoBanner
-                key={index}
-                promo={banner.promo}
-                title={banner.title}
-                subtitle={banner.subtitle}
-                bannerButton={banner.bannerButton}
-                size="small"
-                style={styles.bannerContainer}
-                backgroundColor={banner.backgroundColor}
-                isBannerImage={banner.isBannerImage}
-              />
-            ))}
-          </ScrollView>
+          {bannerData.length > 0 && <AutoScrollBanner bannerData={bannerData} />}
 
           {/* Vendors Grid */}
           <Text style={styles.sectionTitle}>Pharmacy</Text>

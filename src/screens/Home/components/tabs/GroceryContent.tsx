@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Animated,
   Dimensions,
@@ -15,6 +15,7 @@ import CategoryLogo from '../../../../components/common/CategoryLogo';
 import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
 import VendorCard from '../../../../components/modules/Vendor/VendorCard';
 import VendorEmptyState from '../../../../components/modules/Vendor/VendorEmptyState';
+import { usePages } from '../../../../hooks';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import useVendorStore from '../../../../store/vendorStore';
 import { useTheme } from '../../../../theme/ThemeContext';
@@ -39,32 +40,12 @@ export const GroceryContent: React.FC<GroceryContentProps> = ({
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { getVendorsByCategory } = useVendorStore();
   const groceryVendors = getVendorsByCategory('Grocery');
-
-  const bannerData = [
-    {
-      promo: 'groceryPromo',
-      title: 'Fresh Groceries Delivered',
-      subtitle: 'Get your daily essentials at your doorstep',
-      bannerButton: { label: 'Shop Now', onPress: () => {} },
-      backgroundColor: 'yellow',
-      isBannerImage: false,
-    },
-    {
-      promo: 'groceryPromo',
-      title: 'Organic Products',
-      subtitle: 'Fresh organic vegetables and fruits',
-      bannerButton: { label: 'Order Organic', onPress: () => {} },
-      backgroundColor: 'green',
-      isBannerImage: false,
-    },
-    {
-      promo: 'groceryPromo',
-      title: '',
-      subtitle: '',
-      backgroundColor: 'orange',
-      isBannerImage: true,
-    },
-  ];
+  const { getPromotionsByPageId } = usePages();
+  // Get promotions for Food page
+  const bannerData = useMemo(() => {
+    const promotions = getPromotionsByPageId('Grocery');
+    return promotions || [];
+  }, [getPromotionsByPageId]);
 
   const styles = StyleSheet.create({
     container: {

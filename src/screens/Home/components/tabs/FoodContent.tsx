@@ -1,21 +1,21 @@
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   Animated,
   Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  ScrollView,
   StyleSheet,
   Text,
   View,
   ViewStyle,
 } from 'react-native';
 import CategoryLogo from '../../../../components/common/CategoryLogo';
-import PromoBanner from '../../../../components/common/promo/PromoBanner';
+import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
 import VendorCard from '../../../../components/modules/Vendor/VendorCard';
 import VendorEmptyState from '../../../../components/modules/Vendor/VendorEmptyState';
+import { usePages } from '../../../../hooks/usePages';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import useVendorStore from '../../../../store/vendorStore';
 import { useTheme } from '../../../../theme/ThemeContext';
@@ -39,51 +39,16 @@ export const FoodContent: React.FC<FoodContentProps> = ({
   const { theme } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { getVendorsByCategory } = useVendorStore();
+  const { getPromotionsByPageId } = usePages();
+
   const foodVendors = getVendorsByCategory('Food');
 
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const bannerData = [
-    {
-      promo: 'foodPromo',
-      title: 'Get 25% OFF!',
-      subtitle: 'On your first order with code WELCOME',
-      bannerButton: { label: 'Order Now', onPress: () => {} },
-      backgroundColor: 'green',
-      isBannerImage: false,
-    },
-    {
-      promo: 'foodPromo',
-      title: 'Free Delivery',
-      subtitle: 'On orders above ₹200',
-      bannerButton: { label: 'Shop Now', onPress: () => {} },
-      backgroundColor: 'blue',
-      isBannerImage: false,
-    },
-    {
-      promo: 'foodPromo',
-      title: '',
-      subtitle: '',
-      backgroundColor: 'orange',
-      isBannerImage: true,
-    },
-  ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex(prevIndex => {
-        const nextIndex = (prevIndex + 1) % bannerData.length;
-        const bannerWidth = width - 32 + 12; // Full width minus padding plus margin
-        scrollViewRef.current?.scrollTo({
-          x: nextIndex * bannerWidth,
-          animated: true,
-        });
-        return nextIndex;
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [bannerData.length]);
+  // Get promotions for Food page
+  const bannerData = useMemo(() => {
+    const promotions = getPromotionsByPageId('Food');
+    console.log('promotions onFood', promotions);
+    return promotions || [];
+  }, [getPromotionsByPageId]);
 
   const styles = StyleSheet.create({
     container: {
@@ -221,14 +186,6 @@ export const FoodContent: React.FC<FoodContentProps> = ({
       borderRadius: 12,
       padding: 4,
     },
-    bannerScrollContainer: {
-      paddingHorizontal: 16,
-    },
-    bannerContainer: {
-      width: width - 32, // Full width minus padding
-      marginVertical: 8,
-      marginRight: 12,
-    },
   });
 
   return (
@@ -249,28 +206,7 @@ export const FoodContent: React.FC<FoodContentProps> = ({
           </View>
 
           {/* Promotional Banner */}
-          <ScrollView
-            ref={scrollViewRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.bannerScrollContainer}
-            pagingEnabled
-            scrollEventThrottle={16}
-          >
-            {bannerData.map((banner, index) => (
-              <PromoBanner
-                key={index}
-                promo={banner.promo}
-                title={banner.title}
-                subtitle={banner.subtitle}
-                bannerButton={banner.bannerButton}
-                size="medium"
-                style={styles.bannerContainer}
-                backgroundColor={banner.backgroundColor}
-                isBannerImage={banner.isBannerImage}
-              />
-            ))}
-          </ScrollView>
+          {bannerData.length > 0 && <AutoScrollBanner bannerData={bannerData} />}
 
           {/* Vendors Grid */}
           <Text style={styles.sectionTitle}>Food Delivery</Text>
