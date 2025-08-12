@@ -1,8 +1,7 @@
 import debounce from 'lodash.debounce';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Animated,
   Dimensions,
   Modal,
   Platform,
@@ -55,62 +54,14 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
 
-  const slideAnim = useRef(new Animated.Value(MODAL_HEIGHT)).current;
-  const backdropAnim = useRef(new Animated.Value(0)).current;
-
   // Default location (Pune, India)
   const defaultLocation: Location = {
     latitude: 18.5204,
     longitude: 73.8567,
   };
 
-  useEffect(() => {
-    if (visible) {
-      // Slide up animation
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(backdropAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: false,
-        }),
-      ]).start();
-    } else {
-      // Slide down animation
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: MODAL_HEIGHT,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(backdropAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: false,
-        }),
-      ]).start();
-    }
-  }, [visible, slideAnim, backdropAnim]);
-
   const handleClose = () => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: MODAL_HEIGHT,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(backdropAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: false,
-      }),
-    ]).start(() => {
-      onClose();
-    });
+    onClose();
   };
 
   const handleAddressSelect = (address: Address) => {
@@ -172,20 +123,23 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     const city = result.structured_formatting.main_text;
     const state = secondaryParts[1]?.trim() || '';
     const postalCode = secondaryParts[2]?.trim() || '';
-    const country = secondaryParts[3]?.trim() || '';
 
     // Convert search result to Address object
     const newAddress: Address = {
-      id: result.place_id || `search_${Date.now()}`,
-      // name: city,
-      address: result.structured_formatting.secondary_text,
+      addressID: result.place_id || `search_${Date.now()}`,
+      name: city,
+      phone: '',
       city: city,
       state: state,
-      postalCode: postalCode,
-      pincode: postalCode,
-      country: country,
-      isDefault: false,
       tag: 'home',
+      addressLine1: result.structured_formatting.secondary_text,
+      addressLine2: '',
+      addressLine3: '',
+      postalCode: postalCode,
+      coordinates: {
+        longitude: 0,
+        latitude: 0,
+      },
     };
 
     // Update selected address through AuthProvider
@@ -389,31 +343,16 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     >
       <View style={StyleSheet.absoluteFill}>
         {/* Backdrop */}
-        <Animated.View
-          style={[
-            themedStyles.backdrop,
-            {
-              opacity: backdropAnim,
-              backgroundColor: 'rgba(0, 0, 0, 0.9)',
-            },
-          ]}
-        >
+        <View style={[themedStyles.backdrop, { backgroundColor: 'rgba(0, 0, 0, 0.9)' }]}>
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             onPress={handleClose}
             activeOpacity={1}
           />
-        </Animated.View>
+        </View>
 
         {/* Modal Content */}
-        <Animated.View
-          style={[
-            themedStyles.modalContainer,
-            {
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
+        <View style={themedStyles.modalContainer}>
           <View style={themedStyles.header}>
             <TouchableOpacity
               style={themedStyles.closeButton}
@@ -561,12 +500,15 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                         nestedScrollEnabled={true}
                       >
                         {filteredAddresses.map((address, index) => (
-                          <View key={address.id || index} style={themedStyles.addressCardContainer}>
+                          <View
+                            key={address.addressID || index}
+                            style={themedStyles.addressCardContainer}
+                          >
                             <AddressCard
                               address={address}
                               size="small"
                               onPress={() => handleAddressSelect(address)}
-                              isSelected={selectedAddress?.id === address.id}
+                              isSelected={selectedAddress?.addressID === address.addressID}
                             />
                           </View>
                         ))}
@@ -591,7 +533,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
               </>
             )}
           </View>
-        </Animated.View>
+        </View>
 
         {/* Add Address Modal */}
         <AddAddressModal

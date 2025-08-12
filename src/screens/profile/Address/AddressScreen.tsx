@@ -25,15 +25,14 @@ const { width, height } = Dimensions.get('window');
 const AddressScreen = () => {
   const navigation = useNavigation();
   const { getColor, getTypography, theme } = useTheme();
-  const { addresses, loading, error, addAddress, retryFetch } = useAddress();
+  const { addresses, loading, fetchError, retryFetch } = useAddress();
   const [showAddModal, setShowAddModal] = useState(false);
   const insets = useSafeAreaInsets();
 
-  const handleAddAddress = async (newAddress: NewAddress) => {
-    const result = await addAddress(newAddress);
-    if (result.success) {
-      setShowAddModal(false);
-    }
+  const handleAddAddress = async (_newAddress: NewAddress) => {
+    // The API call is now handled by AddressDetailsStep internally
+    // This function is kept for any additional logic if needed
+    // The modal will be closed automatically by AddAddressModal when save is successful
   };
 
   const themedStyles = StyleSheet.create({
@@ -242,15 +241,15 @@ const AddressScreen = () => {
             accessible={true}
             accessibilityLabel="Loading addresses"
           />
-        ) : error ? (
+        ) : fetchError ? (
           <View style={themedStyles.errorContainer}>
             <Text
               style={themedStyles.errorText}
               accessible={true}
               accessibilityRole="alert"
-              accessibilityLabel={`Error: ${error}`}
+              accessibilityLabel={`Error: ${fetchError}`}
             >
-              {error}
+              {fetchError}
             </Text>
             <TouchableOpacity
               onPress={retryFetch}
@@ -270,7 +269,7 @@ const AddressScreen = () => {
           <>
             <FlatList
               data={addresses}
-              keyExtractor={(item, index) => item.id || `address-${index}`}
+              keyExtractor={(item, index) => item.addressID || `address-${index}`}
               renderItem={({ item }) => <AddressCard address={item} />}
               contentContainerStyle={themedStyles.listContainer}
               showsVerticalScrollIndicator={false}

@@ -8,6 +8,7 @@ const NEW_USER_key = '@NewUser';
 const SKIP_PERMISSIONS = '@SkipPermission';
 const SKIP_LOGIN_KEY = '@skipLogin';
 const ALREADY_LAUNCHED_KEY = '@alreadyLaunched';
+const REGION_ID_KEY = '@RegionId';
 
 export const setSkipLoginFlow = (skipLogin: boolean): void => {
   storage.set(SKIP_LOGIN_KEY, skipLogin);
@@ -131,6 +132,29 @@ export const getAlreadyLaunched = (): boolean | undefined => {
  */
 export const removeAlreadyLaunched = (): void => {
   storage.delete(ALREADY_LAUNCHED_KEY);
+};
+
+/**
+ * Sets RegionId in storage
+ * @param regionId string
+ */
+export const setRegionId = (regionId: string): void => {
+  storage.set(REGION_ID_KEY, regionId);
+};
+
+/**
+ * Gets RegionId from storage
+ * @returns string | undefined
+ */
+export const getRegionId = (): string | undefined => {
+  return storage.getString(REGION_ID_KEY) ?? undefined;
+};
+
+/**
+ * Removes RegionId from storage
+ */
+export const removeRegionId = (): void => {
+  storage.delete(REGION_ID_KEY);
 };
 
 export const StorageService = {

@@ -1,45 +1,50 @@
 import { create } from 'zustand';
-import axiosInstance from '../../config/api/axios.config';
+import axiosInstance, { apiCall } from '../../config/api/axios.config';
+import { ApiError } from '../../config/api/axios.types';
 import { getAuthSession } from '../../services/localStorage/storage.service';
 import { AddressStore, NewAddress } from '../../types/address';
 
 const useAddressStore = create<AddressStore>((set, get) => ({
   // Initial state
   addresses: [],
-  loading: false,
-  error: null,
+  loading: false, // This is for fetch operations (used by AppInitializer)
+  addingLoading: false, // This is for add operations (not used by AppInitializer)
+  fetchError: null, // Error for fetch operations
+  addError: null, // Error for add operations
 
   // Actions
   setLoading: (loading: boolean) => set({ loading }),
-  setError: (error: string | null) => set({ error }),
-  clearError: () => set({ error: null }),
+  setAddingLoading: (loading: boolean) => set({ addingLoading: loading }),
+  setFetchError: (error: string | null) => set({ fetchError: error }),
+  setAddError: (error: string | null) => set({ addError: error }),
+  clearFetchError: () => set({ fetchError: null }),
+  clearAddError: () => set({ addError: null }),
 
   fetchAddresses: async () => {
     try {
-      set({ loading: true, error: null });
-
+      set({ loading: true, fetchError: null });
       // Get auth data from storage
       const authSession = getAuthSession();
-      if (!authSession?.jwt || !authSession?.phone) {
+      if (!authSession?.jwt) {
         throw new Error('Authentication required. Please login again.');
       }
 
-      const response = await axiosInstance.get('/v2/getLocalAddress', {
+      const response = await axiosInstance.get('/v2/addresses', {
         headers: {
           SessionKey: authSession.jwt,
-          phone: authSession.phone,
+          phone: '',
+          'Request-Origin': 'CUSTOMER',
         },
       });
-      console.log('response', response.data);
       set({
         addresses: response.data || [],
         loading: false,
-        error: null,
+        fetchError: null,
       });
     } catch (err) {
       console.error('Error fetching addresses:', err);
       set({
-        error: 'Failed to fetch addresses. Please try again.',
+        fetchError: 'Failed to fetch addresses. Please try again.',
         loading: false,
       });
     }
@@ -47,8 +52,7 @@ const useAddressStore = create<AddressStore>((set, get) => ({
 
   addAddress: async (newAddress: NewAddress) => {
     try {
-      set({ loading: true, error: null });
-      const { addresses } = get();
+      set({ addingLoading: true, addError: null });
 
       // Get auth data from storage
       const authSession = getAuthSession();
@@ -56,41 +60,51 @@ const useAddressStore = create<AddressStore>((set, get) => ({
         throw new Error('Authentication required. Please login again.');
       }
 
-      // Prepare the address data according to API format
+      // Prepare the address data according to new API format
       const addressData = {
         name: newAddress.name,
-        addressLine1: newAddress.addressLine1,
-        addressLine2: newAddress.addressLine2,
-        addressLine3: newAddress.addressLine3 || null,
+        phone: newAddress.phoneNumber,
         city: newAddress.city,
         state: newAddress.state,
-        pincode: newAddress.pincode,
-        latitude: newAddress.latitude || null,
-        longitude: newAddress.longitude || null,
         tag: newAddress.tag,
+        addressLine1: newAddress.addressLine1,
+        addressLine2: newAddress.addressLine2,
+        addressLine3: newAddress.addressLine3 || '',
+        longitude: newAddress.longitude && parseFloat(newAddress.longitude),
+        latitude: newAddress.latitude && parseFloat(newAddress.latitude),
+        postalCode: newAddress.pincode,
+        isDefaultAddress: !!newAddress.isDefaultAddress,
       };
 
-      await axiosInstance.post(
-        '/v2/addAddress',
-        {
-          address: addressData,
-          isDefaultAddress: newAddress.isDefaultAddress ?? addresses.length === 0,
-        },
-        {
+      // Use apiCall wrapper for proper error handling
+      await apiCall(
+        axiosInstance.post('/v2/addresses', addressData, {
           headers: {
             SessionKey: authSession.jwt,
+            phone: '',
           },
-        }
+        })
       );
 
       // Refresh addresses after adding
       await get().fetchAddresses();
+      set({ addingLoading: false });
+
+      return { success: true };
     } catch (err) {
-      console.error('Error adding address:', err);
+      const apiError = err as ApiError;
+      console.error('Error adding address:', apiError);
+
       set({
-        error: 'Failed to add address. Please try again.',
-        loading: false,
+        addError: apiError.message || 'Failed to add address. Please try again.',
+        addingLoading: false,
       });
+
+      // Return error object with success: false and the error details
+      return {
+        success: false,
+        error: apiError,
+      };
     }
   },
 }));

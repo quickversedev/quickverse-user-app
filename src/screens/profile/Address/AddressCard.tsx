@@ -166,13 +166,13 @@ const AddressCard = ({ address, size = 'regular', onPress, isSelected }: Address
     },
   });
 
-  const handleEdit = () => {
-    // TODO: Implement edit functionality
-  };
+  // const handleEdit = () => {
+  //   // TODO: Implement edit functionality
+  // };
 
-  const handleDelete = () => {
-    // TODO: Implement delete functionality
-  };
+  // const handleDelete = () => {
+  //   // TODO: Implement delete functionality
+  // };
 
   // Small size variant
   if (size === 'small') {
@@ -275,7 +275,7 @@ const AddressCard = ({ address, size = 'regular', onPress, isSelected }: Address
           </View>
         </View>
       </View>
-      <View style={themedStyles.actions}>
+      {/* <View style={themedStyles.actions}>
         <TouchableOpacity
           style={themedStyles.editButton}
           onPress={handleEdit}
@@ -302,7 +302,7 @@ const AddressCard = ({ address, size = 'regular', onPress, isSelected }: Address
             <Text style={themedStyles.deleteIconText}>✕</Text>
           </View>
         </TouchableOpacity>
-      </View>
+      </View> */}
     </View>
   );
 };

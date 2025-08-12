@@ -24,7 +24,7 @@ const ProfileScreen = () => {
             title: 'Addresses',
             icon: 'map-marker-outline',
             onPress: () => {
-              navigation.navigate('Orders');
+              navigation.navigate('Address');
             },
           },
           {

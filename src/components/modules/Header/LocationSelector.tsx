@@ -19,7 +19,6 @@ export const LocationSelector = () => {
   };
 
   const getDisplayAddress = () => {
-    console.log('🔍 [LocationSelector] Selected address:', selectedAddress);
     if (selectedAddress) {
       let displayText = '';
 
@@ -32,13 +31,10 @@ export const LocationSelector = () => {
         displayText = `${selectedAddress.city} - ${selectedAddress.postalCode}`;
       }
       // Just show city if available
-      else if (selectedAddress.city) {
+      else {
         displayText = selectedAddress.city;
       }
       // Fallback to address
-      else {
-        displayText = selectedAddress.address || 'Selected Address';
-      }
 
       // Add ellipsis if text is too long (more than 25 characters)
       if (displayText.length > 25) {

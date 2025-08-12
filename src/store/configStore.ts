@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { fetchInitialConfig } from '../services/api/configService';
+import { getRegionId, setRegionId } from '../services/localStorage/storage.service';
 import { InitialConfigParams, InitialConfigResponse } from '../types/config';
 
 interface ConfigStore {
@@ -19,6 +20,7 @@ interface ConfigStore {
   getConfig: () => InitialConfigResponse | null;
   getThemeId: () => string | null;
   getRegionId: () => string | null;
+  getStoredRegionId: () => string | undefined;
   getDefaultLocation: () => { latitude: string; longitude: string } | null;
   defaultThemeEnabled: () => boolean;
   hasConfig: () => boolean;
@@ -42,6 +44,12 @@ const useConfigStore = create<ConfigStore>((set, get) => ({
 
     try {
       const config = await fetchInitialConfig(params);
+
+      // Store RegionId in MMKV storage when config is fetched
+      if (config?.regionId) {
+        setRegionId(config.regionId);
+      }
+
       set({
         config,
         loading: false,
@@ -98,6 +106,11 @@ const useConfigStore = create<ConfigStore>((set, get) => ({
    * Get the region ID from configuration
    */
   getRegionId: () => get().config?.regionId || null,
+
+  /**
+   * Get the stored region ID from MMKV storage
+   */
+  getStoredRegionId: () => getRegionId(),
 
   /**
    * Get the default location from configuration

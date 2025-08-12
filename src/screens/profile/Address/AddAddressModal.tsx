@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 
 import { Icons } from '../../../assets';
-import { useAddress } from '../../../hooks';
 import { AddressComponents } from '../../../services/api/olaLocationService';
 import { useTheme } from '../../../theme/ThemeContext';
 import AddressDetailsStep from './AddressDetailsStep';
@@ -31,7 +30,8 @@ interface AddressDetails {
   city: string;
   state: string;
   pincode: string;
-  landmark: string;
+  phoneNumber: string;
+  addressLine3?: string;
   tag: string;
   isDefaultAddress: boolean;
 }
@@ -44,7 +44,6 @@ interface AddAddressModalProps {
 
 const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => {
   const { getColor, getTypography, theme } = useTheme();
-  const { addAddress, loading, error } = useAddress();
   const [step, setStep] = useState(1);
   const [location, setLocation] = useState<Location | null>(null);
   const [selectedAddressDescription, setSelectedAddressDescription] = useState<AddressComponents>({
@@ -61,8 +60,9 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
     city: '',
     state: '',
     pincode: '',
-    landmark: '',
-    tag: 'Home',
+    phoneNumber: '',
+    addressLine3: '',
+    tag: '',
     isDefaultAddress: false,
   });
   const [apiError, setApiError] = useState<string | null>(null);
@@ -76,29 +76,16 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
     setStep(2);
   };
 
-  const handleSaveAddress = async (details: AddressDetails) => {
+  const handleSaveAddress = async (_details: AddressDetails) => {
     setApiError(null);
-    try {
-      const newAddress = {
-        ...details,
-        latitude: location ? location.latitude.toString() : undefined,
-        longitude: location ? location.longitude.toString() : undefined,
-      };
-      const result = await addAddress(newAddress);
-      if (result.success) {
-        onSave(newAddress);
-        resetForm();
-      } else {
-        setApiError(
-          (result.error as { message?: string })?.message ||
-            'Failed to save address. Please try again.'
-        );
-      }
-    } catch (error: unknown) {
-      setApiError(
-        (error as { message?: string })?.message || 'Failed to save address. Please try again.'
-      );
-    }
+    // The API call is now handled by AddressDetailsStep internally
+    // This function is kept for any additional logic if needed
+  };
+
+  const handleAddressSaveSuccess = () => {
+    // Close the modal when address is successfully saved
+    resetForm();
+    onClose();
   };
 
   const resetForm = () => {
@@ -118,10 +105,12 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       city: '',
       state: '',
       pincode: '',
-      landmark: '',
-      tag: 'Home',
+      phoneNumber: '',
+      addressLine3: '',
+      tag: '',
       isDefaultAddress: false,
     });
+    setApiError(null);
   };
 
   const handleBack = () => {
@@ -227,8 +216,8 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
             details={addressDetails}
             onDetailsChange={setAddressDetails}
             onSave={handleSaveAddress}
-            isLoading={loading}
-            apiError={apiError || error}
+            onSuccess={handleAddressSaveSuccess}
+            apiError={apiError}
           />
         )}
       </View>

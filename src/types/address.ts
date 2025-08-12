@@ -6,45 +6,49 @@ export type AddressDetails = {
   city: string;
   state: string;
   pincode: string;
-  landmark: string;
+  phoneNumber: string;
+
   tag: string;
   latitude?: string;
   longitude?: string;
 };
 
 export type Address = {
-  id: string;
-  address: string;
+  addressID: string;
+  name: string;
+  phone: string;
   city: string;
   state: string;
+  tag: string;
+  addressLine1: string;
+  addressLine2: string;
+  addressLine3: string;
   postalCode: string;
-  country: string;
-  isDefault?: boolean;
-  // Add missing properties to match AddressDetails
-  name?: string;
-  addressLine1?: string;
-  addressLine2?: string;
-  pincode?: string;
-  tag?: string;
-  landmark?: string;
-  latitude?: string;
-  longitude?: string;
+  coordinates: {
+    longitude: number;
+    latitude: number;
+  };
 };
 
-export type NewAddress = AddressDetails & { isDefaultAddress?: boolean };
+export type NewAddress = AddressDetails & { isDefaultAddress: boolean };
 
 export type AddressState = {
   addresses: Address[];
   loading: boolean;
-  error: string | null;
+  addingLoading: boolean;
+  fetchError: string | null;
+  addError: string | null;
 };
 
 export type AddressActions = {
   fetchAddresses: () => Promise<void>;
-  addAddress: (newAddress: NewAddress) => Promise<void>;
+  addAddress: (newAddress: NewAddress) => Promise<{ success: boolean; error?: any }>;
   setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  clearError: () => void;
+  setAddingLoading: (loading: boolean) => void;
+  setFetchError: (error: string | null) => void;
+  setAddError: (error: string | null) => void;
+  clearFetchError: () => void;
+  clearAddError: () => void;
 };
 
 export type AddressStore = AddressState & AddressActions;

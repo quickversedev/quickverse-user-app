@@ -13,8 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useAddress } from '../../../hooks/useAddress';
 import { AddressComponents } from '../../../services/api/olaLocationService';
 import { useTheme } from '../../../theme/ThemeContext';
+import { NewAddress } from '../../../types/address';
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,7 +32,8 @@ interface AddressDetails {
   city: string;
   state: string;
   pincode: string;
-  landmark: string;
+  phoneNumber: string;
+  addressLine3?: string;
   tag: string;
   isDefaultAddress: boolean;
 }
@@ -42,9 +45,10 @@ interface ValidationErrors {
   city?: string;
   state?: string;
   pincode?: string;
-  landmark?: string;
+  addressLine3?: string;
   tag?: string;
   isDefaultAddress?: string;
+  phoneNumber?: string;
 }
 
 interface AddressDetailsStepProps {
@@ -53,6 +57,7 @@ interface AddressDetailsStepProps {
   details: AddressDetails;
   onDetailsChange: (details: AddressDetails) => void;
   onSave: (details: AddressDetails) => void;
+  onSuccess: () => void; // Added onSuccess prop
 }
 
 const AddressDetailsStep = ({
@@ -61,13 +66,15 @@ const AddressDetailsStep = ({
   details,
   onDetailsChange,
   onSave,
-  isLoading = false,
+  onSuccess,
   apiError = null,
-}: AddressDetailsStepProps & { isLoading?: boolean; apiError?: string | null }) => {
+}: AddressDetailsStepProps & { apiError?: string | null }) => {
   const { getColor, getTypography, theme } = useTheme();
   const _navigation = useNavigation();
+  const { addAddress, addingLoading } = useAddress(); // Use addingLoading from store
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null); // Keep local error state
 
   // Auto-fill city, state, and pincode from selectedAddressDescription
   useEffect(() => {
@@ -93,7 +100,14 @@ const AddressDetailsStep = ({
         });
       }
     }
-  }, [selectedAddressDescription, details.city, details.state, details.pincode, onDetailsChange]);
+  }, [
+    selectedAddressDescription,
+    details.city,
+    details.state,
+    details.pincode,
+    onDetailsChange,
+    details,
+  ]);
   // Validation rules
   const validateField = (field: keyof AddressDetails, value: string): string | undefined => {
     switch (field) {
@@ -142,7 +156,26 @@ const AddressDetailsStep = ({
           return 'Pincode must be 6 digits';
         }
         break;
-      case 'landmark':
+      case 'phoneNumber':
+        if (!value.trim()) {
+          return 'Phone number is required';
+        }
+        if (!/^\d{10}$/.test(value.trim())) {
+          return 'Phone number must be 10 digits';
+        }
+        break;
+      case 'tag':
+        if (!value.trim()) {
+          return 'Tag is required';
+        }
+        if (value.trim().length < 2) {
+          return 'Tag must be at least 2 characters';
+        }
+        if (value.trim().length > 20) {
+          return 'Tag must be less than 20 characters';
+        }
+        break;
+      case 'addressLine3':
         // Optional field - no validation needed
         break;
     }
@@ -160,6 +193,8 @@ const AddressDetailsStep = ({
       'city',
       'state',
       'pincode',
+      'phoneNumber',
+      'tag',
     ];
 
     requiredFields.forEach(field => {
@@ -212,7 +247,8 @@ const AddressDetailsStep = ({
       'city',
       'state',
       'pincode',
-      'landmark',
+      'phoneNumber',
+      'addressLine3',
     ];
     const newTouched: Record<string, boolean> = {};
     allFields.forEach(field => {
@@ -224,8 +260,47 @@ const AddressDetailsStep = ({
       return;
     }
 
-    // Call parent onSave with all details
-    onSave(details);
+    setSubmitError(null);
+
+    // Prepare the new address data
+    const newAddress: NewAddress = {
+      ...details,
+      latitude: _location ? _location.latitude.toString() : undefined,
+      longitude: _location ? _location.longitude.toString() : undefined,
+    };
+
+    // Make the API call directly
+    const result = await addAddress(newAddress);
+
+    if (result.success) {
+      // Call parent onSave if provided (for any additional logic)
+      if (onSave) {
+        onSave(details);
+      }
+
+      // Call onSuccess to close modal only on successful save
+      if (onSuccess) {
+        onSuccess();
+      }
+    } else {
+      // Handle error response from the store
+      if (result.error) {
+        // The error object from the store contains the ApiError structure
+        const apiError = result.error;
+
+        if (apiError.code === '1052') {
+          // Tag already exists error
+          setSubmitError(`Tag "${details.tag}" already exists. Please change the tag.`);
+        } else {
+          // Use the message from the API error
+          setSubmitError(apiError.message || 'Failed to save address. Please try again.');
+        }
+      } else {
+        // Fallback error handling
+        setSubmitError('Failed to save address. Please try again.');
+      }
+      // Don't call onSuccess here - modal should stay open when API fails
+    }
   };
 
   const isFormValid = () => {
@@ -238,6 +313,8 @@ const AddressDetailsStep = ({
       details.state.trim() &&
       details.pincode.trim() &&
       /^\d{6}$/.test(details.pincode.trim()) &&
+      details.phoneNumber.trim() &&
+      /^\d{10}$/.test(details.phoneNumber.trim()) &&
       details.tag &&
       details.tag.trim(); // Tag is also required
 
@@ -304,11 +381,19 @@ const AddressDetailsStep = ({
     inputContainer: {
       marginBottom: 20,
     },
+    inputRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 20,
+    },
+    inputRowItem: {
+      flex: 0.48, // Take up roughly half the width with some spacing
+    },
     inputWrapper: {
       position: 'relative',
     },
     input: {
-      height: Math.max(52, height * 0.065),
+      height: Math.max(50, height * 0.065),
       paddingHorizontal: Math.max(18, width * 0.045),
       borderRadius: theme.borderRadius.md,
       borderWidth: 1.5,
@@ -338,11 +423,7 @@ const AddressDetailsStep = ({
       shadowColor: getColor('error'),
       shadowOpacity: 0.3,
     },
-    inputValid: {
-      borderColor: '#4CAF50', // Green color for valid state
-      shadowColor: '#4CAF50',
-      shadowOpacity: 0.2,
-    },
+
     errorText: {
       color: getColor('error'),
       fontSize: getTypography('caption'),
@@ -401,11 +482,13 @@ const AddressDetailsStep = ({
       borderRadius: theme.borderRadius.sm,
       alignItems: 'center',
       backgroundColor:
-        isFormValid() && !isLoading ? getColor('primary') : getColor('button').disabled.background,
+        isFormValid() && !addingLoading
+          ? getColor('primary')
+          : getColor('button').disabled.background,
       minHeight: 26,
       justifyContent: 'center',
 
-      opacity: isLoading ? 0.7 : 1,
+      opacity: addingLoading ? 0.7 : 1,
       shadowColor: theme.colors.shadow.color,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: theme.colors.shadow.opacity * 0.3,
@@ -414,7 +497,7 @@ const AddressDetailsStep = ({
     },
     saveButtonText: {
       fontWeight: 'bold',
-      color: isFormValid() && !isLoading ? getColor('white') : getColor('text'),
+      color: isFormValid() && !addingLoading ? getColor('white') : getColor('text'),
       fontSize: getTypography('body'),
       includeFontPadding: false,
       textAlignVertical: 'center',
@@ -492,11 +575,6 @@ const AddressDetailsStep = ({
       returnKeyType = 'next',
     } = options;
     const hasError = touched[field] && errors[field];
-    const isValid =
-      touched[field] &&
-      !errors[field] &&
-      details[field] &&
-      (details[field] as string).trim().length > 0;
 
     // Add asterisk to placeholder if required
     const displayPlaceholder = required ? `${placeholder} *` : placeholder;
@@ -511,13 +589,8 @@ const AddressDetailsStep = ({
             style={[
               themedStyles.input,
               hasError && themedStyles.inputError,
-              isValid && themedStyles.inputValid,
               {
-                borderColor: hasError
-                  ? getColor('error')
-                  : isValid
-                  ? '#4CAF50'
-                  : getColor('border'),
+                borderColor: hasError ? getColor('error') : getColor('border'),
                 paddingTop: isActive ? 20 : 0,
               },
             ]}
@@ -531,7 +604,7 @@ const AddressDetailsStep = ({
                 setTouched(prev => ({ ...prev, [field]: true }));
               }
             }}
-            editable={!isLoading}
+            editable={!addingLoading}
             accessible={true}
             accessibilityRole="text"
             accessibilityLabel={`Enter ${placeholder.toLowerCase()}`}
@@ -546,7 +619,7 @@ const AddressDetailsStep = ({
               style={[
                 themedStyles.floatingLabel,
                 {
-                  color: hasError ? getColor('error') : isValid ? '#4CAF50' : getColor('primary'),
+                  color: hasError ? getColor('error') : getColor('primary'),
                 },
               ]}
             >
@@ -556,6 +629,155 @@ const AddressDetailsStep = ({
         </View>
 
         {optional && <Text style={themedStyles.optionalText}>(Optional)</Text>}
+      </View>
+    );
+  };
+
+  const renderInputRow = (
+    field1: keyof AddressDetails,
+    placeholder1: string,
+    field2: keyof AddressDetails,
+    placeholder2: string,
+    options: {
+      required1?: boolean;
+      required2?: boolean;
+      optional1?: boolean;
+      optional2?: boolean;
+      keyboardType1?: 'default' | 'numeric';
+      keyboardType2?: 'default' | 'numeric';
+      autoCapitalize1?: 'none' | 'sentences' | 'words' | 'characters';
+      autoCapitalize2?: 'none' | 'sentences' | 'words' | 'characters';
+      maxLength1?: number;
+      maxLength2?: number;
+      returnKeyType1?: 'next' | 'done';
+      returnKeyType2?: 'next' | 'done';
+    } = {}
+  ) => {
+    const {
+      required1 = false,
+      required2 = false,
+      optional1 = false,
+      optional2 = false,
+      keyboardType1 = 'default',
+      keyboardType2 = 'default',
+      autoCapitalize1 = 'words',
+      autoCapitalize2 = 'words',
+      maxLength1,
+      maxLength2,
+      returnKeyType1 = 'next',
+      returnKeyType2 = 'next',
+    } = options;
+
+    const hasError1 = touched[field1] && errors[field1];
+    const hasError2 = touched[field2] && errors[field2];
+
+    const displayPlaceholder1 = required1 ? `${placeholder1} *` : placeholder1;
+    const displayPlaceholder2 = required2 ? `${placeholder2} *` : placeholder2;
+
+    const isActive1 = touched[field1] || (details[field1] as string).trim().length > 0;
+    const isActive2 = touched[field2] || (details[field2] as string).trim().length > 0;
+
+    return (
+      <View style={themedStyles.inputRow}>
+        <View style={themedStyles.inputRowItem}>
+          <View style={themedStyles.inputWrapper}>
+            <TextInput
+              style={[
+                themedStyles.input,
+                hasError1 && themedStyles.inputError,
+                {
+                  borderColor: hasError1 ? getColor('error') : getColor('border'),
+                  paddingTop: isActive1 ? 20 : 0,
+                },
+              ]}
+              placeholder={isActive1 ? '' : displayPlaceholder1}
+              placeholderTextColor={getColor('placeholder')}
+              value={details[field1] as string}
+              onChangeText={text => handleChange(field1, text)}
+              onBlur={() => handleBlur(field1)}
+              onFocus={() => {
+                if (!touched[field1]) {
+                  setTouched(prev => ({ ...prev, [field1]: true }));
+                }
+              }}
+              editable={!addingLoading}
+              accessible={true}
+              accessibilityRole="text"
+              accessibilityLabel={`Enter ${placeholder1.toLowerCase()}`}
+              accessibilityHint={`Type your ${placeholder1.toLowerCase()}`}
+              returnKeyType={returnKeyType1}
+              autoCapitalize={autoCapitalize1}
+              keyboardType={keyboardType1}
+              maxLength={maxLength1}
+            />
+            {isActive1 && (
+              <Text
+                style={[
+                  themedStyles.floatingLabel,
+                  {
+                    color: hasError1 ? getColor('error') : getColor('primary'),
+                  },
+                ]}
+              >
+                {displayPlaceholder1}
+              </Text>
+            )}
+          </View>
+          {optional1 && <Text style={themedStyles.optionalText}>(Optional)</Text>}
+          {touched[field1] && errors[field1] && (
+            <Text style={themedStyles.errorText}>{errors[field1]}</Text>
+          )}
+        </View>
+
+        <View style={themedStyles.inputRowItem}>
+          <View style={themedStyles.inputWrapper}>
+            <TextInput
+              style={[
+                themedStyles.input,
+                hasError2 && themedStyles.inputError,
+                {
+                  borderColor: hasError2 ? getColor('error') : getColor('border'),
+                  paddingTop: isActive2 ? 20 : 0,
+                },
+              ]}
+              placeholder={isActive2 ? '' : displayPlaceholder2}
+              placeholderTextColor={getColor('placeholder')}
+              value={details[field2] as string}
+              onChangeText={text => handleChange(field2, text)}
+              onBlur={() => handleBlur(field2)}
+              onFocus={() => {
+                if (!touched[field2]) {
+                  setTouched(prev => ({ ...prev, [field2]: true }));
+                }
+              }}
+              editable={!addingLoading}
+              accessible={true}
+              accessibilityRole="text"
+              accessibilityLabel={`Enter ${placeholder2.toLowerCase()}`}
+              accessibilityHint={`Type your ${placeholder2.toLowerCase()}`}
+              returnKeyType={returnKeyType2}
+              autoCapitalize={autoCapitalize2}
+              keyboardType={keyboardType2}
+              maxLength={maxLength2}
+            />
+            {isActive2 && (
+              <Text
+                style={[
+                  themedStyles.floatingLabel,
+                  {
+                    color: hasError2 ? getColor('error') : getColor('primary'),
+                  },
+                ]}
+              >
+                {displayPlaceholder2}
+              </Text>
+            )}
+          </View>
+          {optional2 && <Text style={themedStyles.optionalText}>(Optional)</Text>}
+          {touched[field2] && errors[field2] && (
+            <Text style={themedStyles.errorText}>{errors[field2]}</Text>
+          )}
+        </View>
       </View>
     );
   };
@@ -574,67 +796,28 @@ const AddressDetailsStep = ({
         accessible={true}
         accessibilityLabel="Address details form"
       >
-        {apiError && (
+        {(apiError || submitError) && (
           <View style={themedStyles.apiErrorContainer}>
-            <Text style={themedStyles.apiErrorText}>⚠️ {apiError}</Text>
+            <Text style={themedStyles.apiErrorText}>⚠️ {apiError || submitError}</Text>
           </View>
         )}
 
-        {renderInput('name', 'Name (Eg. Rahul Yadav)', { required: true })}
-        {renderInput('addressLine1', 'House No. / Flat No. / Building', { required: true })}
-        {renderInput('addressLine2', 'Floor', { required: true })}
-        {renderInput('landmark', 'Tower/Block', { optional: true })}
-        {renderInput('city', 'City', { required: true })}
-        {renderInput('state', 'State', { required: true })}
-        {renderInput('pincode', 'Pincode', {
-          required: true,
-          keyboardType: 'numeric',
-          maxLength: 6,
-          returnKeyType: 'done',
+        {renderInputRow('name', 'Name (Eg. Rahul Yadav)', 'phoneNumber', 'Phone Number', {
+          required1: true,
+          required2: true,
+          keyboardType2: 'numeric',
+          maxLength2: 10,
         })}
-
-        <View style={themedStyles.tagContainer}>
-          <Text
-            style={themedStyles.tagLabel}
-            accessible={true}
-            accessibilityRole="text"
-            accessibilityLabel="Save address as"
-          >
-            Save as *
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-            {['Home', 'Work', 'Other'].map(tag => (
-              <TouchableOpacity
-                key={tag}
-                style={[
-                  themedStyles.tagButton,
-                  {
-                    backgroundColor: details.tag === tag ? getColor('primary') : getColor('card'),
-                  },
-                ]}
-                onPress={() => handleChange('tag', tag)}
-                disabled={isLoading}
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel={`Save as ${tag}`}
-                accessibilityHint={`Marks this address as ${tag.toLowerCase()}`}
-                accessibilityState={{ selected: details.tag === tag, disabled: isLoading }}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    themedStyles.tagButtonText,
-                    {
-                      color: details.tag === tag ? getColor('white') : getColor('text'),
-                    },
-                  ]}
-                >
-                  {tag}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        {renderInput('addressLine1', 'Floor / Flat No. / Building', { required: true })}
+        {renderInput('addressLine2', 'Road / Street ', { required: true })}
+        {renderInputRow('addressLine3', 'Area / Locality', 'pincode', 'Pincode', {
+          optional1: true,
+          required2: true,
+          keyboardType2: 'numeric',
+          maxLength2: 6,
+        })}
+        {renderInputRow('city', 'City', 'state', 'State', { required1: true, required2: true })}
+        {renderInput('tag', 'tag (Home, work, other, etc)', { required: true, maxLength: 20 })}
 
         <View style={themedStyles.defaultContainer}>
           <Text
@@ -651,31 +834,31 @@ const AddressDetailsStep = ({
             trackColor={{ false: getColor('border'), true: getColor('primary') }}
             thumbColor={getColor('white')}
             ios_backgroundColor={getColor('border')}
-            disabled={isLoading}
+            disabled={addingLoading}
             accessible={true}
             accessibilityRole="switch"
             accessibilityLabel="Set as default address"
             accessibilityHint="Toggles whether this address should be your default address"
-            accessibilityState={{ checked: details.isDefaultAddress, disabled: isLoading }}
+            accessibilityState={{ checked: details.isDefaultAddress, disabled: addingLoading }}
           />
         </View>
 
         <TouchableOpacity
           style={themedStyles.saveButton}
-          disabled={!isFormValid() || isLoading}
+          disabled={!isFormValid() || addingLoading}
           onPress={handleSave}
           accessible={true}
           accessibilityRole="button"
-          accessibilityLabel={isLoading ? 'Saving address' : 'Save address'}
+          accessibilityLabel={addingLoading ? 'Saving address' : 'Save address'}
           accessibilityHint={
-            isLoading
+            addingLoading
               ? 'Address is being saved'
               : 'Saves the address details and adds it to your saved addresses'
           }
-          accessibilityState={{ disabled: !isFormValid() || isLoading }}
+          accessibilityState={{ disabled: !isFormValid() || addingLoading }}
           activeOpacity={0.7}
         >
-          {isLoading ? (
+          {addingLoading ? (
             <View style={themedStyles.loadingContainer}>
               <ActivityIndicator size="small" color={getColor('white')} />
               <Text style={themedStyles.loadingText}>Saving Address...</Text>

@@ -55,7 +55,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
   // console.log('AppInitializer location', location);
   // Store hooks for data fetching
   const { fetchVendors, loading: vendorLoading, error: vendorError } = useVendorStore();
-  const { fetchAddresses, loading: addressLoading, error: addressError } = useAddress();
+  const { fetchAddresses, loading: addressLoading, fetchError: addressError } = useAddress();
   const {
     fetchInitialConfig,
     loading: configLoading,
@@ -70,7 +70,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
 
   // Combined loading and error states for UI
   const isLoading = vendorLoading || addressLoading || configLoading;
-  const error = vendorError || addressError || configError;
+  const error = vendorError;
 
   /**
    * Main initialization function that fetches all required data
@@ -136,15 +136,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
         // Error will be handled by the store states
       }
     },
-    [
-      fetchVendors,
-      isLoggedIn,
-      location?.latitude,
-      location?.longitude,
-      fetchAddresses,
-      fetchInitialConfig,
-      fetchTheme,
-    ]
+    [location, permissionStatus, fetchVendors, isLoggedIn, fetchInitialConfig, fetchTheme]
   );
 
   /**
@@ -183,15 +175,20 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
           longitude: location.longitude,
         });
         const currentAddress: Address = {
-          id: 'current-location',
-          address: components.formatted_address || 'Current Location',
+          addressID: 'current-location',
+          name: 'Current Location',
+          phone: '',
           city: components.city || '',
           state: components.state || '',
+          tag: 'Home',
+          addressLine1: components.formatted_address || 'Current Location',
+          addressLine2: '',
+          addressLine3: '',
           postalCode: components.postalCode || '',
-          country: components.country || '',
-          isDefault: true,
-          latitude: location.latitude.toString(),
-          longitude: location.longitude.toString(),
+          coordinates: {
+            longitude: location.longitude,
+            latitude: location.latitude,
+          },
         };
         setSelectedAddress(currentAddress);
         return;
@@ -201,7 +198,9 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
       else if (permissionStatus !== 'granted' && addresses && addresses.length > 0) {
         // Try to use the default address from auth data
         if (authData?.defaultAddressId) {
-          const defaultAddress = addresses.find(addr => addr.id === authData.defaultAddressId);
+          const defaultAddress = addresses.find(
+            addr => addr.addressID === authData.defaultAddressId
+          );
           if (defaultAddress) {
             setSelectedAddress(defaultAddress);
             return;
@@ -225,15 +224,20 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
               longitude: parseFloat(defaultLocation.longitude),
             });
             const configAddress: Address = {
-              id: 'config-default-location',
-              address: components.formatted_address || 'Default Location',
+              addressID: 'config-default-location',
+              name: 'Default Location',
+              phone: '',
               city: components.city || '',
               state: components.state || '',
+              tag: 'Home',
+              addressLine1: components.formatted_address || 'Default Location',
+              addressLine2: '',
+              addressLine3: '',
               postalCode: components.postalCode || '',
-              country: components.country || '',
-              isDefault: true,
-              latitude: defaultLocation.latitude,
-              longitude: defaultLocation.longitude,
+              coordinates: {
+                longitude: parseFloat(defaultLocation.longitude),
+                latitude: parseFloat(defaultLocation.latitude),
+              },
             };
             setSelectedAddress(configAddress);
             return;
@@ -244,15 +248,20 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
 
         // Final fallback to hardcoded default address
         const fallbackAddress: Address = {
-          id: 'fallback-default-location',
-          address: 'Connaught Place',
+          addressID: 'fallback-default-location',
+          name: 'Connaught Place',
+          phone: '',
           city: 'New Delhi',
           state: 'Delhi',
+          tag: 'Home',
+          addressLine1: 'Connaught Place',
+          addressLine2: '',
+          addressLine3: '',
           postalCode: '110001',
-          country: 'India',
-          isDefault: true,
-          latitude: '28.6139', // Connaught Place, Delhi coordinates
-          longitude: '77.2090',
+          coordinates: {
+            longitude: 77.209, // Connaught Place, Delhi coordinates
+            latitude: 28.6139,
+          },
         };
         setSelectedAddress(fallbackAddress);
       }
@@ -295,30 +304,16 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
     getPermissionAndLocation()
       .then(({ permission, location: locationResult }) => {
         setPermissionStatus(permission);
-        console.log(
-          '🔍 [AppInitializer] Retry - Permission:',
-          permission,
-          'Location:',
-          locationResult
-        );
 
-        // Initialize app regardless of location success/failure
-        console.log('🚀 [AppInitializer] Starting app initialization after retry');
         return initializeApp().then(() => {
-          console.log(
-            '🏠 [AppInitializer] App initialized, starting address initialization on retry'
-          );
           return initializeSelectedAddress();
         });
       })
       .catch(error => {
         console.warn('❌ [AppInitializer] Failed to get permission and location on retry:', error);
         // Even if location fails, try to initialize app
-        console.log('🚀 [AppInitializer] Starting app initialization after retry error');
+
         return initializeApp().then(() => {
-          console.log(
-            '🏠 [AppInitializer] App initialized after retry error, starting address initialization'
-          );
           return initializeSelectedAddress();
         });
       });
@@ -333,23 +328,18 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
       getPermissionAndLocation()
         .then(({ permission, location: locationResult }) => {
           setPermissionStatus(permission);
-          console.log('🔍 [AppInitializer] Permission:', permission, 'Location:', locationResult);
 
           // Initialize app regardless of location success/failure
-          console.log('🚀 [AppInitializer] Starting app initialization');
+
           return initializeApp().then(() => {
-            console.log('🏠 [AppInitializer] App initialized, starting address initialization');
             return initializeSelectedAddress();
           });
         })
         .catch(error => {
           console.warn('❌ [AppInitializer] Failed to get permission and location:', error);
           // Even if location fails, try to initialize app
-          console.log('🚀 [AppInitializer] Starting app initialization after error');
+
           return initializeApp().then(() => {
-            console.log(
-              '🏠 [AppInitializer] App initialized after error, starting address initialization'
-            );
             return initializeSelectedAddress();
           });
         });
@@ -361,20 +351,15 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
    */
   useEffect(() => {
     if (isInitialized && selectedAddress) {
-      console.log(
-        '🏠 [AppInitializer] Selected address changed, re-fetching config, vendors, and theme'
-      );
       // Re-fetch only config, vendors, and theme (skip addresses)
-      initializeApp(true).then(() => {
-        console.log('✅ [AppInitializer] Re-fetch completed for address change');
-      });
+      initializeApp(true).then(() => {});
     }
   }, [selectedAddress, isInitialized, initializeApp]);
 
   // Show loading spinner during initialization
   if (isLoading) {
     return (
-      <View style={[styles.container, { backgroundColor: getColor('background') }]}>
+      <View style={[styles.container, { backgroundColor: 'yellow' }]}>
         <ActivityIndicator size="large" color={getColor('primary')} />
       </View>
     );
@@ -398,7 +383,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
 
   // Fallback loading state (should rarely be reached)
   return (
-    <View style={[styles.container, { backgroundColor: getColor('card') }]}>
+    <View style={[styles.container, { backgroundColor: 'red' }]}>
       <ActivityIndicator size="large" color={getColor('primary')} />
     </View>
   );

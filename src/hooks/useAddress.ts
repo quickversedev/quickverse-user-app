@@ -2,8 +2,19 @@ import useAddressStore from '../store/address/addressStore';
 import { NewAddress } from '../types/address';
 
 export const useAddress = () => {
-  const { addresses, loading, error, fetchAddresses, addAddress, setError, clearError } =
-    useAddressStore();
+  const {
+    addresses,
+    loading,
+    addingLoading,
+    fetchError,
+    addError,
+    fetchAddresses,
+    addAddress,
+    setFetchError,
+    setAddError,
+    clearFetchError,
+    clearAddError,
+  } = useAddressStore();
 
   // Auto-fetch addresses on mount
   // useEffect(() => {
@@ -11,33 +22,33 @@ export const useAddress = () => {
   // }, [fetchAddresses]);
 
   const handleAddAddress = async (newAddress: NewAddress) => {
-    try {
-      await addAddress(newAddress);
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err };
-    }
+    const result = await addAddress(newAddress);
+    return result;
   };
 
   const retryFetch = () => {
-    clearError();
+    clearFetchError();
   };
 
   return {
     // State
     addresses,
     loading,
-    error,
+    addingLoading,
+    fetchError,
+    addError,
 
     // Actions
     fetchAddresses,
     addAddress: handleAddAddress,
     retryFetch,
-    clearError,
-    setError,
+    clearFetchError,
+    clearAddError,
+    setFetchError,
+    setAddError,
 
     // Computed values
     hasAddresses: addresses.length > 0,
-    defaultAddress: addresses.find(addr => addr.isDefault),
+    defaultAddress: addresses.find(addr => addr.tag === 'Home'), // Use tag instead of isDefault
   };
 };
