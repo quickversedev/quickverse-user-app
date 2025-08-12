@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import axiosInstance, { apiCall } from '../../config/api/axios.config';
 import { ApiError } from '../../config/api/axios.types';
-import { getAuthSession } from '../../services/localStorage/storage.service';
+import { AuthSession } from '../../services/localStorage/storage.service';
 import { AddressStore, NewAddress } from '../../types/address';
 
 const useAddressStore = create<AddressStore>((set, get) => ({
@@ -20,11 +20,9 @@ const useAddressStore = create<AddressStore>((set, get) => ({
   clearFetchError: () => set({ fetchError: null }),
   clearAddError: () => set({ addError: null }),
 
-  fetchAddresses: async () => {
+  fetchAddresses: async (authSession?: AuthSession) => {
     try {
       set({ loading: true, fetchError: null });
-      // Get auth data from storage
-      const authSession = getAuthSession();
       if (!authSession?.jwt) {
         throw new Error('Authentication required. Please login again.');
       }
@@ -32,8 +30,7 @@ const useAddressStore = create<AddressStore>((set, get) => ({
       const response = await axiosInstance.get('/v2/addresses', {
         headers: {
           SessionKey: authSession.jwt,
-          phone: '',
-          'Request-Origin': 'CUSTOMER',
+          phone: authSession.phone,
         },
       });
       set({
@@ -50,12 +47,10 @@ const useAddressStore = create<AddressStore>((set, get) => ({
     }
   },
 
-  addAddress: async (newAddress: NewAddress) => {
+  addAddress: async (newAddress: NewAddress, authSession?: AuthSession) => {
     try {
       set({ addingLoading: true, addError: null });
 
-      // Get auth data from storage
-      const authSession = getAuthSession();
       if (!authSession?.jwt) {
         throw new Error('Authentication required. Please login again.');
       }

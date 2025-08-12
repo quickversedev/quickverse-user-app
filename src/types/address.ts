@@ -1,3 +1,5 @@
+import { AuthSession } from '../services/localStorage/storage.service';
+
 export type AddressDetails = {
   name: string;
   addressLine1: string;
@@ -41,8 +43,11 @@ export type AddressState = {
 };
 
 export type AddressActions = {
-  fetchAddresses: () => Promise<void>;
-  addAddress: (newAddress: NewAddress) => Promise<{ success: boolean; error?: any }>;
+  fetchAddresses: (authSession: AuthSession) => Promise<void>;
+  addAddress: (
+    newAddress: NewAddress,
+    authSession: AuthSession
+  ) => Promise<{ success: boolean; error?: any }>;
   setLoading: (loading: boolean) => void;
   setAddingLoading: (loading: boolean) => void;
   setFetchError: (error: string | null) => void;

@@ -1,7 +1,10 @@
+import { useAuth } from '../contexts/login/AuthProvider';
+import { AuthSession } from '../services/localStorage/storage.service';
 import useAddressStore from '../store/address/addressStore';
 import { NewAddress } from '../types/address';
 
 export const useAddress = () => {
+  const { authData } = useAuth();
   const {
     addresses,
     loading,
@@ -22,12 +25,15 @@ export const useAddress = () => {
   // }, [fetchAddresses]);
 
   const handleAddAddress = async (newAddress: NewAddress) => {
-    const result = await addAddress(newAddress);
+    const result = await addAddress(newAddress, authData as AuthSession);
     return result;
   };
 
   const retryFetch = () => {
     clearFetchError();
+    if (authData) {
+      fetchAddresses(authData);
+    }
   };
 
   return {
@@ -39,7 +45,7 @@ export const useAddress = () => {
     addError,
 
     // Actions
-    fetchAddresses,
+    fetchAddresses: () => fetchAddresses(authData as AuthSession),
     addAddress: handleAddAddress,
     retryFetch,
     clearFetchError,
