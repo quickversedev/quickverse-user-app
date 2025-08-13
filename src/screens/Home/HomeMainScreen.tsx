@@ -1,14 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
-import {
-  Platform,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Platform, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import VendorLocationEmptyState from '../../components/common/VendorLocationEmptyState';
 import { AddressSelectionModal } from '../../components/modules/Header/AddressSelectionModal';
@@ -86,18 +78,6 @@ const HomeMainScreen = () => {
         <View style={styles.content}>{renderContent()}</View>
       </View>
 
-      {/* Demo button to navigate to Payment */}
-      <View style={styles.demoButtonWrapper} pointerEvents="box-none">
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => navigation.navigate('Payment')}
-          style={[styles.demoButton, { backgroundColor: getButtonColor('default', 'background') }]}
-        >
-          <Text style={[styles.demoButtonText, { color: getButtonColor('default', 'text') }]}>
-            Go to Payment (Demo)
-          </Text>
-        </TouchableOpacity>
-      </View>
       <FloatingCartsStack />
 
       <AddressSelectionModal
