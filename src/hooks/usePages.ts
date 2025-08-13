@@ -23,7 +23,7 @@ export const usePages = () => {
   // Filter promotions by page name
   const getPromotionsByPageId = (pageName: string) => {
     const page = pages.find(p => p.pageName === pageName);
-    console.log('page', page);
+
     return page?.promotion || [];
   };
 

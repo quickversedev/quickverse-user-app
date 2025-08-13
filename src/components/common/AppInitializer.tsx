@@ -79,16 +79,17 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
    */
   const initializeApp = useCallback(
     async (skipAddressFetch = false) => {
+      console.log('🔍 [initializeApp] location', location, selectedAddress);
       try {
         // Build an array of promises for parallel execution
         const tasks: Array<Promise<unknown>> = [
           // Always fetch vendors with location data if available
           fetchVendors(
-            location?.latitude && location?.longitude
+            selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude
               ? {
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                  radiusKm: 5, // Default 5km radius for vendor search
+                  latitude: selectedAddress.coordinates.latitude,
+                  longitude: selectedAddress.coordinates.longitude,
+                  radius: 5000, // Default 5km radius for vendor search
                 }
               : undefined
           ).catch(vendorErr => {
@@ -146,7 +147,15 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
         // Error will be handled by the store states
       }
     },
-    [location, permissionStatus, fetchVendors, isLoggedIn, fetchInitialConfig, fetchTheme]
+    [
+      location,
+      selectedAddress,
+      permissionStatus,
+      fetchVendors,
+      isLoggedIn,
+      fetchInitialConfig,
+      fetchTheme,
+    ]
   );
 
   /**

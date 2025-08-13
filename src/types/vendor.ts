@@ -45,7 +45,7 @@ export interface VendorFilters {
 export interface LocationFilter {
   latitude: number;
   longitude: number;
-  radiusKm?: number; // Default 5km if not provided
+  radius?: number; // Default 5000m if not provided
 }
 
 export interface VendorStore {

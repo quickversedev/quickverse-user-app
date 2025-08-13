@@ -27,7 +27,6 @@ const usePagesStore = create<PagesStore>((set, get) => ({
           Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
         },
       });
-      console.log('response', response.data);
       set({
         pages: response.data || [],
         loading: false,

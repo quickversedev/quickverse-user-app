@@ -15,10 +15,12 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useAuth } from '../../../contexts/login/AuthProvider';
+import { useLocation } from '../../../hooks/Permissions/useLocation';
 import { useAddress } from '../../../hooks/useAddress';
 import AddAddressModal from '../../../screens/profile/Address/AddAddressModal';
 import AddressCard from '../../../screens/profile/Address/AddressCard';
 import {
+  getAddressFromCoordinates,
   getAutocompleteSuggestions,
   type Location,
   type SearchResult,
@@ -47,6 +49,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   const { getColor, getTypography, theme } = useTheme();
   const { addresses, loading } = useAddress();
   const { setSelectedAddress, authData } = useAuth();
+  const { getCurrentLocation, isLoading: locationLoading } = useLocation();
   const isLoggedIn = Boolean(authData?.jwt);
   const [showAddModal, setShowAddModal] = React.useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -155,6 +158,71 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     setShowSearchResults(false);
   };
 
+  const handleUseCurrentLocation = async () => {
+    try {
+      const location = await getCurrentLocation();
+      if (location.latitude && location.longitude) {
+        // Get address details from coordinates using reverse geocoding
+        const addressComponents = await getAddressFromCoordinates({
+          latitude: location.latitude,
+          longitude: location.longitude,
+        });
+
+        // Create a new address object with current location and address details
+        const currentLocationAddress: Address = {
+          addressID: `current_location_${Date.now()}`,
+          name: 'Current Location',
+          phone: '',
+          city: addressComponents.city || 'Current Location',
+          state: addressComponents.state || '',
+          tag: 'current',
+          addressLine1: addressComponents.formatted_address || 'Current GPS Location',
+          addressLine2: '',
+          addressLine3: '',
+          postalCode: addressComponents.postalCode || '',
+          coordinates: {
+            latitude: location.latitude,
+            longitude: location.longitude,
+          },
+        };
+
+        // Set as selected address
+        setSelectedAddress(currentLocationAddress);
+
+        handleClose();
+      }
+    } catch (error) {
+      console.error('Failed to get current location or address:', error);
+      // Fallback: create address with just coordinates if reverse geocoding fails
+      try {
+        const location = await getCurrentLocation();
+        if (location.latitude && location.longitude) {
+          const fallbackAddress: Address = {
+            addressID: `current_location_${Date.now()}`,
+            name: 'Current Location',
+            phone: '',
+            city: 'Current Location',
+            state: '',
+            tag: 'current',
+            addressLine1: 'Current GPS Location',
+            addressLine2: '',
+            addressLine3: '',
+            postalCode: '',
+            coordinates: {
+              latitude: location.latitude,
+              longitude: location.longitude,
+            },
+          };
+          setSelectedAddress(fallbackAddress);
+
+          handleClose();
+        }
+      } catch (fallbackError) {
+        console.error('Failed to get current location as fallback:', fallbackError);
+      }
+    }
+  };
+
   // Always show all saved addresses - no filtering
   const filteredAddresses = addresses;
 
@@ -249,6 +317,24 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       shadowRadius: theme.colors.shadow.radius,
       zIndex: 20,
       overflow: 'hidden',
+    },
+    currentLocationButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      // backgroundColor: getColor('primary'),
+      paddingHorizontal: 16,
+      // paddingVertical: 12,
+      borderRadius: theme.borderRadius.md,
+      // marginTop: 12,
+      marginBottom: 16,
+    },
+    currentLocationButtonText: {
+      color: getColor('white'),
+      fontSize: getTypography('body'),
+      fontWeight: '600',
+      marginLeft: 8,
+      includeFontPadding: false,
     },
     searchResultItem: {
       padding: 12,
@@ -458,6 +544,23 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                 </View>
               )}
             </View>
+
+            {/* Current Location Button */}
+            <TouchableOpacity
+              style={themedStyles.currentLocationButton}
+              onPress={handleUseCurrentLocation}
+              disabled={locationLoading}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Use current location"
+              accessibilityHint="Sets your current GPS location as the delivery address"
+              activeOpacity={0.8}
+            >
+              <MaterialCommunityIcons name="crosshairs-gps" size={20} color={getColor('white')} />
+              <Text style={themedStyles.currentLocationButtonText}>
+                {locationLoading ? 'Getting Location...' : 'Use Current Location'}
+              </Text>
+            </TouchableOpacity>
 
             {/* Section Divider */}
             <View style={themedStyles.sectionDividerContainer}>

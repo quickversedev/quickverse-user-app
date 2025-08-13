@@ -3,8 +3,12 @@ import { mockVendors } from '../assets/mock/vendor';
 import axiosInstance from '../config/api/axios.config';
 import { LocationFilter, Vendor, VendorFilters, VendorStore } from '../types/vendor';
 
-const USE_VENDOR_MOCKS = true; // Set to false for real API
-const VENDOR_API_URL = '/v1/vendors'; // Adjust as needed
+// Request debouncing mechanism
+let currentRequestId = 0;
+let pendingRequest: AbortController | null = null;
+
+const USE_VENDOR_MOCKS = false; // Set to false for real API
+const VENDOR_API_URL = '/v3/shops'; // Adjust as needed
 
 // Helper function to calculate distance between two points (Haversine formula)
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -32,12 +36,25 @@ const useVendorStore = create<VendorStore>((set, get) => ({
 
   // Actions
   fetchVendors: async (location?: LocationFilter) => {
+    // Cancel any pending request
+    if (pendingRequest) {
+      pendingRequest.abort();
+    }
+
+    // Create new request ID and abort controller
+    const requestId = ++currentRequestId;
+    const abortController = new AbortController();
+    pendingRequest = abortController;
+
     set({ loading: true, error: null });
 
     if (USE_VENDOR_MOCKS) {
       // Always return all mock vendors regardless of location
       setTimeout(() => {
-        set({ vendors: mockVendors, loading: false, userLocation: location || null });
+        // Only update if this is still the current request
+        if (requestId === currentRequestId) {
+          set({ vendors: mockVendors, loading: false, userLocation: location || null });
+        }
       }, 1000);
       return;
     }
@@ -47,18 +64,42 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         ? {
             latitude: location.latitude,
             longitude: location.longitude,
-            radiusKm: location.radiusKm || 5,
+            radius: location.radius || 5000,
           }
         : {};
-
-      const response = await axiosInstance.get(VENDOR_API_URL, { params });
-      set({
-        vendors: response.data,
-        loading: false,
-        userLocation: location || null,
+      console.log('🔍 [fetchVendors] params', params, requestId, currentRequestId);
+      const response = await axiosInstance.get(VENDOR_API_URL, {
+        params,
+        headers: {
+          Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+        },
+        signal: abortController.signal,
       });
-    } catch (err) {
-      set({ error: 'Failed to fetch vendors', loading: false });
+      console.log('🔍 [fetchVendors] response', response.data, requestId, currentRequestId);
+      // Only update state if this is still the current request
+      if (requestId === currentRequestId) {
+        set({
+          vendors: response.data,
+          loading: false,
+          userLocation: location || null,
+        });
+      }
+    } catch (err: unknown) {
+      const error = err as { name?: string };
+      // Don't update state if request was aborted
+      if (error.name === 'AbortError') {
+        return;
+      }
+
+      // Only update error state if this is still the current request
+      if (requestId === currentRequestId) {
+        set({ error: 'Failed to fetch vendors', loading: false });
+      }
+    } finally {
+      // Clear pending request if this was the current one
+      if (requestId === currentRequestId) {
+        pendingRequest = null;
+      }
     }
   },
 
@@ -139,7 +180,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
 
   getVendorsNearLocation: (location: LocationFilter) => {
     const { vendors } = get();
-    const radius = location.radiusKm || 5;
+    const radius = location.radius || 5;
 
     return vendors.filter(vendor => {
       // Use new coordinates structure if available, fallback to old location structure
