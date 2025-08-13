@@ -1,15 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAddress, useConfig, usePages } from '../../hooks';
-import { useLocation } from '../../hooks/Permissions/useLocation';
+import { PermissionAndLocation } from '../../hooks/Permissions/useLocation';
 import TabNavigation from '../../navigation/TabNavigation';
 import { findClosestAddressWithinRadius } from '../../screens/profile/Address/utils/addressUtils';
 import { getAddressFromCoordinates } from '../../services/api/olaLocationService';
 import useAddressStore from '../../store/address/addressStore';
-import useConfigStore from '../../store/configStore';
 import useThemeStore from '../../store/themeStore';
 import useVendorStore from '../../store/vendorStore';
-import type { Address } from '../../types/address';
+import { Address } from '../../types/address';
 import ErrorState from './ErrorState';
 import { HomeScreenSkeleton } from './skeleton';
 
@@ -18,6 +17,7 @@ import { HomeScreenSkeleton } from './skeleton';
  */
 interface AppInitializerProps {
   /** Optional children to render after initialization is complete */
+  locationData: PermissionAndLocation | null;
   children?: React.ReactNode;
 }
 
@@ -44,13 +44,12 @@ interface AppInitializerProps {
  * 6. Config default location (reverse geocoded)
  * 7. Hardcoded fallback (Connaught Place, Delhi)
  */
-const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
+const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData }) => {
   // UI state
   const [isInitialized, setIsInitialized] = useState(false);
-  const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
-
+  // console.log('AppInitializer locationData', locationData);
   // Location services
-  const { location, getPermissionAndLocation } = useLocation();
+
   // console.log('AppInitializer location', location);
   // Store hooks for data fetching
   const { fetchVendors, loading: vendorLoading, error: vendorError } = useVendorStore();
@@ -71,131 +70,36 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
   // Combined loading and error states for UI
   const isLoading = vendorLoading || addressLoading || configLoading || pagesLoading;
   const error = vendorError;
-
-  /**
-   * Main initialization function that fetches all required data
-   * Executes API calls in parallel with proper error handling
-   * @param skipAddressFetch - If true, skips fetching addresses (used when selectedAddress changes)
-   */
-  const initializeApp = useCallback(
-    async (skipAddressFetch = false) => {
-      console.log('🔍 [initializeApp] location', location, selectedAddress);
-      try {
-        // Build an array of promises for parallel execution
-        const tasks: Array<Promise<unknown>> = [
-          // Always fetch vendors with location data if available
-          fetchVendors(
-            selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude
-              ? {
-                  latitude: selectedAddress.coordinates.latitude,
-                  longitude: selectedAddress.coordinates.longitude,
-                  radius: 5000, // Default 5km radius for vendor search
-                }
-              : undefined
-          ).catch(vendorErr => {
-            console.warn('Vendor fetch failed:', vendorErr);
-            return null; // Allow fallback to mock data
-          }),
-        ];
-
-        // Fetch addresses only if user is logged in AND not skipping address fetch
-        if (isLoggedIn && !skipAddressFetch) {
-          tasks.unshift(
-            fetchAddresses().catch(addrErr => {
-              console.warn('Address fetch failed:', addrErr);
-              return null; // Allow fallback to empty addresses
-            })
-          );
-        }
-
-        // Always fetch initial config, theme, and pages (with location if available)
-        tasks.unshift(
-          fetchInitialConfig({
-            longitude: location?.longitude?.toString(),
-            latitude: location?.latitude?.toString(),
-          })
-            .catch(configErr => {
-              console.warn('Initial config fetch failed:', configErr);
-              return null; // Allow fallback to default config
-            })
-            .finally(() => {
-              // Always fetch theme and pages in parallel regardless of config fetch success/failure
-              const regionId = useConfigStore.getState().getRegionId();
-
-              return Promise.allSettled([
-                fetchTheme().catch(themeErr => {
-                  console.warn('Theme fetch failed:', themeErr);
-                  return null; // Allow fallback to default theme
-                }),
-                regionId
-                  ? fetchPages(regionId).catch(pagesErr => {
-                      console.warn('Pages fetch failed:', pagesErr);
-                      return null; // Allow fallback to empty pages
-                    })
-                  : Promise.resolve(null),
-              ]);
-            })
-        );
-
-        // Wait for all tasks to complete (success or failure)
-        await Promise.allSettled(tasks);
-
-        // Mark initialization as complete
-        setIsInitialized(true);
-      } catch (initErr: unknown) {
-        console.error('App initialization failed:', initErr);
-        // Error will be handled by the store states
-      }
-    },
-    [
-      location,
-      selectedAddress,
-      permissionStatus,
-      fetchVendors,
-      isLoggedIn,
-      fetchInitialConfig,
-      fetchTheme,
-    ]
-  );
-
-  /**
-   * Initializes the user's selected address based on various scenarios
-   * Handles location permissions, saved addresses, and fallback strategies
-   */
+  const { longitude: currentLongitude, latitude: currentLatitude } = locationData?.location || {};
+  const permissionStatus = locationData?.permission;
   const initializeSelectedAddress = useCallback(async (): Promise<void> => {
     try {
-      // Don't override if address is already selected
       if (selectedAddress) {
         return;
       }
-
-      // Get current addresses from store
       const addresses: Address[] = useAddressStore.getState().addresses as unknown as Address[];
-
-      // CASE 1: Location permission granted and coordinates available
-      if (permissionStatus === 'granted' && location?.latitude && location?.longitude) {
-        // Try to find closest saved address within 200m radius
-
+      if (permissionStatus === 'granted' && currentLatitude && currentLongitude) {
         if (addresses && addresses.length > 0) {
           const closest = findClosestAddressWithinRadius(
-            { latitude: location.latitude, longitude: location.longitude },
+            {
+              latitude: currentLatitude,
+              longitude: currentLongitude,
+            },
             addresses as unknown as Array<{ [key: string]: unknown }>,
-            200 // 200 meters radius
+            200
           );
           if (closest?.address) {
             setSelectedAddress(closest.address as unknown as Address);
             return;
           }
         }
-
-        // No close saved address found - reverse geocode current location
         const components = await getAddressFromCoordinates({
-          latitude: location.latitude,
-          longitude: location.longitude,
+          latitude: currentLatitude,
+          longitude: currentLongitude,
         });
         const currentAddress: Address = {
           addressID: 'current-location',
-          name: 'Current Location',
+          name: components.postalCode,
           phone: '',
           city: components.city || '',
           state: components.state || '',
@@ -205,17 +109,17 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
           addressLine3: '',
           postalCode: components.postalCode || '',
           coordinates: {
-            longitude: location.longitude,
-            latitude: location.latitude,
+            longitude: currentLongitude,
+            latitude: currentLatitude,
           },
         };
         setSelectedAddress(currentAddress);
         return;
-      }
-
-      // CASE 2: No location permission but saved addresses exist
-      else if (permissionStatus !== 'granted' && addresses && addresses.length > 0) {
-        // Try to use the default address from auth data
+      } else if (
+        (!permissionStatus || permissionStatus !== 'granted') &&
+        addresses &&
+        addresses.length > 0
+      ) {
         if (authData?.defaultAddressId) {
           const defaultAddress = addresses.find(
             addr => addr.addressID === authData.defaultAddressId
@@ -225,18 +129,14 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
             return;
           }
         }
-        // Fallback to first saved address if no defaultAddressId
         setSelectedAddress(addresses[0]);
         return;
-      }
-
-      // CASE 3: No location permission and no saved addresses
-      else if (permissionStatus !== 'granted' && (!addresses || addresses.length === 0)) {
-        // Try to use default location from config
+      } else if (
+        (!permissionStatus || permissionStatus !== 'granted') &&
+        (!addresses || addresses.length === 0)
+      ) {
         const defaultLocation = getDefaultLocation();
-
         if (defaultLocation) {
-          // Reverse geocode the default location from config
           try {
             const components = await getAddressFromCoordinates({
               latitude: parseFloat(defaultLocation.latitude),
@@ -264,8 +164,6 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
             console.warn('Failed to reverse geocode default location:', geocodeError);
           }
         }
-
-        // Final fallback to hardcoded default address
         const fallbackAddress: Address = {
           addressID: 'fallback-default-location',
           name: 'Connaught Place',
@@ -278,102 +176,81 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
           addressLine3: '',
           postalCode: '110001',
           coordinates: {
-            longitude: 77.209, // Connaught Place, Delhi coordinates
+            longitude: 77.209,
             latitude: 28.6139,
           },
         };
         setSelectedAddress(fallbackAddress);
-      }
-
-      // CASE 4: Location permission granted but no coordinates available
-      else if (permissionStatus === 'granted' && (!location?.latitude || !location?.longitude)) {
-        // Wait for location to be available or use fallback
+      } else if (permissionStatus === 'granted' && (!currentLatitude || !currentLongitude)) {
         console.warn('Location permission granted but coordinates not available');
-        // Could implement a retry mechanism here if needed
-      }
-
-      // CASE 5: Unexpected state - no conditions met
-      else {
+      } else {
         console.warn('Unexpected state in address initialization:', {
           permissionStatus,
-          hasLocation: Boolean(location?.latitude && location?.longitude),
+          hasLocation: Boolean(currentLatitude && currentLongitude),
           hasAddresses: Boolean(addresses && addresses.length > 0),
         });
       }
     } catch (e) {
-      // Fail silently; selected address remains unset
       console.warn('Address initialization failed:', e);
     }
   }, [
-    permissionStatus,
-    location?.latitude,
-    location?.longitude,
     selectedAddress,
+    permissionStatus,
+    currentLatitude,
+    currentLongitude,
     setSelectedAddress,
     authData?.defaultAddressId,
     getDefaultLocation,
   ]);
+  console.log('AppInitializer initializeSelectedAddress', vendorError);
 
-  /**
-   * Retry function to restart initialization process
-   */
-  const handleRetry = () => {
-    setIsInitialized(false);
-    // Use optimized function to get permission and location with minimal time
-    getPermissionAndLocation()
-      .then(({ permission, location: _locationResult }) => {
-        setPermissionStatus(permission);
-
-        return initializeApp().then(() => {
-          return initializeSelectedAddress();
-        });
-      })
-      .catch(error => {
-        console.warn('❌ [AppInitializer] Failed to get permission and location on retry:', error);
-        // Even if location fails, try to initialize app
-
-        return initializeApp().then(() => {
-          return initializeSelectedAddress();
-        });
+  const initializeApp = useCallback(async () => {
+    try {
+      const configPromise = fetchInitialConfig({
+        longitude: locationData?.location?.longitude?.toString(),
+        latitude: locationData?.location?.latitude?.toString(),
       });
-  };
+      const addressPromise = isLoggedIn ? fetchAddresses() : Promise.resolve();
 
-  /**
-   * Effect to trigger initialization on component mount
-   */
-  useEffect(() => {
-    if (!isInitialized) {
-      // Use optimized function to get permission and location with minimal time
-      getPermissionAndLocation()
-        .then(({ permission, location: _locationResult }) => {
-          setPermissionStatus(permission);
+      await Promise.allSettled([configPromise, addressPromise]);
 
-          // Initialize app regardless of location success/failure
+      await Promise.allSettled([fetchTheme(), fetchPages()]);
 
-          return initializeApp().then(() => {
-            return initializeSelectedAddress();
-          });
-        })
-        .catch(error => {
-          console.warn('❌ [AppInitializer] Failed to get permission and location:', error);
-          // Even if location fails, try to initialize app
-
-          return initializeApp().then(() => {
-            return initializeSelectedAddress();
-          });
-        });
+      await (async () => {
+        // Inline invoke to avoid using before declaration lint issue
+        await initializeSelectedAddress();
+      })();
+    } catch (e) {
+      // Silent catch; UI handles error states from stores
     }
-  }, [getPermissionAndLocation, initializeApp, initializeSelectedAddress, isInitialized]);
+  }, [
+    fetchInitialConfig,
+    fetchAddresses,
+    fetchTheme,
+    fetchPages,
+    initializeSelectedAddress,
+    isLoggedIn,
+    locationData?.location?.latitude,
+    locationData?.location?.longitude,
+  ]);
 
-  /**
-   * Effect to handle selectedAddress changes - re-fetch config, vendors, and theme
-   */
+  const handleRetry = useCallback(() => {
+    initializeApp();
+  }, []);
+
   useEffect(() => {
-    if (isInitialized && selectedAddress) {
-      // Re-fetch only config, vendors, and theme (skip addresses)
-      initializeApp(true).then(() => {});
+    console.log('AppInitializer useEffect');
+    initializeApp();
+  }, []);
+  useEffect(() => {
+    if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
+      console.log('AppInitializer useEffect fetchVendors', selectedAddress);
+      fetchVendors(selectedAddress.coordinates).then(() => {
+        setIsInitialized(true);
+      });
     }
-  }, [selectedAddress, isInitialized, initializeApp]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAddress?.coordinates?.latitude, selectedAddress?.coordinates?.longitude]);
 
   // Show skeleton loader during initialization
   if (isLoading) {
@@ -396,7 +273,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children }) => {
     return children || <TabNavigation />;
   }
 
-  // Fallback loading state (should rarely be reached)
+  // Fallback/loading state while initializing
   return <HomeScreenSkeleton />;
 };
 

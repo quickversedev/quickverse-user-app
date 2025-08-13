@@ -40,7 +40,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
     if (pendingRequest) {
       pendingRequest.abort();
     }
-
+    console.log('🔍 [fetchVendors] location', location);
     // Create new request ID and abort controller
     const requestId = ++currentRequestId;
     const abortController = new AbortController();

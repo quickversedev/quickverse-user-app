@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { AppStack } from '../../routes/AppStack';
 
+import { PermissionAndLocation, useLocation } from '../../hooks/Permissions/useLocation';
 import Registration from '../../screens/login/Registration';
 import PermissionsScreen from '../../screens/permission/PermissionsScreen';
 import AppInitializer from './AppInitializer';
+import ErrorState from './ErrorState';
+import { HomeScreenSkeleton } from './skeleton';
 
 /**
  * AppBootstrap Component
@@ -22,7 +25,32 @@ import AppInitializer from './AppInitializer';
 const AppBootstrap: React.FC = () => {
   const { isNewUser } = useAuth();
   const [permissionsCompleted, setPermissionsCompleted] = useState(false);
+  const { getPermissionAndLocation } = useLocation();
+  const [permissionData, setPermissionData] = useState<PermissionAndLocation | null>(null);
+  const [bootLoading, setBootLoading] = useState(false);
+  const [bootError, setBootError] = useState<string | null>(null);
 
+  const bootstrap = async () => {
+    setBootLoading(true);
+    setBootError(null);
+    try {
+      const result = await getPermissionAndLocation();
+      console.log('bootstrap result', result);
+      setPermissionData(result);
+    } catch (error) {
+      console.log('bootstrap error', error);
+      setBootError(
+        error instanceof Error ? error.message : 'Failed to initialize location permissions'
+      );
+    } finally {
+      console.log('bootstrap finally');
+      setBootLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    bootstrap();
+  }, []);
   // CASE 1: New user - show registration
   if (isNewUser) {
     return <Registration />;
@@ -33,9 +61,19 @@ const AppBootstrap: React.FC = () => {
     return <PermissionsScreen onPermissionsComplete={() => setPermissionsCompleted(true)} />;
   }
 
+  // CASE 2.5: While bootstrapping location/permission data, avoid mounting children
+  if (bootLoading) {
+    return <HomeScreenSkeleton />;
+  }
+
+  // CASE 2.6: Error while bootstrapping location/permission data
+  if (bootError) {
+    return <ErrorState onRetry={bootstrap} title="Initialization Failed" message={bootError} />;
+  }
+
   // CASE 3: User authenticated and permissions completed - show main app
   return (
-    <AppInitializer>
+    <AppInitializer locationData={permissionData}>
       <AppStack />
     </AppInitializer>
   );
