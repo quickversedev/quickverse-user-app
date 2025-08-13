@@ -6,10 +6,7 @@ import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBann
 import SectionDivider from '../../../../components/common/SectionDivider';
 import VendorList from '../../../../components/modules/Vendor/VendorList';
 import VendorProductList from '../../../../components/modules/Vendor/VendorProductList';
-import { useAuth } from '../../../../contexts/login/AuthProvider';
-import { useAddress } from '../../../../hooks';
 import { usePages } from '../../../../hooks/usePages';
-import useThemeStore from '../../../../store/themeStore';
 import useVendorStore from '../../../../store/vendorStore';
 import { AppNavigationProp } from '../../../../types/navigation';
 
@@ -29,16 +26,7 @@ export const ForYouContent: React.FC<ForYouContentProps> = ({
   const navigation = useNavigation<AppNavigationProp>();
   const { vendors } = useVendorStore();
   const { getPromotionsByPageId } = usePages();
-  const { selectedAddress } = useAuth();
-  const { address } = useAddress();
-  const { vendor } = useVendorStore();
-  const { pages } = usePages();
-  const { theme } = useThemeStore();
-  console.log('🔍 [ForYouContent] selectedAddress', selectedAddress);
-  console.log('🔍 [ForYouContent] address', address);
-  console.log('🔍 [ForYouContent] vendor', vendor);
-  console.log('🔍 [ForYouContent] pages', pages);
-  console.log('🔍 [ForYouContent] theme', theme);
+
   // Get promotions for ForYou page
   const bannerData = useMemo(() => {
     const promotions = getPromotionsByPageId('ForYou');

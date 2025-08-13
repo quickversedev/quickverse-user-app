@@ -548,7 +548,9 @@ const CartScreen: React.FC = () => {
     if (cart) decrement(cart.cartId, sku);
   };
   const handleAddSuggested = (_idx: number) => {};
-  const handleCheckout = () => {};
+  const handleCheckout = () => {
+    navigation.navigate('Payment');
+  };
   // Dynamic styles using theme
   const themedStyles = StyleSheet.create({
     headerRow: {

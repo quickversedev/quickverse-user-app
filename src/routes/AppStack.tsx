@@ -9,6 +9,7 @@ import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
 import CartScreen from '../screens/cart/CartScreen';
 import CouponsScreen from '../screens/cart/CouponsScreen';
+import PaymentScreen from '../screens/cart/PaymentScreen';
 import AddressScreen from '../screens/profile/Address/AddressScreen';
 import OrderDetailsScreen from '../screens/profile/orders/OrderDetailsScreen';
 import SearchScreen from '../screens/search/SearchScreen';
@@ -29,6 +30,7 @@ export type RootStackParamList = {
   Orders: undefined;
   OrderDetails: { orderId: string };
   Coupons: undefined;
+  Payment: undefined;
   Search: undefined;
   Address: undefined;
 };
@@ -82,6 +84,7 @@ export const AppStack = () => {
       <Stack.Screen name="Cart" component={CartScreen} />
       <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
       <Stack.Screen name="Coupons" component={CouponsScreen} />
+      <Stack.Screen name="Payment" component={PaymentScreen} />
       <Stack.Screen
         name="Search"
         component={SearchScreen}

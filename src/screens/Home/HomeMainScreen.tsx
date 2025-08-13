@@ -1,5 +1,14 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { Platform, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import {
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import VendorLocationEmptyState from '../../components/common/VendorLocationEmptyState';
 import { AddressSelectionModal } from '../../components/modules/Header/AddressSelectionModal';
@@ -9,6 +18,7 @@ import { useTab } from '../../contexts/TabContext';
 import { useHeaderAnimation } from '../../hooks/useHeaderAnimation';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
+import { AppNavigationProp } from '../../types/navigation';
 import { FoodContent } from './components/tabs/FoodContent';
 import { ForYouContent } from './components/tabs/ForYouContent';
 import { GroceryContent } from './components/tabs/GroceryContent';
@@ -18,11 +28,12 @@ const HEADER_HEIGHT = 280; // Approximate total header height
 
 const HomeMainScreen = () => {
   const { selectedTab } = useTab();
-  const { theme } = useTheme();
+  const { theme, getButtonColor } = useTheme();
   const { translateY, opacity, handleScroll } = useHeaderAnimation();
   const { vendors, loading: vendorLoading } = useVendorStore();
   const { selectedAddress } = useAuth();
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const navigation = useNavigation<AppNavigationProp>();
 
   const handleChangeAddress = () => {
     setShowAddressModal(true);
@@ -74,6 +85,19 @@ const HomeMainScreen = () => {
         <Header translateY={translateY} hiddenSectionsOpacity={opacity} />
         <View style={styles.content}>{renderContent()}</View>
       </View>
+
+      {/* Demo button to navigate to Payment */}
+      <View style={styles.demoButtonWrapper} pointerEvents="box-none">
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('Payment')}
+          style={[styles.demoButton, { backgroundColor: getButtonColor('default', 'background') }]}
+        >
+          <Text style={[styles.demoButtonText, { color: getButtonColor('default', 'text') }]}>
+            Go to Payment (Demo)
+          </Text>
+        </TouchableOpacity>
+      </View>
       <FloatingCartsStack />
 
       <AddressSelectionModal
@@ -100,6 +124,21 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: HEADER_HEIGHT,
     paddingBottom: 160, // Tab bar (60px) + floating cart stack (56px) + extra space for comfort
+  },
+  demoButtonWrapper: {
+    position: 'absolute',
+    right: 16,
+    bottom: 220, // keep above FloatingCartsStack
+  },
+  demoButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  demoButtonText: {
+    fontWeight: '600',
   },
 });
 
