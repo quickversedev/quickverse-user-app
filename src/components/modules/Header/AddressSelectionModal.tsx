@@ -38,6 +38,7 @@ interface AddressSelectionModalProps {
   onClose: () => void;
   onAddressSelect: (address: Address) => void;
   selectedAddress?: Address | null;
+  needCompulsoryAddress?: boolean;
 }
 
 export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
@@ -45,6 +46,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   onClose,
   onAddressSelect,
   selectedAddress,
+  needCompulsoryAddress = false,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
   const { addresses, loading } = useAddress();
@@ -453,114 +455,121 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
           </View>
 
           <View style={themedStyles.content}>
-            {/* Search Bar */}
-            <View style={themedStyles.searchContainer}>
-              <View style={themedStyles.searchBar}>
-                <MaterialCommunityIcons
-                  name="magnify"
-                  size={20}
-                  color={getColor('subText')}
-                  style={themedStyles.searchIcon}
-                />
-                <TextInput
-                  style={themedStyles.searchInput}
-                  placeholder="Search for locations worldwide..."
-                  placeholderTextColor={getColor('placeholder')}
-                  value={searchQuery}
-                  onChangeText={handleSearchInputChange}
-                  accessible={true}
-                  accessibilityRole="search"
-                  accessibilityLabel="Search for locations worldwide"
-                  returnKeyType="search"
-                  autoCapitalize="words"
-                />
-                {searchQuery.length > 0 && (
-                  <TouchableOpacity
-                    onPress={handleClearSearch}
-                    accessible={true}
-                    accessibilityRole="button"
-                    accessibilityLabel="Clear search"
-                    accessibilityHint="Clears the search input"
-                    activeOpacity={0.7}
-                  >
+            {/* Search Bar and Current Location Button - Only show if needCompulsoryAddress is false */}
+            {!needCompulsoryAddress && (
+              <>
+                <View style={themedStyles.searchContainer}>
+                  <View style={themedStyles.searchBar}>
                     <MaterialCommunityIcons
-                      name="close-circle"
-                      size={22}
+                      name="magnify"
+                      size={20}
                       color={getColor('subText')}
+                      style={themedStyles.searchIcon}
                     />
-                  </TouchableOpacity>
-                )}
-                {searchLoading && (
-                  <ActivityIndicator
-                    size="small"
-                    color={getColor('primary')}
-                    style={{ marginLeft: 8 }}
-                  />
-                )}
-              </View>
-
-              {/* Search Results Dropdown */}
-              {showSearchResults && searchResults.length > 0 && (
-                <View
-                  style={themedStyles.searchResultsContainer}
-                  pointerEvents="box-none"
-                  onStartShouldSetResponder={() => true}
-                  onTouchStart={e => e.stopPropagation()}
-                  onTouchMove={e => e.stopPropagation()}
-                >
-                  <ScrollView
-                    style={{ maxHeight: 200 }}
-                    contentContainerStyle={{ paddingVertical: 4 }}
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={true}
-                    nestedScrollEnabled={true}
-                    scrollEnabled={true}
-                    onScroll={event => {
-                      // Prevent scroll events from propagating to parent scrollable components
-                      event.stopPropagation();
-                    }}
-                    scrollEventThrottle={16}
-                  >
-                    {searchResults.map((result, index) => (
+                    <TextInput
+                      style={themedStyles.searchInput}
+                      placeholder="Search for locations worldwide..."
+                      placeholderTextColor={getColor('placeholder')}
+                      value={searchQuery}
+                      onChangeText={handleSearchInputChange}
+                      accessible={true}
+                      accessibilityRole="search"
+                      accessibilityLabel="Search for locations worldwide"
+                      returnKeyType="search"
+                      autoCapitalize="words"
+                    />
+                    {searchQuery.length > 0 && (
                       <TouchableOpacity
-                        key={result.place_id || index}
-                        style={themedStyles.searchResultItem}
-                        onPress={() => handleSearchResultSelect(result)}
+                        onPress={handleClearSearch}
                         accessible={true}
                         accessibilityRole="button"
-                        accessibilityLabel={`Select ${result.structured_formatting.main_text}`}
-                        accessibilityHint={`Selects ${result.structured_formatting.main_text} as the location`}
+                        accessibilityLabel="Clear search"
+                        accessibilityHint="Clears the search input"
                         activeOpacity={0.7}
                       >
-                        <Text style={themedStyles.searchResultMainText}>
-                          {result.structured_formatting.main_text}
-                        </Text>
-                        <Text style={themedStyles.searchResultSecondaryText}>
-                          {result.structured_formatting.secondary_text}
-                        </Text>
+                        <MaterialCommunityIcons
+                          name="close-circle"
+                          size={22}
+                          color={getColor('subText')}
+                        />
                       </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
+                    )}
+                    {searchLoading && (
+                      <ActivityIndicator
+                        size="small"
+                        color={getColor('primary')}
+                        style={{ marginLeft: 8 }}
+                      />
+                    )}
+                  </View>
 
-            {/* Current Location Button */}
-            <TouchableOpacity
-              style={themedStyles.currentLocationButton}
-              onPress={handleUseCurrentLocation}
-              disabled={locationLoading}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Use current location"
-              accessibilityHint="Sets your current GPS location as the delivery address"
-              activeOpacity={0.8}
-            >
-              <MaterialCommunityIcons name="crosshairs-gps" size={20} color={getColor('white')} />
-              <Text style={themedStyles.currentLocationButtonText}>
-                {locationLoading ? 'Getting Location...' : 'Use Current Location'}
-              </Text>
-            </TouchableOpacity>
+                  {/* Search Results Dropdown */}
+                  {showSearchResults && searchResults.length > 0 && (
+                    <View
+                      style={themedStyles.searchResultsContainer}
+                      pointerEvents="box-none"
+                      onStartShouldSetResponder={() => true}
+                      onTouchStart={e => e.stopPropagation()}
+                      onTouchMove={e => e.stopPropagation()}
+                    >
+                      <ScrollView
+                        style={{ maxHeight: 200 }}
+                        contentContainerStyle={{ paddingVertical: 4 }}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={true}
+                        nestedScrollEnabled={true}
+                        scrollEnabled={true}
+                        onScroll={event => {
+                          // Prevent scroll events from propagating to parent scrollable components
+                          event.stopPropagation();
+                        }}
+                        scrollEventThrottle={16}
+                      >
+                        {searchResults.map((result, index) => (
+                          <TouchableOpacity
+                            key={result.place_id || index}
+                            style={themedStyles.searchResultItem}
+                            onPress={() => handleSearchResultSelect(result)}
+                            accessible={true}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Select ${result.structured_formatting.main_text}`}
+                            accessibilityHint={`Selects ${result.structured_formatting.main_text} as the location`}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={themedStyles.searchResultMainText}>
+                              {result.structured_formatting.main_text}
+                            </Text>
+                            <Text style={themedStyles.searchResultSecondaryText}>
+                              {result.structured_formatting.secondary_text}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={themedStyles.currentLocationButton}
+                  onPress={handleUseCurrentLocation}
+                  disabled={locationLoading}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Use current location"
+                  accessibilityHint="Sets your current GPS location as the delivery address"
+                  activeOpacity={0.8}
+                >
+                  <MaterialCommunityIcons
+                    name="crosshairs-gps"
+                    size={20}
+                    color={getColor('white')}
+                  />
+                  <Text style={themedStyles.currentLocationButtonText}>
+                    {locationLoading ? 'Getting Location...' : 'Use Current Location'}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
 
             {/* Section Divider */}
             <View style={themedStyles.sectionDividerContainer}>

@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Platform, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import VendorLocationEmptyState from '../../components/common/VendorLocationEmptyState';
@@ -10,6 +10,7 @@ import { useTab } from '../../contexts/TabContext';
 import { useHeaderAnimation } from '../../hooks/useHeaderAnimation';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
+import { Address } from '../../types/address';
 import { AppNavigationProp } from '../../types/navigation';
 import { FoodContent } from './components/tabs/FoodContent';
 import { ForYouContent } from './components/tabs/ForYouContent';
@@ -20,21 +21,33 @@ const HEADER_HEIGHT = 280; // Approximate total header height
 
 const HomeMainScreen = () => {
   const { selectedTab } = useTab();
-  const { theme, getButtonColor } = useTheme();
+  const { theme } = useTheme();
   const { translateY, opacity, handleScroll } = useHeaderAnimation();
   const { vendors, loading: vendorLoading } = useVendorStore();
   const { selectedAddress } = useAuth();
+
+  const { setSelectedAddress, permissionDataInAuth } = useAuth();
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const navigation = useNavigation<AppNavigationProp>();
+  const _navigation = useNavigation<AppNavigationProp>();
 
   const handleChangeAddress = () => {
     setShowAddressModal(true);
   };
 
-  const handleAddressSelect = (_address: unknown) => {
+  const handleAddressSelect = (address: Address) => {
+    setSelectedAddress(address);
     setShowAddressModal(false);
     // The address will be set through the AuthProvider
   };
+
+  // Check if we need to show the compulsory address modal
+  useEffect(() => {
+    const shouldShowCompulsoryModal = permissionDataInAuth?.permission !== 'granted'; // Selected address is not a saved address
+
+    if (shouldShowCompulsoryModal) {
+      setShowAddressModal(true);
+    }
+  }, []);
 
   const renderContent = () => {
     // Show zero state if no vendors available and not loading
@@ -85,6 +98,11 @@ const HomeMainScreen = () => {
         onClose={() => setShowAddressModal(false)}
         onAddressSelect={handleAddressSelect}
         selectedAddress={selectedAddress}
+        needCompulsoryAddress={
+          permissionDataInAuth?.permission !== 'granted' ||
+          (selectedAddress && selectedAddress.isSavedAddress === false) ||
+          false
+        }
       />
     </SafeAreaView>
   );

@@ -7,7 +7,7 @@ import {
   removeUserAddresses,
   setUserAddresses,
 } from '../../services/localStorage/storage.service';
-import { AddressStore, NewAddress } from '../../types/address';
+import { Address, AddressStore, NewAddress } from '../../types/address';
 
 const useAddressStore = create<AddressStore>((set, get) => ({
   // Initial state
@@ -41,11 +41,17 @@ const useAddressStore = create<AddressStore>((set, get) => ({
 
       const addresses = response.data || [];
 
+      // Add isSavedAddress: true to each address
+      const addressesWithSavedFlag = addresses.map((address: Address) => ({
+        ...address,
+        isSavedAddress: true,
+      }));
+
       // Store addresses in MMKV storage
-      setUserAddresses(addresses);
+      setUserAddresses(addressesWithSavedFlag);
 
       set({
-        addresses,
+        addresses: addressesWithSavedFlag,
         loading: false,
         fetchError: null,
       });

@@ -1,4 +1,5 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { PermissionAndLocation } from '../../hooks/Permissions/useLocation';
 import authService from '../../services/api/authService';
 import {
   AuthSession,
@@ -19,8 +20,10 @@ type AuthContextData = {
   skipUserLogin?: boolean;
   isNewUser: boolean | undefined;
   selectedAddress: Address | null;
+  permissionDataInAuth: PermissionAndLocation | null;
   setSkipLogin: (skipLogin: boolean) => void;
   setSelectedAddress: (address: Address | null) => void;
+  setPermissionDataInAuth: (data: PermissionAndLocation | null) => void;
   sendOtp(phoneNumber: string): Promise<string>;
   verifyOtp(phoneNumber: string, otp: string, verificationId: string): Promise<void>;
   signOut(): void;
@@ -41,6 +44,9 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isNewUser, setIsNewUser] = useState<boolean | undefined>();
   const [skipUserLogin, setSkipUserLogin] = useState<boolean | undefined>(false);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [permissionDataInAuth, setPermissionDataInAuth] = useState<PermissionAndLocation | null>(
+    null
+  );
 
   useEffect(() => {
     const loadStorageData = async () => {
@@ -152,8 +158,10 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         skipUserLogin,
         isNewUser,
         selectedAddress,
+        permissionDataInAuth,
         setSkipLogin,
         setSelectedAddress: handleSetSelectedAddress,
+        setPermissionDataInAuth,
         sendOtp,
         verifyOtp,
         signOut,

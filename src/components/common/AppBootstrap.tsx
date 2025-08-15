@@ -26,8 +26,9 @@ const AppBootstrap: React.FC = () => {
   const { isNewUser } = useAuth();
   const [permissionsCompleted, setPermissionsCompleted] = useState(false);
   const { getPermissionAndLocation } = useLocation();
-  const [permissionData, setPermissionData] = useState<PermissionAndLocation | null>(null);
+  const [permissionData, setLocalPermissionData] = useState<PermissionAndLocation | null>(null);
   const [bootLoading, setBootLoading] = useState(false);
+  const { setPermissionDataInAuth } = useAuth();
   const [bootError, setBootError] = useState<string | null>(null);
 
   const bootstrap = async () => {
@@ -36,7 +37,8 @@ const AppBootstrap: React.FC = () => {
     try {
       const result = await getPermissionAndLocation();
       console.log('bootstrap result', result);
-      setPermissionData(result);
+      setLocalPermissionData(result as PermissionAndLocation);
+      setPermissionDataInAuth(result as PermissionAndLocation);
     } catch (error) {
       console.log('bootstrap error', error);
       setBootError(

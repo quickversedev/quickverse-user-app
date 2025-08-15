@@ -3,7 +3,6 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import React from 'react';
 import {
   Image,
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Icons, Images } from '../../assets';
+import { AddressSelectionModal } from '../../components/modules/Header/AddressSelectionModal';
 import AddButton from '../../components/modules/Product/AddButton';
 import ProductCard from '../../components/modules/Product/ProductCard';
 import QuantitySelector from '../../components/modules/Product/QuantitySelector';
@@ -23,6 +23,7 @@ import useCartStore, { CartProduct } from '../../store/cart/cartStore';
 import useCouponStore from '../../store/cart/couponStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
+import { Address } from '../../types/address';
 import { Vendor } from '../../types/vendor';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
@@ -496,7 +497,9 @@ const CartFooter: React.FC<{
     <View style={footerStyles.footerBar}>
       <TouchableOpacity style={footerStyles.addressBox} onPress={onSelectAddress}>
         <Image source={Icons.selectedAddress} style={footerStyles.addressIcon} />
-        <Text style={footerStyles.addressText}>{address}</Text>
+        <Text style={footerStyles.addressText} numberOfLines={1} ellipsizeMode="tail">
+          {address}
+        </Text>
         <MaterialCommunityIcons
           name="chevron-right"
           size={22}
@@ -518,7 +521,7 @@ const CartScreen: React.FC = () => {
   const { carts, activeCartId, increment, decrement, clearCart } = useCartStore();
   const { vendors } = useVendorStore();
   const { getAppliedCoupon, removeCoupon, availableCoupons } = useCouponStore();
-  const { selectedAddress } = useAuth();
+  const { selectedAddress, setSelectedAddress, permissionDataInAuth } = useAuth();
   const [showAddressModal, setShowAddressModal] = React.useState(false);
   const [paymentExpanded, setPaymentExpanded] = React.useState(false);
   const { theme, getColor, getButtonColor, getTypography } = useTheme();
@@ -550,7 +553,23 @@ const CartScreen: React.FC = () => {
   };
   const handleAddSuggested = (_idx: number) => {};
   const handleCheckout = () => {
+    // Check if location permission is not granted or selected address is not a saved address
+    const shouldShowCompulsoryModal =
+      !permissionDataInAuth?.permission ||
+      permissionDataInAuth?.permission !== 'granted' ||
+      (selectedAddress && selectedAddress.isSavedAddress === false);
+
+    if (shouldShowCompulsoryModal) {
+      setShowAddressModal(true);
+      return;
+    }
+
     navigation.navigate('Payment');
+  };
+
+  const handleAddressSelect = (address: Address) => {
+    setSelectedAddress(address);
+    setShowAddressModal(false);
   };
 
   // Format address for display
@@ -558,7 +577,7 @@ const CartScreen: React.FC = () => {
     if (!selectedAddress) {
       return 'Select delivery address';
     }
-    console.log(selectedAddress);
+
     const { addressLine1, city, state } = selectedAddress;
     const parts = [addressLine1, city, state].filter(Boolean);
     return parts.join(', ');
@@ -1084,33 +1103,13 @@ const CartScreen: React.FC = () => {
         onSelectAddress={() => setShowAddressModal(true)}
         onCheckout={handleCheckout}
       />
-      <Modal visible={showAddressModal} transparent animationType="slide">
-        <View style={themedStyles.modalOverlay}>
-          <View style={themedStyles.modalBox}>
-            <Text style={themedStyles.modalTitle}>Select Address</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setShowAddressModal(false);
-              }}
-            >
-              <Text style={themedStyles.modalOption}>Baner - Balewadi Road, Pune</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setShowAddressModal(false);
-              }}
-            >
-              <Text style={themedStyles.modalOption}>Kothrud, Pune</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setShowAddressModal(false)}
-              style={themedStyles.modalCloseBtn}
-            >
-              <Text style={themedStyles.modalCloseText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <AddressSelectionModal
+        visible={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        onAddressSelect={handleAddressSelect}
+        selectedAddress={selectedAddress}
+        needCompulsoryAddress={true}
+      />
     </SafeAreaView>
   );
 };
