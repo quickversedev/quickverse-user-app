@@ -41,7 +41,12 @@ export const PharmacyContent: React.FC<PharmacyContentProps> = ({
   const { getVendorsByCategory } = useVendorStore();
   const { getPromotionsByPageId } = usePages();
 
-  const pharmacyVendors = getVendorsByCategory('Pharmacy');
+  const pharmacyVendors = getVendorsByCategory('Pharmacy').sort((a, b) => {
+    // Active vendors first, then inactive
+    if (a.storeActive && !b.storeActive) return -1;
+    if (!a.storeActive && b.storeActive) return 1;
+    return 0;
+  });
 
   // Get promotions for Pharmacy page
   const bannerData = useMemo(() => {

@@ -82,7 +82,7 @@ const useAddressStore = create<AddressStore>((set, get) => ({
       );
 
       // Refresh addresses after adding
-      await get().fetchAddresses();
+      await get().fetchAddresses(authSession);
       set({ addingLoading: false });
 
       return { success: true };

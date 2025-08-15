@@ -41,7 +41,12 @@ export const FoodContent: React.FC<FoodContentProps> = ({
   const { getVendorsByCategory } = useVendorStore();
   const { getPromotionsByPageId } = usePages();
 
-  const foodVendors = getVendorsByCategory('Food');
+  const foodVendors = getVendorsByCategory('Food').sort((a, b) => {
+    // Active vendors first, then inactive
+    if (a.storeActive && !b.storeActive) return -1;
+    if (!a.storeActive && b.storeActive) return 1;
+    return 0;
+  });
 
   // Get promotions for Food page
   const bannerData = useMemo(() => {

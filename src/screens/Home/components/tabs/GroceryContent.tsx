@@ -39,7 +39,12 @@ export const GroceryContent: React.FC<GroceryContentProps> = ({
   const { theme } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { getVendorsByCategory } = useVendorStore();
-  const groceryVendors = getVendorsByCategory('Grocery');
+  const groceryVendors = getVendorsByCategory('Grocery').sort((a, b) => {
+    // Active vendors first, then inactive
+    if (a.storeActive && !b.storeActive) return -1;
+    if (!a.storeActive && b.storeActive) return 1;
+    return 0;
+  });
   const { getPromotionsByPageId } = usePages();
   // Get promotions for Food page
   const bannerData = useMemo(() => {
