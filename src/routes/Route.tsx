@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text } from 'react-native';
-import { AppBootstrap } from '../components/common';
+
+import AppBootstrap from '../components/common/AppBootstrap';
 import ForceUpdateChecker from '../components/common/ForceUpdate';
 import { useAuth } from '../contexts/login/AuthProvider';
 import { AuthStack } from './AuthStack';

@@ -27,6 +27,8 @@ const HomeMainScreen = () => {
   const { selectedAddress } = useAuth();
 
   const { setSelectedAddress, permissionDataInAuth } = useAuth();
+  const { authData } = useAuth();
+  const loggedIn = Boolean(authData?.jwt);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const _navigation = useNavigation<AppNavigationProp>();
 
@@ -93,17 +95,19 @@ const HomeMainScreen = () => {
 
       <FloatingCartsStack />
 
-      <AddressSelectionModal
-        visible={showAddressModal}
-        onClose={() => setShowAddressModal(false)}
-        onAddressSelect={handleAddressSelect}
-        selectedAddress={selectedAddress}
-        needCompulsoryAddress={
-          permissionDataInAuth?.permission !== 'granted' ||
-          (selectedAddress && selectedAddress.isSavedAddress === false) ||
-          false
-        }
-      />
+      {loggedIn && (
+        <AddressSelectionModal
+          visible={showAddressModal}
+          onClose={() => setShowAddressModal(false)}
+          onAddressSelect={handleAddressSelect}
+          selectedAddress={selectedAddress}
+          needCompulsoryAddress={
+            permissionDataInAuth?.permission !== 'granted' ||
+            (selectedAddress && selectedAddress.isSavedAddress === false) ||
+            false
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };

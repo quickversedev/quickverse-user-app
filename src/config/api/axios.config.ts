@@ -42,7 +42,18 @@ const axiosInstance = axios.create({
  *
  * Converts axios errors to a consistent format
  */
-const handleAxiosError = (error: AxiosError): ApiError => {
+const handleAxiosError = (error: unknown): ApiError => {
+  // Type guard to check if it's an AxiosError
+  if (!axios.isAxiosError(error)) {
+    return {
+      status: 500,
+      message: 'An unexpected error occurred',
+      code: 'UNKNOWN_ERROR',
+      isCancelled: false,
+      apiEndpoint: 'Unknown',
+    };
+  }
+
   // Handle network errors
   if (error.code === 'ERR_NETWORK') {
     return {

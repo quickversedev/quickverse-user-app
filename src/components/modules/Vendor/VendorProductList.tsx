@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, StyleSheet, View, ViewToken } from 'react-native';
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import useFeaturedProductsStoreHook from '../../../hooks/useFeaturedProductsStore';
 import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -29,6 +30,7 @@ const VendorProductList: React.FC<VendorProductListProps> = ({
   useFlatList = true, // Default to FlatList for standalone usage
 }) => {
   const { getColor } = useTheme();
+  const { authData } = useAuth();
   const addToCart = useCartStore(state => state.addToCart);
   const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
   const [selectedProductForDetail, setSelectedProductForDetail] =
@@ -122,16 +124,21 @@ const VendorProductList: React.FC<VendorProductListProps> = ({
   );
 
   const handleAddToCart = (product: Product, vendor: Vendor) => {
+    if (!authData?.jwt) return;
     const cartId = `vendor_${vendor.shopId}`;
-    addToCart(cartId, {
-      sku: product.sku || product.id,
-      shopId: vendor.shopId,
-      name: product.name,
-      price: product.price,
-      mrp: product.mrp,
-      image: product.image,
-      // quantity is handled by the store
-    });
+    addToCart(
+      cartId,
+      {
+        sku: product.sku || product.id,
+        shopId: vendor.shopId,
+        name: product.name,
+        price: product.price,
+        mrp: product.mrp,
+        image: product.image,
+        // quantity is handled by the store
+      },
+      authData.jwt
+    );
   };
 
   const handleProductPress = (product: Product, vendor: Vendor) => {

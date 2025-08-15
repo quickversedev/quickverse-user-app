@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAddress, useConfig, usePages } from '../../hooks';
 import { PermissionAndLocation } from '../../hooks/Permissions/useLocation';
-import TabNavigation from '../../navigation/TabNavigation';
 import { findClosestAddressWithinRadius } from '../../screens/profile/Address/utils/addressUtils';
 import { getAddressFromCoordinates } from '../../services/api/olaLocationService';
 import { getUserAddresses } from '../../services/localStorage/storage.service';
@@ -309,7 +308,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
 
   // Show main app content if initialization successful
   if (isInitialized) {
-    return children || <TabNavigation />;
+    return <>{children}</>;
   }
 
   // Fallback/loading state while initializing

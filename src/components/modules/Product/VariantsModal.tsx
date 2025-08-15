@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Product } from '../../../assets/mock/products';
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useVariants } from '../../../hooks/useVariants';
 import { Variant } from '../../../services/api/variantsService';
 import useCartStore from '../../../store/cart/cartStore';
@@ -39,6 +40,7 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
   onVariantSelect,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
+  const { authData } = useAuth();
   const { variants, loading, error, hasData, fetchVariants, clearError, reset } = useVariants();
   const { addToCart, increment, decrement, carts } = useCartStore();
 
@@ -65,22 +67,29 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
   };
 
   const handleAddToCart = (variant: Variant) => {
-    addToCart(cartId, {
-      sku: variant.id,
-      shopId: vendor.shopId,
-      name: variant.name,
-      price: variant.price,
-      mrp: variant.mrp,
-      image: product.imageUrl,
-    });
+    if (!authData?.jwt) return;
+    addToCart(
+      cartId,
+      {
+        sku: variant.id,
+        shopId: vendor.shopId,
+        name: variant.name,
+        price: variant.price,
+        mrp: variant.mrp,
+        image: product.imageUrl,
+      },
+      authData.jwt
+    );
   };
 
   const handleIncrement = (variantId: string) => {
-    increment(cartId, variantId);
+    if (!authData?.jwt) return;
+    increment(cartId, variantId, authData.jwt);
   };
 
   const handleDecrement = (variantId: string) => {
-    decrement(cartId, variantId);
+    if (!authData?.jwt) return;
+    decrement(cartId, variantId, authData.jwt);
   };
 
   const getVariantQuantity = (variantId: string) => {

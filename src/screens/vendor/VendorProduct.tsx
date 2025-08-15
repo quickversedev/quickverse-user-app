@@ -25,6 +25,7 @@ import CategoryHeader from '../../components/vendor/CategoryHeader';
 import CategoryTabs, { CategoryItem } from '../../components/vendor/CategoryTabs';
 import VendorHeaderCard from '../../components/vendor/VendorHeaderCard';
 import VendorTopBar from '../../components/vendor/VendorTopBar';
+import { useAuth } from '../../contexts/login/AuthProvider';
 import { RootStackParamList } from '../../routes/AppStack';
 import { Variant } from '../../services/api/variantsService';
 import useCartStore from '../../store/cart/cartStore';
@@ -69,6 +70,7 @@ const getRowBasedProductList = (
 
 const VendorProduct: React.FC = () => {
   const { getColor, getTypography } = useTheme();
+  const { authData } = useAuth();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<VendorProductRouteProp>();
   const { vendor } = route.params;
@@ -268,7 +270,7 @@ const VendorProduct: React.FC = () => {
 
   // Cart operation handlers
   const handleAddToCart = (product: Product) => {
-    if (!vendor.storeActive) return; // Disable when store is closed
+    if (!vendor.storeActive || !authData?.jwt) return; // Disable when store is closed or no auth
 
     // If product has multiple variants, show variants modal
     if (product.numberOfVariants > 1) {
@@ -278,37 +280,45 @@ const VendorProduct: React.FC = () => {
     }
 
     // Otherwise, add directly to cart
-    addToCart(cartId, {
-      sku: product.sku,
-      shopId: vendor.shopId,
-      name: product.name,
-      price: product.sellingPrice,
-      mrp: product.mrp,
-      image: product.imageUrl, // Now a URL string
-    });
+    addToCart(
+      cartId,
+      {
+        sku: product.sku,
+        shopId: vendor.shopId,
+        name: product.name,
+        price: product.sellingPrice,
+        mrp: product.mrp,
+        image: product.imageUrl, // Now a URL string
+      },
+      authData.jwt
+    );
   };
 
   const handleVariantSelect = (variant: Variant) => {
-    if (!selectedProductForVariants) return;
+    if (!selectedProductForVariants || !authData?.jwt) return;
 
-    addToCart(cartId, {
-      sku: variant.id,
-      shopId: vendor.shopId,
-      name: variant.name,
-      price: variant.price,
-      mrp: variant.mrp,
-      image: selectedProductForVariants.imageUrl,
-    });
+    addToCart(
+      cartId,
+      {
+        sku: variant.id,
+        shopId: vendor.shopId,
+        name: variant.name,
+        price: variant.price,
+        mrp: variant.mrp,
+        image: selectedProductForVariants.imageUrl,
+      },
+      authData.jwt
+    );
   };
 
   const handleIncrement = (sku: string) => {
-    if (!vendor.storeActive) return; // Disable when store is closed
-    increment(cartId, sku);
+    if (!vendor.storeActive || !authData?.jwt) return; // Disable when store is closed or no auth
+    increment(cartId, sku, authData.jwt);
   };
 
   const handleDecrement = (sku: string) => {
-    if (!vendor.storeActive) return; // Disable when store is closed
-    decrement(cartId, sku);
+    if (!vendor.storeActive || !authData?.jwt) return; // Disable when store is closed or no auth
+    decrement(cartId, sku, authData.jwt);
   };
 
   const getProductQuantity = (sku: string) => {

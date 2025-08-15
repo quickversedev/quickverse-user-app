@@ -525,10 +525,11 @@ const CartScreen: React.FC = () => {
     removeCoupon,
     getAvailableCoupons,
     checkAndFetchOffers,
-    isLoading: couponLoading,
+    loading: couponLoading,
     error: couponError,
   } = useCouponStore();
   const { selectedAddress, setSelectedAddress, permissionDataInAuth } = useAuth();
+  const { authData } = useAuth();
   const [showAddressModal, setShowAddressModal] = React.useState(false);
   const [paymentExpanded, setPaymentExpanded] = React.useState(false);
   const { theme, getColor, getButtonColor, getTypography } = useTheme();
@@ -547,16 +548,16 @@ const CartScreen: React.FC = () => {
   ];
 
   const handleClearCart = () => {
-    if (cart) {
-      clearCart(cart.cartId);
+    if (cart && authData?.jwt) {
+      clearCart(cart.cartId, authData.jwt);
       navigation.goBack();
     }
   };
   const handleInc = (sku: string) => {
-    if (cart) increment(cart.cartId, sku);
+    if (cart && authData?.jwt) increment(cart.cartId, sku, authData.jwt);
   };
   const handleDec = (sku: string) => {
-    if (cart) decrement(cart.cartId, sku);
+    if (cart && authData?.jwt) decrement(cart.cartId, sku, authData.jwt);
   };
   const handleAddSuggested = (_idx: number) => {};
   const handleCheckout = () => {

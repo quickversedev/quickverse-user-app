@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import AddButton from './AddButton';
@@ -83,6 +84,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   vendor,
 }) => {
   const { getColor, getTypography } = useTheme();
+  const { authData } = useAuth();
   const insets = useSafeAreaInsets();
   const [selectedVariantId, setSelectedVariantId] = useState('variant_1');
   const { addToCart, increment, decrement, carts } = useCartStore();
@@ -105,22 +107,29 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   // Cart handlers
   const handleAddToCart = () => {
-    addToCart(cartId, {
-      sku: product.sku,
-      shopId: vendor.shopId,
-      name: product.name,
-      price: product.sellingPrice,
-      mrp: product.mrp,
-      image: product.imageUrl,
-    });
+    if (!authData?.jwt) return;
+    addToCart(
+      cartId,
+      {
+        sku: product.sku,
+        shopId: vendor.shopId,
+        name: product.name,
+        price: product.sellingPrice,
+        mrp: product.mrp,
+        image: product.imageUrl,
+      },
+      authData.jwt
+    );
   };
 
   const handleIncrement = () => {
-    increment(cartId, product.sku);
+    if (!authData?.jwt) return;
+    increment(cartId, product.sku, authData.jwt);
   };
 
   const handleDecrement = () => {
-    decrement(cartId, product.sku);
+    if (!authData?.jwt) return;
+    decrement(cartId, product.sku, authData.jwt);
   };
 
   const suggestedItems: SuggestedItem[] = [
@@ -263,6 +272,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   const handleSuggestedItemAdd = (item: SuggestedItem) => {
+    if (!authData?.jwt) return;
     // Add suggested item to cart
     const cartProduct = {
       sku: item.id,
@@ -272,15 +282,17 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       mrp: item.mrp,
       image: item.image,
     };
-    addToCart(cartId, cartProduct);
+    addToCart(cartId, cartProduct, authData.jwt);
   };
 
   const handleSuggestedItemIncrement = (item: SuggestedItem) => {
-    increment(cartId, item.id);
+    if (!authData?.jwt) return;
+    increment(cartId, item.id, authData.jwt);
   };
 
   const handleSuggestedItemDecrement = (item: SuggestedItem) => {
-    decrement(cartId, item.id);
+    if (!authData?.jwt) return;
+    decrement(cartId, item.id, authData.jwt);
   };
 
   const handleViewAllPress = () => {

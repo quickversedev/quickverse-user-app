@@ -248,7 +248,7 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }
 
-  return children;
+  return <>{children}</>;
 };
 
 export default ForceUpdateChecker;

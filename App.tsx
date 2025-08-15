@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/contexts/login/AuthProvider';
 import { TabProvider } from './src/contexts/TabContext';
+
 import { Route } from './src/routes/Route';
 import { ThemeProvider } from './src/theme/ThemeContext';
 

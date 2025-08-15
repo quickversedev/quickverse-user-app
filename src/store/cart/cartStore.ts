@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import cartApiService, { TransformedCartData } from '../../services/cartApiService';
 
 export type CartProduct = {
   sku: string;
@@ -12,134 +13,153 @@ export type CartProduct = {
 
 export type Cart = {
   cartId: string;
+  smartBizCartId: string; // Maps to cartId from API
+  customerId?: string;
+  totalCartAmountWithBenefit?: number;
+  finalCartAmount?: number;
   products: Record<string, CartProduct>; // key: sku
 };
 
 interface CartStore {
   carts: Record<string, Cart>; // key: cartId
   activeCartId: string | null;
-  addToCart: (cartId: string, product: Omit<CartProduct, 'quantity'>) => void;
-  removeFromCart: (cartId: string, sku: string) => void;
-  increment: (cartId: string, sku: string) => void;
-  decrement: (cartId: string, sku: string) => void;
+  loading: boolean;
+  error: string | null;
+  addToCart: (
+    cartId: string,
+    product: Omit<CartProduct, 'quantity'>,
+    jwtToken: string
+  ) => Promise<void>;
+  removeFromCart: (cartId: string, sku: string, jwtToken: string) => Promise<void>;
+  increment: (cartId: string, sku: string, jwtToken: string) => Promise<void>;
+  decrement: (cartId: string, sku: string, jwtToken: string) => Promise<void>;
   setActiveCart: (cartId: string) => void;
-  clearCart: (cartId: string) => void;
+  clearCart: (cartId: string, jwtToken: string) => Promise<void>;
   getCartCount: (cartId: string) => number;
   getTotalCarts: () => number;
   getAllCarts: () => Cart[];
+  syncCartWithApi: (cartId: string, apiData: TransformedCartData) => void;
 }
-
-const MAX_CARTS = 3;
 
 const useCartStore = create<CartStore>((set, get) => ({
   carts: {},
   activeCartId: null,
+  loading: false,
+  error: null,
 
-  addToCart: (cartId, product) => {
-    set(state => {
-      // If cart doesn't exist and max carts reached, do nothing
-      if (!state.carts[cartId] && Object.keys(state.carts).length >= MAX_CARTS) {
-        return {};
+  addToCart: async (cartId, product, jwtToken) => {
+    set({ loading: true, error: null });
+    try {
+      if (!jwtToken) {
+        throw new Error('No authentication token available');
       }
-      const cart = state.carts[cartId] || { cartId, products: {} };
-      const existing = cart.products[product.sku];
-      const updatedProducts = {
-        ...cart.products,
-        [product.sku]: existing
-          ? { ...existing, quantity: existing.quantity + 1 }
-          : { ...product, quantity: 1 },
-      };
-      return {
-        carts: {
-          ...state.carts,
-          [cartId]: { ...cart, products: updatedProducts },
-        },
-        activeCartId: cartId,
-      };
-    });
+
+      // Extract shopId from cartId (assuming format: vendor_shopId)
+      const shopId = cartId.replace('vendor_', '');
+
+      // Call API to add product
+      const apiResponse = await cartApiService.addToCart(shopId, product.sku, jwtToken);
+
+      // Sync local cart with API response
+      get().syncCartWithApi(cartId, apiResponse);
+
+      set({ loading: false });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to add to cart',
+        loading: false,
+      });
+    }
   },
 
-  removeFromCart: (cartId, sku) => {
-    set(state => {
-      const cart = state.carts[cartId];
-      if (!cart) return {};
-      const { [sku]: _, ...rest } = cart.products;
-      return {
-        carts: {
-          ...state.carts,
-          [cartId]: { ...cart, products: rest },
-        },
-      };
-    });
-  },
-
-  increment: (cartId, sku) => {
-    set(state => {
-      const cart = state.carts[cartId];
-      if (!cart || !cart.products[sku]) return {};
-      return {
-        carts: {
-          ...state.carts,
-          [cartId]: {
-            ...cart,
-            products: {
-              ...cart.products,
-              [sku]: {
-                ...cart.products[sku],
-                quantity: cart.products[sku].quantity + 1,
-              },
-            },
-          },
-        },
-      };
-    });
-  },
-
-  decrement: (cartId, sku) => {
-    set(state => {
-      const cart = state.carts[cartId];
-      if (!cart || !cart.products[sku]) return {};
-      const currentQty = cart.products[sku].quantity;
-      if (currentQty <= 1) {
-        // Remove product if quantity goes to 0
-        const { [sku]: _, ...rest } = cart.products;
-        return {
-          carts: {
-            ...state.carts,
-            [cartId]: { ...cart, products: rest },
-          },
-        };
+  removeFromCart: async (cartId, sku, jwtToken) => {
+    set({ loading: true, error: null });
+    try {
+      if (!jwtToken) {
+        throw new Error('No authentication token available');
       }
-      return {
-        carts: {
-          ...state.carts,
-          [cartId]: {
-            ...cart,
-            products: {
-              ...cart.products,
-              [sku]: {
-                ...cart.products[sku],
-                quantity: currentQty - 1,
-              },
-            },
-          },
-        },
-      };
-    });
+
+      const shopId = cartId.replace('vendor_', '');
+      const apiResponse = await cartApiService.deleteFromCart(shopId, sku, true, jwtToken);
+
+      get().syncCartWithApi(cartId, apiResponse);
+
+      set({ loading: false });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to remove from cart',
+        loading: false,
+      });
+    }
+  },
+
+  increment: async (cartId, sku, jwtToken) => {
+    set({ loading: true, error: null });
+    try {
+      if (!jwtToken) {
+        throw new Error('No authentication token available');
+      }
+
+      const shopId = cartId.replace('vendor_', '');
+      const apiResponse = await cartApiService.addToCart(shopId, sku, jwtToken);
+
+      get().syncCartWithApi(cartId, apiResponse);
+
+      set({ loading: false });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to increment quantity',
+        loading: false,
+      });
+    }
+  },
+
+  decrement: async (cartId, sku, jwtToken) => {
+    set({ loading: true, error: null });
+    try {
+      if (!jwtToken) {
+        throw new Error('No authentication token available');
+      }
+
+      const shopId = cartId.replace('vendor_', '');
+      const apiResponse = await cartApiService.deleteFromCart(shopId, sku, false, jwtToken);
+
+      get().syncCartWithApi(cartId, apiResponse);
+
+      set({ loading: false });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to decrement quantity',
+        loading: false,
+      });
+    }
   },
 
   setActiveCart: cartId => {
     set({ activeCartId: cartId });
   },
 
-  clearCart: cartId => {
-    set(state => {
-      if (!state.carts[cartId]) return {};
-      const { [cartId]: _, ...restCarts } = state.carts;
-      return {
-        carts: restCarts,
-      };
-    });
+  clearCart: async (cartId, jwtToken) => {
+    set({ loading: true, error: null });
+    try {
+      if (!jwtToken) {
+        throw new Error('No authentication token available');
+      }
+
+      const shopId = cartId.replace('vendor_', '');
+      await cartApiService.clearCart(shopId, jwtToken);
+
+      // Remove cart from local state
+      set(state => {
+        const { [cartId]: _, ...restCarts } = state.carts;
+        return { carts: restCarts, loading: false };
+      });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to clear cart',
+        loading: false,
+      });
+    }
   },
 
   getCartCount: cartId => {
@@ -154,6 +174,42 @@ const useCartStore = create<CartStore>((set, get) => ({
 
   getAllCarts: () => {
     return Object.values(get().carts);
+  },
+
+  syncCartWithApi: (cartId, apiData) => {
+    set(state => {
+      // Transform API products to local format
+      const transformedProducts: Record<string, CartProduct> = {};
+
+      Object.entries(apiData.products).forEach(([sku, apiProduct]) => {
+        transformedProducts[sku] = {
+          sku: apiProduct.sku,
+          shopId: cartId.replace('vendor_', ''),
+          name: apiProduct.productDetails.productName,
+          price: apiProduct.finalPrice,
+          mrp: apiProduct.productMRP,
+          image: apiProduct.productDetails.productImageUrl,
+          quantity: apiProduct.itemCount,
+        };
+      });
+
+      const updatedCart: Cart = {
+        cartId,
+        smartBizCartId: apiData.smartBizCartId,
+        customerId: apiData.customerId,
+        totalCartAmountWithBenefit: apiData.totalCartAmountWithBenefit,
+        finalCartAmount: apiData.finalCartAmount,
+        products: transformedProducts,
+      };
+
+      return {
+        carts: {
+          ...state.carts,
+          [cartId]: updatedCart,
+        },
+        activeCartId: cartId,
+      };
+    });
   },
 }));
 
