@@ -13,6 +13,7 @@ export const useAddress = () => {
     addError,
     fetchAddresses,
     addAddress,
+    loadAddressesFromStorage,
     setFetchError,
     setAddError,
     clearFetchError,
@@ -52,7 +53,7 @@ export const useAddress = () => {
     clearAddError,
     setFetchError,
     setAddError,
-
+    loadAddressesFromStorage,
     // Computed values
     hasAddresses: addresses.length > 0,
     defaultAddress: addresses.find(addr => addr.tag === 'Home'), // Use tag instead of isDefault

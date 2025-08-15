@@ -30,6 +30,7 @@ export type Address = {
     longitude: number;
     latitude: number;
   };
+  isSavedAddress?: boolean;
 };
 
 export type NewAddress = AddressDetails & { isDefaultAddress: boolean };
@@ -48,6 +49,8 @@ export type AddressActions = {
     newAddress: NewAddress,
     authSession: AuthSession
   ) => Promise<{ success: boolean; error?: any }>;
+  loadAddressesFromStorage: () => void;
+  clearAddressesFromStorage: () => void;
   setLoading: (loading: boolean) => void;
   setAddingLoading: (loading: boolean) => void;
   setFetchError: (error: string | null) => void;

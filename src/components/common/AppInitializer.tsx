@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAddress, useConfig, usePages } from '../../hooks';
 import { PermissionAndLocation } from '../../hooks/Permissions/useLocation';
 import TabNavigation from '../../navigation/TabNavigation';
 import { findClosestAddressWithinRadius } from '../../screens/profile/Address/utils/addressUtils';
 import { getAddressFromCoordinates } from '../../services/api/olaLocationService';
+import { getUserAddresses } from '../../services/localStorage/storage.service';
 import useAddressStore from '../../store/address/addressStore';
 import useThemeStore from '../../store/themeStore';
 import useVendorStore from '../../store/vendorStore';
@@ -25,12 +26,14 @@ interface AppInitializerProps {
  * AppInitializer Component
  *
  * This component is responsible for bootstrapping the application by:
- * 1. Fetching essential data (vendors, addresses, config, theme)
- * 2. Initializing user's selected address based on various scenarios
- * 3. Managing loading and error states during initialization
- * 4. Providing retry functionality for failed initialization
+ * 1. Loading addresses from MMKV storage first
+ * 2. Fetching essential data (vendors, addresses, config, theme)
+ * 3. Initializing user's selected address based on various scenarios
+ * 4. Managing loading and error states during initialization
+ * 5. Providing retry functionality for failed initialization
  *
  * Initialization Flow:
+ * - Load addresses from MMKV storage
  * - Parallel API calls for vendors, addresses (if logged in), config, and theme
  * - Address selection based on location permissions and saved addresses
  * - Graceful fallbacks for each service failure
@@ -47,13 +50,16 @@ interface AppInitializerProps {
 const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData }) => {
   // UI state
   const [isInitialized, setIsInitialized] = useState(false);
-  // console.log('AppInitializer locationData', locationData);
-  // Location services
+  const initializationRef = useRef(false);
 
-  // console.log('AppInitializer location', location);
   // Store hooks for data fetching
   const { fetchVendors, loading: vendorLoading, error: vendorError } = useVendorStore();
-  const { fetchAddresses, loading: addressLoading, fetchError: _addressError } = useAddress();
+  const {
+    fetchAddresses,
+    loading: addressLoading,
+    fetchError: _addressError,
+    loadAddressesFromStorage,
+  } = useAddress();
   const {
     fetchInitialConfig,
     loading: configLoading,
@@ -67,8 +73,14 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   const { setSelectedAddress, selectedAddress, authData } = useAuth();
   const isLoggedIn = Boolean(authData?.jwt);
 
+  // Get cached addresses once
+  const cachedAddresses = isLoggedIn ? getUserAddresses() : undefined;
+  const hasCachedAddresses = cachedAddresses && cachedAddresses.length > 0;
+
   // Combined loading and error states for UI
-  const isLoading = vendorLoading || addressLoading || configLoading || pagesLoading;
+  // Exclude addressLoading if we have cached addresses (non-blocking API call)
+  const isLoading =
+    vendorLoading || (!hasCachedAddresses && addressLoading) || configLoading || pagesLoading;
   const error = vendorError;
   const { longitude: currentLongitude, latitude: currentLatitude } = locationData?.location || {};
   const permissionStatus = locationData?.permission;
@@ -112,6 +124,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
             longitude: currentLongitude,
             latitude: currentLatitude,
           },
+          isSavedAddress: false,
         };
         setSelectedAddress(currentAddress);
         return;
@@ -157,6 +170,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
                 longitude: parseFloat(defaultLocation.longitude),
                 latitude: parseFloat(defaultLocation.latitude),
               },
+              isSavedAddress: false,
             };
             setSelectedAddress(configAddress);
             return;
@@ -179,6 +193,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
             longitude: 77.209,
             latitude: 28.6139,
           },
+          isSavedAddress: false,
         };
         setSelectedAddress(fallbackAddress);
       } else if (permissionStatus === 'granted' && (!currentLatitude || !currentLongitude)) {
@@ -202,22 +217,46 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     authData?.defaultAddressId,
     getDefaultLocation,
   ]);
-  console.log('AppInitializer initializeSelectedAddress', vendorError);
 
   const initializeApp = useCallback(async () => {
+    if (initializationRef.current) return;
+    initializationRef.current = true;
+
     try {
+      // Step 1: Load addresses from MMKV storage first
+      if (isLoggedIn) {
+        loadAddressesFromStorage();
+      }
+
+      // Step 2: Fetch config in parallel
       const configPromise = fetchInitialConfig({
         longitude: locationData?.location?.longitude?.toString(),
         latitude: locationData?.location?.latitude?.toString(),
       });
-      const addressPromise = isLoggedIn ? fetchAddresses() : Promise.resolve();
+
+      // Step 3: Handle address fetching based on MMKV storage state
+      const addressPromise = isLoggedIn
+        ? (async () => {
+            if (!cachedAddresses || cachedAddresses.length === 0) {
+              // MMKV storage is empty, wait for API call to resolve
+              console.log('AppInitializer initializeApp fetchAddresses wait');
+              await fetchAddresses();
+            } else {
+              console.log('AppInitializer initializeApp fetchAddresses non-blocking');
+              fetchAddresses().catch(() => {
+                // Silently handle API errors for non-blocking calls
+              });
+            }
+          })()
+        : Promise.resolve();
 
       await Promise.allSettled([configPromise, addressPromise]);
 
+      // Step 4: Fetch theme and pages
       await Promise.allSettled([fetchTheme(), fetchPages()]);
 
+      // Step 5: Initialize selected address
       await (async () => {
-        // Inline invoke to avoid using before declaration lint issue
         await initializeSelectedAddress();
       })();
     } catch (e) {
@@ -232,19 +271,19 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     isLoggedIn,
     locationData?.location?.latitude,
     locationData?.location?.longitude,
+    cachedAddresses,
   ]);
 
   const handleRetry = useCallback(() => {
+    initializationRef.current = false;
     initializeApp();
   }, []);
 
   useEffect(() => {
-    console.log('AppInitializer useEffect');
     initializeApp();
   }, []);
   useEffect(() => {
     if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
-      console.log('AppInitializer useEffect fetchVendors', selectedAddress);
       fetchVendors(selectedAddress.coordinates).then(() => {
         setIsInitialized(true);
       });

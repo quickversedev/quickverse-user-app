@@ -9,6 +9,7 @@ const SKIP_PERMISSIONS = '@SkipPermission';
 const SKIP_LOGIN_KEY = '@skipLogin';
 const ALREADY_LAUNCHED_KEY = '@alreadyLaunched';
 const REGION_ID_KEY = '@RegionId';
+const USER_ADDRESSES_KEY = '@UserAddresses';
 
 export const setSkipLoginFlow = (skipLogin: boolean): void => {
   storage.set(SKIP_LOGIN_KEY, skipLogin);
@@ -155,6 +156,44 @@ export const getRegionId = (): string | undefined => {
  */
 export const removeRegionId = (): void => {
   storage.delete(REGION_ID_KEY);
+};
+
+/**
+ * Sets user addresses in storage
+ * @param addresses Address array
+ */
+export const setUserAddresses = (addresses: any[]): void => {
+  try {
+    storage.set(USER_ADDRESSES_KEY, JSON.stringify(addresses));
+  } catch {
+    // noop
+  }
+};
+
+/**
+ * Gets user addresses from storage
+ * @returns Address array or undefined
+ */
+export const getUserAddresses = (): any[] | undefined => {
+  // console.log('getUserAddresses from storage', storage.getString(USER_ADDRESSES_KEY));
+  const raw = storage.getString(USER_ADDRESSES_KEY);
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as any[];
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Removes user addresses from storage
+ */
+export const removeUserAddresses = (): void => {
+  storage.delete(USER_ADDRESSES_KEY);
 };
 
 export const StorageService = {

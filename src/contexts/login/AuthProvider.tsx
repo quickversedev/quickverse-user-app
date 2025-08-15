@@ -5,6 +5,7 @@ import {
   getAuthSession,
   getNewUser,
   getSkipLoginFlow,
+  removeUserAddresses,
   setAuthSession,
   setNewUser,
   setSkipLoginFlow,
@@ -100,6 +101,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthData(undefined);
     setSkipUserLogin(undefined);
     setSelectedAddress(null);
+    removeUserAddresses();
     StorageService.clearAll();
   };
 

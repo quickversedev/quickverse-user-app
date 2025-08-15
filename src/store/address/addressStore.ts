@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import axiosInstance, { apiCall } from '../../config/api/axios.config';
 import { ApiError } from '../../config/api/axios.types';
-import { AuthSession } from '../../services/localStorage/storage.service';
+import {
+  AuthSession,
+  getUserAddresses,
+  removeUserAddresses,
+  setUserAddresses,
+} from '../../services/localStorage/storage.service';
 import { AddressStore, NewAddress } from '../../types/address';
 
 const useAddressStore = create<AddressStore>((set, get) => ({
@@ -26,15 +31,21 @@ const useAddressStore = create<AddressStore>((set, get) => ({
       if (!authSession?.jwt) {
         throw new Error('Authentication required. Please login again.');
       }
-
+      console.log('fetchAddresses', authSession);
       const response = await axiosInstance.get('/v2/addresses', {
         headers: {
           SessionKey: authSession.jwt,
           phone: authSession.phone,
         },
       });
+
+      const addresses = response.data || [];
+
+      // Store addresses in MMKV storage
+      setUserAddresses(addresses);
+
       set({
-        addresses: response.data || [],
+        addresses,
         loading: false,
         fetchError: null,
       });
@@ -44,6 +55,28 @@ const useAddressStore = create<AddressStore>((set, get) => ({
         fetchError: 'Failed to fetch addresses. Please try again.',
         loading: false,
       });
+    }
+  },
+
+  // Load addresses from MMKV storage
+  loadAddressesFromStorage: () => {
+    try {
+      const storedAddresses = getUserAddresses();
+      if (storedAddresses) {
+        set({ addresses: storedAddresses });
+      }
+    } catch (err) {
+      console.error('Error loading addresses from storage:', err);
+    }
+  },
+
+  // Clear addresses from MMKV storage
+  clearAddressesFromStorage: () => {
+    try {
+      removeUserAddresses();
+      set({ addresses: [] });
+    } catch (err) {
+      console.error('Error clearing addresses from storage:', err);
     }
   },
 
