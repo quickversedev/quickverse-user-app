@@ -7,7 +7,7 @@ import { LocationFilter, Vendor, VendorFilters, VendorStore } from '../types/ven
 let currentRequestId = 0;
 let pendingRequest: AbortController | null = null;
 
-const USE_VENDOR_MOCKS = false; // Set to false for real API
+const USE_VENDOR_MOCKS = true; // Set to false for real API
 const VENDOR_API_URL = '/v3/shops'; // Adjust as needed
 
 // Helper function to calculate distance between two points (Haversine formula)

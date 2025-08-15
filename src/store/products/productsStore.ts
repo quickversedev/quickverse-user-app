@@ -2,6 +2,16 @@ import { create } from 'zustand';
 import { mockProducts, Product } from '../../assets/mock/products';
 import axiosInstance from '../../config/api/axios.config';
 
+type Category = {
+  id: string;
+  name: string;
+  description: string | null;
+  imageURLs: string[] | null;
+  type: 'MANAGED' | 'CUSTOM';
+  parentCategory: string | null;
+  countOfSkus: number;
+};
+
 interface ProductsStore {
   products: Product[];
   loading: boolean; // true while fetching any data (including first batch)
@@ -12,6 +22,12 @@ interface ProductsStore {
   total: number;
   shopId: string;
   hasMore: boolean;
+
+  // Categories
+  categories: Category[];
+  categoriesLoading: boolean;
+  categoriesError: string | null;
+  fetchCategories: (shopIdOverride?: string) => Promise<void>;
   fetchProducts: (opts?: { offset?: number; limit?: number; append?: boolean }) => Promise<void>;
   resetProducts: () => void;
   setShopId: (shopId: string) => void;
@@ -34,6 +50,11 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
   total: 0,
   shopId: '4512',
   hasMore: true,
+
+  // Categories initial state
+  categories: [],
+  categoriesLoading: false,
+  categoriesError: null,
 
   fetchProducts: async ({ offset, limit, append } = {}) => {
     set({ loading: true, fullyLoaded: false, error: null });
@@ -136,6 +157,51 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
     }
   },
 
+  // Fetch categories for a given shop. In the real API, the category "id" maps to the product "division" field
+  fetchCategories: async (shopIdOverride?: string) => {
+    const shopId = shopIdOverride || get().shopId;
+    set({ categoriesLoading: true, categoriesError: null });
+    if (USE_PRODUCTS_MOCKS) {
+      // Build categories from mock products using unique divisions; map id = division
+      await new Promise(res => setTimeout(res, 200));
+      const shopProducts = mockProducts.filter(p => p.shopId === shopId);
+      const divisionCount = shopProducts.reduce<Record<string, number>>((acc, p) => {
+        acc[p.division] = (acc[p.division] || 0) + 1;
+        return acc;
+      }, {});
+      const categories: Category[] = Object.keys(divisionCount).map(div => ({
+        id: div, // critical: maps to product.division
+        name: div,
+        description: null,
+        imageURLs: null,
+        type: 'CUSTOM',
+        parentCategory: null,
+        countOfSkus: divisionCount[div],
+      }));
+      set({ categories, categoriesLoading: false, categoriesError: null });
+      return;
+    }
+    try {
+      const response = await axiosInstance.get(`/v3/${shopId}/category`, {
+        headers: {
+          Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+        },
+      });
+      const data = response?.data as { categories?: Category[] };
+      const categories = (data?.categories || []).map(c => ({
+        ...c,
+        // ensure optional fields are present
+        description: c.description ?? null,
+        imageURLs: c.imageURLs ?? null,
+        parentCategory: c.parentCategory ?? null,
+        countOfSkus: c.countOfSkus ?? 0,
+      }));
+      set({ categories, categoriesLoading: false, categoriesError: null });
+    } catch (err: unknown) {
+      set({ categoriesLoading: false, categoriesError: 'Failed to fetch categories' });
+    }
+  },
+
   resetProducts: () =>
     set({
       products: [],
@@ -150,8 +216,9 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
   setShopId: (shopId: string) => set({ shopId }),
 
   // Selector: Get products by category from the current store
+  // NOTE: API's category.id maps to product.division; so categoryId should be compared with product.division
   getProductsByCategory: (categoryId: string) => {
-    return get().products.filter(product => product.category === categoryId);
+    return get().products.filter(product => product.division === categoryId);
   },
 
   // Selector: Get best seller products (tagName === 'BestSeller')

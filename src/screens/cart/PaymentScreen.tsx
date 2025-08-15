@@ -1,3 +1,4 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useMemo, useState } from 'react';
 import {
   SafeAreaView,
@@ -20,6 +21,7 @@ type PaymentOption = {
 };
 
 const PaymentScreen: React.FC = () => {
+  const navigation = useNavigation();
   const { getColor, getButtonColor } = useTheme();
   const [selected, setSelected] = useState<PaymentOptionKey>('cod');
   const [upiId, setUpiId] = useState<string>('');
@@ -38,10 +40,18 @@ const PaymentScreen: React.FC = () => {
     // For now, simply navigate back or show a toast in the parent flow
   };
 
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: getColor('background') }]}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
+        </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: getColor('text') }]}>Checkout</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -231,10 +241,23 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 40,
   },
   scrollContent: {
     paddingHorizontal: 16,

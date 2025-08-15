@@ -39,3 +39,13 @@ export interface Product {
     tagName: string;
   }>;
 }
+
+export interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+  imageURLs: string[] | null;
+  type: 'MANAGED' | 'CUSTOM';
+  parentCategory: string | null;
+  countOfSkus: number;
+}

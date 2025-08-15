@@ -1,5 +1,5 @@
 // mock/products.ts
-
+import { Category } from '../../types/product';
 const categories = [
   'scoops',
   'sundaes',
@@ -203,3 +203,28 @@ export const mockProducts: Product[] = [
   ...generateProducts('4526', 100, 1000), // South Indian Delights (Food)
   ...generateProducts('4527', 100, 1100), // Organic Corner (Grocery)
 ];
+
+// Build mock categories by division (id maps to product.division)
+const CATEGORY_ICON_URLS: Record<string, string[]> = {
+  Cold: ['https://via.placeholder.com/64?text=Cold'],
+  Hot: ['https://via.placeholder.com/64?text=Hot'],
+  Ambient: ['https://via.placeholder.com/64?text=Ambient'],
+};
+
+export const getMockCategoriesForShop = (shopId: string): Category[] => {
+  const shopProducts = mockProducts.filter(p => p.shopId === shopId);
+  const counts = shopProducts.reduce<Record<string, number>>((acc, p) => {
+    acc[p.division] = (acc[p.division] || 0) + 1;
+    return acc;
+  }, {});
+  const divisionsUnique = Array.from(new Set(shopProducts.map(p => p.division)));
+  return divisionsUnique.map(div => ({
+    id: div, // maps to product.division
+    name: div,
+    description: null,
+    imageURLs: CATEGORY_ICON_URLS[div] || null,
+    type: div === 'Cold' || div === 'Hot' ? 'MANAGED' : 'CUSTOM',
+    parentCategory: null,
+    countOfSkus: counts[div] || 0,
+  }));
+};

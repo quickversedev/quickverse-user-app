@@ -32,23 +32,8 @@ import { useProductsStore } from '../../store/products/productsStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
 
-// Category type for local use
+// Category type for local use (as expected by CategoryTabs)
 type Category = CategoryItem;
-
-// Category type remains, Product is now imported from mock data
-// Mock categories
-const allCategories: Category[] = [
-  { id: 'scoops', name: 'Scoops', icon: Images.bg1 },
-  { id: 'sundaes', name: 'Sundaes', icon: Images.bg1 },
-  { id: 'cones', name: 'Cones', icon: Images.bg1 },
-  { id: 'family', name: 'Family Packs', icon: Images.bg1 },
-  { id: 'milkshakes', name: 'Milkshakes', icon: Images.bg1 },
-  { id: 'smoothies', name: 'Smoothies', icon: Images.bg1 },
-  { id: 'icecream_cakes', name: 'Ice Cream Cakes', icon: Images.bg1 },
-  { id: 'frozen_yogurt', name: 'Frozen Yogurt', icon: Images.bg1 },
-  { id: 'ice_pops', name: 'Ice Pops', icon: Images.bg1 },
-  { id: 'gelato', name: 'Gelato', icon: Images.bg1 },
-];
 
 // Categories will be filtered based on fetched products
 
@@ -73,7 +58,8 @@ const getRowBasedProductList = (
   > = [];
   categories.forEach((cat: Category) => {
     rows.push({ type: 'header', category: cat });
-    const catProducts = products.filter((p: Product) => p.category === cat.id);
+    // Map category.id to product.division per API contract
+    const catProducts = products.filter((p: Product) => p.division === cat.id);
     for (let i = 0; i < catProducts.length; i += numColumns) {
       rows.push({ type: 'products', products: catProducts.slice(i, i + numColumns) });
     }
@@ -94,20 +80,30 @@ const VendorProduct: React.FC = () => {
     error: productsError,
     fetchProducts,
     resetProducts,
+    categories,
+    fetchCategories,
+    setShopId,
   } = useProductsStore();
 
-  // Fetch products on mount or when vendor.shopId changes
+  // Fetch products and categories on mount or when vendor.shopId changes
   useEffect(() => {
+    setShopId(vendor.shopId);
     resetProducts();
     fetchProducts({ offset: 0, limit: 50 });
-    // Optionally, setShopId(vendor.shopId) if you want to support dynamic shop switching
-    // setShopId(vendor.shopId);
-    // fetchProducts({ offset: 0, limit: 50 });
+    fetchCategories(vendor.shopId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendor.shopId]);
 
-  // Only include categories that have at least one product (from fetched products)
-  const filteredCategories: Category[] = allCategories.filter(cat =>
-    products.some(product => product.category === cat.id)
+  // Map store categories to CategoryTabs items with a placeholder icon
+  const categoriesForTabs: Category[] = (categories || []).map(c => ({
+    id: c.id,
+    name: c.name,
+    icon: Images.bg1,
+  }));
+
+  // Only include categories that have at least one product (match product.division)
+  const filteredCategories: Category[] = categoriesForTabs.filter(cat =>
+    products.some(product => product.division === cat.id)
   );
 
   // Cart store integration

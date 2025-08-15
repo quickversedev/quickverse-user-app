@@ -17,6 +17,7 @@ import { Icons, Images } from '../../assets';
 import AddButton from '../../components/modules/Product/AddButton';
 import ProductCard from '../../components/modules/Product/ProductCard';
 import QuantitySelector from '../../components/modules/Product/QuantitySelector';
+import { useAuth } from '../../contexts/login/AuthProvider';
 import { RootStackParamList } from '../../routes/AppStack';
 import useCartStore, { CartProduct } from '../../store/cart/cartStore';
 import useCouponStore from '../../store/cart/couponStore';
@@ -517,9 +518,9 @@ const CartScreen: React.FC = () => {
   const { carts, activeCartId, increment, decrement, clearCart } = useCartStore();
   const { vendors } = useVendorStore();
   const { getAppliedCoupon, removeCoupon, availableCoupons } = useCouponStore();
+  const { selectedAddress } = useAuth();
   const [showAddressModal, setShowAddressModal] = React.useState(false);
   const [paymentExpanded, setPaymentExpanded] = React.useState(false);
-  const [address, setAddress] = React.useState('Baner - Balewadi Road, Pune');
   const { theme, getColor, getButtonColor, getTypography } = useTheme();
 
   // Get current cart and vendor
@@ -550,6 +551,17 @@ const CartScreen: React.FC = () => {
   const handleAddSuggested = (_idx: number) => {};
   const handleCheckout = () => {
     navigation.navigate('Payment');
+  };
+
+  // Format address for display
+  const getFormattedAddress = () => {
+    if (!selectedAddress) {
+      return 'Select delivery address';
+    }
+    console.log(selectedAddress);
+    const { addressLine1, city, state } = selectedAddress;
+    const parts = [addressLine1, city, state].filter(Boolean);
+    return parts.join(', ');
   };
   // Dynamic styles using theme
   const themedStyles = StyleSheet.create({
@@ -1068,7 +1080,7 @@ const CartScreen: React.FC = () => {
         <SuggestedItems items={suggestedItems} onAdd={handleAddSuggested} />
       </ScrollView>
       <CartFooter
-        address={address}
+        address={getFormattedAddress()}
         onSelectAddress={() => setShowAddressModal(true)}
         onCheckout={handleCheckout}
       />
@@ -1078,7 +1090,6 @@ const CartScreen: React.FC = () => {
             <Text style={themedStyles.modalTitle}>Select Address</Text>
             <TouchableOpacity
               onPress={() => {
-                setAddress('Baner - Balewadi Road, Pune');
                 setShowAddressModal(false);
               }}
             >
@@ -1086,7 +1097,6 @@ const CartScreen: React.FC = () => {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => {
-                setAddress('Kothrud, Pune');
                 setShowAddressModal(false);
               }}
             >
