@@ -520,7 +520,14 @@ const CartScreen: React.FC = () => {
   const { cartId } = route.params || {};
   const { carts, activeCartId, increment, decrement, clearCart } = useCartStore();
   const { vendors } = useVendorStore();
-  const { getAppliedCoupon, removeCoupon, availableCoupons } = useCouponStore();
+  const {
+    getAppliedCoupon,
+    removeCoupon,
+    getAvailableCoupons,
+    checkAndFetchOffers,
+    isLoading: couponLoading,
+    error: couponError,
+  } = useCouponStore();
   const { selectedAddress, setSelectedAddress, permissionDataInAuth } = useAuth();
   const [showAddressModal, setShowAddressModal] = React.useState(false);
   const [paymentExpanded, setPaymentExpanded] = React.useState(false);
@@ -572,6 +579,16 @@ const CartScreen: React.FC = () => {
     setShowAddressModal(false);
   };
 
+  // Fetch offers when vendor is available
+  React.useEffect(() => {
+    if (vendor?.shopId) {
+      checkAndFetchOffers(vendor.shopId);
+    }
+  }, [vendor?.shopId, checkAndFetchOffers]);
+
+  // Get available coupons for current vendor
+  const availableCoupons = getAvailableCoupons(vendor?.shopId || '');
+
   // Format address for display
   const getFormattedAddress = () => {
     if (!selectedAddress) {
@@ -582,6 +599,15 @@ const CartScreen: React.FC = () => {
     const parts = [addressLine1, city, state].filter(Boolean);
     return parts.join(', ');
   };
+
+  // Handle coupon navigation with vendor data
+  const handleCouponNavigation = () => {
+    if (vendor?.shopId) {
+      // Navigate to coupons screen - the screen will fetch its own data based on vendor context
+      navigation.navigate('Coupons');
+    }
+  };
+
   // Dynamic styles using theme
   const themedStyles = StyleSheet.create({
     headerRow: {
@@ -996,6 +1022,16 @@ const CartScreen: React.FC = () => {
       height: 16,
       marginRight: 4,
     },
+    couponLoadingText: {
+      color: getColor('subText'),
+      fontSize: getTypography('caption'),
+      marginLeft: 8,
+    },
+    couponErrorText: {
+      color: getColor('error'),
+      fontSize: getTypography('caption'),
+      marginLeft: 8,
+    },
   });
 
   return (
@@ -1041,7 +1077,8 @@ const CartScreen: React.FC = () => {
         {/* Coupon Section */}
         <TouchableOpacity
           style={themedStyles.couponBox}
-          onPress={() => navigation.navigate('Coupons')}
+          onPress={handleCouponNavigation}
+          disabled={couponLoading}
         >
           <View style={themedStyles.couponLeft}>
             <MaterialCommunityIcons
@@ -1066,7 +1103,15 @@ const CartScreen: React.FC = () => {
                 <Text style={themedStyles.minOrderText}>Min order: ₹{appliedCoupon.minOrder}</Text>
               </View>
             ) : (
-              <Text style={themedStyles.couponText}>Apply Coupon</Text>
+              <View style={themedStyles.couponLeft}>
+                <Text style={themedStyles.couponText}>Apply Coupon</Text>
+                {couponLoading && (
+                  <Text style={themedStyles.couponLoadingText}>Loading offers...</Text>
+                )}
+                {couponError && (
+                  <Text style={themedStyles.couponErrorText}>Failed to load offers</Text>
+                )}
+              </View>
             )}
           </View>
           <View style={themedStyles.couponRight}>
@@ -1080,9 +1125,11 @@ const CartScreen: React.FC = () => {
               </TouchableOpacity>
             ) : (
               <>
-                <Text style={themedStyles.couponAvailable}>
-                  {availableCoupons.length} Coupons Available
-                </Text>
+                {!couponLoading && !couponError && (
+                  <Text style={themedStyles.couponAvailable}>
+                    {availableCoupons.length} Coupons Available
+                  </Text>
+                )}
                 <MaterialCommunityIcons
                   name="chevron-right"
                   size={24}

@@ -17,6 +17,7 @@ import { AppNavigationProp } from '../../types/navigation';
 
 import useCartStore from '../../store/cart/cartStore';
 import useCouponStore, { Coupon } from '../../store/cart/couponStore';
+import useVendorStore from '../../store/vendorStore';
 
 const CouponCard: React.FC<{
   coupon: Coupon;
@@ -124,16 +125,26 @@ const CouponCard: React.FC<{
 
 const CouponsScreen: React.FC = () => {
   const { carts, activeCartId } = useCartStore();
-  const { availableCoupons, applyCoupon, isLoading, error, fetchCustomerOffers } = useCouponStore();
+  const { vendors } = useVendorStore();
+  const { getAvailableCoupons, applyCoupon, loading, error, checkAndFetchOffers } =
+    useCouponStore();
   const navigation = useNavigation<AppNavigationProp>();
   const { getColor, getTypography, theme } = useTheme();
   const [couponCode, setCouponCode] = useState('');
 
+  // Get current cart and vendor
+  const cart = activeCartId ? carts[activeCartId] : Object.values(carts)[0];
+  const vendor = vendors.find(v => v.shopId === cart?.cartId.replace('vendor_', ''));
+  const vendorId = vendor?.shopId || '';
+
+  // Get vendor-specific coupons
+  const availableCoupons = getAvailableCoupons(vendorId);
+
   useEffect(() => {
-    const cart = activeCartId ? carts[activeCartId] : Object.values(carts)[0];
-    const shopId = cart?.cartId.replace('vendor_', '');
-    fetchCustomerOffers(shopId);
-  }, [activeCartId, carts, fetchCustomerOffers]);
+    if (vendorId) {
+      checkAndFetchOffers(vendorId);
+    }
+  }, [vendorId, checkAndFetchOffers]);
 
   const handleApplyCoupon = (code: string) => {
     const cartId = activeCartId || (carts && Object.keys(carts)[0]);
@@ -252,10 +263,40 @@ const CouponsScreen: React.FC = () => {
       alignItems: 'center',
       paddingVertical: 32,
     },
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 32,
+      paddingVertical: 32,
+    },
+    errorIcon: {
+      marginBottom: 16,
+    },
     errorText: {
       color: getColor('error'),
       fontSize: getTypography('body'),
       textAlign: 'center',
+      fontFamily: theme.typography.fontFamily,
+      marginBottom: 8,
+    },
+    errorSubtext: {
+      color: getColor('subText'),
+      fontSize: getTypography('caption'),
+      textAlign: 'center',
+      fontFamily: theme.typography.fontFamily,
+      marginBottom: 16,
+    },
+    retryButton: {
+      backgroundColor: getColor('primary'),
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: theme.borderRadius.md,
+    },
+    retryButtonText: {
+      color: getColor('black'),
+      fontSize: getTypography('body'),
+      fontWeight: 'bold',
       fontFamily: theme.typography.fontFamily,
     },
     noDataText: {
@@ -264,7 +305,29 @@ const CouponsScreen: React.FC = () => {
       textAlign: 'center',
       fontFamily: theme.typography.fontFamily,
     },
+    vendorInfo: {
+      backgroundColor: getColor('card'),
+      padding: 16,
+      marginHorizontal: 16,
+      marginBottom: 16,
+      borderRadius: theme.borderRadius.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    vendorName: {
+      color: getColor('text'),
+      fontSize: getTypography('body'),
+      fontWeight: '600',
+      fontFamily: theme.typography.fontFamily,
+      marginLeft: 12,
+    },
   });
+
+  const handleRetry = () => {
+    if (vendorId) {
+      checkAndFetchOffers(vendorId);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -308,17 +371,33 @@ const CouponsScreen: React.FC = () => {
 
         {/* Available Coupons */}
         <Text style={styles.sectionTitle}>Available Coupons</Text>
-        {isLoading ? (
+        {loading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color={getColor('primary')} />
           </View>
         ) : error ? (
-          <View style={styles.centerContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={styles.errorContainer}>
+            <MaterialCommunityIcons
+              name="alert-circle-outline"
+              size={48}
+              color={getColor('error')}
+              style={styles.errorIcon}
+            />
+            <Text style={styles.errorText}>Failed to load coupons</Text>
+            <Text style={styles.errorSubtext}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </TouchableOpacity>
           </View>
         ) : availableCoupons.length === 0 ? (
           <View style={styles.centerContainer}>
-            <Text style={styles.noDataText}>No coupons available</Text>
+            <MaterialCommunityIcons
+              name="ticket-percent-outline"
+              size={48}
+              color={getColor('subText')}
+              style={styles.errorIcon}
+            />
+            <Text style={styles.noDataText}>No coupons available for this vendor</Text>
           </View>
         ) : (
           <FlatList

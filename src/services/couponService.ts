@@ -1,6 +1,50 @@
-import { API_BASE_URL } from '../config/api/axios.config';
+import axiosInstance from '../config/api/axios.config';
 import { Coupon } from '../store/cart/couponStore';
 
+// Vendor Offers Response
+export interface VendorOffersResponse {
+  publicOffersPresent: boolean;
+  privateOffersPresent: boolean;
+}
+
+// Customer Offers Response
+export interface CustomerOffersResponse {
+  listOfEligibleOffers: CustomerOffer[];
+  listOfNonEligibleOffers: CustomerOffer[];
+}
+
+// Customer Offer Interface
+interface CustomerOffer {
+  offerId: string;
+  offerCode: string | null;
+  offerName: string;
+  startDate: number;
+  endDate: number;
+  offerType: 'PERCENTAGE_OFF' | 'FLAT_OFF' | 'ENTITY_PERCENTAGE_OFF' | 'ENTITY_FLAT_OFF';
+  discountValue: number;
+  minimumOrderAmount: number;
+  discountLimit: number;
+  countAllowedPerUser: number;
+  customerCohortType: number;
+  redeemMethod: string;
+  offerConstraintSuggestions: string[];
+  offerBenefitSuggestions: string[];
+  totalAmountRequired: number;
+  totalBenefit: number;
+  state: 'ACTIVE' | 'INACTIVE';
+  remainingProductsCount: number;
+  offerClass: 'CART' | 'PRODUCT';
+  applicableEntities: ApplicableEntity[];
+  minProductCount: number;
+}
+
+interface ApplicableEntity {
+  entityId: string;
+  entityType: string;
+  quantityLimit: number | null;
+}
+
+// Legacy API Response (for backward compatibility)
 export interface GetOffersResponse {
   success: boolean;
   data: {
@@ -24,19 +68,25 @@ interface ApiCoupon {
   isActive: boolean;
 }
 
-const transformApiCoupon = (apiCoupon: ApiCoupon): Coupon => ({
-  id: apiCoupon.id,
-  code: apiCoupon.code,
-  description: apiCoupon.description,
-  discount: `${apiCoupon.discount.value}${
-    apiCoupon.discount.type === 'PERCENTAGE' ? '%' : '₹'
+const transformCustomerOffer = (customerOffer: CustomerOffer): Coupon => ({
+  id: customerOffer.offerId,
+  code: customerOffer.offerCode || '',
+  description: customerOffer.offerName,
+  discount: `${customerOffer.discountValue}${
+    customerOffer.offerType.includes('PERCENTAGE') ? '%' : '₹'
   } OFF`,
-  minOrder: apiCoupon.minOrder,
-  expiryDate: `Valid till ${new Date(apiCoupon.expiryDate).toLocaleDateString('en-IN', {
+  minOrder: customerOffer.minimumOrderAmount,
+  expiryDate: `Valid till ${new Date(customerOffer.endDate).toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   })}`,
+  offerType: customerOffer.offerType,
+  discountLimit: customerOffer.discountLimit,
+  totalBenefit: customerOffer.totalBenefit,
+  offerClass: customerOffer.offerClass,
+  applicableEntities: customerOffer.applicableEntities,
+  minProductCount: customerOffer.minProductCount,
 });
 
 class CouponService {
@@ -48,6 +98,12 @@ class CouponService {
       discount: '50% OFF',
       minOrder: 200,
       expiryDate: 'Valid till 30 Apr 2024',
+      offerType: 'PERCENTAGE_OFF',
+      discountLimit: 100,
+      totalBenefit: 50,
+      offerClass: 'CART',
+      applicableEntities: [],
+      minProductCount: 0,
     },
     {
       id: '2',
@@ -56,6 +112,12 @@ class CouponService {
       discount: '20% OFF',
       minOrder: 500,
       expiryDate: 'Valid till 15 Apr 2024',
+      offerType: 'PERCENTAGE_OFF',
+      discountLimit: 200,
+      totalBenefit: 100,
+      offerClass: 'CART',
+      applicableEntities: [],
+      minProductCount: 0,
     },
     {
       id: '3',
@@ -64,6 +126,37 @@ class CouponService {
       discount: '30% OFF',
       minOrder: 300,
       expiryDate: 'Valid till 20 Apr 2024',
+      offerType: 'ENTITY_PERCENTAGE_OFF',
+      discountLimit: 150,
+      totalBenefit: 75,
+      offerClass: 'PRODUCT',
+      applicableEntities: [
+        {
+          entityId: 'product-1',
+          entityType: 'PRODUCT',
+          quantityLimit: 2,
+        },
+        {
+          entityId: 'product-2',
+          entityType: 'PRODUCT',
+          quantityLimit: 1,
+        },
+      ],
+      minProductCount: 2,
+    },
+    {
+      id: '4',
+      code: 'FLAT100',
+      description: 'Get ₹100 off on orders above ₹1000',
+      discount: '₹100 OFF',
+      minOrder: 1000,
+      expiryDate: 'Valid till 25 Apr 2024',
+      offerType: 'FLAT_OFF',
+      discountLimit: 100,
+      totalBenefit: 100,
+      offerClass: 'CART',
+      applicableEntities: [],
+      minProductCount: 0,
     },
   ];
 
@@ -75,19 +168,21 @@ class CouponService {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/quickVerse/v3/${vendorId}/Offers`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/v3/${vendorId}/Offers`, {
         headers: {
           Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const data: VendorOffersResponse = response.data;
+
+      // Check if any offers are present
+      if (data.publicOffersPresent || data.privateOffersPresent) {
+        // If offers are present, fetch customer offers
+        return await this.getCustomerOffers(vendorId);
       }
 
-      const data: GetOffersResponse = await response.json();
-      return data.data.offers.map(transformApiCoupon);
+      return []; // No offers available
     } catch (error) {
       console.error('Error fetching vendor offers:', error);
       return this.mockCoupons; // Fallback to mock data on error
@@ -100,28 +195,27 @@ class CouponService {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/quickVerse/v3/Offers/Customer`, {
-        method: 'GET',
+      const response = await axiosInstance.get('/v3/Offers/Customer', {
+        params: {
+          shopId: shopId || 'null',
+          sortBy: 'null',
+          state: 'null',
+          limit: 'null',
+          isBuyNow: 'null',
+        },
         headers: {
           Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
           SessionKey: await this.getSessionKey(),
-          'Content-Type': 'application/json',
+          'Request-Origin': 'CUSTOMER',
         },
-        body: JSON.stringify({
-          shopId,
-          sortBy: '',
-          state: '',
-          limit: 500,
-          isBuyNow: true,
-        }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const data: CustomerOffersResponse = response.data;
 
-      const data: GetOffersResponse = await response.json();
-      return data.data.offers.map(transformApiCoupon);
+      // Transform eligible offers to Coupon format
+      const eligibleCoupons = data.listOfEligibleOffers.map(transformCustomerOffer);
+
+      return eligibleCoupons;
     } catch (error) {
       console.error('Error fetching customer offers:', error);
       return this.mockCoupons; // Fallback to mock data on error
