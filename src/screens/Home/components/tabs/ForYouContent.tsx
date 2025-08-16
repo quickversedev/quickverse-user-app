@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { NativeScrollEvent, NativeSyntheticEvent, ScrollView, ViewStyle } from 'react-native';
 
 import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
@@ -17,7 +17,7 @@ interface ForYouContentProps {
   showsVerticalScrollIndicator?: boolean;
 }
 
-export const ForYouContent: React.FC<ForYouContentProps> = ({
+const ForYouContentComponent: React.FC<ForYouContentProps> = ({
   onScroll,
   scrollEventThrottle,
   contentContainerStyle,
@@ -32,6 +32,20 @@ export const ForYouContent: React.FC<ForYouContentProps> = ({
     const promotions = getPromotionsByPageId('ForYou');
     return promotions || [];
   }, [getPromotionsByPageId]);
+
+  // Memoize vendor press handler
+  const handleVendorPress = useCallback(
+    (vendor: any) => {
+      navigation.navigate('VendorProduct', { vendor });
+    },
+    [navigation]
+  );
+
+  // Memoize product press handler
+  const handleProductPress = useCallback((_product: any) => {
+    // Handle product press if needed
+  }, []);
+
   return (
     <ScrollView
       onScroll={onScroll}
@@ -48,10 +62,14 @@ export const ForYouContent: React.FC<ForYouContentProps> = ({
       <SectionDivider text="BESTSELLERS" fontSize={16} />
       <VendorProductList
         vendors={vendors}
-        onVendorPress={vendor => navigation.navigate('VendorProduct', { vendor })}
-        onProductPress={_product => {}}
+        onVendorPress={handleVendorPress}
+        onProductPress={handleProductPress}
         useFlatList={false} // Disable FlatList when nested in ScrollView
       />
     </ScrollView>
   );
 };
+
+ForYouContentComponent.displayName = 'ForYouContent';
+
+export const ForYouContent = React.memo(ForYouContentComponent);

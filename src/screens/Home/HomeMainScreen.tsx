@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import VendorLocationEmptyState from '../../components/common/VendorLocationEmptyState';
@@ -19,7 +19,7 @@ import { PharmacyContent } from './components/tabs/PharmacyContent';
 
 const HEADER_HEIGHT = 280; // Approximate total header height
 
-const HomeMainScreen = () => {
+const HomeMainScreen = React.memo(() => {
   const { selectedTab } = useTab();
   const { theme } = useTheme();
   const { translateY, opacity, handleScroll } = useHeaderAnimation();
@@ -28,19 +28,26 @@ const HomeMainScreen = () => {
 
   const { setSelectedAddress, permissionDataInAuth } = useAuth();
   const { authData } = useAuth();
-  const loggedIn = Boolean(authData?.jwt);
+  const loggedIn = useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const _navigation = useNavigation<AppNavigationProp>();
 
-  const handleChangeAddress = () => {
+  const handleChangeAddress = useCallback(() => {
     setShowAddressModal(true);
-  };
+  }, []);
 
-  const handleAddressSelect = (address: Address) => {
-    setSelectedAddress(address);
+  const handleAddressSelect = useCallback(
+    (address: Address) => {
+      setSelectedAddress(address);
+      setShowAddressModal(false);
+      // The address will be set through the AuthProvider
+    },
+    [setSelectedAddress]
+  );
+
+  const handleCloseAddressModal = useCallback(() => {
     setShowAddressModal(false);
-    // The address will be set through the AuthProvider
-  };
+  }, []);
 
   // Check if we need to show the compulsory address modal
   useEffect(() => {
@@ -49,13 +56,37 @@ const HomeMainScreen = () => {
     if (shouldShowCompulsoryModal) {
       setShowAddressModal(true);
     }
-  }, []);
+  }, [permissionDataInAuth?.permission]);
 
-  const renderContent = () => {
+  // Memoize content props to prevent unnecessary re-renders
+  const contentProps = useMemo(
+    () => ({
+      onScroll: handleScroll,
+      scrollEventThrottle: 16,
+      contentContainerStyle: styles.scrollContent,
+      showsVerticalScrollIndicator: false,
+    }),
+    [handleScroll]
+  );
+
+  // Memoize address text
+  const addressText = useMemo(
+    () => selectedAddress?.addressLine1 || selectedAddress?.city || 'Current Location',
+    [selectedAddress?.addressLine1, selectedAddress?.city]
+  );
+
+  // Memoize needCompulsoryAddress calculation
+  const needCompulsoryAddress = useMemo(
+    () =>
+      permissionDataInAuth?.permission !== 'granted' ||
+      (selectedAddress && selectedAddress.isSavedAddress === false) ||
+      false,
+    [permissionDataInAuth?.permission, selectedAddress]
+  );
+
+  const renderContent = useCallback(() => {
     // Show zero state if no vendors available and not loading
     if (!vendorLoading && vendors.length === 0) {
-      const addressText =
-        selectedAddress?.addressLine1 || selectedAddress?.city || 'Current Location';
       return (
         <View
           style={[styles.safeArea, { backgroundColor: theme.colors.background, marginTop: 100 }]}
@@ -68,12 +99,6 @@ const HomeMainScreen = () => {
       );
     }
 
-    const contentProps = {
-      onScroll: handleScroll,
-      scrollEventThrottle: 16,
-      contentContainerStyle: styles.scrollContent,
-      showsVerticalScrollIndicator: false,
-    };
     switch (selectedTab || 'ForYou') {
       case 'food':
         return <FoodContent {...contentProps} />;
@@ -83,8 +108,18 @@ const HomeMainScreen = () => {
         return <PharmacyContent {...contentProps} />;
       case 'ForYou':
         return <ForYouContent {...contentProps} />;
+      default:
+        return <ForYouContent {...contentProps} />;
     }
-  };
+  }, [
+    vendorLoading,
+    vendors.length,
+    theme.colors.background,
+    handleChangeAddress,
+    addressText,
+    selectedTab,
+    contentProps,
+  ]);
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
@@ -98,19 +133,17 @@ const HomeMainScreen = () => {
       {loggedIn && (
         <AddressSelectionModal
           visible={showAddressModal}
-          onClose={() => setShowAddressModal(false)}
+          onClose={handleCloseAddressModal}
           onAddressSelect={handleAddressSelect}
           selectedAddress={selectedAddress}
-          needCompulsoryAddress={
-            permissionDataInAuth?.permission !== 'granted' ||
-            (selectedAddress && selectedAddress.isSavedAddress === false) ||
-            false
-          }
+          needCompulsoryAddress={needCompulsoryAddress}
         />
       )}
     </SafeAreaView>
   );
-};
+});
+
+HomeMainScreen.displayName = 'HomeMainScreen';
 
 const styles = StyleSheet.create({
   safeArea: {

@@ -25,6 +25,16 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 };
 
+// Helper function to sort vendors by active status
+const sortVendorsByActiveStatus = (vendors: Vendor[]): Vendor[] => {
+  return vendors.sort((a, b) => {
+    // Active vendors first, then inactive
+    if (a.storeActive && !b.storeActive) return -1;
+    if (!a.storeActive && b.storeActive) return 1;
+    return 0;
+  });
+};
+
 const useVendorStore = create<VendorStore>((set, get) => ({
   // Initial state
   vendors: [],
@@ -53,7 +63,8 @@ const useVendorStore = create<VendorStore>((set, get) => ({
       setTimeout(() => {
         // Only update if this is still the current request
         if (requestId === currentRequestId) {
-          set({ vendors: mockVendors, loading: false, userLocation: location || null });
+          const sortedVendors = sortVendorsByActiveStatus(mockVendors);
+          set({ vendors: sortedVendors, loading: false, userLocation: location || null });
         }
       }, 1000);
       return;
@@ -78,8 +89,9 @@ const useVendorStore = create<VendorStore>((set, get) => ({
       console.log('🔍 [fetchVendors] response', response.data, requestId, currentRequestId);
       // Only update state if this is still the current request
       if (requestId === currentRequestId) {
+        const sortedVendors = sortVendorsByActiveStatus(response.data);
         set({
-          vendors: response.data,
+          vendors: sortedVendors,
           loading: false,
           userLocation: location || null,
         });
@@ -126,7 +138,10 @@ const useVendorStore = create<VendorStore>((set, get) => ({
     }
   },
 
-  setVendors: (vendors: Vendor[]) => set({ vendors }),
+  setVendors: (vendors: Vendor[]) => {
+    const sortedVendors = sortVendorsByActiveStatus(vendors);
+    set({ vendors: sortedVendors });
+  },
   setSelectedVendor: (vendor: Vendor | null) => set({ selectedVendor: vendor }),
   setLoading: (loading: boolean) => set({ loading }),
   setError: (error: string | null) => set({ error }),

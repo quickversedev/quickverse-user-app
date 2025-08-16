@@ -1,6 +1,6 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -50,6 +50,12 @@ type VendorProductRouteProp = RouteProp<
 
 const { width } = Dimensions.get('window');
 
+// Constants for better performance
+const NUM_COLUMNS = 3;
+const CATEGORY_WIDTH = 120;
+const SCROLL_DELAY = 100;
+const ANIMATION_DURATION = 300;
+
 // Helper: create a row-based list with headers and product rows
 const getRowBasedProductList = (
   categories: Category[],
@@ -70,7 +76,7 @@ const getRowBasedProductList = (
   return rows;
 };
 
-const VendorProduct: React.FC = () => {
+const VendorProductComponent: React.FC = () => {
   const { getColor, getTypography } = useTheme();
   const { authData } = useAuth();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -98,6 +104,10 @@ const VendorProduct: React.FC = () => {
     setShopId,
   } = useProductsStore();
 
+  // Memoized values
+  const hasAuth = useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
+  const isStoreActive = useMemo(() => vendor.storeActive, [vendor.storeActive]);
+
   // Fetch products and categories on mount or when vendor.shopId changes
   useEffect(() => {
     setShopId(vendor.shopId);
@@ -108,31 +118,42 @@ const VendorProduct: React.FC = () => {
   }, [vendor.shopId]);
 
   // Filter products based on search query
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProducts = useMemo(
+    () =>
+      products.filter(product => product.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    [products, searchQuery]
   );
 
   // Always show filtered products when searching, or all products when not searching
-  const productsToShow = searchQuery ? filteredProducts : products;
+  const productsToShow = useMemo(
+    () => (searchQuery ? filteredProducts : products),
+    [searchQuery, filteredProducts, products]
+  );
 
   // Map store categories to CategoryTabs items with a placeholder icon
-  const categoriesForTabs: Category[] = (categories || []).map(c => ({
-    id: c.id,
-    name: c.name,
-    icon: Images.bg1,
-  }));
+  const categoriesForTabs: Category[] = useMemo(
+    () =>
+      (categories || []).map(c => ({
+        id: c.id,
+        name: c.name,
+        icon: Images.bg1,
+      })),
+    [categories]
+  );
 
   // Only include categories that have at least one product (match product.division)
   // When searching, show all categories that have matching products
-  const filteredCategories: Category[] = categoriesForTabs.filter(cat =>
-    productsToShow.some(product => product.division === cat.id)
+  const filteredCategories: Category[] = useMemo(
+    () =>
+      categoriesForTabs.filter(cat => productsToShow.some(product => product.division === cat.id)),
+    [categoriesForTabs, productsToShow]
   );
 
   // Cart store integration
   const { addToCart, increment, decrement, setActiveCart, carts } = useCartStore();
 
   // Create vendor-specific cart ID
-  const cartId = `vendor_${vendor.shopId}`;
+  const cartId = useMemo(() => `vendor_${vendor.shopId}`, [vendor.shopId]);
 
   // Set this cart as active when component mounts
   useEffect(() => {
@@ -140,9 +161,9 @@ const VendorProduct: React.FC = () => {
   }, [cartId, setActiveCart]);
 
   // Get item count for this cart
-  const itemCount = Object.values(carts[cartId]?.products || {}).reduce(
-    (sum, p) => sum + p.quantity,
-    0
+  const itemCount = useMemo(
+    () => Object.values(carts[cartId]?.products || {}).reduce((sum, p) => sum + p.quantity, 0),
+    [carts, cartId]
   );
 
   const [selectedCategory, setSelectedCategory] = useState(
@@ -152,32 +173,48 @@ const VendorProduct: React.FC = () => {
   const categoryScrollRef = useRef<ScrollView>(null);
 
   // Animated value for timing section opacity
-  const timingOpacity = scrollY.interpolate({
-    inputRange: [0, 50],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
+  const timingOpacity = useMemo(
+    () =>
+      scrollY.interpolate({
+        inputRange: [0, 50],
+        outputRange: [1, 0],
+        extrapolate: 'clamp',
+      }),
+    [scrollY]
+  );
 
   // Animated value for timing section height
-  const timingHeight = scrollY.interpolate({
-    inputRange: [0, 50],
-    outputRange: [40, 0],
-    extrapolate: 'clamp',
-  });
+  const timingHeight = useMemo(
+    () =>
+      scrollY.interpolate({
+        inputRange: [0, 50],
+        outputRange: [40, 0],
+        extrapolate: 'clamp',
+      }),
+    [scrollY]
+  );
 
   // Animated value for category images opacity
-  const categoryImageOpacity = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
+  const categoryImageOpacity = useMemo(
+    () =>
+      scrollY.interpolate({
+        inputRange: [0, 100],
+        outputRange: [1, 0],
+        extrapolate: 'clamp',
+      }),
+    [scrollY]
+  );
 
   // Animated value for category images height
-  const categoryImageHeight = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [32, 0],
-    extrapolate: 'clamp',
-  });
+  const categoryImageHeight = useMemo(
+    () =>
+      scrollY.interpolate({
+        inputRange: [0, 100],
+        outputRange: [32, 0],
+        extrapolate: 'clamp',
+      }),
+    [scrollY]
+  );
 
   // Auto-scroll to selected category when categories are loaded
   useEffect(() => {
@@ -186,18 +223,17 @@ const VendorProduct: React.FC = () => {
       if (categoryIndex !== -1) {
         // Small delay to ensure the ScrollView is rendered
         setTimeout(() => {
-          const categoryWidth = 120; // Approximate width of each category item
           const screenWidth = width;
           const scrollToX = Math.max(
             0,
-            categoryIndex * categoryWidth - screenWidth / 2 + categoryWidth / 2
+            categoryIndex * CATEGORY_WIDTH - screenWidth / 2 + CATEGORY_WIDTH / 2
           );
 
           categoryScrollRef.current?.scrollTo({
             x: scrollToX,
             animated: true,
           });
-        }, 100);
+        }, SCROLL_DELAY);
       }
     }
   }, [filteredCategories, selectedCategory]);
@@ -209,20 +245,28 @@ const VendorProduct: React.FC = () => {
   );
   const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
-  const numColumns = 3;
-  const rowProductList = getRowBasedProductList(filteredCategories, productsToShow, numColumns);
+
+  const rowProductList = useMemo(
+    () => getRowBasedProductList(filteredCategories, productsToShow, NUM_COLUMNS),
+    [filteredCategories, productsToShow]
+  );
+
   type RowProductListItem =
     | { type: 'header'; category: Category }
     | { type: 'products'; products: Product[] };
+
   const flatListRef = useRef<FlatList<RowProductListItem> | null>(null);
 
   // Map category id to index in flatProductList for scrollToIndex
-  const categoryIndexMap: { [key: string]: number } = {};
-  rowProductList.forEach((item, idx) => {
-    if (item.type === 'header') {
-      categoryIndexMap[item.category.id] = idx;
-    }
-  });
+  const categoryIndexMap = useMemo(() => {
+    const map: { [key: string]: number } = {};
+    rowProductList.forEach((item, idx) => {
+      if (item.type === 'header') {
+        map[item.category.id] = idx;
+      }
+    });
+    return map;
+  }, [rowProductList]);
 
   // --- Viewability config and handler for FlatList ---
   const viewabilityConfig = useRef({
@@ -247,90 +291,96 @@ const VendorProduct: React.FC = () => {
   // --- End viewability ---
 
   // On category select, scroll to its header and center the category
-  const handleCategorySelect = (catId: string) => {
-    setSelectedCategory(catId);
+  const handleCategorySelect = useCallback(
+    (catId: string) => {
+      setSelectedCategory(catId);
 
-    // Scroll to the category in the horizontal scroll view
-    const categoryIndex = filteredCategories.findIndex(cat => cat.id === catId);
-    if (categoryIndex !== -1 && categoryScrollRef.current) {
-      // Calculate the position to center the selected category
-      const categoryWidth = 120; // Approximate width of each category item
-      const screenWidth = width;
-      const scrollToX = Math.max(
-        0,
-        categoryIndex * categoryWidth - screenWidth / 2 + categoryWidth / 2
-      );
+      // Scroll to the category in the horizontal scroll view
+      const categoryIndex = filteredCategories.findIndex(cat => cat.id === catId);
+      if (categoryIndex !== -1 && categoryScrollRef.current) {
+        // Calculate the position to center the selected category
+        const screenWidth = width;
+        const scrollToX = Math.max(
+          0,
+          categoryIndex * CATEGORY_WIDTH - screenWidth / 2 + CATEGORY_WIDTH / 2
+        );
 
-      categoryScrollRef.current.scrollTo({
-        x: scrollToX,
-        animated: true,
-      });
-    }
+        categoryScrollRef.current.scrollTo({
+          x: scrollToX,
+          animated: true,
+        });
+      }
 
-    // Scroll to the category header in the product list
-    const idx = categoryIndexMap[catId];
-    if (idx !== undefined && flatListRef.current) {
-      flatListRef.current.scrollToIndex({ index: idx, animated: true });
-    }
-  };
-
-  // Listen to scroll for category selection
-  const handleScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-    useNativeDriver: false,
-    listener: (event: { nativeEvent: { contentOffset: { y: number } } }) => {
-      const offsetY = event.nativeEvent.contentOffset.y;
-      if (offsetY <= 0) {
-        // At the very top, force select the first category
-        if (filteredCategories.length > 0 && selectedCategory !== filteredCategories[0].id) {
-          setSelectedCategory(filteredCategories[0].id);
-        }
+      // Scroll to the category header in the product list
+      const idx = categoryIndexMap[catId];
+      if (idx !== undefined && flatListRef.current) {
+        flatListRef.current.scrollToIndex({ index: idx, animated: true });
       }
     },
-  });
+    [filteredCategories, categoryIndexMap]
+  );
+
+  // Listen to scroll for category selection
+  const handleScroll = useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+        useNativeDriver: false,
+        listener: (event: { nativeEvent: { contentOffset: { y: number } } }) => {
+          const offsetY = event.nativeEvent.contentOffset.y;
+          if (offsetY <= 0) {
+            // At the very top, force select the first category
+            if (filteredCategories.length > 0 && selectedCategory !== filteredCategories[0].id) {
+              setSelectedCategory(filteredCategories[0].id);
+            }
+          }
+        },
+      }),
+    [scrollY, filteredCategories, selectedCategory]
+  );
 
   // Search bar animation functions
-  const showSearchBar = () => {
+  const showSearchBar = useCallback(() => {
     setIsSearchVisible(true);
     Animated.parallel([
       Animated.timing(searchBarHeight, {
         toValue: 1,
-        duration: 300,
+        duration: ANIMATION_DURATION,
         useNativeDriver: false,
       }),
       Animated.timing(searchBarOpacity, {
         toValue: 1,
-        duration: 300,
+        duration: ANIMATION_DURATION,
         useNativeDriver: false,
       }),
     ]).start(() => {
       // Focus the search input after animation completes
       searchInputRef.current?.focus();
     });
-  };
+  }, [searchBarHeight, searchBarOpacity]);
 
-  const hideSearchBar = () => {
+  const hideSearchBar = useCallback(() => {
     Animated.parallel([
       Animated.timing(searchBarHeight, {
         toValue: 0,
-        duration: 300,
+        duration: ANIMATION_DURATION,
         useNativeDriver: false,
       }),
       Animated.timing(searchBarOpacity, {
         toValue: 0,
-        duration: 300,
+        duration: ANIMATION_DURATION,
         useNativeDriver: false,
       }),
     ]).start(() => {
       setIsSearchVisible(false);
     });
-  };
+  }, [searchBarHeight, searchBarOpacity]);
 
   // Search handlers
-  const handleSearchPress = () => {
+  const handleSearchPress = useCallback(() => {
     showSearchBar();
-  };
+  }, [showSearchBar]);
 
-  const handleSearchClose = () => {
+  const handleSearchClose = useCallback(() => {
     if (searchQuery === '') {
       // If no search string, hide the search bar with animation
       hideSearchBar();
@@ -338,73 +388,495 @@ const VendorProduct: React.FC = () => {
       // If search string exists, clear it but keep search bar visible
       setSearchQuery('');
     }
-  };
+  }, [searchQuery, hideSearchBar]);
 
-  const handleSearchChange = (text: string) => {
-    setSearchQuery(text);
-    // Reset to first category when searching
-    if (text && filteredCategories.length > 0) {
-      setSelectedCategory(filteredCategories[0].id);
-    }
-  };
+  const handleSearchChange = useCallback(
+    (text: string) => {
+      setSearchQuery(text);
+      // Reset to first category when searching
+      if (text && filteredCategories.length > 0) {
+        setSelectedCategory(filteredCategories[0].id);
+      }
+    },
+    [filteredCategories]
+  );
 
   // Cart operation handlers
-  const handleAddToCart = (product: Product) => {
-    if (!vendor.storeActive || !authData?.jwt) return; // Disable when store is closed or no auth
+  const handleAddToCart = useCallback(
+    (product: Product) => {
+      if (!isStoreActive || !hasAuth) return; // Disable when store is closed or no auth
 
-    // If product has multiple variants, show variants modal
-    if (product.numberOfVariants > 1) {
-      setSelectedProductForVariants(product);
-      setVariantsModalVisible(true);
-      return;
-    }
+      // If product has multiple variants, show variants modal
+      if (product.numberOfVariants > 1) {
+        setSelectedProductForVariants(product);
+        setVariantsModalVisible(true);
+        return;
+      }
 
-    // Otherwise, add directly to cart
-    addToCart(
-      cartId,
-      {
-        sku: product.sku,
-        shopId: vendor.shopId,
-        name: product.name,
-        price: product.sellingPrice,
-        mrp: product.mrp,
-        image: product.imageUrl, // Now a URL string
-      },
-      authData.jwt
-    );
-  };
+      // Otherwise, add directly to cart
+      addToCart(
+        cartId,
+        {
+          sku: product.sku,
+          shopId: vendor.shopId,
+          name: product.name,
+          price: product.sellingPrice,
+          mrp: product.mrp,
+          image: product.imageUrl, // Now a URL string
+        },
+        authData!.jwt
+      );
+    },
+    [isStoreActive, hasAuth, addToCart, cartId, vendor.shopId, authData]
+  );
 
-  const handleVariantSelect = (variant: ProductVariant) => {
-    if (!selectedProductForVariants || !authData?.jwt) return;
+  const handleVariantSelect = useCallback(
+    (variant: ProductVariant) => {
+      if (!selectedProductForVariants || !hasAuth) return;
 
-    addToCart(
-      cartId,
-      {
-        sku: variant.id,
-        shopId: vendor.shopId,
-        name: variant.name,
-        price: variant.price,
-        mrp: variant.mrp,
-        image: selectedProductForVariants.imageUrl,
-      },
-      authData.jwt
-    );
-  };
+      addToCart(
+        cartId,
+        {
+          sku: variant.id,
+          shopId: vendor.shopId,
+          name: variant.name,
+          price: variant.price,
+          mrp: variant.mrp,
+          image: selectedProductForVariants.imageUrl,
+        },
+        authData!.jwt
+      );
+    },
+    [selectedProductForVariants, hasAuth, addToCart, cartId, vendor.shopId, authData]
+  );
 
-  const handleIncrement = (sku: string) => {
-    if (!vendor.storeActive || !authData?.jwt) return; // Disable when store is closed or no auth
-    increment(cartId, sku, authData.jwt);
-  };
+  const handleIncrement = useCallback(
+    (sku: string) => {
+      if (!isStoreActive || !hasAuth) return; // Disable when store is closed or no auth
+      increment(cartId, sku, authData!.jwt);
+    },
+    [isStoreActive, hasAuth, increment, cartId, authData]
+  );
 
-  const handleDecrement = (sku: string) => {
-    if (!vendor.storeActive || !authData?.jwt) return; // Disable when store is closed or no auth
-    decrement(cartId, sku, authData.jwt);
-  };
+  const handleDecrement = useCallback(
+    (sku: string) => {
+      if (!isStoreActive || !hasAuth) return; // Disable when store is closed or no auth
+      decrement(cartId, sku, authData!.jwt);
+    },
+    [isStoreActive, hasAuth, decrement, cartId, authData]
+  );
 
-  const getProductQuantity = (sku: string) => {
-    const cart = useCartStore.getState().carts[cartId];
-    return cart?.products[sku]?.quantity || 0;
-  };
+  const getProductQuantity = useCallback(
+    (sku: string) => {
+      const cart = useCartStore.getState().carts[cartId];
+      return cart?.products[sku]?.quantity || 0;
+    },
+    [cartId]
+  );
+
+  // Memoize modal handlers
+  const handleCloseVariantsModal = useCallback(() => {
+    setVariantsModalVisible(false);
+    setSelectedProductForVariants(null);
+  }, []);
+
+  const handleCloseProductDetailModal = useCallback(() => {
+    setProductDetailModalVisible(false);
+    setSelectedProductForDetail(null);
+  }, []);
+
+  const handleProductPress = useCallback((product: Product) => {
+    setSelectedProductForDetail(product);
+    setProductDetailModalVisible(true);
+  }, []);
+
+  // Memoize styles
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: getColor('background'),
+        },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          padding: 16,
+          paddingBottom: 0,
+        },
+        backButton: {
+          marginRight: 12,
+        },
+        searchContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: getColor('card'),
+          borderRadius: 12,
+          margin: 16,
+          marginTop: 8,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          borderWidth: 1,
+          borderColor: getColor('border'),
+        },
+        searchInput: {
+          flex: 1,
+          color: getColor('text'),
+          fontSize: getTypography('body'),
+          paddingVertical: 8,
+        },
+        searchCloseButton: {
+          padding: 4,
+        },
+        vendorCard: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: getColor('card'),
+          borderRadius: 12,
+          margin: 16,
+          padding: 12,
+          shadowColor: getColor('primary'),
+          shadowOpacity: 0.2,
+          shadowRadius: 8,
+          borderWidth: 1,
+          borderColor: getColor('primary'),
+        },
+        vendorLogo: {
+          width: 48,
+          height: 48,
+          borderRadius: 12,
+          marginRight: 12,
+          backgroundColor: getColor('border'),
+        },
+        vendorInfo: {
+          flex: 1,
+        },
+        vendorName: {
+          color: getColor('text'),
+          fontSize: getTypography('h2'),
+          fontWeight: 'bold',
+        },
+        vendorMeta: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginTop: 4,
+        },
+        vendorMetaText: {
+          color: getColor('subText'),
+          fontSize: getTypography('caption'),
+          marginRight: 8,
+        },
+        ratingBox: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: '#1ec28b',
+          borderRadius: 6,
+          paddingHorizontal: 6,
+          paddingVertical: 2,
+          marginLeft: 8,
+        },
+        ratingText: {
+          color: '#fff',
+          fontSize: getTypography('caption'),
+          fontWeight: 'bold',
+          marginLeft: 2,
+        },
+        categoryContainer: {
+          backgroundColor: getColor('background'),
+          paddingHorizontal: 16,
+          borderBottomWidth: 2,
+          borderBottomColor: getColor('border'),
+        },
+        categoryItem: {
+          alignItems: 'center',
+          marginRight: 24,
+          paddingVertical: 4,
+          paddingHorizontal: 12,
+          borderBottomWidth: 3,
+          borderBottomColor: 'transparent',
+          minHeight: 40, // Ensure consistent height even when image disappears
+        },
+        categoryItemActive: {
+          borderBottomColor: getColor('primary'),
+          backgroundColor: getColor('card'),
+          borderRadius: 8,
+          shadowColor: getColor('primary'),
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          elevation: 2,
+        },
+        categoryIcon: {
+          width: 32,
+          height: 32,
+          marginBottom: 4,
+          borderRadius: 16,
+          overflow: 'hidden', // Ensure smooth scaling
+        },
+        productList: {
+          flex: 1,
+          padding: 8,
+        },
+        productCard: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: getColor('card'),
+          borderRadius: 12,
+          marginBottom: 16,
+          padding: 12,
+          shadowColor: getColor('shadow').color,
+          shadowOpacity: getColor('shadow').opacity,
+          shadowRadius: getColor('shadow').radius,
+          elevation: 2,
+        },
+        productImage: {
+          width: 60,
+          height: 60,
+          borderRadius: 8,
+          marginRight: 12,
+          backgroundColor: getColor('border'),
+        },
+        productInfo: {
+          flex: 1,
+        },
+        productName: {
+          color: getColor('text'),
+          fontSize: getTypography('body'),
+          fontWeight: 'bold',
+        },
+        productMeta: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginTop: 2,
+        },
+        productRating: {
+          color: '#1ec28b',
+          fontWeight: 'bold',
+          marginRight: 8,
+        },
+        productPriceRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginTop: 2,
+        },
+        productMRP: {
+          color: getColor('subText'),
+          fontSize: getTypography('caption'),
+          textDecorationLine: 'line-through',
+          marginRight: 6,
+        },
+        productPrice: {
+          color: getColor('text'),
+          fontSize: getTypography('body'),
+          fontWeight: 'bold',
+        },
+        addButton: {
+          borderWidth: 1,
+          borderColor: getColor('primary'),
+          borderRadius: 8,
+          paddingHorizontal: 12,
+          paddingVertical: 6,
+          marginLeft: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+        },
+        addButtonText: {
+          color: getColor('primary'),
+          fontWeight: 'bold',
+          fontSize: getTypography('body'),
+          marginLeft: 4,
+        },
+        bookmarkIcon: {
+          marginLeft: 8,
+        },
+        headerTitle: {
+          color: getColor('text'),
+          fontSize: getTypography('h2'),
+          fontWeight: 'bold',
+        },
+        vendorTime: {
+          color: getColor('subText'),
+          fontSize: getTypography('caption'),
+          letterSpacing: 2,
+          textAlign: 'center',
+          marginBottom: 8,
+        },
+        categoryHeader: {
+          width: '100%',
+          backgroundColor: getColor('background'),
+          paddingHorizontal: 16,
+          marginTop: 16,
+          marginBottom: 4,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        line: {
+          flex: 1,
+          height: 2,
+          marginHorizontal: 8,
+          opacity: 0.5,
+        },
+        categoryHeaderText: {
+          color: getColor('primary'),
+          fontWeight: 'bold',
+          fontSize: getTypography('h2'),
+          letterSpacing: 1,
+        },
+        productRow: {
+          flexDirection: 'row',
+          justifyContent: 'flex-start',
+        },
+        emptyProductCell: {
+          flex: 1,
+          margin: 8,
+          backgroundColor: 'transparent',
+        },
+        closedBanner: {
+          backgroundColor: getColor('error'),
+          paddingVertical: 12,
+          paddingHorizontal: 16,
+          alignItems: 'center',
+          marginTop: -16,
+          marginBottom: 16,
+          borderBottomLeftRadius: 16,
+          borderBottomRightRadius: 16,
+          marginHorizontal: 16,
+        },
+        closedText: {
+          color: getColor('white'),
+          fontSize: getTypography('caption'),
+          fontWeight: 'bold',
+          fontFamily: 'BricolageGrotesque-Regular',
+          textTransform: 'uppercase',
+        },
+        mainContent: {
+          flex: 1,
+        },
+        contentDisabled: {
+          // No visual effect - just gray colors
+        },
+        categoryItemDisabled: {
+          // No visual effect - just gray colors
+        },
+        iconDisabled: {
+          // No visual effect - just gray colors
+        },
+        vendorCardClosed: {
+          borderBottomLeftRadius: 0,
+          borderBottomRightRadius: 0,
+        },
+        emptyStateContainer: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: 32,
+        },
+        emptyStateTitle: {
+          color: getColor('text'),
+          fontSize: getTypography('h2'),
+          fontWeight: 'bold',
+          textAlign: 'center',
+          marginBottom: 8,
+        },
+        emptyStateMessage: {
+          color: getColor('subText'),
+          fontSize: getTypography('body'),
+          textAlign: 'center',
+          lineHeight: 20,
+          marginBottom: 24,
+        },
+        clearSearchButton: {
+          backgroundColor: getColor('primary'),
+          paddingHorizontal: 24,
+          paddingVertical: 12,
+          borderRadius: 8,
+        },
+        clearSearchButtonText: {
+          color: getColor('white'),
+          fontSize: getTypography('body'),
+          fontWeight: 'bold',
+        },
+        emptyStateMessageContainer: {
+          backgroundColor: getColor('card'),
+          margin: 16,
+          marginTop: 8,
+          padding: 16,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: getColor('border'),
+          alignItems: 'center',
+        },
+      }),
+    [getColor, getTypography]
+  );
+
+  const safeAreaTop = useMemo(
+    () =>
+      Platform.select({
+        ios: 0,
+        android: StatusBar.currentHeight || 0,
+        default: 0,
+      }),
+    []
+  );
+
+  // Memoize key extractor for FlatList
+  const keyExtractor = useCallback((item: RowProductListItem, idx: number) => {
+    if (item.type === 'header') return `header-${item.category.id}`;
+    if (item.type === 'products') return `products-row-${idx}`;
+    return `row-${idx}`;
+  }, []);
+
+  // Memoize render item for FlatList
+  const renderItem = useCallback(
+    ({ item }: { item: RowProductListItem }) => {
+      if (item.type === 'header') {
+        return <CategoryHeader title={item.category.name} />;
+      } else if (item.type === 'products') {
+        return (
+          <View style={styles.productRow}>
+            {item.products.map((product: Product) => (
+              <ProductCard
+                key={product.sku}
+                image={Images.bg1}
+                name={product.name}
+                price={product.sellingPrice}
+                mrp={product.mrp}
+                discount={product.discount || 0}
+                rating={0}
+                onAdd={() => handleAddToCart(product)}
+                onIncrement={() => handleIncrement(product.sku)}
+                onDecrement={() => handleDecrement(product.sku)}
+                quantity={getProductQuantity(product.sku)}
+                disabled={!isStoreActive}
+                numberOfVariants={product.numberOfVariants}
+                showVariantsCount={true}
+                onPress={() => handleProductPress(product)}
+                backgroundColor={getColor('background')}
+              />
+            ))}
+            {/* Fill empty columns if needed */}
+            {item.products.length < NUM_COLUMNS &&
+              Array.from({ length: NUM_COLUMNS - item.products.length }).map((_, idx) => (
+                <View key={`empty-${idx}`} style={styles.emptyProductCell} />
+              ))}
+          </View>
+        );
+      }
+      return null;
+    },
+    [
+      styles.productRow,
+      styles.emptyProductCell,
+      handleAddToCart,
+      handleIncrement,
+      handleDecrement,
+      getProductQuantity,
+      isStoreActive,
+      handleProductPress,
+      getColor,
+    ]
+  );
 
   if (productsLoading) {
     return (
@@ -425,333 +897,6 @@ const VendorProduct: React.FC = () => {
       </SafeAreaView>
     );
   }
-
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: getColor('background'),
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: 16,
-      paddingBottom: 0,
-    },
-    backButton: {
-      marginRight: 12,
-    },
-    searchContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: getColor('card'),
-      borderRadius: 12,
-      margin: 16,
-      marginTop: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderWidth: 1,
-      borderColor: getColor('border'),
-    },
-    searchInput: {
-      flex: 1,
-      color: getColor('text'),
-      fontSize: getTypography('body'),
-      paddingVertical: 8,
-    },
-    searchCloseButton: {
-      padding: 4,
-    },
-    vendorCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: getColor('card'),
-      borderRadius: 12,
-      margin: 16,
-      // marginBottom: 12,
-      padding: 12,
-      shadowColor: getColor('primary'),
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      borderWidth: 1,
-      borderColor: getColor('primary'),
-    },
-    vendorLogo: {
-      width: 48,
-      height: 48,
-      borderRadius: 12,
-      marginRight: 12,
-      backgroundColor: getColor('border'),
-    },
-    vendorInfo: {
-      flex: 1,
-    },
-    vendorName: {
-      color: getColor('text'),
-      fontSize: getTypography('h2'),
-      fontWeight: 'bold',
-    },
-    vendorMeta: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: 4,
-    },
-    vendorMetaText: {
-      color: getColor('subText'),
-      fontSize: getTypography('caption'),
-      marginRight: 8,
-    },
-    ratingBox: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#1ec28b',
-      borderRadius: 6,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      marginLeft: 8,
-    },
-    ratingText: {
-      color: '#fff',
-      fontSize: getTypography('caption'),
-      fontWeight: 'bold',
-      marginLeft: 2,
-    },
-    categoryContainer: {
-      backgroundColor: getColor('background'),
-      // paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderBottomWidth: 2,
-      borderBottomColor: getColor('border'),
-    },
-    categoryItem: {
-      alignItems: 'center',
-      marginRight: 24,
-      paddingVertical: 4,
-      paddingHorizontal: 12,
-      borderBottomWidth: 3,
-      borderBottomColor: 'transparent',
-      minHeight: 40, // Ensure consistent height even when image disappears
-    },
-    categoryItemActive: {
-      borderBottomColor: getColor('primary'),
-      backgroundColor: getColor('card'),
-      borderRadius: 8,
-      shadowColor: getColor('primary'),
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    categoryIcon: {
-      width: 32,
-      height: 32,
-      marginBottom: 4,
-      borderRadius: 16,
-      overflow: 'hidden', // Ensure smooth scaling
-    },
-    productList: {
-      flex: 1,
-      padding: 8,
-    },
-    productCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: getColor('card'),
-      borderRadius: 12,
-      marginBottom: 16,
-      padding: 12,
-      shadowColor: getColor('shadow').color,
-      shadowOpacity: getColor('shadow').opacity,
-      shadowRadius: getColor('shadow').radius,
-      elevation: 2,
-    },
-    productImage: {
-      width: 60,
-      height: 60,
-      borderRadius: 8,
-      marginRight: 12,
-      backgroundColor: getColor('border'),
-    },
-    productInfo: {
-      flex: 1,
-    },
-    productName: {
-      color: getColor('text'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-    },
-    productMeta: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: 2,
-    },
-    productRating: {
-      color: '#1ec28b',
-      fontWeight: 'bold',
-      marginRight: 8,
-    },
-    productPriceRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: 2,
-    },
-    productMRP: {
-      color: getColor('subText'),
-      fontSize: getTypography('caption'),
-      textDecorationLine: 'line-through',
-      marginRight: 6,
-    },
-    productPrice: {
-      color: getColor('text'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-    },
-    addButton: {
-      borderWidth: 1,
-      borderColor: getColor('primary'),
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      marginLeft: 12,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    addButtonText: {
-      color: getColor('primary'),
-      fontWeight: 'bold',
-      fontSize: getTypography('body'),
-      marginLeft: 4,
-    },
-    bookmarkIcon: {
-      marginLeft: 8,
-    },
-    headerTitle: {
-      color: getColor('text'),
-      fontSize: getTypography('h2'),
-      fontWeight: 'bold',
-    },
-    vendorTime: {
-      color: getColor('subText'),
-      fontSize: getTypography('caption'),
-      letterSpacing: 2,
-      textAlign: 'center',
-      marginBottom: 8,
-    },
-    categoryHeader: {
-      width: '100%',
-      backgroundColor: getColor('background'),
-      // paddingVertical: 18,
-      paddingHorizontal: 16,
-      // borderBottomWidth: 1,
-      // borderBottomColor: getColor('border'),
-      marginTop: 16,
-      marginBottom: 4,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    line: {
-      flex: 1,
-      height: 2,
-      marginHorizontal: 8,
-      opacity: 0.5,
-    },
-    categoryHeaderText: {
-      color: getColor('primary'),
-      fontWeight: 'bold',
-      fontSize: getTypography('h2'),
-      letterSpacing: 1,
-    },
-    productRow: {
-      flexDirection: 'row',
-      justifyContent: 'flex-start',
-    },
-    emptyProductCell: {
-      flex: 1,
-      margin: 8,
-      backgroundColor: 'transparent',
-    },
-
-    closedBanner: {
-      backgroundColor: getColor('error'),
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      alignItems: 'center',
-      marginTop: -16,
-      marginBottom: 16,
-      borderBottomLeftRadius: 16,
-      borderBottomRightRadius: 16,
-      marginHorizontal: 16,
-    },
-    closedText: {
-      color: getColor('white'),
-      fontSize: getTypography('caption'),
-      fontWeight: 'bold',
-      fontFamily: 'BricolageGrotesque-Regular',
-      textTransform: 'uppercase',
-    },
-    mainContent: {
-      flex: 1,
-    },
-    contentDisabled: {
-      // No visual effect - just gray colors
-    },
-    categoryItemDisabled: {
-      // No visual effect - just gray colors
-    },
-    iconDisabled: {
-      // No visual effect - just gray colors
-    },
-    vendorCardClosed: {
-      borderBottomLeftRadius: 0,
-      borderBottomRightRadius: 0,
-    },
-    emptyStateContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingHorizontal: 32,
-    },
-    emptyStateTitle: {
-      color: getColor('text'),
-      fontSize: getTypography('h2'),
-      fontWeight: 'bold',
-      textAlign: 'center',
-      marginBottom: 8,
-    },
-    emptyStateMessage: {
-      color: getColor('subText'),
-      fontSize: getTypography('body'),
-      textAlign: 'center',
-      lineHeight: 20,
-      marginBottom: 24,
-    },
-    clearSearchButton: {
-      backgroundColor: getColor('primary'),
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: 8,
-    },
-    clearSearchButtonText: {
-      color: getColor('white'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-    },
-    emptyStateMessageContainer: {
-      backgroundColor: getColor('card'),
-      margin: 16,
-      marginTop: 8,
-      padding: 16,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: getColor('border'),
-      alignItems: 'center',
-    },
-  });
-
-  const safeAreaTop = Platform.select({
-    ios: 0,
-    android: StatusBar.currentHeight || 0,
-    default: 0,
-  });
 
   return (
     <>
@@ -802,11 +947,11 @@ const VendorProduct: React.FC = () => {
           <VendorHeaderCard
             vendor={vendor}
             onPress={() => navigation.navigate('VendorProfile', { vendor })}
-            style={!vendor.storeActive ? styles.vendorCardClosed : undefined}
+            style={!isStoreActive ? styles.vendorCardClosed : undefined}
           />
 
           {/* Store Status Banner */}
-          {!vendor.storeActive && (
+          {!isStoreActive && (
             <View style={styles.closedBanner}>
               <Text style={styles.closedText}>WE ARE CLOSED</Text>
             </View>
@@ -846,7 +991,7 @@ const VendorProduct: React.FC = () => {
               onSelect={handleCategorySelect}
               iconOpacity={categoryImageOpacity}
               iconSize={categoryImageHeight}
-              disabled={!vendor.storeActive}
+              disabled={!isStoreActive}
             />
             {/* Product List with headers */}
             <Animated.View style={[styles.productList, { width: '100%' }]}>
@@ -855,54 +1000,10 @@ const VendorProduct: React.FC = () => {
                 data={getRowBasedProductList(
                   categoriesForTabs,
                   searchQuery && filteredProducts.length === 0 ? products : productsToShow,
-                  numColumns
+                  NUM_COLUMNS
                 )}
-                keyExtractor={(item, idx) => {
-                  if (item.type === 'header') return `header-${item.category.id}`;
-                  if (item.type === 'products') return `products-row-${idx}`;
-                  return `row-${idx}`;
-                }}
-                renderItem={({ item }) => {
-                  if (item.type === 'header') {
-                    return <CategoryHeader title={item.category.name} />;
-                  } else if (item.type === 'products') {
-                    return (
-                      <View style={styles.productRow}>
-                        {item.products.map((product: Product) => (
-                          <ProductCard
-                            key={product.sku}
-                            image={Images.bg1}
-                            name={product.name}
-                            price={product.sellingPrice}
-                            mrp={product.mrp}
-                            discount={product.discount || 0}
-                            rating={0}
-                            onAdd={() => handleAddToCart(product)}
-                            onIncrement={() => handleIncrement(product.sku)}
-                            onDecrement={() => handleDecrement(product.sku)}
-                            quantity={getProductQuantity(product.sku)}
-                            disabled={!vendor.storeActive}
-                            numberOfVariants={product.numberOfVariants}
-                            showVariantsCount={true}
-                            onPress={() => {
-                              setSelectedProductForDetail(product);
-                              setProductDetailModalVisible(true);
-                            }}
-                            backgroundColor={getColor('background')}
-                          />
-                        ))}
-                        {/* Fill empty columns if needed */}
-                        {item.products.length < numColumns &&
-                          Array.from({ length: numColumns - item.products.length }).map(
-                            (_, idx) => (
-                              <View key={`empty-${idx}`} style={styles.emptyProductCell} />
-                            )
-                          )}
-                      </View>
-                    );
-                  }
-                  return null;
-                }}
+                keyExtractor={keyExtractor}
+                renderItem={renderItem}
                 numColumns={1}
                 key={'row-based'}
                 showsVerticalScrollIndicator={false}
@@ -933,10 +1034,7 @@ const VendorProduct: React.FC = () => {
           {selectedProductForVariants && (
             <VariantsModal
               visible={variantsModalVisible}
-              onClose={() => {
-                setVariantsModalVisible(false);
-                setSelectedProductForVariants(null);
-              }}
+              onClose={handleCloseVariantsModal}
               product={selectedProductForVariants}
               vendor={vendor}
               onVariantSelect={handleVariantSelect}
@@ -948,10 +1046,7 @@ const VendorProduct: React.FC = () => {
       {selectedProductForDetail && (
         <ProductDetailModal
           visible={productDetailModalVisible}
-          onClose={() => {
-            setProductDetailModalVisible(false);
-            setSelectedProductForDetail(null);
-          }}
+          onClose={handleCloseProductDetailModal}
           productId={selectedProductForDetail.sku}
           vendor={vendor}
         />
@@ -960,4 +1055,6 @@ const VendorProduct: React.FC = () => {
   );
 };
 
-export default VendorProduct;
+VendorProductComponent.displayName = 'VendorProduct';
+
+export default React.memo(VendorProductComponent);

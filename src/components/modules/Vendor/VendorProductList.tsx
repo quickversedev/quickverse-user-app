@@ -13,213 +13,260 @@ interface VendorProductListProps {
   vendors: Vendor[];
   onVendorPress: (vendor: Vendor) => void;
   onProductPress: (product: Product) => void;
-  useFlatList?: boolean; // New prop to control rendering mode
+  useFlatList?: boolean;
 }
 
-const VendorProductList: React.FC<VendorProductListProps> = ({
+// Constants for better performance
+const INITIAL_BATCH_SIZE = 6;
+const BATCH_SIZE = 6;
+const VIEWABILITY_THRESHOLD = 4;
+const ITEM_HEIGHT = 200;
+
+const VendorProductListComponent: React.FC<VendorProductListProps> = ({
   vendors,
   onVendorPress,
   onProductPress: _onProductPress,
-  useFlatList = true, // Default to FlatList for standalone usage
+  useFlatList = true,
 }) => {
   const { getColor } = useTheme();
   const { authData } = useAuth();
   const addToCart = useCartStore(state => state.addToCart);
+
+  // State management
   const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
   const [selectedVendorForDetail, setSelectedVendorForDetail] = useState<Vendor | null>(null);
+  const [loadedVendorsCount, setLoadedVendorsCount] = useState(INITIAL_BATCH_SIZE);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Refs
+  const flatListRef = useRef<FlatList>(null);
 
   // Featured products store
   const { prefetchForVendors } = useFeaturedProductsStoreHook();
 
-  // Lazy loading state (only used when useFlatList is true)
-  const [loadedVendorsCount, setLoadedVendorsCount] = useState(6); // Initial batch size
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const flatListRef = useRef<FlatList>(null);
-
-  const sortedVendors = useMemo(() => {
-    // Active stores first, inactive at the bottom
-    return [...vendors].sort((a, b) => {
-      if (a.storeActive === b.storeActive) return 0;
-      return a.storeActive ? -1 : 1;
-    });
-  }, [vendors]);
+  // Memoized values
+  const hasAuth = useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
+  const vendorsLength = useMemo(() => vendors.length, [vendors.length]);
 
   // Get currently visible vendors (for lazy loading)
   const visibleVendors = useMemo(() => {
     if (useFlatList) {
-      return sortedVendors.slice(0, loadedVendorsCount);
+      return vendors.slice(0, loadedVendorsCount);
     }
-    return sortedVendors; // Show all vendors when not using FlatList
-  }, [sortedVendors, loadedVendorsCount, useFlatList]);
+    return vendors;
+  }, [vendors, loadedVendorsCount, useFlatList]);
 
-  // Load more vendors when needed (only for FlatList mode)
+  // Memoize viewability config
+  const viewabilityConfig = useMemo(
+    () => ({
+      itemVisiblePercentThreshold: 50,
+    }),
+    []
+  );
+
+  // Memoize styles
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          backgroundColor: getColor('background'),
+        },
+      }),
+    [getColor]
+  );
+
+  // Memoize FlatList performance props
+  const flatListProps = useMemo(
+    () => ({
+      removeClippedSubviews: true,
+      maxToRenderPerBatch: BATCH_SIZE,
+      windowSize: 10,
+      initialNumToRender: INITIAL_BATCH_SIZE,
+      showsVerticalScrollIndicator: false,
+    }),
+    []
+  );
+
+  // Load more vendors when needed
   const loadMoreVendors = useCallback(async () => {
-    if (!useFlatList || isLoadingMore || loadedVendorsCount >= sortedVendors.length) return;
+    if (!useFlatList || isLoadingMore || loadedVendorsCount >= vendorsLength) return;
 
     setIsLoadingMore(true);
     try {
       const nextBatchStart = loadedVendorsCount;
-      const nextBatchEnd = Math.min(nextBatchStart + 6, sortedVendors.length);
-      const nextBatchVendors = sortedVendors.slice(nextBatchStart, nextBatchEnd);
+      const nextBatchEnd = Math.min(nextBatchStart + BATCH_SIZE, vendorsLength);
+      const nextBatchVendors = vendors.slice(nextBatchStart, nextBatchEnd);
 
-      // Prefetch featured products for the next batch
       await prefetchForVendors(nextBatchVendors);
-
       setLoadedVendorsCount(nextBatchEnd);
     } catch (error) {
       console.warn('Failed to load more vendors:', error);
     } finally {
       setIsLoadingMore(false);
     }
-  }, [useFlatList, isLoadingMore, loadedVendorsCount, sortedVendors.length, prefetchForVendors]);
+  }, [useFlatList, isLoadingMore, loadedVendorsCount, vendorsLength, vendors, prefetchForVendors]);
 
-  // Initial load of first batch
-  useEffect(() => {
-    if (sortedVendors.length > 0) {
-      if (useFlatList) {
-        // Load first batch for FlatList mode
-        const initialVendors = sortedVendors.slice(0, 6);
-        prefetchForVendors(initialVendors).catch(error => {
-          console.warn('Failed to prefetch initial featured products:', error);
-        });
-      } else {
-        // Load all vendors for non-FlatList mode
-        prefetchForVendors(sortedVendors).catch(error => {
-          console.warn('Failed to prefetch featured products:', error);
-        });
-      }
-    }
-  }, [sortedVendors, prefetchForVendors, useFlatList]);
-
-  // Handle viewability change for lazy loading (only for FlatList mode)
+  // Handle viewability change for lazy loading
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken<Vendor>[] }) => {
       if (!useFlatList || viewableItems.length === 0) return;
 
-      // Find the highest visible index
       const highestVisibleIndex = Math.max(...viewableItems.map(item => item.index || 0));
 
-      // If 5th shop (index 4) is visible and we haven't loaded all vendors yet, load more
-      if (highestVisibleIndex >= 4 && loadedVendorsCount < sortedVendors.length && !isLoadingMore) {
+      if (
+        highestVisibleIndex >= VIEWABILITY_THRESHOLD &&
+        loadedVendorsCount < vendorsLength &&
+        !isLoadingMore
+      ) {
         loadMoreVendors();
       }
     },
-    [useFlatList, loadedVendorsCount, sortedVendors.length, isLoadingMore, loadMoreVendors]
+    [useFlatList, loadedVendorsCount, vendorsLength, isLoadingMore, loadMoreVendors]
   );
 
-  const viewabilityConfig = useMemo(
-    () => ({
-      itemVisiblePercentThreshold: 50, // Trigger when 50% of item is visible
+  // Memoize key extractor
+  const keyExtractor = useCallback((vendor: Vendor) => vendor.shopId, []);
+
+  // Memoize getItemLayout
+  const getItemLayout = useCallback(
+    (data: ArrayLike<Vendor> | null | undefined, index: number) => ({
+      length: ITEM_HEIGHT,
+      offset: ITEM_HEIGHT * index,
+      index,
     }),
     []
   );
 
-  const handleAddToCart = (product: Product, vendor: Vendor) => {
-    if (!authData?.jwt) return;
-    const cartId = `vendor_${vendor.shopId}`;
-    addToCart(
-      cartId,
-      {
-        sku: product.sku || product.id,
-        shopId: vendor.shopId,
-        name: product.name,
-        price: product.price,
-        mrp: product.mrp,
-        image: product.image,
-        // quantity is handled by the store
-      },
-      authData.jwt
-    );
-  };
+  // Memoize handleAddToCart
+  const handleAddToCart = useCallback(
+    (product: Product, vendor: Vendor) => {
+      if (!hasAuth) return;
 
-  const handleProductPress = (product: Product, vendor: Vendor) => {
-    // Convert Product to include sellingPrice for ProductDetailModal
-    // Using type assertion since ProductDetailModal expects a different Product interface
+      const cartId = `vendor_${vendor.shopId}`;
+      addToCart(
+        cartId,
+        {
+          sku: product.sku || product.id,
+          shopId: vendor.shopId,
+          name: product.name,
+          price: product.price,
+          mrp: product.mrp,
+          image: product.image,
+        },
+        authData!.jwt
+      );
+    },
+    [hasAuth, addToCart, authData]
+  );
+
+  // Memoize handleProductPress
+  const handleProductPress = useCallback((product: Product, vendor: Vendor) => {
     const productWithSellingPrice = {
       ...product,
       sku: product.sku || product.id,
       shopId: product.shopId || vendor.shopId,
       sellingPrice: product.price,
-    }; // Convert Product to include sellingPrice
+    };
+
     setSelectedProductForDetail(productWithSellingPrice);
     setSelectedVendorForDetail(vendor);
     setProductDetailModalVisible(true);
-  };
+  }, []);
 
-  const renderVendorItem = ({ item: vendor }: { item: Vendor }) => (
-    <View key={vendor.shopId}>
-      <VendorProductCard
-        vendor={vendor}
-        onVendorPress={onVendorPress}
-        onProductPress={product => handleProductPress(product, vendor)}
-        onAddToCart={product => handleAddToCart(product, vendor)}
-      />
-    </View>
+  // Memoize renderVendorItem
+  const renderVendorItem = useCallback(
+    ({ item: vendor }: { item: Vendor }) => (
+      <View key={vendor.shopId}>
+        <VendorProductCard
+          vendor={vendor}
+          onVendorPress={onVendorPress}
+          onProductPress={product => handleProductPress(product, vendor)}
+          onAddToCart={product => handleAddToCart(product, vendor)}
+        />
+      </View>
+    ),
+    [onVendorPress, handleProductPress, handleAddToCart]
   );
 
-  const styles = StyleSheet.create({
-    container: {
-      backgroundColor: getColor('background'),
-    },
-  });
+  // Memoize modal handlers
+  const handleCloseModal = useCallback(() => {
+    setProductDetailModalVisible(false);
+    setSelectedProductForDetail(null);
+    setSelectedVendorForDetail(null);
+  }, []);
+
+  // Memoize product ID for modal
+  const selectedProductId = useMemo(
+    () => selectedProductForDetail?.sku || '',
+    [selectedProductForDetail?.sku]
+  );
+
+  // Initial load of first batch
+  useEffect(() => {
+    if (vendorsLength > 0) {
+      const initialVendors = useFlatList ? vendors.slice(0, INITIAL_BATCH_SIZE) : vendors;
+
+      prefetchForVendors(initialVendors).catch(error => {
+        console.warn('Failed to prefetch featured products:', error);
+      });
+    }
+  }, [vendorsLength, vendors, prefetchForVendors, useFlatList]);
 
   // Render vendors based on the useFlatList prop
-  const renderVendors = () => {
+  const renderVendors = useCallback(() => {
     if (useFlatList) {
       return (
         <FlatList
           ref={flatListRef}
           data={visibleVendors}
           renderItem={renderVendorItem}
-          keyExtractor={vendor => vendor.shopId}
+          keyExtractor={keyExtractor}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
-          showsVerticalScrollIndicator={false}
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={6}
-          windowSize={10}
-          initialNumToRender={6}
-          getItemLayout={(data, index) => ({
-            length: 200, // Approximate height of VendorProductCard
-            offset: 200 * index,
-            index,
-          })}
+          getItemLayout={getItemLayout}
+          {...flatListProps}
         />
       );
-    } else {
-      // Render all vendors in a simple View when nested in ScrollView
-      return (
-        <View>
-          {visibleVendors.map(vendor => (
-            <View key={vendor.shopId}>
-              <VendorProductCard
-                vendor={vendor}
-                onVendorPress={onVendorPress}
-                onProductPress={product => handleProductPress(product, vendor)}
-                onAddToCart={product => handleAddToCart(product, vendor)}
-              />
-            </View>
-          ))}
-        </View>
-      );
     }
-  };
+
+    return (
+      <View>
+        {visibleVendors.map(vendor => (
+          <View key={vendor.shopId}>
+            <VendorProductCard
+              vendor={vendor}
+              onVendorPress={onVendorPress}
+              onProductPress={product => handleProductPress(product, vendor)}
+              onAddToCart={product => handleAddToCart(product, vendor)}
+            />
+          </View>
+        ))}
+      </View>
+    );
+  }, [
+    useFlatList,
+    visibleVendors,
+    renderVendorItem,
+    keyExtractor,
+    onViewableItemsChanged,
+    viewabilityConfig,
+    getItemLayout,
+    flatListProps,
+    onVendorPress,
+    handleProductPress,
+    handleAddToCart,
+  ]);
 
   return (
     <View style={styles.container}>
       {renderVendors()}
 
-      {/* Product Detail Modal */}
       {selectedProductForDetail && selectedVendorForDetail && (
         <ProductDetailModal
           visible={productDetailModalVisible}
-          onClose={() => {
-            setProductDetailModalVisible(false);
-            setSelectedProductForDetail(null);
-            setSelectedVendorForDetail(null);
-          }}
-          productId={selectedProductForDetail.sku || ''}
+          onClose={handleCloseModal}
+          productId={selectedProductId}
           vendor={selectedVendorForDetail}
         />
       )}
@@ -227,4 +274,6 @@ const VendorProductList: React.FC<VendorProductListProps> = ({
   );
 };
 
-export default VendorProductList;
+VendorProductListComponent.displayName = 'VendorProductList';
+
+export default React.memo(VendorProductListComponent);

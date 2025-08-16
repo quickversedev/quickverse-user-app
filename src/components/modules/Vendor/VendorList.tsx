@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import type { RootStackParamList } from '../../../routes/AppStack';
 import useVendorStore from '../../../store/vendorStore';
@@ -12,12 +12,12 @@ const VendorList = () => {
   const { getColor } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  const sortedVendors = useMemo(() => {
-    return [...vendors].sort((a, b) => {
-      if (a.storeActive === b.storeActive) return 0;
-      return a.storeActive ? -1 : 1;
-    });
-  }, [vendors]);
+  // const sortedVendors = useMemo(() => {
+  //   return [...vendors].sort((a, b) => {
+  //     if (a.storeActive === b.storeActive) return 0;
+  //     return a.storeActive ? -1 : 1;
+  //   });
+  // }, [vendors]);
 
   const styles = StyleSheet.create({
     container: {
@@ -38,7 +38,7 @@ const VendorList = () => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={sortedVendors}
+        data={vendors}
         keyExtractor={item => item.shopId}
         renderItem={({ item }) => (
           <VendorCard
