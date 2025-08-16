@@ -1,5 +1,5 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../theme/ThemeContext';
@@ -15,95 +15,103 @@ type VendorProductRouteProp = RouteProp<
   'VendorProduct'
 >;
 
-const VendorProduct: React.FC = () => {
+const VendorDetailsComponent: React.FC = () => {
   const { getColor, getTypography } = useTheme();
   const navigation = useNavigation();
   const route = useRoute<VendorProductRouteProp>();
   const { vendor } = route.params;
 
-  const renderRating = () => {
+  const renderRating = useCallback(() => {
     if (!vendor.rating || vendor.rating === 0) {
       return <Text style={styles.ratingText}>Not Rated</Text>;
     }
     return <Text style={styles.ratingText}>{vendor.rating}</Text>;
-  };
+  }, [vendor.rating]);
 
-  const formatAddress = () => {
+  const formatAddress = useCallback(() => {
     if (vendor.shopAddress) {
       const { address, city, state, postalCode } = vendor.shopAddress;
       return `${address}, ${city}, ${state} - ${postalCode}`;
     }
     return 'Address not available';
-  };
+  }, [vendor.shopAddress]);
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: getColor('background'),
-    },
-    image: {
-      width: '100%',
-      height: 220,
-      borderBottomLeftRadius: 24,
-      borderBottomRightRadius: 24,
-      backgroundColor: getColor('border'),
-    },
-    content: {
-      padding: 20,
-    },
-    name: {
-      color: getColor('text'),
-      fontSize: getTypography('h1'),
-      fontWeight: 'bold',
-      marginBottom: 8,
-    },
-    description: {
-      color: getColor('subText'),
-      fontSize: getTypography('body'),
-      marginBottom: 12,
-    },
-    info: {
-      color: getColor('text'),
-      fontSize: getTypography('body'),
-      marginBottom: 6,
-    },
-    hours: {
-      color: getColor('text'),
-      fontSize: getTypography('body'),
-      marginBottom: 6,
-      fontWeight: 'bold',
-    },
-    ratingContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 12,
-    },
-    ratingText: {
-      color: getColor('text'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-      marginLeft: 8,
-    },
-    address: {
-      color: getColor('text'),
-      fontSize: getTypography('body'),
-      marginBottom: 6,
-      fontStyle: 'italic',
-    },
-    backButton: {
-      position: 'absolute',
-      top: 36,
-      left: 16,
-      backgroundColor: 'rgba(0,0,0,0.4)',
-      borderRadius: 20,
-      padding: 6,
-      zIndex: 2,
-    },
-    backText: {
-      color: '#fff',
-      fontSize: 18,
-    },
-  });
+  const handleBackPress = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: getColor('background'),
+        },
+        image: {
+          width: '100%',
+          height: 220,
+          borderBottomLeftRadius: 24,
+          borderBottomRightRadius: 24,
+          backgroundColor: getColor('border'),
+        },
+        content: {
+          padding: 20,
+        },
+        name: {
+          color: getColor('text'),
+          fontSize: getTypography('h1'),
+          fontWeight: 'bold',
+          marginBottom: 8,
+        },
+        description: {
+          color: getColor('subText'),
+          fontSize: getTypography('body'),
+          marginBottom: 12,
+        },
+        info: {
+          color: getColor('text'),
+          fontSize: getTypography('body'),
+          marginBottom: 6,
+        },
+        hours: {
+          color: getColor('text'),
+          fontSize: getTypography('body'),
+          marginBottom: 6,
+          fontWeight: 'bold',
+        },
+        ratingContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 12,
+        },
+        ratingText: {
+          color: getColor('text'),
+          fontSize: getTypography('body'),
+          fontWeight: 'bold',
+          marginLeft: 8,
+        },
+        address: {
+          color: getColor('text'),
+          fontSize: getTypography('body'),
+          marginBottom: 6,
+          fontStyle: 'italic',
+        },
+        backButton: {
+          position: 'absolute',
+          top: 36,
+          left: 16,
+          backgroundColor: 'rgba(0,0,0,0.4)',
+          borderRadius: 20,
+          padding: 6,
+          zIndex: 2,
+        },
+        backText: {
+          color: '#fff',
+          fontSize: 18,
+        },
+      }),
+    [getColor, getTypography]
+  );
 
   return (
     <View style={styles.container}>
@@ -113,7 +121,7 @@ const VendorProduct: React.FC = () => {
           style={styles.image}
           resizeMode="cover"
         />
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
           <Text style={styles.backText}>{'<'} Back</Text>
         </TouchableOpacity>
       </View>
@@ -138,4 +146,6 @@ const VendorProduct: React.FC = () => {
   );
 };
 
-export default VendorProduct;
+VendorDetailsComponent.displayName = 'VendorDetails';
+
+export default React.memo(VendorDetailsComponent);

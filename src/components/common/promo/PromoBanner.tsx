@@ -18,7 +18,10 @@ export type PromoBannerSize = 'small' | 'medium' | 'large' | number;
 interface PromoBannerProps {
   promo: Promotion;
   size?: PromoBannerSize;
-  style?: StyleProp<ViewStyle>;
+  style?: StyleProp<ViewStyle> & {
+    titleColor?: string;
+    subtitleColor?: string;
+  };
   imageStyle?: StyleProp<ImageStyle>;
   aspectRatio?: number; // width:height ratio for custom sizes (predefined sizes have their own ratios)
 }
@@ -73,6 +76,11 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
       : sizeMap[size] || sizeMap.medium;
 
   const fallbackPromo = Images.bg1;
+
+  // Extract custom colors from style prop
+  const customTitleColor = (style as { titleColor?: string; subtitleColor?: string })?.titleColor;
+  const customSubtitleColor = (style as { titleColor?: string; subtitleColor?: string })
+    ?.subtitleColor;
 
   // Get aspect ratio based on size
   const getAspectRatio = (): number => {
@@ -130,7 +138,7 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
     title: {
       fontWeight: 'bold',
       marginBottom: 2,
-      color: getColor('text'),
+      color: customTitleColor || getColor('text'),
       fontSize: getTypography('body'),
     },
     bannerImageTitle: {
@@ -140,7 +148,7 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
       fontSize: getTypography('body'),
     },
     subtitle: {
-      color: getColor('subText'),
+      color: customSubtitleColor || getColor('subText'),
       marginBottom: 4,
       fontSize: getTypography('caption'),
     },

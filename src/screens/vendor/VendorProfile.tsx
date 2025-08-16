@@ -1,56 +1,24 @@
-import { RouteProp, useRoute } from '@react-navigation/native';
-import React, { useEffect, useRef, useState } from 'react';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Dimensions,
   Image,
   Linking,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Images } from '../../assets';
+
+import PromoBanner from '../../components/common/promo/PromoBanner';
+import useCouponStore from '../../store/cart/couponStore';
 import { useTheme } from '../../theme/ThemeContext';
+import { Promotion } from '../../types/pages';
 import { Vendor } from '../../types/vendor';
-
-// Mock reviews and offers
-type Review = {
-  id: string;
-  user: string;
-  date: string;
-  text: string;
-};
-const mockReviews: Review[] = [
-  {
-    id: '1',
-    user: 'Amar Singh',
-    date: '18th May 2025, 18:45p.m.',
-    text: 'Ordered their Choco Fudge and Mango Tango via delivery — came perfectly packed and still frozen! Flavors were rich and creamy. Just wish the portion was a bit bigger for the price. Still, totally worth it!',
-  },
-  {
-    id: '2',
-    user: 'Amar Singh',
-    date: '18th May 2025, 18:45p.m.',
-    text: 'Ordered their Choco Fudge and Mango Tango via delivery — came perfectly packed and still frozen! Flavors were rich and creamy. Just wish the portion was a bit bigger for the price. Still, totally worth it!',
-  },
-];
-
-const mockOffers = [
-  {
-    id: '1',
-    image: Images.bg1,
-    text: 'Get 25% OFF when you pay with District',
-  },
-  {
-    id: '2',
-    image: Images.bg1,
-    text: 'Get 25% OFF when you pay with District',
-  },
-];
 
 interface VendorProfileRouteParams {
   vendor: Vendor;
@@ -60,45 +28,89 @@ type VendorProfileRouteProp = RouteProp<
   'VendorProfile'
 >;
 
-const VendorProfile: React.FC = () => {
+const { width: screenWidth } = Dimensions.get('window');
+
+// Utility function to calculate contrasting colors
+const getContrastingColors = (backgroundColor: string) => {
+  // Convert hex to RGB
+  const hex = backgroundColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+
+  // Calculate luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  // Return contrasting colors based on background brightness
+  if (luminance > 0.5) {
+    // Light background - use dark text
+    return {
+      titleColor: '#000000',
+      subtitleColor: '#333333',
+    };
+  } else {
+    // Dark background - use light text
+    return {
+      titleColor: '#ffffff',
+      subtitleColor: '#cccccc',
+    };
+  }
+};
+
+const VendorProfileComponent: React.FC = () => {
   const { getColor, getTypography } = useTheme();
+  const navigation = useNavigation();
   const route = useRoute<VendorProfileRouteProp>();
   const { vendor } = route.params;
+
+  // Coupon store integration
+  const { availableCoupons, loading: couponsLoading, fetchVendorOffers } = useCouponStore();
 
   const [currentOffer, setCurrentOffer] = useState(0);
   const offersScrollRef = useRef<ScrollView>(null);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentOffer(prev => (prev === mockOffers.length - 1 ? 0 : prev + 1));
-    }, 3000);
-    return () => clearInterval(interval);
+  // Calculate responsive card width and spacing
+  const cardWidth = useMemo(() => {
+    const horizontalPadding = 32; // 16px on each side
+    const availableWidth = screenWidth - horizontalPadding;
+    return Math.min(availableWidth * 0.95, 320); // 95% of available width, max 320px
   }, []);
 
+  const scrollOffset = cardWidth + 12;
+
+  // Fetch coupons when component mounts
   useEffect(() => {
-    if (offersScrollRef.current) {
-      offersScrollRef.current.scrollTo({
-        x: currentOffer * 220, // Adjust 220 if your offerCard width+margin is different
-        animated: true,
-      });
-    }
-  }, [currentOffer]);
+    fetchVendorOffers(vendor.shopId);
+  }, [fetchVendorOffers, vendor.shopId]);
 
-  const handlePhoneCall = () => {
-    if (vendor.phone) {
-      Linking.openURL(`tel:${vendor.phone}`);
-    }
-  };
+  // Get coupons for this vendor
+  const vendorCoupons = useMemo(() => {
+    return availableCoupons[vendor.shopId] || [];
+  }, [availableCoupons, vendor.shopId]);
 
-  const formatAddress = () => {
-    if (vendor.shopAddress) {
-      const { address, city, state, postalCode } = vendor.shopAddress;
-      return `${address}, ${city}, ${state} - ${postalCode}`;
-    }
-    return 'Address not available';
-  };
+  // Convert coupons to Promotion format for PromoBanner
+  const couponPromotions = useMemo((): Promotion[] => {
+    return vendorCoupons.map(coupon => {
+      const backgroundColor = getColor('primary');
+      const contrastingColors = getContrastingColors(backgroundColor);
 
-  const getVendorCoordinates = () => {
+      return {
+        shopId: vendor.shopId,
+        title: coupon.code,
+        subtitle: coupon.description,
+        size: 'small',
+        imageURL: '', // Empty string since coupons don't have images, PromoBanner will use fallback
+        backgroundColor: backgroundColor,
+        bannerImage: false, // Use regular mode for coupons
+        // Add contrasting colors to the promotion object
+        titleColor: contrastingColors.titleColor,
+        subtitleColor: contrastingColors.subtitleColor,
+      };
+    });
+  }, [vendorCoupons, getColor, vendor.shopId]);
+
+  // Memoized values
+  const vendorCoordinates = useMemo(() => {
     if (vendor.coordinates) {
       return {
         latitude: vendor.coordinates.latitude,
@@ -111,276 +123,234 @@ const VendorProfile: React.FC = () => {
       };
     }
     return null;
-  };
+  }, [vendor.coordinates, vendor.location]);
 
-  const renderRating = () => {
+  const formattedAddress = useMemo(() => {
+    if (vendor.shopAddress) {
+      const { address, city, state, postalCode } = vendor.shopAddress;
+      return `${address}, ${city}, ${state} - ${postalCode}`;
+    }
+    return 'Address not available';
+  }, [vendor.shopAddress]);
+
+  const renderRating = useCallback(() => {
     if (!vendor.rating || vendor.rating === 0) {
       return <Text style={styles.statValue}>Not Rated</Text>;
     }
-    return (
-      <Text style={styles.statValue}>
-        {vendor.rating} <Text style={styles.reviewCount}>(32)</Text>
-      </Text>
-    );
-  };
+    return <Text style={styles.statValue}>{vendor.rating}</Text>;
+  }, [vendor.rating]);
 
-  const renderStars = () => {
-    if (!vendor.rating || vendor.rating === 0) {
-      return <Text style={styles.reviewRating}>Not Rated</Text>;
+  const handlePhoneCall = useCallback(() => {
+    if (vendor.phone) {
+      Linking.openURL(`tel:${vendor.phone}`);
     }
+  }, [vendor.phone]);
 
-    const fullStars = Math.floor(vendor.rating);
-    const hasHalfStar = vendor.rating % 1 !== 0;
+  const handleBackPress = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
 
-    return (
-      <>
-        {[1, 2, 3, 4, 5].map(i => (
-          <MaterialCommunityIcons
-            key={i}
-            name={
-              i <= fullStars
-                ? 'star'
-                : hasHalfStar && i === fullStars + 1
-                ? 'star-half-full'
-                : 'star-outline'
-            }
-            size={22}
-            color={
-              i <= fullStars || (hasHalfStar && i === fullStars + 1)
-                ? '#FFD700'
-                : getColor('border')
-            }
-            style={styles.reviewStar}
-          />
-        ))}
-        <Text style={styles.reviewRating}>{vendor.rating}</Text>
-        <Text style={styles.reviewCount}>(32)</Text>
-      </>
-    );
-  };
+  // Auto-scroll offers if there are multiple coupons
+  useEffect(() => {
+    if (couponPromotions.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentOffer(prev => (prev === couponPromotions.length - 1 ? 0 : prev + 1));
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [couponPromotions.length]);
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: getColor('background'),
-    },
-    banner: {
-      width: '100%',
-      height: 180,
-    },
-    profileCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: getColor('card'),
-      borderRadius: 16,
-      padding: 16,
-      marginHorizontal: 16,
-      marginTop: -40,
-      elevation: 4,
-      shadowColor: '#000',
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
-      zIndex: 2,
-    },
-    logo: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
-      backgroundColor: getColor('border'),
-      marginRight: 16,
-    },
-    info: {
-      flex: 1,
-      justifyContent: 'center',
-    },
-    name: {
-      color: getColor('text'),
-      fontSize: getTypography('h1'),
-      fontWeight: 'bold',
-      marginBottom: 2,
-    },
-    saveRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 2,
-    },
-    saveBtn: {
-      backgroundColor: getColor('background'),
-      borderRadius: 8,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      marginRight: 8,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    saveBtnText: {
-      color: getColor('subText'),
-      fontSize: getTypography('caption'),
-      marginLeft: 4,
-      fontWeight: 'bold',
-    },
-    callBtn: {
-      marginLeft: 8,
-      backgroundColor: getColor('primary'),
-      borderRadius: 20,
-      padding: 8,
-    },
-    rowStats: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginHorizontal: 16,
-      marginTop: 18,
-      marginBottom: 8,
-    },
-    statCol: {
-      alignItems: 'center',
-      flex: 1,
-    },
-    statIcon: {
-      marginBottom: 2,
-    },
-    statLabel: {
-      color: getColor('subText'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-      marginTop: 2,
-    },
-    statValue: {
-      color: getColor('text'),
-      // fontWeight: 'bold',
-      fontSize: getTypography('caption'),
-      marginTop: 2,
-    },
-    offersRow: {
-      flexDirection: 'row',
-      marginHorizontal: 16,
-      marginTop: 8,
-      marginBottom: 8,
-    },
-    offerCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: getColor('card'),
-      borderRadius: 12,
-      marginRight: 12,
-      padding: 12,
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOpacity: 0.08,
-      shadowRadius: 4,
-    },
-    offerImage: {
-      width: 48,
-      height: 48,
-      borderRadius: 8,
-      marginRight: 10,
-      backgroundColor: getColor('border'),
-    },
-    offerText: {
-      color: getColor('text'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-    },
-    sectionTitle: {
-      color: getColor('text'),
-      fontSize: getTypography('h2'),
-      fontWeight: 'bold',
-      marginHorizontal: 16,
-      marginTop: 18,
-      marginBottom: 8,
-    },
-    reviewStarsRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginHorizontal: 16,
-      marginBottom: 4,
-    },
-    reviewStar: {
-      marginRight: 2,
-    },
-    reviewRating: {
-      color: getColor('text'),
-      fontWeight: 'bold',
-      marginLeft: 6,
-      fontSize: getTypography('body'),
-    },
-    reviewCount: {
-      color: getColor('subText'),
-      marginLeft: 4,
-      fontSize: getTypography('caption'),
-    },
-    reviewInputRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: getColor('card'),
-      borderRadius: 8,
-      marginHorizontal: 16,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      marginBottom: 8,
-    },
-    reviewInputIcon: {
-      marginRight: 8,
-    },
-    reviewInput: {
-      flex: 1,
-      color: getColor('text'),
-      fontSize: getTypography('body'),
-    },
-    reviewCard: {
-      backgroundColor: getColor('card'),
-      borderRadius: 12,
-      marginHorizontal: 16,
-      marginTop: 8,
-      padding: 12,
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      elevation: 1,
-    },
-    reviewAvatar: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: getColor('border'),
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 12,
-    },
-    reviewContent: {
-      flex: 1,
-    },
-    reviewUser: {
-      color: getColor('text'),
-      fontWeight: 'bold',
-      fontSize: getTypography('body'),
-    },
-    reviewDate: {
-      color: getColor('subText'),
-      fontSize: getTypography('caption'),
-      marginBottom: 2,
-    },
-    reviewText: {
-      color: getColor('text'),
-      fontSize: getTypography('body'),
-    },
-    showMore: {
-      color: getColor('primary'),
-      textAlign: 'center',
-      marginVertical: 8,
-      fontWeight: 'bold',
-    },
-  });
+  useEffect(() => {
+    if (offersScrollRef.current && couponPromotions.length > 1) {
+      const scrollToX = currentOffer * scrollOffset;
+      offersScrollRef.current.scrollTo({
+        x: scrollToX,
+        animated: true,
+      });
+    }
+  }, [currentOffer, couponPromotions.length, scrollOffset]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: getColor('background'),
+        },
+        banner: {
+          width: '100%',
+          height: 180,
+        },
+        backButton: {
+          position: 'absolute',
+          top: 50,
+          left: 16,
+          backgroundColor: 'rgba(0,0,0,0.4)',
+          borderRadius: 15,
+          padding: 8,
+          zIndex: 2,
+        },
+        profileCard: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: getColor('card'),
+          borderRadius: 16,
+          padding: 16,
+          marginHorizontal: 16,
+          marginTop: -40,
+          elevation: 4,
+          shadowColor: '#000',
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          zIndex: 2,
+        },
+        logo: {
+          width: 64,
+          height: 64,
+          borderRadius: 32,
+          backgroundColor: getColor('border'),
+          marginRight: 16,
+        },
+        info: {
+          flex: 1,
+          justifyContent: 'center',
+        },
+        name: {
+          color: getColor('text'),
+          fontSize: getTypography('h1'),
+          fontWeight: 'bold',
+          marginBottom: 2,
+        },
+        saveRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 2,
+        },
+        saveBtn: {
+          backgroundColor: getColor('background'),
+          borderRadius: 8,
+          paddingHorizontal: 10,
+          paddingVertical: 4,
+          marginRight: 8,
+          flexDirection: 'row',
+          alignItems: 'center',
+        },
+        saveBtnText: {
+          color: getColor('subText'),
+          fontSize: getTypography('caption'),
+          marginLeft: 4,
+          fontWeight: 'bold',
+        },
+        callBtn: {
+          marginLeft: 8,
+          backgroundColor: getColor('primary'),
+          borderRadius: 20,
+          padding: 8,
+        },
+        rowStats: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginHorizontal: 16,
+          marginTop: 18,
+          marginBottom: 8,
+        },
+        statCol: {
+          alignItems: 'center',
+          flex: 1,
+        },
+        statIcon: {
+          marginBottom: 2,
+        },
+        statLabel: {
+          color: getColor('subText'),
+          fontSize: getTypography('body'),
+          fontWeight: 'bold',
+          marginTop: 2,
+        },
+        statValue: {
+          color: getColor('text'),
+          fontSize: getTypography('caption'),
+          marginTop: 2,
+        },
+        offersRow: {
+          flexDirection: 'row',
+          marginHorizontal: 16,
+          marginTop: 8,
+          marginBottom: 8,
+        },
+        offerCard: {
+          width: cardWidth,
+          marginRight: 12,
+        },
+        sectionTitle: {
+          color: getColor('text'),
+          fontSize: getTypography('h2'),
+          fontWeight: 'bold',
+          marginHorizontal: 16,
+          marginTop: 18,
+          marginBottom: 8,
+        },
+        reviewCount: {
+          color: getColor('subText'),
+          marginLeft: 4,
+          fontSize: getTypography('caption'),
+        },
+        mapContainer: {
+          marginHorizontal: 16,
+          marginTop: 8,
+          marginBottom: 24,
+          backgroundColor: getColor('card'),
+          borderRadius: 12,
+          padding: 12,
+          shadowColor: '#000',
+          shadowOpacity: 0.08,
+          shadowRadius: 4,
+          elevation: 2,
+        },
+        mapAddress: {
+          color: getColor('text'),
+          fontWeight: 'bold',
+          fontSize: getTypography('body'),
+          marginBottom: 4,
+        },
+        mapSubAddress: {
+          color: getColor('subText'),
+          fontSize: getTypography('caption'),
+          marginBottom: 8,
+        },
+        map: {
+          width: '100%',
+          height: 140,
+          borderRadius: 8,
+        },
+        noOffersText: {
+          color: getColor('subText'),
+          fontSize: getTypography('body'),
+          textAlign: 'center',
+          fontStyle: 'italic',
+          marginHorizontal: 16,
+          marginTop: 8,
+          marginBottom: 8,
+        },
+      }),
+    [getColor, getTypography, cardWidth]
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Banner */}
-        <Image
-          source={{ uri: vendor.banner || vendor.logo }}
-          style={styles.banner}
-          resizeMode="cover"
-        />
+        <View style={{ position: 'relative' }}>
+          <Image
+            source={{ uri: vendor.banner || vendor.logo }}
+            style={styles.banner}
+            resizeMode="cover"
+          />
+          <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <Image source={{ uri: vendor.logo }} style={styles.logo} />
@@ -431,93 +401,50 @@ const VendorProfile: React.FC = () => {
             <Text style={styles.statLabel}>Timings</Text>
           </View>
         </View>
-        {/* Offers */}
-        <ScrollView
-          ref={offersScrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.offersRow}
-          scrollEventThrottle={26}
-        >
-          {mockOffers.map(offer => (
-            <View key={offer.id} style={styles.offerCard}>
-              <Image source={offer.image} style={styles.offerImage} />
-              <Text style={styles.offerText}>{offer.text}</Text>
-            </View>
-          ))}
-        </ScrollView>
-        {/* Reviews */}
-        <Text style={styles.sectionTitle}>Reviews</Text>
-        <View style={styles.reviewStarsRow}>{renderStars()}</View>
-        <View style={styles.reviewInputRow}>
-          <MaterialCommunityIcons
-            name="pencil"
-            size={20}
-            color={getColor('subText')}
-            style={styles.reviewInputIcon}
-          />
-          <TextInput
-            style={styles.reviewInput}
-            placeholder="Write your review"
-            placeholderTextColor={getColor('subText')}
-          />
-        </View>
-        {mockReviews.map(review => (
-          <View key={review.id} style={styles.reviewCard}>
-            <View style={styles.reviewAvatar}>
-              <MaterialCommunityIcons name="account" size={22} color={getColor('subText')} />
-            </View>
-            <View style={styles.reviewContent}>
-              <Text style={styles.reviewUser}>{review.user}</Text>
-              <Text style={styles.reviewDate}>{review.date}</Text>
-              <Text style={styles.reviewText}>{review.text}</Text>
-            </View>
-          </View>
-        ))}
-        <TouchableOpacity>
-          <Text style={styles.showMore}>SHOW MORE</Text>
-        </TouchableOpacity>
+        {/* Offers/Coupons */}
+        {couponPromotions.length > 0 ? (
+          <ScrollView
+            ref={offersScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.offersRow}
+            scrollEventThrottle={16}
+            decelerationRate="fast"
+            snapToInterval={scrollOffset}
+            snapToAlignment="start"
+          >
+            {couponPromotions.map((promotion, _index) => (
+              <View key={`${promotion.shopId}-${promotion.title}`} style={styles.offerCard}>
+                <PromoBanner
+                  promo={promotion}
+                  size="small"
+                  style={{
+                    marginBottom: 0,
+                    titleColor: (promotion as { titleColor?: string; subtitleColor?: string })
+                      .titleColor,
+                    subtitleColor: (promotion as { titleColor?: string; subtitleColor?: string })
+                      .subtitleColor,
+                  }}
+                />
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          !couponsLoading && (
+            <Text style={styles.noOffersText}>No offers available at the moment</Text>
+          )
+        )}
         {/* Directions/Map Section */}
         <Text style={styles.sectionTitle}>Get Directions</Text>
-        <View
-          style={{
-            marginHorizontal: 16,
-            marginTop: 8,
-            marginBottom: 24,
-            backgroundColor: getColor('card'),
-            borderRadius: 12,
-            padding: 12,
-            shadowColor: '#000',
-            shadowOpacity: 0.08,
-            shadowRadius: 4,
-            elevation: 2,
-          }}
-        >
-          <Text
-            style={{
-              color: getColor('text'),
-              fontWeight: 'bold',
-              fontSize: getTypography('body'),
-              marginBottom: 4,
-            }}
-          >
-            {formatAddress()}
-          </Text>
-          <Text
-            style={{
-              color: getColor('subText'),
-              fontSize: getTypography('caption'),
-              marginBottom: 8,
-            }}
-          >
-            {formatAddress()}
-          </Text>
-          {getVendorCoordinates() && (
+        <View style={styles.mapContainer}>
+          <Text style={styles.mapAddress}>{formattedAddress}</Text>
+          <Text style={styles.mapSubAddress}>{formattedAddress}</Text>
+          {vendorCoordinates && (
             <MapView
-              style={{ width: '100%', height: 140, borderRadius: 8 }}
+              style={styles.map}
               initialRegion={{
-                latitude: getVendorCoordinates()!.latitude,
-                longitude: getVendorCoordinates()!.longitude,
+                latitude: vendorCoordinates.latitude,
+                longitude: vendorCoordinates.longitude,
                 latitudeDelta: 0.005,
                 longitudeDelta: 0.005,
               }}
@@ -525,8 +452,8 @@ const VendorProfile: React.FC = () => {
             >
               <Marker
                 coordinate={{
-                  latitude: getVendorCoordinates()!.latitude,
-                  longitude: getVendorCoordinates()!.longitude,
+                  latitude: vendorCoordinates.latitude,
+                  longitude: vendorCoordinates.longitude,
                 }}
               />
             </MapView>
@@ -537,4 +464,6 @@ const VendorProfile: React.FC = () => {
   );
 };
 
-export default VendorProfile;
+VendorProfileComponent.displayName = 'VendorProfile';
+
+export default React.memo(VendorProfileComponent);
