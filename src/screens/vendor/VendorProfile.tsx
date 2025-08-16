@@ -14,6 +14,7 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
+import { SectionDivider } from '../../components/common';
 import PromoBanner from '../../components/common/promo/PromoBanner';
 import useCouponStore from '../../store/cart/couponStore';
 import { useTheme } from '../../theme/ThemeContext';
@@ -435,7 +436,8 @@ const VendorProfileComponent: React.FC = () => {
           )
         )}
         {/* Directions/Map Section */}
-        <Text style={styles.sectionTitle}>Get Directions</Text>
+
+        <SectionDivider text="Location Details" />
         <View style={styles.mapContainer}>
           <Text style={styles.mapAddress}>{formattedAddress}</Text>
           <Text style={styles.mapSubAddress}>{formattedAddress}</Text>

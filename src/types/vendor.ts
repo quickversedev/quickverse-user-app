@@ -33,6 +33,7 @@ export interface Vendor {
   rating?: number; // Optional rating field
   shopAddress?: VendorAddress; // Optional address field
   coordinates?: VendorCoordinates; // Optional coordinates field
+  featured?: boolean; // Optional featured field
 }
 
 export interface VendorFilters {
@@ -71,6 +72,7 @@ export interface VendorStore {
   // Computed values
   getActiveVendors: () => Vendor[];
   getVendorsByCategory: (category: string) => Vendor[];
+  getFeaturedVendors: () => Vendor[];
   getFilteredVendors: () => Vendor[];
   getVendorsNearLocation: (location: LocationFilter) => Vendor[];
   getVendorNameById: (shopId: string) => string | undefined;

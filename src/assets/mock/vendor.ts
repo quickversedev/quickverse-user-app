@@ -17,6 +17,7 @@ export const mockVendors: Vendor[] = [
     storeEnabled: true,
     storeActive: false,
     rating: 4.3,
+    featured: true,
     shopAddress: {
       address: 'Something',
       city: 'Bangalore',
@@ -44,6 +45,7 @@ export const mockVendors: Vendor[] = [
     storeEnabled: true,
     storeActive: true,
     rating: 4.2,
+    featured: false,
     shopAddress: {
       address: 'FC Road',
       city: 'Pune',
@@ -71,6 +73,7 @@ export const mockVendors: Vendor[] = [
     storeEnabled: true,
     storeActive: true,
     rating: 4.1,
+    featured: true,
     shopAddress: {
       address: 'Near City Center',
       city: 'Chennai',
@@ -98,6 +101,7 @@ export const mockVendors: Vendor[] = [
     storeEnabled: true,
     storeActive: true,
     rating: 4.1,
+    featured: false,
     shopAddress: {
       address: 'Near City Center',
       city: 'Chennai',
@@ -125,6 +129,7 @@ export const mockVendors: Vendor[] = [
     storeEnabled: true,
     storeActive: true,
     rating: 4.5,
+    featured: true,
     shopAddress: {
       address: 'MG Road',
       city: 'Mumbai',
@@ -152,6 +157,7 @@ export const mockVendors: Vendor[] = [
     storeEnabled: true,
     storeActive: true,
     rating: 4.3,
+    featured: false,
     shopAddress: {
       address: 'Connaught Place',
       city: 'Delhi',
@@ -179,6 +185,7 @@ export const mockVendors: Vendor[] = [
     storeEnabled: true,
     storeActive: false,
     rating: 4.7,
+    featured: true,
     shopAddress: {
       address: 'Salt Lake City',
       city: 'Kolkata',
@@ -206,6 +213,7 @@ export const mockVendors: Vendor[] = [
     storeEnabled: true,
     storeActive: true,
     rating: 4.4,
+    featured: false,
     shopAddress: {
       address: 'Sector 17',
       city: 'Chandigarh',
@@ -233,6 +241,7 @@ export const mockVendors: Vendor[] = [
     storeEnabled: true,
     storeActive: true,
     rating: 4.0,
+    featured: false,
     shopAddress: {
       address: 'Banjara Hills',
       city: 'Hyderabad',
@@ -260,6 +269,7 @@ export const mockVendors: Vendor[] = [
     storeEnabled: true,
     storeActive: true,
     rating: 4.2,
+    featured: false,
     shopAddress: {
       address: 'Vastrapur',
       city: 'Ahmedabad',
@@ -287,6 +297,7 @@ export const mockVendors: Vendor[] = [
     storeEnabled: true,
     storeActive: true,
     rating: 4.6,
+    featured: true,
     shopAddress: {
       address: 'T Nagar',
       city: 'Chennai',
@@ -314,6 +325,7 @@ export const mockVendors: Vendor[] = [
     storeEnabled: true,
     storeActive: false,
     rating: 4.8,
+    featured: true,
     shopAddress: {
       address: 'Koramangala',
       city: 'Bangalore',

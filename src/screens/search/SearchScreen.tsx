@@ -36,15 +36,15 @@ const SearchScreen: React.FC = () => {
   const { addSearch } = useRecentSearches();
 
   // Get vendors from vendor store
-  const { getActiveVendors } = useVendorStore();
+  const { getFeaturedVendors } = useVendorStore();
 
   // Handle search input change - only update query, don't make API calls
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
   };
 
-  // Get trending vendors from vendor store (active and enabled vendors)
-  const trendingVendors = getActiveVendors().slice(0, 6); // Show up to 6 trending vendors
+  // Get featured vendors from vendor store
+  const featuredVendors = getFeaturedVendors().slice(0, 6); // Show up to 6 featured vendors
 
   const styles = StyleSheet.create({
     container: {
@@ -122,11 +122,11 @@ const SearchScreen: React.FC = () => {
             {/* Trending Vendors Section */}
             <View style={styles.trendingVendorsGrid}>
               <SectionDivider
-                text="Trending Vendors"
+                text="Featured Vendors"
                 fontSize={14}
                 style={{ marginVertical: 16 }}
               />
-              {trendingVendors.map(vendor => (
+              {featuredVendors.map(vendor => (
                 <View key={vendor.shopId} style={styles.vendorCardContainer}>
                   <VendorCard
                     vendor={vendor}

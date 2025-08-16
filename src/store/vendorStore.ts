@@ -164,6 +164,11 @@ const useVendorStore = create<VendorStore>((set, get) => ({
     return vendors.filter(vendor => vendor.category === category);
   },
 
+  getFeaturedVendors: () => {
+    const { vendors } = get();
+    return vendors.filter(vendor => vendor.featured === true);
+  },
+
   getFilteredVendors: () => {
     const { vendors, filters } = get();
     let filtered = vendors;
