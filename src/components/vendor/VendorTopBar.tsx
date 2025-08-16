@@ -7,9 +7,15 @@ interface VendorTopBarProps {
   title: string;
   onBack: () => void;
   onFavoritePress?: () => void;
+  onSearchPress?: () => void;
 }
 
-const VendorTopBar: React.FC<VendorTopBarProps> = ({ title, onBack, onFavoritePress }) => {
+const VendorTopBar: React.FC<VendorTopBarProps> = ({
+  title,
+  onBack,
+  onFavoritePress,
+  onSearchPress,
+}) => {
   const { getColor, getTypography } = useTheme();
 
   const styles = StyleSheet.create({
@@ -28,6 +34,13 @@ const VendorTopBar: React.FC<VendorTopBarProps> = ({ title, onBack, onFavoritePr
     backButton: {
       marginRight: 12,
     },
+    actionButtons: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    actionButton: {
+      marginLeft: 16,
+    },
   });
 
   return (
@@ -36,9 +49,14 @@ const VendorTopBar: React.FC<VendorTopBarProps> = ({ title, onBack, onFavoritePr
         <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
       </TouchableOpacity>
       <Text style={styles.title}>{title}</Text>
-      <TouchableOpacity onPress={onFavoritePress}>
-        <MaterialCommunityIcons name="heart-outline" size={24} color={getColor('primary')} />
-      </TouchableOpacity>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity style={styles.actionButton} onPress={onSearchPress}>
+          <MaterialCommunityIcons name="magnify" size={24} color={getColor('text')} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionButton} onPress={onFavoritePress}>
+          <MaterialCommunityIcons name="heart-outline" size={24} color={getColor('primary')} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };

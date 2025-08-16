@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
-import { Variant, fetchVariantsByParentSkuMock } from '../services/api/variantsService';
+import productDetailsService, { ProductVariant } from '../services/productDetailsService';
 
 export interface UseVariantsState {
-  variants: Variant[];
+  variants: ProductVariant[];
   loading: boolean;
   error: string | null;
   hasData: boolean;
@@ -39,7 +39,7 @@ export const useVariants = (): UseVariantsReturn => {
     }));
 
     try {
-      const response = await fetchVariantsByParentSkuMock(parentSku);
+      const response = await productDetailsService.getProductVariants(parentSku);
 
       if (response.success) {
         setState({

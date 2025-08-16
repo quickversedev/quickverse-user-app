@@ -1,16 +1,6 @@
 import { create } from 'zustand';
-import { mockProducts, Product } from '../../assets/mock/products';
-import axiosInstance from '../../config/api/axios.config';
-
-type Category = {
-  id: string;
-  name: string;
-  description: string | null;
-  imageURLs: string[] | null;
-  type: 'MANAGED' | 'CUSTOM';
-  parentCategory: string | null;
-  countOfSkus: number;
-};
+import { Product } from '../../assets/mock/products';
+import productsService, { Category } from '../../services/productsService';
 
 interface ProductsStore {
   products: Product[];
@@ -37,9 +27,6 @@ interface ProductsStore {
   getBestSellers: () => Product[];
 }
 
-// Toggle this flag to switch between mock and real API
-const USE_PRODUCTS_MOCKS = true; // Set to true for mock data
-
 export const useProductsStore = create<ProductsStore>((set, get) => ({
   products: [],
   loading: false,
@@ -58,85 +45,35 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
 
   fetchProducts: async ({ offset, limit, append } = {}) => {
     set({ loading: true, fullyLoaded: false, error: null });
-    if (USE_PRODUCTS_MOCKS) {
-      // Simulate network delay
-      await new Promise(res => setTimeout(res, 500));
+
+    try {
       const currentOffset = offset !== undefined ? offset : get().offset;
       const currentLimit = limit !== undefined ? limit : get().limit;
       const shopId = get().shopId;
-      const shopProducts = mockProducts.filter(p => p.shopId === shopId);
-      const pagedProducts = shopProducts.slice(currentOffset, currentOffset + currentLimit);
-      const total = shopProducts.length;
+
+      // Use the products service to fetch products
+      const response = await productsService.fetchProducts({
+        shopId,
+        offset: currentOffset,
+        limit: currentLimit,
+      });
+
+      const newProducts = response.products;
+      const total = response.total;
+
       set(state => ({
-        products: append ? [...state.products, ...pagedProducts] : pagedProducts,
-        offset: currentOffset + pagedProducts.length,
+        products: append ? [...state.products, ...newProducts] : newProducts,
+        offset: currentOffset + newProducts.length,
         total,
-        hasMore: currentOffset + pagedProducts.length < total,
+        hasMore: currentOffset + newProducts.length < total,
         loading: false,
-        fullyLoaded: currentOffset + pagedProducts.length >= total,
+        fullyLoaded: currentOffset + newProducts.length >= total,
         error: null,
       }));
-      return;
-    }
-    try {
-      const currentLimit = limit !== undefined ? limit : get().limit;
-      let currentOffset = offset !== undefined ? offset : get().offset;
-      // Ensure offset is always a multiple of limit
-      currentOffset = Math.floor(currentOffset / currentLimit) * currentLimit;
-      const shopId = get().shopId;
-      let allProducts: Product[] = append ? [...get().products] : [];
-      let hasMore = true;
-      let total = 0;
-      let firstBatchLoaded = false;
-      while (hasMore) {
-        const response = await axiosInstance.post(`/v3/products?shopId=${shopId}`, {
-          filters: {},
-          offset: String(currentOffset),
-          limit: String(currentLimit),
-        });
-        if (!response || typeof response !== 'object' || !('data' in response)) {
-          set({ loading: false, fullyLoaded: false, error: 'Invalid server response.' });
-          return;
-        }
-        const data = response.data;
-        if (!data || typeof data !== 'object') {
-          set({ loading: false, fullyLoaded: false, error: 'Invalid data format from server.' });
-          return;
-        }
-        const newProducts = data.products || data.data || [];
-        total = data.total || data.count || 0;
-        allProducts = [...allProducts, ...newProducts];
-        currentOffset += newProducts.length;
-        // Set loading to false after first batch so UI can show products
-        if (!firstBatchLoaded) {
-          set({
-            products: allProducts,
-            offset: allProducts.length,
-            total,
-            hasMore: true,
-            loading: false,
-            fullyLoaded: false,
-            error: null,
-          });
-          firstBatchLoaded = true;
-        }
-        // If less than limit, we've reached the last page
-        if (newProducts.length < currentLimit) {
-          hasMore = false;
-        }
-      }
-      set({
-        products: allProducts,
-        offset: allProducts.length,
-        total,
-        hasMore: allProducts.length < total,
-        loading: false,
-        fullyLoaded: true,
-        error: null,
-      });
     } catch (error: unknown) {
-      console.error('error', error);
+      console.error('Fetch products error:', error);
       let message = 'Failed to fetch products.';
+
       if (typeof error === 'object' && error !== null) {
         // Axios error with response
         if ('response' in error && error.response && typeof error.response === 'object') {
@@ -153,6 +90,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
           message = (error as { message?: string }).message || message;
         }
       }
+
       set({ loading: false, fullyLoaded: false, error: message });
     }
   },
@@ -161,43 +99,13 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
   fetchCategories: async (shopIdOverride?: string) => {
     const shopId = shopIdOverride || get().shopId;
     set({ categoriesLoading: true, categoriesError: null });
-    if (USE_PRODUCTS_MOCKS) {
-      // Build categories from mock products using unique divisions; map id = division
-      await new Promise(res => setTimeout(res, 200));
-      const shopProducts = mockProducts.filter(p => p.shopId === shopId);
-      const divisionCount = shopProducts.reduce<Record<string, number>>((acc, p) => {
-        acc[p.division] = (acc[p.division] || 0) + 1;
-        return acc;
-      }, {});
-      const categories: Category[] = Object.keys(divisionCount).map(div => ({
-        id: div, // critical: maps to product.division
-        name: div,
-        description: null,
-        imageURLs: null,
-        type: 'CUSTOM',
-        parentCategory: null,
-        countOfSkus: divisionCount[div],
-      }));
-      set({ categories, categoriesLoading: false, categoriesError: null });
-      return;
-    }
+
     try {
-      const response = await axiosInstance.get(`/v3/${shopId}/category`, {
-        headers: {
-          Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
-        },
-      });
-      const data = response?.data as { categories?: Category[] };
-      const categories = (data?.categories || []).map(c => ({
-        ...c,
-        // ensure optional fields are present
-        description: c.description ?? null,
-        imageURLs: c.imageURLs ?? null,
-        parentCategory: c.parentCategory ?? null,
-        countOfSkus: c.countOfSkus ?? 0,
-      }));
+      // Use the products service to fetch categories
+      const categories = await productsService.fetchCategories(shopId);
       set({ categories, categoriesLoading: false, categoriesError: null });
-    } catch (err: unknown) {
+    } catch (error: unknown) {
+      console.error('Fetch categories error:', error);
       set({ categoriesLoading: false, categoriesError: 'Failed to fetch categories' });
     }
   },

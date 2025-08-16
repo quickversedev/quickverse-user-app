@@ -28,6 +28,7 @@ interface ProductCardProps {
   showVariantsCount?: boolean;
   onPress?: () => void;
   backgroundColor?: string;
+  productId?: string; // Add productId prop
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({

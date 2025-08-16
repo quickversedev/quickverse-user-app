@@ -1,9 +1,13 @@
+export { useLocation } from './Permissions/useLocation';
 export { useAddress } from './useAddress';
 export { useConfig } from './useConfig';
-export { default as useFeaturedProducts } from './useFeaturedProducts';
-export { default as useFeaturedProductsStoreHook } from './useFeaturedProductsStore';
-export { default as useFetchUpdateData } from './useFetchUpdateData';
+export { useFeaturedProducts } from './useFeaturedProducts';
+export { useFeaturedProductsStore } from './useFeaturedProductsStore';
+export { useFetchUpdateData } from './useFetchUpdateData';
 export { useHeaderAnimation } from './useHeaderAnimation';
 export { useNotifications } from './useNotifications';
 export { useOrders } from './useOrders';
 export { usePages } from './usePages';
+export { useProductDetails } from './useProductDetails';
+export { useSearch } from './useSearch';
+export { useVariants } from './useVariants';

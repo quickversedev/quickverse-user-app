@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   Modal,
   ScrollView,
@@ -11,6 +12,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
+import productDetailsService, {
+  ProductDetailsResponse,
+} from '../../../services/productDetailsService';
 import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import AddButton from './AddButton';
@@ -32,29 +36,6 @@ const getResponsiveValue = (small: number, medium: number, large: number) => {
   return large;
 };
 
-interface Product {
-  sku: string;
-  shopId: string;
-  name: string;
-  mrp: number;
-  sellingPrice: number;
-  gst: number;
-  category: string;
-  division: string;
-  subDivision: string;
-  brand: string;
-  description: string;
-  imageUrl: string;
-  discount: number;
-  numberOfVariants: number;
-  currentStock: number;
-  inStock: boolean;
-  primarySKU: string;
-  tags: Array<{
-    tagName: string;
-  }>;
-}
-
 interface Vendor {
   name: string;
   shopId: string;
@@ -73,20 +54,23 @@ interface SuggestedItem {
 interface ProductDetailModalProps {
   visible: boolean;
   onClose: () => void;
-  product: Product;
+  productId: string;
   vendor: Vendor;
 }
 
 const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   visible,
   onClose,
-  product,
+  productId,
   vendor,
 }) => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor, getTypography, theme } = useTheme();
   const { authData } = useAuth();
   const insets = useSafeAreaInsets();
   const [selectedVariantId, setSelectedVariantId] = useState('variant_1');
+  const [productDetails, setProductDetails] = useState<ProductDetailsResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { addToCart, increment, decrement, carts } = useCartStore();
 
   // Create vendor-specific cart ID
@@ -96,40 +80,61 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const cart = carts[cartId];
 
   // Get current quantity for this product
-  const currentQuantity = cart?.products[product.sku]?.quantity || 0;
+  const currentQuantity = productDetails ? cart?.products[productDetails.sku]?.quantity || 0 : 0;
+
+  useEffect(() => {
+    if (visible && productId) {
+      fetchProductDetails();
+    }
+  }, [visible, productId]);
+
+  const fetchProductDetails = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const details = await productDetailsService.getProductDetails(productId, true);
+      setProductDetails(details);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch product details');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Create mock variants based on numberOfVariants
-  const mockVariants = [
-    { id: 'variant_1', name: 'Weight', value: '75 gms' },
-    { id: 'variant_2', name: 'Weight', value: '100 gms' },
-    { id: 'variant_3', name: 'Weight', value: '150 gms' },
-  ].slice(0, product.numberOfVariants);
+  const mockVariants = productDetails
+    ? [
+        { id: 'variant_1', name: 'Weight', value: '75 gms' },
+        { id: 'variant_2', name: 'Weight', value: '100 gms' },
+        { id: 'variant_3', name: 'Weight', value: '150 gms' },
+      ].slice(0, productDetails.numberOfVariants)
+    : [];
 
   // Cart handlers
   const handleAddToCart = () => {
-    if (!authData?.jwt) return;
+    if (!authData?.jwt || !productDetails) return;
     addToCart(
       cartId,
       {
-        sku: product.sku,
+        sku: productDetails.sku,
         shopId: vendor.shopId,
-        name: product.name,
-        price: product.sellingPrice,
-        mrp: product.mrp,
-        image: product.imageUrl,
+        name: productDetails.name,
+        price: productDetails.sellingPrice,
+        mrp: productDetails.mrp,
+        image: productDetails.imageUrl,
       },
       authData.jwt
     );
   };
 
   const handleIncrement = () => {
-    if (!authData?.jwt) return;
-    increment(cartId, product.sku, authData.jwt);
+    if (!authData?.jwt || !productDetails) return;
+    increment(cartId, productDetails.sku, authData.jwt);
   };
 
   const handleDecrement = () => {
-    if (!authData?.jwt) return;
-    decrement(cartId, product.sku, authData.jwt);
+    if (!authData?.jwt || !productDetails) return;
+    decrement(cartId, productDetails.sku, authData.jwt);
   };
 
   const suggestedItems: SuggestedItem[] = [
@@ -253,6 +258,35 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       minWidth: getResponsiveValue(70, 80, 90),
       height: getResponsiveValue(32, 36, 40),
     },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 40,
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 40,
+    },
+    errorText: {
+      color: getColor('error'),
+      fontSize: getTypography('body'),
+      textAlign: 'center',
+      marginBottom: 16,
+    },
+    retryButton: {
+      backgroundColor: getColor('primary'),
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: theme.borderRadius.sm,
+    },
+    retryButtonText: {
+      color: getColor('white'),
+      fontSize: getTypography('body'),
+      fontWeight: 'bold',
+    },
   });
 
   const handleAddToStacks = () => {
@@ -299,6 +333,48 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     // View all suggested items
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <Modal visible={visible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={getColor('primary')} />
+              <Text style={{ color: getColor('subText'), marginTop: 16 }}>
+                Loading product details...
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Modal visible={visible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <View style={styles.errorContainer}>
+              <MaterialCommunityIcons name="alert-circle" size={48} color={getColor('error')} />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={fetchProductDetails}>
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
+
+  // No product details
+  if (!productDetails) {
+    return null;
+  }
+
   return (
     <Modal
       visible={visible}
@@ -320,13 +396,13 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.mainCard}>
               <ProductImageCarousel
-                imageUrl={product.imageUrl}
-                productName={product.name}
+                imageUrl={productDetails.imageUrl}
+                productName={productDetails.name}
                 onAddToStacks={handleAddToStacks}
               />
 
               <ProductInfo
-                productName={product.name}
+                productName={productDetails.name}
                 variants={mockVariants}
                 selectedVariantId={selectedVariantId}
                 onVariantSelect={handleVariantSelect}
@@ -350,8 +426,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           {/* Fixed Bottom Bar */}
           <View style={styles.bottomBar}>
             <View style={styles.priceContainer}>
-              <Text style={styles.mrpText}>MRP ₹{product.mrp}</Text>
-              <Text style={styles.sellingPriceText}>₹{product.sellingPrice}</Text>
+              <Text style={styles.mrpText}>MRP ₹{productDetails.mrp}</Text>
+              <Text style={styles.sellingPriceText}>₹{productDetails.sellingPrice}</Text>
             </View>
 
             <View style={styles.buttonContainer}>

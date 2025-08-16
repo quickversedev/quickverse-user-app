@@ -9,13 +9,6 @@ import { Vendor } from '../../../types/vendor';
 import ProductDetailModal from '../Product/ProductDetailModal';
 import VendorProductCard from './VendorProductCard';
 
-// Interface for ProductDetailModal's expected Product type
-interface ProductDetailModalProduct extends Product {
-  sellingPrice: number;
-  sku: string; // Ensure sku is always defined
-  shopId: string; // Ensure shopId is always defined
-}
-
 interface VendorProductListProps {
   vendors: Vendor[];
   onVendorPress: (vendor: Vendor) => void;
@@ -33,8 +26,7 @@ const VendorProductList: React.FC<VendorProductListProps> = ({
   const { authData } = useAuth();
   const addToCart = useCartStore(state => state.addToCart);
   const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
-  const [selectedProductForDetail, setSelectedProductForDetail] =
-    useState<ProductDetailModalProduct | null>(null);
+  const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
   const [selectedVendorForDetail, setSelectedVendorForDetail] = useState<Vendor | null>(null);
 
   // Featured products store
@@ -149,7 +141,7 @@ const VendorProductList: React.FC<VendorProductListProps> = ({
       sku: product.sku || product.id,
       shopId: product.shopId || vendor.shopId,
       sellingPrice: product.price,
-    } as ProductDetailModalProduct; // Type assertion to bypass complex type mismatch
+    }; // Convert Product to include sellingPrice
     setSelectedProductForDetail(productWithSellingPrice);
     setSelectedVendorForDetail(vendor);
     setProductDetailModalVisible(true);
@@ -227,7 +219,7 @@ const VendorProductList: React.FC<VendorProductListProps> = ({
             setSelectedProductForDetail(null);
             setSelectedVendorForDetail(null);
           }}
-          product={selectedProductForDetail as ProductDetailModalProduct}
+          productId={selectedProductForDetail.sku || ''}
           vendor={selectedVendorForDetail}
         />
       )}

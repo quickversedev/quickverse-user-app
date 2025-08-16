@@ -9,9 +9,9 @@ import { ApiError } from './axios.types';
  * - Timeout settings for request handling
  * - Default headers for all requests
  */
-const API_CONFIG = {
+export const API_CONFIG = {
   /** Base URL for the QuickVerse API server */
-  baseURL: 'http:/192.168.1.37:8080/quickVerse',
+  baseURL: 'http:/192.168.1.39:8080/quickVerse',
 
   /** Default timeout for all requests (15 seconds) */
   timeout: 15000,

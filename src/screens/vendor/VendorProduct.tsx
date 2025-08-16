@@ -11,6 +11,8 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { Images } from '../../assets';
@@ -27,7 +29,7 @@ import VendorHeaderCard from '../../components/vendor/VendorHeaderCard';
 import VendorTopBar from '../../components/vendor/VendorTopBar';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { RootStackParamList } from '../../routes/AppStack';
-import { Variant } from '../../services/api/variantsService';
+import { ProductVariant } from '../../services/productDetailsService';
 import useCartStore from '../../store/cart/cartStore';
 import { useProductsStore } from '../../store/products/productsStore';
 import { useTheme } from '../../theme/ThemeContext';
@@ -75,6 +77,15 @@ const VendorProduct: React.FC = () => {
   const route = useRoute<VendorProductRouteProp>();
   const { vendor } = route.params;
 
+  // Search state
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<TextInput>(null);
+
+  // Search bar animation
+  const searchBarHeight = useRef(new Animated.Value(0)).current;
+  const searchBarOpacity = useRef(new Animated.Value(0)).current;
+
   // Products store integration
   const {
     products,
@@ -96,6 +107,14 @@ const VendorProduct: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendor.shopId]);
 
+  // Filter products based on search query
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Always show filtered products when searching, or all products when not searching
+  const productsToShow = searchQuery ? filteredProducts : products;
+
   // Map store categories to CategoryTabs items with a placeholder icon
   const categoriesForTabs: Category[] = (categories || []).map(c => ({
     id: c.id,
@@ -104,8 +123,9 @@ const VendorProduct: React.FC = () => {
   }));
 
   // Only include categories that have at least one product (match product.division)
+  // When searching, show all categories that have matching products
   const filteredCategories: Category[] = categoriesForTabs.filter(cat =>
-    products.some(product => product.division === cat.id)
+    productsToShow.some(product => product.division === cat.id)
   );
 
   // Cart store integration
@@ -190,7 +210,7 @@ const VendorProduct: React.FC = () => {
   const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
   const numColumns = 3;
-  const rowProductList = getRowBasedProductList(filteredCategories, products, numColumns);
+  const rowProductList = getRowBasedProductList(filteredCategories, productsToShow, numColumns);
   type RowProductListItem =
     | { type: 'header'; category: Category }
     | { type: 'products'; products: Product[] };
@@ -268,6 +288,66 @@ const VendorProduct: React.FC = () => {
     },
   });
 
+  // Search bar animation functions
+  const showSearchBar = () => {
+    setIsSearchVisible(true);
+    Animated.parallel([
+      Animated.timing(searchBarHeight, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+      Animated.timing(searchBarOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+    ]).start(() => {
+      // Focus the search input after animation completes
+      searchInputRef.current?.focus();
+    });
+  };
+
+  const hideSearchBar = () => {
+    Animated.parallel([
+      Animated.timing(searchBarHeight, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+      Animated.timing(searchBarOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+    ]).start(() => {
+      setIsSearchVisible(false);
+    });
+  };
+
+  // Search handlers
+  const handleSearchPress = () => {
+    showSearchBar();
+  };
+
+  const handleSearchClose = () => {
+    if (searchQuery === '') {
+      // If no search string, hide the search bar with animation
+      hideSearchBar();
+    } else {
+      // If search string exists, clear it but keep search bar visible
+      setSearchQuery('');
+    }
+  };
+
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    // Reset to first category when searching
+    if (text && filteredCategories.length > 0) {
+      setSelectedCategory(filteredCategories[0].id);
+    }
+  };
+
   // Cart operation handlers
   const handleAddToCart = (product: Product) => {
     if (!vendor.storeActive || !authData?.jwt) return; // Disable when store is closed or no auth
@@ -294,7 +374,7 @@ const VendorProduct: React.FC = () => {
     );
   };
 
-  const handleVariantSelect = (variant: Variant) => {
+  const handleVariantSelect = (variant: ProductVariant) => {
     if (!selectedProductForVariants || !authData?.jwt) return;
 
     addToCart(
@@ -325,19 +405,6 @@ const VendorProduct: React.FC = () => {
     const cart = useCartStore.getState().carts[cartId];
     return cart?.products[sku]?.quantity || 0;
   };
-
-  // If there are no categories or products, show a message
-  if (!productsLoading && filteredCategories.length === 0) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background') }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: getColor('text'), fontSize: 16 }}>
-            No products available for this vendor.
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   if (productsLoading) {
     return (
@@ -372,6 +439,27 @@ const VendorProduct: React.FC = () => {
     },
     backButton: {
       marginRight: 12,
+    },
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: getColor('card'),
+      borderRadius: 12,
+      margin: 16,
+      marginTop: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderColor: getColor('border'),
+    },
+    searchInput: {
+      flex: 1,
+      color: getColor('text'),
+      fontSize: getTypography('body'),
+      paddingVertical: 8,
+    },
+    searchCloseButton: {
+      padding: 4,
     },
     vendorCard: {
       flexDirection: 'row',
@@ -616,6 +704,47 @@ const VendorProduct: React.FC = () => {
       borderBottomLeftRadius: 0,
       borderBottomRightRadius: 0,
     },
+    emptyStateContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 32,
+    },
+    emptyStateTitle: {
+      color: getColor('text'),
+      fontSize: getTypography('h2'),
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    emptyStateMessage: {
+      color: getColor('subText'),
+      fontSize: getTypography('body'),
+      textAlign: 'center',
+      lineHeight: 20,
+      marginBottom: 24,
+    },
+    clearSearchButton: {
+      backgroundColor: getColor('primary'),
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 8,
+    },
+    clearSearchButtonText: {
+      color: getColor('white'),
+      fontSize: getTypography('body'),
+      fontWeight: 'bold',
+    },
+    emptyStateMessageContainer: {
+      backgroundColor: getColor('card'),
+      margin: 16,
+      marginTop: 8,
+      padding: 16,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: getColor('border'),
+      alignItems: 'center',
+    },
   });
 
   const safeAreaTop = Platform.select({
@@ -631,7 +760,43 @@ const VendorProduct: React.FC = () => {
       >
         <View style={styles.container}>
           {/* Header */}
-          <VendorTopBar title={vendor.name} onBack={() => navigation.goBack()} />
+          <VendorTopBar
+            title={vendor.name}
+            onBack={() => navigation.goBack()}
+            onSearchPress={handleSearchPress}
+          />
+
+          {/* Search Bar */}
+          {isSearchVisible && (
+            <Animated.View
+              style={[
+                styles.searchContainer,
+                {
+                  opacity: searchBarOpacity,
+                  maxHeight: searchBarHeight.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 60], // Adjust based on your search container height
+                  }),
+                  overflow: 'hidden',
+                },
+              ]}
+            >
+              <TextInput
+                ref={searchInputRef}
+                style={styles.searchInput}
+                placeholder="Search products..."
+                placeholderTextColor={getColor('subText')}
+                value={searchQuery}
+                onChangeText={handleSearchChange}
+                returnKeyType="search"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity style={styles.searchCloseButton} onPress={handleSearchClose}>
+                <Text style={{ color: getColor('text'), fontSize: 18 }}>✕</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
 
           {/* Vendor Card */}
           <VendorHeaderCard
@@ -647,10 +812,21 @@ const VendorProduct: React.FC = () => {
             </View>
           )}
 
+          {/* Empty State Message - Show above main container */}
+          {!productsLoading && searchQuery && filteredProducts.length === 0 && (
+            <View style={styles.emptyStateMessageContainer}>
+              <Text style={styles.emptyStateMessage}>
+                {`No products match "${searchQuery}". Try a different search term.`}
+              </Text>
+              <TouchableOpacity style={styles.clearSearchButton} onPress={handleSearchClose}>
+                <Text style={styles.clearSearchButtonText}>Clear Search</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Main Content: Categories + Products */}
           <View style={styles.mainContent}>
             {/* Category List (absolute overlay with animation) */}
-
             <Animated.View
               style={{
                 opacity: timingOpacity,
@@ -665,7 +841,7 @@ const VendorProduct: React.FC = () => {
             </Animated.View>
 
             <CategoryTabs
-              categories={filteredCategories}
+              categories={categoriesForTabs}
               selectedCategoryId={selectedCategory}
               onSelect={handleCategorySelect}
               iconOpacity={categoryImageOpacity}
@@ -676,7 +852,11 @@ const VendorProduct: React.FC = () => {
             <Animated.View style={[styles.productList, { width: '100%' }]}>
               <Animated.FlatList
                 ref={flatListRef}
-                data={rowProductList}
+                data={getRowBasedProductList(
+                  categoriesForTabs,
+                  searchQuery && filteredProducts.length === 0 ? products : productsToShow,
+                  numColumns
+                )}
                 keyExtractor={(item, idx) => {
                   if (item.type === 'header') return `header-${item.category.id}`;
                   if (item.type === 'products') return `products-row-${idx}`;
@@ -772,7 +952,7 @@ const VendorProduct: React.FC = () => {
             setProductDetailModalVisible(false);
             setSelectedProductForDetail(null);
           }}
-          product={selectedProductForDetail}
+          productId={selectedProductForDetail.sku}
           vendor={vendor}
         />
       )}

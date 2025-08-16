@@ -3,6 +3,7 @@ import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Icons } from '../../../assets';
 import useFeaturedProducts from '../../../hooks/useFeaturedProducts';
+import { ProductVariant } from '../../../services/productDetailsService';
 import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
@@ -56,7 +57,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
     onAddToCart(product);
   };
 
-  const handleVariantSelect = (variant: any) => {
+  const handleVariantSelect = (variant: ProductVariant) => {
     if (!selectedProduct) return;
 
     // Create a product object with variant data

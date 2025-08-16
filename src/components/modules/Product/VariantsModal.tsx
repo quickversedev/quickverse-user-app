@@ -13,7 +13,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { Product } from '../../../assets/mock/products';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useVariants } from '../../../hooks/useVariants';
-import { Variant } from '../../../services/api/variantsService';
+import { ProductVariant } from '../../../services/productDetailsService';
 import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
@@ -29,7 +29,7 @@ interface VariantsModalProps {
   onClose: () => void;
   product: Product;
   vendor: Vendor;
-  onVariantSelect?: (variant: Variant) => void;
+  onVariantSelect?: (variant: ProductVariant) => void;
 }
 
 const VariantsModal: React.FC<VariantsModalProps> = ({
@@ -60,13 +60,13 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
     }
   }, [visible, reset]);
 
-  const _handleVariantSelect = (variant: Variant) => {
+  const _handleVariantSelect = (variant: ProductVariant) => {
     if (onVariantSelect) {
       onVariantSelect(variant);
     }
   };
 
-  const handleAddToCart = (variant: Variant) => {
+  const handleAddToCart = (variant: ProductVariant) => {
     if (!authData?.jwt) return;
     addToCart(
       cartId,

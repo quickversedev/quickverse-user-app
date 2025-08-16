@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import productService from '../../services/productService';
+import productsService from '../../services/productsService';
 import { Product } from '../../types/product';
 
 interface CachedFeaturedProducts {
@@ -73,12 +73,43 @@ const useFeaturedProductsStore = create<FeaturedProductsStore>((set, get) => ({
         setTimeout(() => reject(new Error('Request timeout')), 10000); // Reduced to 10 seconds
       });
 
-      const fetchPromise = productService.getFeaturedProducts(shopId, limit);
+      // Use productsService to fetch all products with bestSeller filter
+      const fetchPromise = productsService.fetchAllProducts({
+        shopId,
+        filters: { bestSeller: true },
+        limit: 1000, // Fetch all best sellers, then limit in store
+      });
+
       const response = await Promise.race([fetchPromise, timeoutPromise]);
 
-      if (response && response.success) {
+      if (response && response.products) {
+        // Apply limit to the fetched products
+        const limitedProducts = response.products.slice(0, limit);
+
+        // Convert mock Product type to expected Product type
+        const convertedProducts: Product[] = limitedProducts.map(mockProduct => ({
+          id: mockProduct.sku,
+          sku: mockProduct.sku,
+          shopId: mockProduct.shopId,
+          name: mockProduct.name,
+          price: mockProduct.sellingPrice,
+          mrp: mockProduct.mrp,
+          image: mockProduct.imageUrl,
+          numberOfVariants: mockProduct.numberOfVariants,
+          variantAttributes: [], // Mock products don't have variant attributes
+          rating: 4.0 + Math.random() * 1.0, // Random rating between 4.0 and 5.0
+          discount: mockProduct.discount,
+          quantity: 0,
+          category: mockProduct.category,
+          description: mockProduct.description,
+          brand: mockProduct.brand,
+          inStock: mockProduct.inStock,
+          currentStock: mockProduct.currentStock,
+          tags: mockProduct.tags,
+        }));
+
         const cachedData: CachedFeaturedProducts = {
-          products: Array.isArray(response.data) ? response.data : [],
+          products: convertedProducts,
           timestamp: Date.now(),
           loading: false,
           error: null,
@@ -97,7 +128,7 @@ const useFeaturedProductsStore = create<FeaturedProductsStore>((set, get) => ({
           products: [],
           timestamp: Date.now(),
           loading: false,
-          error: response?.message || 'Failed to fetch featured products',
+          error: 'Failed to fetch featured products',
         };
 
         set(state => ({
