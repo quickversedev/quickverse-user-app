@@ -9,5 +9,7 @@ export { useNotifications } from './useNotifications';
 export { useOrders } from './useOrders';
 export { usePages } from './usePages';
 export { useProductDetails } from './useProductDetails';
+export { useRecentSearches } from './useRecentSearches';
 export { useSearch } from './useSearch';
+export { useSearchSuggestions } from './useSearchSuggestions';
 export { useVariants } from './useVariants';

@@ -10,6 +10,7 @@ const SKIP_LOGIN_KEY = '@skipLogin';
 const ALREADY_LAUNCHED_KEY = '@alreadyLaunched';
 const REGION_ID_KEY = '@RegionId';
 const USER_ADDRESSES_KEY = '@UserAddresses';
+const RECENT_SEARCHES_KEY = '@RecentSearches';
 
 export const setSkipLoginFlow = (skipLogin: boolean): void => {
   storage.set(SKIP_LOGIN_KEY, skipLogin);
@@ -194,6 +195,75 @@ export const getUserAddresses = (): any[] | undefined => {
  */
 export const removeUserAddresses = (): void => {
   storage.delete(USER_ADDRESSES_KEY);
+};
+
+/**
+ * Sets recent searches in storage
+ * @param searches RecentSearch array
+ */
+export const setRecentSearches = (searches: any[]): void => {
+  try {
+    storage.set(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+  } catch {
+    // noop
+  }
+};
+
+/**
+ * Gets recent searches from storage
+ * @returns RecentSearch array or undefined
+ */
+export const getRecentSearches = (): any[] | undefined => {
+  const raw = storage.getString(RECENT_SEARCHES_KEY);
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as any[];
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Adds a new search to recent searches
+ * @param searchText string
+ * @param icon string (optional)
+ */
+export const addRecentSearch = (searchText: string, icon: string = 'magnify'): void => {
+  try {
+    const existingSearches = getRecentSearches() || [];
+
+    // Remove if already exists (to move to top)
+    const filteredSearches = existingSearches.filter(
+      (search: any) => search.text.toLowerCase() !== searchText.toLowerCase()
+    );
+
+    // Add new search at the beginning
+    const newSearch = {
+      id: Date.now().toString(),
+      text: searchText,
+      icon: icon,
+    };
+
+    const updatedSearches = [newSearch, ...filteredSearches];
+
+    // Keep only the last 10 searches
+    const limitedSearches = updatedSearches.slice(0, 10);
+
+    setRecentSearches(limitedSearches);
+  } catch {
+    // noop
+  }
+};
+
+/**
+ * Removes recent searches from storage
+ */
+export const removeRecentSearches = (): void => {
+  storage.delete(RECENT_SEARCHES_KEY);
 };
 
 export const StorageService = {

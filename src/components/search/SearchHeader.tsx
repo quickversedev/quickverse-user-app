@@ -1,23 +1,31 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSearchSuggestions } from '../../hooks/useSearchSuggestions';
 import { useTheme } from '../../theme/ThemeContext';
+import SearchSuggestions from './SearchSuggestions';
 
 interface SearchHeaderProps {
   searchQuery: string;
   onSearchChange: (text: string) => void;
+  onSuggestionPress?: (suggestion: string) => void;
   placeholder?: string;
 }
 
 const SearchHeader: React.FC<SearchHeaderProps> = ({
   searchQuery,
   onSearchChange,
+  onSuggestionPress,
   placeholder = 'Search for vendors and products...',
 }) => {
   const { getColor, getTypography } = useTheme();
   const navigation = useNavigation();
   const searchInputRef = useRef<TextInput>(null);
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Use search suggestions hook
+  const { suggestions, isLoading, clearSuggestions } = useSearchSuggestions(searchQuery);
 
   // Auto-focus the search input when component mounts
   useEffect(() => {
@@ -30,6 +38,26 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
 
   const handleBackPress = () => {
     navigation.goBack();
+  };
+
+  const handleSuggestionPress = (suggestion: string) => {
+    onSearchChange(suggestion);
+    if (onSuggestionPress) {
+      onSuggestionPress(suggestion);
+    }
+    clearSuggestions();
+    setIsFocused(false);
+  };
+
+  const handleInputFocus = () => {
+    setIsFocused(true);
+  };
+
+  const handleInputBlur = () => {
+    // Delay hiding suggestions to allow for touch events
+    setTimeout(() => {
+      setIsFocused(false);
+    }, 200);
   };
 
   const styles = StyleSheet.create({
@@ -62,6 +90,7 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
       shadowOpacity: 0.25,
       shadowRadius: 8,
       elevation: 6,
+      zIndex: 1,
     },
     searchIcon: {
       marginRight: 8,
@@ -92,7 +121,15 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
           placeholderTextColor={getColor('subText')}
           value={searchQuery}
           onChangeText={onSearchChange}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
           ref={searchInputRef}
+        />
+        <SearchSuggestions
+          suggestions={suggestions}
+          isLoading={isLoading}
+          onSuggestionPress={handleSuggestionPress}
+          visible={isFocused && searchQuery.length > 0 && suggestions.length > 0}
         />
       </View>
     </View>

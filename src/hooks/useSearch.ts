@@ -1,4 +1,6 @@
 import { useCallback, useState } from 'react';
+import searchService, { SearchResponse } from '../services/api/searchService';
+import useVendorStore from '../store/vendorStore';
 import { Vendor } from '../types/vendor';
 
 interface Product {
@@ -6,6 +8,9 @@ interface Product {
   name: string;
   image: string;
 }
+
+// Toggle for using real API vs mock data
+const USE_REAL_SEARCH_API = true; // Set to true to use real API
 
 interface SearchResults {
   vendors: Vendor[];
@@ -19,6 +24,7 @@ interface UseSearchReturn {
   hasSearched: boolean;
   setSearchQuery: (query: string) => void;
   performSearch: (query: string) => Promise<void>;
+  searchOnSuggestionSelect: (query: string) => Promise<void>;
   clearSearch: () => void;
 }
 
@@ -31,7 +37,10 @@ export const useSearch = (): UseSearchReturn => {
   });
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Dummy API call for search
+  // Get vendors from vendorStore to filter products
+  const { vendors: storeVendors } = useVendorStore();
+
+  // Real API call for search with debouncing
   const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults({ vendors: [], products: [] });
@@ -42,81 +51,56 @@ export const useSearch = (): UseSearchReturn => {
     setIsLoading(true);
     setHasSearched(true);
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      let searchResponse: SearchResponse;
 
-    // Dummy search results
-    const dummyVendors: Vendor[] = [
-      {
-        shopId: 'search1',
-        name: `${query} Restaurant`,
-        rating: 4.5,
-        preparationTime: '25 mins',
-        logo: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop',
-        banner: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop',
-        owner: 'Owner 1',
-        phone: '1234567890',
-        openingTime: '09:00',
-        closingTime: '22:00',
-        description: `Best ${query} in town`,
-        category: 'restaurant',
-        storeEnabled: true,
-        storeActive: true,
-      },
-      {
-        shopId: 'search2',
-        name: `${query} Express`,
-        rating: 4.2,
-        preparationTime: '15 mins',
-        logo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=300&fit=crop',
-        banner: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=300&fit=crop',
-        owner: 'Owner 2',
-        phone: '1234567890',
-        openingTime: '10:00',
-        closingTime: '23:00',
-        description: `Quick ${query} delivery`,
-        category: 'restaurant',
-        storeEnabled: true,
-        storeActive: true,
-      },
-    ];
+      if (USE_REAL_SEARCH_API) {
+        searchResponse = await searchService.search({
+          query: query.trim(),
+        });
+      } else {
+        // Use mock data for development
+        searchResponse = await searchService.mockSearch(query.trim());
+      }
 
-    const dummyProducts: Product[] = [
-      {
-        id: 'prod1',
-        name: `${query} Special`,
-        image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=200&h=200&fit=crop',
-      },
-      {
-        id: 'prod2',
-        name: `${query} Deluxe`,
-        image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=200&h=200&fit=crop',
-      },
-      {
-        id: 'prod3',
-        name: `${query} Classic`,
-        image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=200&h=200&fit=crop',
-      },
-      {
-        id: 'prod4',
-        name: `${query} Premium`,
-        image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=200&h=200&fit=crop',
-      },
-      {
-        id: 'prod5',
-        name: `${query} Supreme`,
-        image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=200&h=200&fit=crop',
-      },
-      {
-        id: 'prod6',
-        name: `${query} Ultimate`,
-        image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=200&h=200&fit=crop',
-      },
-    ];
+      // Filter products to only include those from valid vendors in the store
+      const validShopIds = new Set(storeVendors.map(vendor => vendor.shopId));
 
-    setSearchResults({ vendors: dummyVendors, products: dummyProducts });
-    setIsLoading(false);
+      const filteredProducts: Product[] = searchResponse.products
+        .filter(product => validShopIds.has(product.shopId))
+        .map(product => ({
+          id: product.productSKU,
+          name: product.productName,
+          image: product.productImage,
+        }));
+
+      // Get vendors that have products in the search results
+      const vendorsWithProducts = storeVendors.filter(vendor =>
+        searchResponse.products.some(product => product.shopId === vendor.shopId)
+      );
+
+      setSearchResults({
+        vendors: vendorsWithProducts,
+        products: filteredProducts,
+      });
+    } catch (error) {
+      console.error('Search failed:', error);
+      // Fallback to empty results on error
+      setSearchResults({ vendors: [], products: [] });
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  // Search function for when suggestion is selected
+  const searchOnSuggestionSelect = useCallback(
+    async (query: string) => {
+      if (query.trim()) {
+        await performSearch(query);
+      }
+    },
+    [performSearch]
+  );
 
   const clearSearch = useCallback(() => {
     setSearchQuery('');
@@ -131,6 +115,7 @@ export const useSearch = (): UseSearchReturn => {
     hasSearched,
     setSearchQuery,
     performSearch,
+    searchOnSuggestionSelect,
     clearSearch,
   };
 };

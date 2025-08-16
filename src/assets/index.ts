@@ -56,6 +56,9 @@ export { DefaultTheme } from './theme/defaultTheme';
 export { mockProducts } from './mock/products';
 export { mockVendors } from './mock/vendor';
 
+// Search Suggestions
+export * from './searchSuggestions';
+
 // Types for better TypeScript support
 export type ImageKey = keyof typeof Images;
 export type IconKey = keyof typeof Icons;

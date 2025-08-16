@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import SectionDivider from '../../components/common/SectionDivider';
@@ -8,6 +8,7 @@ import RecentSearches from '../../components/search/RecentSearches';
 import SearchHeader from '../../components/search/SearchHeader';
 import SearchResults from '../../components/search/SearchResults';
 import SearchSkeleton from '../../components/search/SearchSkeleton';
+import { useRecentSearches } from '../../hooks/useRecentSearches';
 import { useSearch } from '../../hooks/useSearch';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
@@ -21,7 +22,6 @@ interface Product {
 const SearchScreen: React.FC = () => {
   const { getColor } = useTheme();
   const navigation = useNavigation();
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     searchQuery,
@@ -29,41 +29,15 @@ const SearchScreen: React.FC = () => {
     searchResults,
     hasSearched,
     setSearchQuery,
-    performSearch,
-    clearSearch,
+    searchOnSuggestionSelect,
   } = useSearch();
 
-  // Handle search input change with debounce
+  const { addSearch } = useRecentSearches();
+
+  // Handle search input change - only update query, don't make API calls
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
-
-    // Clear previous timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    // Set new timeout for search
-    searchTimeoutRef.current = setTimeout(() => {
-      performSearch(text);
-    }, 500);
   };
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Mock recent searches data
-  const recentSearches = [
-    { id: '1', text: 'Pendant', icon: 'magnify' },
-    { id: '2', text: 'Siuuuuuuuuuuuuuu', icon: 'magnify' },
-    { id: '3', text: 'Shwarma King', icon: 'magnify' },
-    { id: '4', text: 'Trending', icon: 'magnify' },
-  ];
 
   // Mock trending vendors data
   const trendingVendors: Vendor[] = [
@@ -152,17 +126,20 @@ const SearchScreen: React.FC = () => {
     },
   });
 
-  const handleSearchPress = (searchText: string) => {
+  const handleSearchPress = async (searchText: string) => {
     setSearchQuery(searchText);
-    performSearch(searchText);
+    await searchOnSuggestionSelect(searchText);
+    addSearch(searchText);
   };
 
   const handleVendorPress = (vendor: Vendor) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (navigation as any).navigate('VendorProduct', { vendor });
   };
 
   const handleProductPress = (product: Product) => {
     // TODO: Navigate to product details
+    // eslint-disable-next-line no-console
     console.log('Product pressed:', product.name);
   };
 
@@ -173,7 +150,11 @@ const SearchScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Search Header */}
-      <SearchHeader searchQuery={searchQuery} onSearchChange={handleSearchChange} />
+      <SearchHeader
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+        onSuggestionPress={handleSearchPress}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -197,7 +178,7 @@ const SearchScreen: React.FC = () => {
         ) : (
           <>
             {/* Recent Searches Section */}
-            <RecentSearches searches={recentSearches} onSearchPress={handleSearchPress} />
+            <RecentSearches onSearchPress={handleSearchPress} />
 
             {/* Trending Vendors Section */}
             <View style={styles.trendingVendorsGrid}>

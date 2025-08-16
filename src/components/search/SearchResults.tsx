@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
 import ProductItemOnSearch from '../common/search/ProductItemOnSearch';
@@ -28,6 +29,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   onFavoritePress,
 }) => {
   const { getColor, getTypography } = useTheme();
+  const { vendors: storeVendors } = useVendorStore();
+
+  // Get vendor details from store using shopId
+  const getVendorDetails = (shopId: string): Vendor | undefined => {
+    return storeVendors.find(vendor => vendor.shopId === shopId);
+  };
 
   const styles = StyleSheet.create({
     section: {
@@ -37,12 +44,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     vendorsGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      gap: 4,
+      justifyContent: 'flex-start',
+      gap: 10,
     },
     vendorCardContainer: {
       width: '32%',
-      marginBottom: 16,
+      margin: 16,
     },
     productsContainer: {
       flexDirection: 'row',
@@ -98,16 +105,26 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         <View style={styles.section}>
           <SectionDivider text="Vendors" fontSize={14} style={{ marginVertical: 16 }} />
           <View style={styles.vendorsGrid}>
-            {vendors.map(vendor => (
-              <View key={vendor.shopId} style={styles.vendorCardContainer}>
-                <VendorCard
-                  vendor={vendor}
-                  onPress={onVendorPress}
-                  onFavoritePress={onFavoritePress}
-                  size="small"
-                />
-              </View>
-            ))}
+            {vendors.map(vendor => {
+              // Get full vendor details from store
+              const vendorDetails = getVendorDetails(vendor.shopId);
+
+              // Only render if vendor details exist in store
+              if (!vendorDetails) {
+                return null;
+              }
+
+              return (
+                <View key={vendor.shopId} style={styles.vendorCardContainer}>
+                  <VendorCard
+                    vendor={vendorDetails}
+                    onPress={onVendorPress}
+                    onFavoritePress={onFavoritePress}
+                    size="small"
+                  />
+                </View>
+              );
+            })}
           </View>
         </View>
       )}
