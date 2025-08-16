@@ -250,7 +250,7 @@ export const addRecentSearch = (searchText: string, icon: string = 'magnify'): v
 
     const updatedSearches = [newSearch, ...filteredSearches];
 
-    // Keep only the last 10 searches
+    // Limit to maximum 10 recent searches
     const limitedSearches = updatedSearches.slice(0, 10);
 
     setRecentSearches(limitedSearches);

@@ -10,6 +10,7 @@ import SearchResults from '../../components/search/SearchResults';
 import SearchSkeleton from '../../components/search/SearchSkeleton';
 import { useRecentSearches } from '../../hooks/useRecentSearches';
 import { useSearch } from '../../hooks/useSearch';
+import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
 
@@ -34,78 +35,16 @@ const SearchScreen: React.FC = () => {
 
   const { addSearch } = useRecentSearches();
 
+  // Get vendors from vendor store
+  const { getActiveVendors } = useVendorStore();
+
   // Handle search input change - only update query, don't make API calls
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
   };
 
-  // Mock trending vendors data
-  const trendingVendors: Vendor[] = [
-    {
-      shopId: '1',
-      name: 'Meridian Icecream',
-      rating: 4.3,
-      preparationTime: '30 mins',
-      logo: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=400&h=300&fit=crop',
-      banner: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=400&h=300&fit=crop',
-      owner: 'Owner 1',
-      phone: '1234567890',
-      openingTime: '09:00',
-      closingTime: '22:00',
-      description: 'Delicious ice cream shop',
-      category: 'restaurant',
-      storeEnabled: true,
-      storeActive: true,
-    },
-    {
-      shopId: '2',
-      name: 'Wellness Forever',
-      rating: 3.7,
-      preparationTime: '16 mins',
-      logo: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=300&fit=crop',
-      banner: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=300&fit=crop',
-      owner: 'Owner 2',
-      phone: '1234567890',
-      openingTime: '09:00',
-      closingTime: '22:00',
-      description: 'Pharmacy and wellness store',
-      category: 'pharmacy',
-      storeEnabled: true,
-      storeActive: true,
-    },
-    {
-      shopId: '3',
-      name: 'Meridian Icecream',
-      rating: 4.3,
-      preparationTime: '30 mins',
-      logo: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=400&h=300&fit=crop',
-      banner: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=400&h=300&fit=crop',
-      owner: 'Owner 3',
-      phone: '1234567890',
-      openingTime: '09:00',
-      closingTime: '22:00',
-      description: 'Delicious ice cream shop',
-      category: 'restaurant',
-      storeEnabled: true,
-      storeActive: true,
-    },
-    {
-      shopId: '4',
-      name: 'Wellness Forever',
-      rating: 3.7,
-      preparationTime: '16 mins',
-      logo: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=300&fit=crop',
-      banner: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=300&fit=crop',
-      owner: 'Owner 4',
-      phone: '1234567890',
-      openingTime: '09:00',
-      closingTime: '22:00',
-      description: 'Pharmacy and wellness store',
-      category: 'pharmacy',
-      storeEnabled: true,
-      storeActive: true,
-    },
-  ];
+  // Get trending vendors from vendor store (active and enabled vendors)
+  const trendingVendors = getActiveVendors().slice(0, 6); // Show up to 6 trending vendors
 
   const styles = StyleSheet.create({
     container: {

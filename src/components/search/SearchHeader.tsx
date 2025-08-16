@@ -60,6 +60,11 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
     }, 200);
   };
 
+  const handleClearPress = () => {
+    onSearchChange('');
+    searchInputRef.current?.focus();
+  };
+
   const styles = StyleSheet.create({
     header: {
       flexDirection: 'row',
@@ -101,6 +106,10 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
       fontSize: getTypography('body'),
       paddingVertical: 4,
     },
+    clearButton: {
+      marginLeft: 8,
+      padding: 4,
+    },
   });
 
   return (
@@ -125,6 +134,11 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
           onBlur={handleInputBlur}
           ref={searchInputRef}
         />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity style={styles.clearButton} onPress={handleClearPress}>
+            <MaterialCommunityIcons name="close-circle" size={20} color={getColor('subText')} />
+          </TouchableOpacity>
+        )}
         <SearchSuggestions
           suggestions={suggestions}
           isLoading={isLoading}

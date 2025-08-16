@@ -7,6 +7,7 @@ export const Images = {
   // Icons
   logoQv: require('./images/logo_qv.png'),
   mapLocation: require('./images/map-location.png'),
+  mapPin: require('./images/mapPin.png'),
   orderZero: require('./images/order_zero.png'),
   emptyVendors: require('./images/empty_vendors.png'),
 

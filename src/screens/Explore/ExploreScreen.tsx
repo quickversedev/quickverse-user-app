@@ -1,8 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Circle, Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useLocation } from '../../hooks/Permissions/useLocation';
+
+import { useAuth } from '../../contexts/login/AuthProvider';
 import { useTheme } from '../../theme/ThemeContext';
 
 // Vendor data type
@@ -20,28 +22,35 @@ interface Vendor {
 
 const ExploreScreen = () => {
   const { getColor, theme } = useTheme();
-  const {
-    checkLocationPermission,
-    requestLocationPermission,
-    getCurrentLocation,
-    location: currentLocation,
-  } = useLocation();
+  const { selectedAddress } = useAuth();
 
-  const [region, setRegion] = useState({
-    latitude: 18.5204, // Default to Pune
-    longitude: 73.8567,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
-  });
-  const [loading, setLoading] = useState(false);
-  const [mapError, setMapError] = useState<string | null>(null);
-  const [_locationStatus, setLocationStatus] = useState('Initializing...');
+  // Get region from selected address or fallback to Pune
+  const getRegion = useCallback(() => {
+    if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
+      return {
+        latitude: selectedAddress.coordinates.latitude,
+        longitude: selectedAddress.coordinates.longitude,
+        latitudeDelta: 0.062, // Even larger view to show more area
+        longitudeDelta: 0.062,
+      };
+    }
+    return {
+      latitude: 18.5204, // Default to Pune
+      longitude: 73.8567,
+      latitudeDelta: 0.06,
+      longitudeDelta: 0.06,
+    };
+  }, [selectedAddress]);
+
+  const [region, setRegion] = useState(getRegion());
   const [shouldRenderMap, setShouldRenderMap] = useState(false);
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const mapRef = useRef<MapView>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+  // const mapRef = useRef<MapView>(null);
 
-  // Generate random vendors within 3km radius
-  const generateRandomVendors = (centerLat: number, centerLng: number): Vendor[] => {
+  // Generate vendors in 5km radius around selected address
+  const generateVendors = useCallback((centerLat: number, centerLng: number): Vendor[] => {
     const vendorTypes: Vendor['type'][] = ['restaurant', 'grocery', 'pharmacy', 'retail'];
     const vendorNames = [
       'Quick Bites',
@@ -59,10 +68,10 @@ const ExploreScreen = () => {
     ];
 
     const vendors: Vendor[] = [];
-    const maxRadius = 3; // 3km radius
+    const maxRadius = 5; // 5km radius
 
-    for (let i = 0; i < 10; i++) {
-      // Generate random distance within 3km
+    for (let i = 0; i < 15; i++) {
+      // Generate random distance within 5km
       const distance = Math.random() * maxRadius;
 
       // Generate random angle
@@ -90,145 +99,72 @@ const ExploreScreen = () => {
     }
 
     return vendors;
-  };
+  }, []);
 
-  // Get vendor icon based on type
-  const getVendorIcon = (type: Vendor['type']) => {
-    switch (type) {
-      case 'restaurant':
-        return 'food-fork-drink';
-      case 'grocery':
-        return 'shopping';
-      case 'pharmacy':
-        return 'medical-bag';
-      case 'retail':
-        return 'store';
-      default:
-        return 'map-marker';
+  // Memoized vendors based on selected address
+  const memoizedVendors = useMemo(() => {
+    if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
+      return generateVendors(
+        selectedAddress.coordinates.latitude,
+        selectedAddress.coordinates.longitude
+      );
     }
-  };
+    return [];
+  }, [selectedAddress, generateVendors]);
 
-  // Get vendor color based on type
-  const getVendorColor = (type: Vendor['type']) => {
-    switch (type) {
-      case 'restaurant':
-        return '#FF6B6B'; // Red
-      case 'grocery':
-        return '#4ECDC4'; // Teal
-      case 'pharmacy':
-        return '#45B7D1'; // Blue
-      case 'retail':
-        return '#96CEB4'; // Green
-      default:
-        return '#FFA500'; // Orange
-    }
-  };
-
-  // Delay map rendering to avoid crash
+  // Initialize map when component mounts
   useEffect(() => {
     const timer = setTimeout(() => {
       setShouldRenderMap(true);
-    }, 1000); // 1 second delay
+    }, 300);
 
     return () => clearTimeout(timer);
   }, []);
 
-  // On mount, fetch and center on current location
+  // Update region and vendors when selectedAddress changes
   useEffect(() => {
-    (async () => {
-      try {
-        setLocationStatus('Checking permissions...');
-        const hasPermission = await checkLocationPermission();
-        if (!hasPermission) {
-          setLocationStatus('Requesting permissions...');
-          await requestLocationPermission();
-        }
-        setLocationStatus('Getting location...');
-        getCurrentLocation();
-        setLocationStatus('Location ready');
-      } catch (error) {
-        console.error('Error initializing location:', error);
-        setLocationStatus('Error getting location');
-      }
-    })();
-  }, [checkLocationPermission, getCurrentLocation, requestLocationPermission]);
-
-  // When current location is available, center map and generate vendors
-  useEffect(() => {
-    if (
-      typeof currentLocation.latitude === 'number' &&
-      typeof currentLocation.longitude === 'number'
-    ) {
-      const newRegion = {
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      };
+    if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
+      const newRegion = getRegion();
       setRegion(newRegion);
-
-      // Generate random vendors around current location
-      const randomVendors = generateRandomVendors(
-        currentLocation.latitude,
-        currentLocation.longitude
-      );
-      setVendors(randomVendors);
+      setVendors(memoizedVendors);
     }
-  }, [currentLocation.latitude, currentLocation.longitude]);
+  }, [selectedAddress]);
 
-  const handleGetCurrentLocation = async () => {
-    setLoading(true);
-    try {
-      setLocationStatus('Getting current location...');
+  // Auto-refresh when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      // Trigger handleRefreshVendors when navigating to this screen
+      handleRefreshVendors();
+    }, [selectedAddress])
+  );
 
-      // Actually fetch current location
-      const newCoords = await getCurrentLocation();
+  const handleRefreshVendors = () => {
+    // Force complete re-render of the Explore screen
+    setIsRefreshing(true);
+    setIsAutoRefreshing(true);
+    setShouldRenderMap(false);
+    setVendors([]);
 
-      console.log('New coordinates received:', newCoords);
+    // Reset map and regenerate everything after a short delay
+    setTimeout(() => {
+      if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
+        const newRegion = getRegion();
+        const newVendors = generateVendors(
+          selectedAddress.coordinates.latitude,
+          selectedAddress.coordinates.longitude
+        );
 
-      if (
-        newCoords &&
-        typeof newCoords.latitude === 'number' &&
-        typeof newCoords.longitude === 'number'
-      ) {
-        const newLocation = {
-          latitude: newCoords.latitude,
-          longitude: newCoords.longitude,
-        };
-
-        console.log('Setting new location:', newLocation);
-
-        const newRegion = {
-          latitude: newLocation.latitude,
-          longitude: newLocation.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        };
-
-        // Update the region state
         setRegion(newRegion);
+        setVendors(newVendors);
+        setShouldRenderMap(true);
+        setIsRefreshing(false);
 
-        // Use animateToRegion for smooth animation to current location
-        if (mapRef.current) {
-          mapRef.current.animateToRegion(newRegion, 1000);
-        }
-
-        // Regenerate vendors for new location
-        const randomVendors = generateRandomVendors(newLocation.latitude, newLocation.longitude);
-        setVendors(randomVendors);
-
-        setLocationStatus('Location updated successfully');
-        console.log('Location updated and vendors regenerated');
-      } else {
-        console.error('Invalid coordinates received:', newCoords);
-        setLocationStatus('Error: Invalid location data');
+        // Clear auto-refresh state after a short delay
+        setTimeout(() => {
+          setIsAutoRefreshing(false);
+        }, 500);
       }
-    } catch (error) {
-      console.error('Error getting current location:', error);
-      setLocationStatus('Error updating location');
-    } finally {
-      setLoading(false);
-    }
+    }, 100);
   };
 
   const styles = StyleSheet.create({
@@ -295,65 +231,11 @@ const ExploreScreen = () => {
       shadowRadius: 6,
       elevation: 6,
     },
-    vendorMarker: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      borderWidth: 3,
-      borderColor: '#fff',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      elevation: 4,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    loadingOverlay: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.3)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 20,
-    },
-    loadingContainer: {
-      backgroundColor: getColor('card'),
-      borderRadius: theme.borderRadius.md,
-      padding: 20,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
+
     loadingText: {
       color: getColor('text'),
       marginLeft: 12,
       fontSize: 16,
-    },
-    errorContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-    },
-    errorText: {
-      color: getColor('text'),
-      fontSize: 16,
-      textAlign: 'center',
-      marginBottom: 16,
-    },
-    retryButton: {
-      backgroundColor: getColor('primary'),
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      borderRadius: theme.borderRadius.md,
-    },
-    retryButtonText: {
-      color: '#fff',
-      fontSize: 16,
-      fontWeight: '600',
     },
     mapLoadingContainer: {
       flex: 1,
@@ -380,22 +262,17 @@ const ExploreScreen = () => {
       color: getColor('subText'),
       fontSize: 12,
     },
+    customMapPin: {
+      width: 50,
+      height: 50,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      borderRadius: 25,
+      borderWidth: 2,
+      borderColor: '#FF6B6B',
+    },
   });
-
-  // Show error state if map failed to load
-  if (mapError) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.errorContainer}>
-          <MaterialCommunityIcons name="map-marker-alert" size={64} color={getColor('subText')} />
-          <Text style={styles.errorText}>{mapError}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => setMapError(null)}>
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -403,11 +280,11 @@ const ExploreScreen = () => {
       <View style={styles.mapContainer}>
         {shouldRenderMap ? (
           <MapView
-            ref={mapRef}
+            // ref={mapRef}
             style={styles.map}
             region={region}
-            showsUserLocation={true}
-            showsMyLocationButton={false}
+            showsUserLocation={false}
+            showsMyLocationButton={true}
             showsCompass={true}
             showsScale={true}
             showsBuildings={true}
@@ -418,30 +295,42 @@ const ExploreScreen = () => {
             pitchEnabled={true}
             toolbarEnabled={false}
           >
-            {/* Show current location marker if available */}
-            {currentLocation.latitude && currentLocation.longitude && (
+            {/* Show selected address marker */}
+            {selectedAddress?.coordinates && (
               <>
                 <Marker
                   coordinate={{
-                    latitude: currentLocation.latitude,
-                    longitude: currentLocation.longitude,
+                    latitude: selectedAddress.coordinates.latitude,
+                    longitude: selectedAddress.coordinates.longitude,
                   }}
-                  title="Current Location"
-                  description="Your current location"
+                  title={selectedAddress.name || 'Selected Address'}
+                  description={selectedAddress.addressLine1}
                   anchor={{ x: 0.5, y: 0.5 }}
                 >
-                  <View style={styles.currentLocationDot} />
+                  <View style={[styles.currentLocationDot, { backgroundColor: '#FF9800' }]} />
                 </Marker>
 
-                {/* Show 3km radius circle */}
+                {/* Show 5km radius circle */}
                 <Circle
                   center={{
-                    latitude: currentLocation.latitude,
-                    longitude: currentLocation.longitude,
+                    latitude: selectedAddress.coordinates.latitude,
+                    longitude: selectedAddress.coordinates.longitude,
                   }}
-                  radius={3000} // 3km in meters
-                  fillColor="rgba(33, 150, 243, 0.1)" // Light blue with transparency
-                  strokeColor="rgba(33, 150, 243, 0.3)" // Blue border
+                  radius={5000} // 5km in meters
+                  fillColor="rgba(255, 152, 0, 0.15)" // More visible orange fill
+                  strokeColor="rgba(255, 152, 0, 0.8)" // Much more visible orange border
+                  strokeWidth={3} // Thicker border
+                />
+
+                {/* Additional smaller circle for better visibility */}
+                <Circle
+                  center={{
+                    latitude: selectedAddress.coordinates.latitude,
+                    longitude: selectedAddress.coordinates.longitude,
+                  }}
+                  radius={1000} // 1km inner circle
+                  fillColor="rgba(255, 152, 0, 0.05)" // Very light fill
+                  strokeColor="rgba(255, 152, 0, 0.4)" // Medium visibility border
                   strokeWidth={2}
                 />
               </>
@@ -454,18 +343,10 @@ const ExploreScreen = () => {
                 coordinate={vendor.coordinate}
                 title={vendor.name}
                 description={`${vendor.type} • ${vendor.rating}★ • ${vendor.distance}km`}
-                anchor={{ x: 0.5, y: 0.5 }}
+                anchor={{ x: 0.5, y: 1.0 }}
               >
-                <View
-                  style={[styles.vendorMarker, { backgroundColor: getVendorColor(vendor.type) }]}
-                >
-                  <MaterialCommunityIcons
-                    name={
-                      getVendorIcon(vendor.type) as keyof typeof MaterialCommunityIcons.glyphMap
-                    }
-                    size={16}
-                    color="#fff"
-                  />
+                <View style={styles.customMapPin}>
+                  <MaterialCommunityIcons name="map-marker" size={30} color="#FF6B6B" />
                 </View>
               </Marker>
             ))}
@@ -483,33 +364,31 @@ const ExploreScreen = () => {
           <Text style={styles.subtitle}>Discover vendors and products near you</Text>
           <View style={styles.radiusIndicator}>
             <View style={styles.radiusDot} />
-            <Text style={styles.radiusText}>3km radius from your location</Text>
+            <Text style={styles.radiusText}>
+              {isRefreshing || isAutoRefreshing
+                ? 'Refreshing vendors...'
+                : selectedAddress?.coordinates
+                ? `5km radius from ${selectedAddress.name || 'your saved address'} (${
+                    vendors.length
+                  } vendors)`
+                : '5km radius from your location'}
+            </Text>
           </View>
         </View>
 
-        {/* Current Location Button */}
+        {/* Refresh Button */}
         <TouchableOpacity
           style={styles.currentLocationButton}
-          onPress={handleGetCurrentLocation}
+          onPress={handleRefreshVendors}
           activeOpacity={0.85}
-          disabled={loading}
+          disabled={isRefreshing}
         >
-          {loading ? (
+          {isRefreshing ? (
             <ActivityIndicator size="small" color={getColor('primary')} />
           ) : (
-            <MaterialCommunityIcons name="crosshairs-gps" size={24} color={getColor('primary')} />
+            <MaterialCommunityIcons name="refresh" size={24} color={getColor('primary')} />
           )}
         </TouchableOpacity>
-
-        {/* Loading Overlay */}
-        {loading && (
-          <View style={styles.loadingOverlay}>
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={getColor('primary')} />
-              <Text style={styles.loadingText}>Getting your location...</Text>
-            </View>
-          </View>
-        )}
       </View>
     </View>
   );
