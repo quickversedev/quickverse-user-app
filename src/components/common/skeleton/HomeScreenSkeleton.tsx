@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   vendorCard: {
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#5c5d5e',
   },
   vendorHeader: {
     flexDirection: 'row',
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     height: 100,
   },
   skeletonItem: {
-    backgroundColor: '#e0e0e0', // Same as getColor('border')
+    backgroundColor: '#7e7f80', // Same as getColor('border')
   },
   wave: {
     position: 'absolute',
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#ffffff', // Same as getColor('white')
+    backgroundColor: '#a8abad', // Same as getColor('white')
     opacity: 0.3,
   },
 });

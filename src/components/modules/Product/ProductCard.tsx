@@ -29,6 +29,7 @@ interface ProductCardProps {
   onPress?: () => void;
   backgroundColor?: string;
   productId?: string; // Add productId prop
+  inStock?: boolean; // Add inStock prop
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
@@ -48,6 +49,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   showVariantsCount = false,
   onPress,
   backgroundColor,
+  inStock = true, // Default to true for backward compatibility
 }) => {
   const { getColor, getTypography, theme } = useTheme();
 
@@ -130,13 +132,45 @@ const ProductCard: React.FC<ProductCardProps> = ({
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
       zIndex: 10,
     },
+    outOfStockOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(128, 128, 128, 0.7)',
+      zIndex: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    outOfStockText: {
+      color: getColor('white'),
+      fontSize: size === 'xs' ? getTypography('caption') - 2 : getTypography('caption'),
+      fontWeight: 'bold',
+      textAlign: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 4,
+    },
+    grayedOutImage: {
+      width: '100%',
+      height: '100%',
+      borderRadius: theme.borderRadius.sm,
+      opacity: 0.5,
+    },
   });
 
   const cardContent = (
     <View style={styles.card}>
       {disabled && <View style={styles.disabledOverlay} />}
+      {!inStock && <View style={styles.outOfStockOverlay} />}
       <View style={styles.imageContainer}>
-        <Image source={image} style={styles.image} resizeMode="cover" />
+        <Image
+          source={image}
+          style={[styles.image, !inStock && styles.grayedOutImage]}
+          resizeMode="cover"
+        />
         <View style={styles.ratingBadge}>
           {size !== 'xs' && (
             <RatingBadge rating={rating} size={size === 'regular' ? 'medium' : size} />
@@ -152,7 +186,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
             />
           </View>
         )}
-        {quantity === 0 ? (
+        {!inStock ? (
+          <View style={styles.outOfStockOverlay}>
+            <Text style={styles.outOfStockText}>OUT OF STOCK</Text>
+          </View>
+        ) : quantity === 0 ? (
           <AddButton
             onPress={onAdd}
             size={size}
@@ -168,12 +206,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
           />
         )}
       </View>
-      <Text style={styles.name} numberOfLines={1}>
+      <Text style={[styles.name, !inStock && { opacity: 0.6 }]} numberOfLines={1}>
         {name}
       </Text>
       <View style={styles.priceRow}>
-        <Text style={styles.mrp}>₹{mrp}</Text>
-        <Text style={styles.price}>₹{price}</Text>
+        <Text style={[styles.mrp, !inStock && { opacity: 0.6 }]}>₹{mrp}</Text>
+        <Text style={[styles.price, !inStock && { opacity: 0.6 }]}>₹{price}</Text>
       </View>
     </View>
   );

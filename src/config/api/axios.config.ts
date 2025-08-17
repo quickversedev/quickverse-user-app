@@ -11,7 +11,7 @@ import { ApiError } from './axios.types';
  */
 export const API_CONFIG = {
   /** Base URL for the QuickVerse API server */
-  baseURL: 'http:/192.168.1.35:8080/quickVerse',
+  baseURL: 'http:/192.168.1.33:8080/quickVerse',
 
   /** Default timeout for all requests (15 seconds) */
   timeout: 15000,
@@ -54,42 +54,44 @@ const handleAxiosError = (error: unknown): ApiError => {
     };
   }
 
+  const axiosError = error as AxiosError;
+
   // Handle network errors
-  if (error.code === 'ERR_NETWORK') {
+  if (axiosError.code === 'ERR_NETWORK') {
     return {
-      status: 0,
+      status: axiosError.response?.status || 0,
       message: 'Network error. Please check your internet connection.',
       code: 'NETWORK_ERROR',
       isCancelled: false,
-      apiEndpoint: error.config?.url || 'Unknown',
+      apiEndpoint: axiosError.config?.url || 'Unknown',
     };
   }
 
   // Handle timeout errors
-  if (error.code === 'ECONNABORTED') {
+  if (axiosError.code === 'ECONNABORTED') {
     return {
       status: 408,
       message: 'Request timed out. Please check your internet connection and try again.',
       code: 'TIMEOUT',
       isCancelled: false,
-      apiEndpoint: error.config?.url || 'Unknown',
+      apiEndpoint: axiosError.config?.url || 'Unknown',
     };
   }
 
   // Handle cancelled requests
-  if (axios.isCancel(error)) {
+  if (axios.isCancel(axiosError)) {
     return {
       status: 499,
       message: 'Request was cancelled',
       code: 'CANCELLED',
       isCancelled: true,
-      apiEndpoint: error.config?.url || 'Unknown',
+      apiEndpoint: axiosError.config?.url || 'Unknown',
     };
   }
 
   // Handle HTTP errors
-  if (error.response) {
-    const responseData = error.response.data as {
+  if (axiosError.response) {
+    const responseData = axiosError.response.data as {
       error: {
         code: string;
         message: string;
@@ -102,11 +104,11 @@ const handleAxiosError = (error: unknown): ApiError => {
     const errorCode = responseData?.error?.code || '';
 
     return {
-      status: error.response.status,
+      status: axiosError.response.status,
       message: errorMessage,
       code: errorCode,
       isCancelled: false,
-      apiEndpoint: error.config?.url || 'Unknown',
+      apiEndpoint: axiosError.config?.url || 'Unknown',
       error: responseData?.error || { code: errorCode, message: errorMessage },
     };
   }
@@ -114,10 +116,10 @@ const handleAxiosError = (error: unknown): ApiError => {
   // Handle any other errors
   return {
     status: 500,
-    message: error.message || 'An unexpected error occurred',
+    message: axiosError.message || 'An unexpected error occurred',
     code: 'UNKNOWN_ERROR',
     isCancelled: false,
-    apiEndpoint: error.config?.url || 'Unknown',
+    apiEndpoint: axiosError.config?.url || 'Unknown',
   };
 };
 

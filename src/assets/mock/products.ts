@@ -202,6 +202,8 @@ export const mockProducts: Product[] = [
   ...generateProducts('4525', 100, 900), // Quick Meds (Pharmacy)
   ...generateProducts('4526', 100, 1000), // South Indian Delights (Food)
   ...generateProducts('4527', 100, 1100), // Organic Corner (Grocery)
+  ...generateProducts('49351', 100, 1100),
+  ...generateProducts('49464', 100, 1100),
 ];
 
 // Build mock categories by division (id maps to product.division)

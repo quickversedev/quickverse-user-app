@@ -69,8 +69,17 @@ const getRowBasedProductList = (
     rows.push({ type: 'header', category: cat });
     // Map category.id to product.division per API contract
     const catProducts = products.filter((p: Product) => p.division === cat.id);
-    for (let i = 0; i < catProducts.length; i += numColumns) {
-      rows.push({ type: 'products', products: catProducts.slice(i, i + numColumns) });
+
+    // Sort products within each category: in-stock first, then out-of-stock
+    const sortedCatProducts = catProducts.sort((a, b) => {
+      // If both have same stock status, maintain original order
+      if (a.inStock === b.inStock) return 0;
+      // In-stock products come first (true > false)
+      return a.inStock ? -1 : 1;
+    });
+
+    for (let i = 0; i < sortedCatProducts.length; i += numColumns) {
+      rows.push({ type: 'products', products: sortedCatProducts.slice(i, i + numColumns) });
     }
   });
   return rows;
@@ -404,7 +413,7 @@ const VendorProductComponent: React.FC = () => {
   // Cart operation handlers
   const handleAddToCart = useCallback(
     (product: Product) => {
-      if (!isStoreActive || !hasAuth) return; // Disable when store is closed or no auth
+      if (!isStoreActive || !hasAuth || !product.inStock) return; // Disable when store is closed, no auth, or out of stock
 
       // If product has multiple variants, show variants modal
       if (product.numberOfVariants > 1) {
@@ -453,9 +462,12 @@ const VendorProductComponent: React.FC = () => {
   const handleIncrement = useCallback(
     (sku: string) => {
       if (!isStoreActive || !hasAuth) return; // Disable when store is closed or no auth
+      // Check if the product is in stock before incrementing
+      const product = products.find(p => p.sku === sku);
+      if (product && !product.inStock) return; // Disable if product is out of stock
       increment(cartId, sku, authData!.jwt);
     },
-    [isStoreActive, hasAuth, increment, cartId, authData]
+    [isStoreActive, hasAuth, increment, cartId, authData, products]
   );
 
   const handleDecrement = useCallback(
@@ -848,11 +860,12 @@ const VendorProductComponent: React.FC = () => {
                 onIncrement={() => handleIncrement(product.sku)}
                 onDecrement={() => handleDecrement(product.sku)}
                 quantity={getProductQuantity(product.sku)}
-                disabled={!isStoreActive}
+                disabled={!isStoreActive || !product.inStock}
                 numberOfVariants={product.numberOfVariants}
                 showVariantsCount={true}
                 onPress={() => handleProductPress(product)}
                 backgroundColor={getColor('background')}
+                inStock={product.inStock}
               />
             ))}
             {/* Fill empty columns if needed */}

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Icons } from '../../../assets';
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import useFeaturedProducts from '../../../hooks/useFeaturedProducts';
 import { ProductVariant } from '../../../services/productDetailsService';
 import useCartStore from '../../../store/cart/cartStore';
@@ -30,6 +31,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
   onAddToCart,
 }) => {
   const { getColor, getTypography } = useTheme();
+  const { authData } = useAuth();
   const [showVariantsModal, setShowVariantsModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
@@ -39,6 +41,16 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
     limit: 5,
     autoFetch: true,
   });
+
+  // Sort featured products: in-stock first, then out-of-stock
+  const sortedFeaturedProducts = useMemo(() => {
+    return [...featuredProducts].sort((a, b) => {
+      // If both have same stock status, maintain original order
+      if (a.inStock === b.inStock) return 0;
+      // In-stock products come first (true > false)
+      return a.inStock ? -1 : 1;
+    });
+  }, [featuredProducts]);
 
   const cartId = `vendor_${vendor.shopId}`;
   const cart = useCartStore(state => state.carts[cartId]);
@@ -94,13 +106,18 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
         rating={item.rating || 0}
         quantity={quantity}
         onAdd={() => !isStoreClosed && handleAddToCart(item)}
-        onIncrement={() => !isStoreClosed && increment(cartId, item.sku || item.id)}
-        onDecrement={() => !isStoreClosed && decrement(cartId, item.sku || item.id)}
+        onIncrement={() =>
+          !isStoreClosed && authData?.jwt && increment(cartId, item.sku || item.id, authData.jwt)
+        }
+        onDecrement={() =>
+          !isStoreClosed && authData?.jwt && decrement(cartId, item.sku || item.id, authData.jwt)
+        }
         size="xs"
-        disabled={isStoreClosed}
+        disabled={isStoreClosed || !item.inStock}
         numberOfVariants={item.numberOfVariants || 1}
         onPress={() => !isStoreClosed && onProductPress(item)}
         backgroundColor={getColor('card')}
+        inStock={item.inStock}
       />
     );
   };
@@ -114,7 +131,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       return <FeaturedProductsError error={error} onRetry={refetch} loading={loading} />;
     }
 
-    if (featuredProducts.length === 0) {
+    if (sortedFeaturedProducts.length === 0) {
       return (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No featured products available</Text>
@@ -124,7 +141,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
 
     return (
       <FlatList
-        data={featuredProducts}
+        data={sortedFeaturedProducts}
         renderItem={renderProductItem}
         keyExtractor={item => item.id}
         horizontal
