@@ -27,6 +27,7 @@ export type CartProduct = {
   mrp: number;
   image: string | number; // require() returns number, uri is string
   quantity: number;
+  veg: boolean;
 };
 
 export type Cart = {
@@ -223,6 +224,7 @@ const useCartStore = create<CartStore>()(
               mrp: apiProduct.productMRP,
               image: apiProduct.productDetails.productImageUrl,
               quantity: apiProduct.itemCount,
+              veg: true, // Default to vegetarian, can be updated when API provides this data
             };
           });
 

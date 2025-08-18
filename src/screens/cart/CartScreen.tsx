@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Icons, Images } from '../../assets';
+import { VegIcon } from '../../components/common';
 import { AddressSelectionModal } from '../../components/modules/Header/AddressSelectionModal';
 import AddButton from '../../components/modules/Product/AddButton';
 import ProductCard from '../../components/modules/Product/ProductCard';
@@ -42,7 +43,16 @@ interface SuggestedItem {
 }
 
 // CartItem: single cart item row
-const CartItem: React.FC<CartItemProps> = ({ name, price, quantity, tag, onInc, onDec, image }) => {
+const CartItem: React.FC<CartItemProps> = ({
+  name,
+  price,
+  quantity,
+  tag,
+  onInc,
+  onDec,
+  image,
+  veg,
+}) => {
   const { getColor, getTypography, theme } = useTheme();
 
   const itemStyles = StyleSheet.create({
@@ -142,7 +152,7 @@ const CartItem: React.FC<CartItemProps> = ({ name, price, quantity, tag, onInc, 
       <View style={{ flex: 1, minWidth: 120 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
           <Text style={itemStyles.cartItemName}>{name}</Text>
-          <View style={itemStyles.vegIcon} />
+          <VegIcon veg={veg} size="small" />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Text style={itemStyles.cartItemMRP}>₹79</Text>
@@ -420,6 +430,7 @@ const SuggestedItems: React.FC<{ items: SuggestedItem[]; onAdd: (idx: number) =>
             inStock: true,
             primarySKU: `suggested_${idx}`,
             tags: [],
+            veg: true, // Add missing veg property
           };
 
           return (
@@ -558,7 +569,7 @@ const CartScreen: React.FC = () => {
   const cartItems = cart ? Object.values(cart.products) : [];
   const vendor = vendors.find(v => v.shopId === cart?.cartId.replace('vendor_', ''));
   const appliedCoupon = cart ? getAppliedCoupon(cart.cartId) : undefined;
-
+  console.log('cartItems', cartItems);
   // Example suggested items (mock)
   const suggestedItems: SuggestedItem[] = [
     { name: 'Choco Lava Cake', price: 20, image: Images.bg1 },

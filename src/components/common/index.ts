@@ -13,3 +13,4 @@ export { default as PromoBanner } from './promo/PromoBanner';
 export { default as PromoImage } from './promo/PromoImage';
 export { default as SectionDivider } from './SectionDivider';
 export { ThemeText } from './theme/ThemeText';
+export { default as VegIcon } from './VegIcon';

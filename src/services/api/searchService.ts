@@ -7,18 +7,34 @@ export interface SearchProduct {
   productImage: string;
 }
 
+export interface SearchVendor {
+  vendorId: string;
+  vendorName: string;
+  vendorImage?: string;
+}
+
 export interface SearchResponse {
   products: SearchProduct[];
-  vendors?: any[]; // Add vendor type when available
+  vendors?: SearchVendor[];
 }
 
 export interface SearchParams {
   query: string;
 }
 
+interface ApiSearchItem {
+  productSKU?: string;
+  sku?: string;
+  productName?: string;
+  name?: string;
+  shopId?: string;
+  productImage?: string;
+  imageUrl?: string;
+}
+
 class SearchService {
-  private readonly baseURL = '/v3/search';
   private readonly authHeader = 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx';
+  private debounceTimeoutId: NodeJS.Timeout | null = null;
 
   /**
    * Search for products and vendors
@@ -26,14 +42,14 @@ class SearchService {
   async search(params: SearchParams): Promise<SearchResponse> {
     try {
       const { query } = params;
-      console.log('query', query);
+
       // Use the correct search endpoint with keyword parameter
       const response = await axiosInstance.get('v3/search', {
         params: {
           keyword: query,
         },
         headers: {
-          Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+          Authorization: this.authHeader,
         },
       });
 
@@ -41,7 +57,7 @@ class SearchService {
       const products = Array.isArray(response.data) ? response.data : [response.data];
 
       return {
-        products: products.map((item: any) => ({
+        products: products.map((item: ApiSearchItem) => ({
           productSKU: item.productSKU || item.sku || '',
           productName: item.productName || item.name || '',
           shopId: item.shopId || '',
@@ -50,25 +66,45 @@ class SearchService {
         vendors: [], // Add vendors when API supports it
       };
     } catch (error) {
-      console.error('Search API error:', error);
-      throw new Error('Failed to search products');
+      // Use proper error logging instead of console.error
+      throw new Error(
+        `Failed to search products: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
-   * Search with debouncing - returns a promise that resolves after delay
+   * True debounced search - cancels previous requests and waits for user to stop typing
    */
   debouncedSearch(params: SearchParams, delay: number = 500): Promise<SearchResponse> {
     return new Promise((resolve, reject) => {
-      setTimeout(async () => {
+      // Clear any existing timeout
+      if (this.debounceTimeoutId) {
+        clearTimeout(this.debounceTimeoutId);
+      }
+
+      // Set new timeout
+      this.debounceTimeoutId = setTimeout(async () => {
         try {
           const result = await this.search(params);
           resolve(result);
         } catch (error) {
           reject(error);
+        } finally {
+          this.debounceTimeoutId = null;
         }
       }, delay);
     });
+  }
+
+  /**
+   * Cancel any pending debounced search
+   */
+  cancelDebouncedSearch(): void {
+    if (this.debounceTimeoutId) {
+      clearTimeout(this.debounceTimeoutId);
+      this.debounceTimeoutId = null;
+    }
   }
 
   /**
