@@ -52,7 +52,7 @@ class SearchService {
           Authorization: this.authHeader,
         },
       });
-
+      console.log(response.data);
       // Transform the response to match our expected format
       const products = Array.isArray(response.data) ? response.data : [response.data];
 

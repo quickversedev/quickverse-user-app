@@ -1,6 +1,12 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSearchSuggestions } from '../../hooks/useSearchSuggestions';
 import { useTheme } from '../../theme/ThemeContext';
@@ -10,6 +16,7 @@ interface SearchHeaderProps {
   searchQuery: string;
   onSearchChange: (text: string) => void;
   onSuggestionPress?: (suggestion: string) => void;
+  onClearSearch?: () => void;
   placeholder?: string;
 }
 
@@ -17,12 +24,14 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
   searchQuery,
   onSearchChange,
   onSuggestionPress,
+  onClearSearch,
   placeholder = 'Search for vendors and products...',
 }) => {
   const { getColor, getTypography } = useTheme();
   const navigation = useNavigation();
   const searchInputRef = useRef<TextInput>(null);
-  const [isFocused, setIsFocused] = useState(false);
+  // Removed focus tracking; we control visibility with showSuggestions
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Use search suggestions hook
   const { suggestions, isLoading, clearSuggestions } = useSearchSuggestions(searchQuery);
@@ -46,23 +55,38 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
       onSuggestionPress(suggestion);
     }
     clearSuggestions();
-    setIsFocused(false);
+    setShowSuggestions(false);
   };
 
   const handleInputFocus = () => {
-    setIsFocused(true);
+    setShowSuggestions(true);
   };
 
   const handleInputBlur = () => {
     // Delay hiding suggestions to allow for touch events
     setTimeout(() => {
-      setIsFocused(false);
+      setShowSuggestions(false);
     }, 200);
   };
 
   const handleClearPress = () => {
     onSearchChange('');
+    if (onClearSearch) {
+      onClearSearch();
+    }
+    setShowSuggestions(false);
     searchInputRef.current?.focus();
+  };
+
+  const handleOutsidePress = () => {
+    setShowSuggestions(false);
+    searchInputRef.current?.blur();
+  };
+
+  // Ensure suggestions open while typing (especially after clearing)
+  const handleChangeText = (text: string) => {
+    onSearchChange(text);
+    setShowSuggestions(text.length > 0);
   };
 
   const styles = StyleSheet.create({
@@ -72,6 +96,10 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
       paddingHorizontal: 16,
       paddingTop: 20,
       backgroundColor: getColor('background'),
+      zIndex: 10000,
+      elevation: 16,
+      position: 'relative',
+      overflow: 'visible',
     },
     backButton: {
       marginRight: 12,
@@ -96,6 +124,7 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
       shadowRadius: 8,
       elevation: 6,
       zIndex: 1,
+      position: 'relative',
     },
     searchIcon: {
       marginRight: 8,
@@ -113,40 +142,42 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
   });
 
   return (
-    <View style={styles.header}>
-      <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-        <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
-      </TouchableOpacity>
-      <View style={styles.searchContainer}>
-        <MaterialCommunityIcons
-          name="magnify"
-          size={20}
-          color={getColor('subText')}
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={styles.searchInput}
-          placeholder={placeholder}
-          placeholderTextColor={getColor('subText')}
-          value={searchQuery}
-          onChangeText={onSearchChange}
-          onFocus={handleInputFocus}
-          onBlur={handleInputBlur}
-          ref={searchInputRef}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity style={styles.clearButton} onPress={handleClearPress}>
-            <MaterialCommunityIcons name="close-circle" size={20} color={getColor('subText')} />
-          </TouchableOpacity>
-        )}
+    <TouchableWithoutFeedback onPress={handleOutsidePress}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+          <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
+        </TouchableOpacity>
+        <View style={styles.searchContainer}>
+          <MaterialCommunityIcons
+            name="magnify"
+            size={20}
+            color={getColor('subText')}
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={placeholder}
+            placeholderTextColor={getColor('subText')}
+            value={searchQuery}
+            onChangeText={handleChangeText}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
+            ref={searchInputRef}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity style={styles.clearButton} onPress={handleClearPress}>
+              <MaterialCommunityIcons name="close-circle" size={20} color={getColor('subText')} />
+            </TouchableOpacity>
+          )}
+        </View>
         <SearchSuggestions
           suggestions={suggestions}
           isLoading={isLoading}
           onSuggestionPress={handleSuggestionPress}
-          visible={isFocused && searchQuery.length > 0 && suggestions.length > 0}
+          visible={showSuggestions && searchQuery.length > 0 && suggestions.length > 0}
         />
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 };
 

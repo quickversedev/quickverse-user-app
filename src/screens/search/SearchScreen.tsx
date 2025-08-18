@@ -31,20 +31,30 @@ const SearchScreen: React.FC = () => {
     hasSearched,
     setSearchQuery,
     searchOnSuggestionSelect,
+    clearSearch,
   } = useSearch();
 
   const { addSearch } = useRecentSearches();
 
   // Get vendors from vendor store
-  const { getFeaturedVendors } = useVendorStore();
+  const { getFeaturedVendors, searchVendorsByQuery } = useVendorStore();
 
   // Handle search input change - only update query, don't make API calls
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
   };
 
+  const handleClearSearch = () => {
+    clearSearch();
+  };
+
   // Get featured vendors from vendor store
   const featuredVendors = getFeaturedVendors().slice(0, 6); // Show up to 6 featured vendors
+
+  // Get nearby stores based on search query
+  const nearbyStores = searchQuery.trim()
+    ? searchVendorsByQuery(searchQuery).slice(0, 6) // Show up to 6 nearby stores
+    : [];
 
   const styles = StyleSheet.create({
     container: {
@@ -93,6 +103,7 @@ const SearchScreen: React.FC = () => {
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
         onSuggestionPress={handleSearchPress}
+        onClearSearch={handleClearSearch}
       />
 
       <ScrollView
@@ -108,6 +119,7 @@ const SearchScreen: React.FC = () => {
               <SearchResults
                 vendors={searchResults.vendors}
                 products={searchResults.products}
+                nearbyStores={nearbyStores}
                 onVendorPress={handleVendorPress}
                 onProductPress={handleProductPress}
                 onFavoritePress={handleFavoritePress}
@@ -119,24 +131,71 @@ const SearchScreen: React.FC = () => {
             {/* Recent Searches Section */}
             <RecentSearches onSearchPress={handleSearchPress} />
 
-            {/* Trending Vendors Section */}
-            <View style={styles.trendingVendorsGrid}>
-              <SectionDivider
-                text="Featured Vendors"
-                fontSize={14}
-                style={{ marginVertical: 16 }}
-              />
-              {featuredVendors.map(vendor => (
-                <View key={vendor.shopId} style={styles.vendorCardContainer}>
-                  <VendorCard
-                    vendor={vendor}
-                    onPress={handleVendorPress}
-                    onFavoritePress={handleFavoritePress}
-                    size="small"
-                  />
-                </View>
-              ))}
-            </View>
+            {/* Show nearby stores if user is typing */}
+            {searchQuery.trim() && nearbyStores.length > 0 && (
+              <View style={styles.trendingVendorsGrid}>
+                <SectionDivider text="Nearby Stores" fontSize={14} style={{ marginVertical: 16 }} />
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 16 }}
+                  style={{ marginVertical: 8 }}
+                >
+                  {/* Container for both rows */}
+                  <View>
+                    {/* First row - first half of stores */}
+                    <View style={{ flexDirection: 'row', marginBottom: 12 }}>
+                      {nearbyStores.slice(0, Math.ceil(nearbyStores.length / 2)).map(vendor => (
+                        <View key={vendor.shopId} style={{ width: 160, marginRight: 12 }}>
+                          <VendorCard
+                            vendor={vendor}
+                            onPress={handleVendorPress}
+                            onFavoritePress={handleFavoritePress}
+                            size="small"
+                          />
+                        </View>
+                      ))}
+                    </View>
+                    {/* Second row - second half of stores */}
+                    {nearbyStores.length > Math.ceil(nearbyStores.length / 2) && (
+                      <View style={{ flexDirection: 'row', marginBottom: 12 }}>
+                        {nearbyStores.slice(Math.ceil(nearbyStores.length / 2)).map(vendor => (
+                          <View key={vendor.shopId} style={{ width: 160, marginRight: 12 }}>
+                            <VendorCard
+                              vendor={vendor}
+                              onPress={handleVendorPress}
+                              onFavoritePress={handleFavoritePress}
+                              size="small"
+                            />
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Trending Vendors Section - only show if no search query or no nearby stores */}
+            {(!searchQuery.trim() || nearbyStores.length === 0) && (
+              <View style={styles.trendingVendorsGrid}>
+                <SectionDivider
+                  text="Featured Vendors"
+                  fontSize={14}
+                  style={{ marginVertical: 16 }}
+                />
+                {featuredVendors.map(vendor => (
+                  <View key={vendor.shopId} style={styles.vendorCardContainer}>
+                    <VendorCard
+                      vendor={vendor}
+                      onPress={handleVendorPress}
+                      onFavoritePress={handleFavoritePress}
+                      size="small"
+                    />
+                  </View>
+                ))}
+              </View>
+            )}
           </>
         )}
       </ScrollView>

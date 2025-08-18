@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
@@ -16,6 +16,7 @@ interface Product {
 interface SearchResultsProps {
   vendors: Vendor[];
   products: Product[];
+  nearbyStores: Vendor[];
   onVendorPress: (vendor: Vendor) => void;
   onProductPress: (product: Product) => void;
   onFavoritePress: (vendor: Vendor) => void;
@@ -24,12 +25,31 @@ interface SearchResultsProps {
 const SearchResults: React.FC<SearchResultsProps> = ({
   vendors,
   products,
+  nearbyStores,
   onVendorPress,
   onProductPress,
   onFavoritePress,
 }) => {
   const { getColor, getTypography } = useTheme();
   const { vendors: storeVendors } = useVendorStore();
+
+  // State for pagination
+  const [visibleProducts, setVisibleProducts] = React.useState(10);
+  const [showMoreVisible, setShowMoreVisible] = React.useState(true);
+
+  // Handle show more button press
+  const handleShowMore = () => {
+    const newVisibleCount = visibleProducts + 4;
+    setVisibleProducts(newVisibleCount);
+
+    // Hide show more button if all products are visible
+    if (newVisibleCount >= products.length) {
+      setShowMoreVisible(false);
+    }
+  };
+
+  // Get visible products
+  const displayedProducts = products.slice(0, visibleProducts);
 
   // Get vendor details from store using shopId
   const getVendorDetails = (shopId: string): Vendor | undefined => {
@@ -49,7 +69,55 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     },
     vendorCardContainer: {
       width: '32%',
-      margin: 16,
+      margin: 6,
+    },
+    // Horizontal scroll styles for nearby stores
+    horizontalScrollContainer: {
+      marginVertical: 8,
+    },
+    horizontalScrollContent: {
+      paddingHorizontal: 16,
+    },
+    horizontalRow: {
+      flexDirection: 'row',
+      marginBottom: 8,
+    },
+    horizontalVendorCard: {
+      width: 160,
+      marginRight: 8,
+    },
+    horizontalProductCard: {
+      width: 160,
+      marginRight: 8,
+    },
+    // Products grid styles for 2 columns
+    productsScrollContainer: {
+      maxHeight: 340, // Limit height for vertical scrolling
+    },
+    productsGridContainer: {
+      paddingBottom: 4,
+    },
+    productsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'flex-start',
+      gap: 4,
+    },
+    productGridItem: {
+      width: '48%', // 100% / 2 = 50% - 2% gap = 48% for 2 columns
+      marginBottom: 8,
+    },
+    showMoreButton: {
+      backgroundColor: 'transparent',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      alignSelf: 'center',
+      marginTop: 8,
+    },
+    showMoreText: {
+      color: getColor('primary'),
+      fontSize: getTypography('body'),
+      fontWeight: '600',
     },
     productsContainer: {
       flexDirection: 'row',
@@ -74,7 +142,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     },
   });
 
-  const hasResults = vendors.length > 0 || products.length > 0;
+  const hasResults = vendors.length > 0 || products.length > 0 || nearbyStores.length > 0;
 
   if (!hasResults) {
     return (
@@ -90,42 +158,173 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     <View style={styles.section}>
       {products.length > 0 && (
         <View style={styles.section}>
-          <SectionDivider text="Products" fontSize={14} style={{ marginVertical: 16 }} />
-          <View style={styles.productsContainer}>
-            {products.map(product => (
-              <View key={product.id} style={styles.productItemContainer}>
-                <ProductItemOnSearch product={product} onPress={onProductPress} />
+          <SectionDivider text="Products" fontSize={14} style={{ marginVertical: 8 }} />
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.productsGridContainer}
+            style={styles.productsScrollContainer}
+          >
+            <View style={styles.productsGrid}>
+              {displayedProducts.map(product => (
+                <View key={product.id} style={styles.productGridItem}>
+                  <ProductItemOnSearch product={product} onPress={onProductPress} />
+                </View>
+              ))}
+            </View>
+            {showMoreVisible && visibleProducts < products.length && (
+              <View style={styles.showMoreButton}>
+                <Text style={styles.showMoreText} onPress={handleShowMore}>
+                  Show More
+                </Text>
               </View>
-            ))}
-          </View>
+            )}
+          </ScrollView>
         </View>
       )}
 
       {vendors.length > 0 && (
         <View style={styles.section}>
-          <SectionDivider text="Vendors" fontSize={14} style={{ marginVertical: 16 }} />
-          <View style={styles.vendorsGrid}>
-            {vendors.map(vendor => {
-              // Get full vendor details from store
-              const vendorDetails = getVendorDetails(vendor.shopId);
+          <SectionDivider text="Vendors" fontSize={14} style={{ marginVertical: 8 }} />
+          {vendors.length <= 2 ? (
+            // Show 2 or fewer vendors horizontally
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScrollContent}
+              style={styles.horizontalScrollContainer}
+            >
+              {vendors.map(vendor => {
+                const vendorDetails = getVendorDetails(vendor.shopId);
+                if (!vendorDetails) return null;
 
-              // Only render if vendor details exist in store
-              if (!vendorDetails) {
-                return null;
-              }
+                return (
+                  <View key={vendor.shopId} style={styles.horizontalVendorCard}>
+                    <VendorCard
+                      vendor={vendorDetails}
+                      onPress={onVendorPress}
+                      onFavoritePress={onFavoritePress}
+                      size="small"
+                    />
+                  </View>
+                );
+              })}
+            </ScrollView>
+          ) : (
+            // Show more than 2 vendors in 2-row design
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScrollContent}
+              style={styles.horizontalScrollContainer}
+            >
+              {/* Container for both rows */}
+              <View>
+                {/* First row - first half of vendors */}
+                <View style={styles.horizontalRow}>
+                  {vendors.slice(0, Math.ceil(vendors.length / 2)).map(vendor => {
+                    const vendorDetails = getVendorDetails(vendor.shopId);
+                    if (!vendorDetails) return null;
 
-              return (
-                <View key={vendor.shopId} style={styles.vendorCardContainer}>
+                    return (
+                      <View key={vendor.shopId} style={styles.horizontalVendorCard}>
+                        <VendorCard
+                          vendor={vendorDetails}
+                          onPress={onVendorPress}
+                          onFavoritePress={onFavoritePress}
+                          size="small"
+                        />
+                      </View>
+                    );
+                  })}
+                </View>
+                {/* Second row - second half of vendors */}
+                {vendors.length > Math.ceil(vendors.length / 2) && (
+                  <View style={styles.horizontalRow}>
+                    {vendors.slice(Math.ceil(vendors.length / 2)).map(vendor => {
+                      const vendorDetails = getVendorDetails(vendor.shopId);
+                      if (!vendorDetails) return null;
+
+                      return (
+                        <View key={vendor.shopId} style={styles.horizontalVendorCard}>
+                          <VendorCard
+                            vendor={vendorDetails}
+                            onPress={onVendorPress}
+                            onFavoritePress={onFavoritePress}
+                            size="small"
+                          />
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          )}
+        </View>
+      )}
+      {nearbyStores.length > 0 && (
+        <View style={styles.section}>
+          <SectionDivider text="Nearby Stores" fontSize={14} style={{ marginVertical: 16 }} />
+          {nearbyStores.length <= 2 ? (
+            // Show 2 or fewer stores horizontally
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScrollContent}
+              style={styles.horizontalScrollContainer}
+            >
+              {nearbyStores.map(vendor => (
+                <View key={vendor.shopId} style={styles.horizontalVendorCard}>
                   <VendorCard
-                    vendor={vendorDetails}
+                    vendor={vendor}
                     onPress={onVendorPress}
                     onFavoritePress={onFavoritePress}
                     size="small"
                   />
                 </View>
-              );
-            })}
-          </View>
+              ))}
+            </ScrollView>
+          ) : (
+            // Show more than 2 stores in 2-row design
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScrollContent}
+              style={styles.horizontalScrollContainer}
+            >
+              {/* Container for both rows */}
+              <View>
+                {/* First row - first half of stores */}
+                <View style={styles.horizontalRow}>
+                  {nearbyStores.slice(0, Math.ceil(nearbyStores.length / 2)).map(vendor => (
+                    <View key={vendor.shopId} style={styles.horizontalVendorCard}>
+                      <VendorCard
+                        vendor={vendor}
+                        onPress={onVendorPress}
+                        onFavoritePress={onFavoritePress}
+                        size="small"
+                      />
+                    </View>
+                  ))}
+                </View>
+                {/* Second row - second half of stores */}
+                {nearbyStores.length > Math.ceil(nearbyStores.length / 2) && (
+                  <View style={styles.horizontalRow}>
+                    {nearbyStores.slice(Math.ceil(nearbyStores.length / 2)).map(vendor => (
+                      <View key={vendor.shopId} style={styles.horizontalVendorCard}>
+                        <VendorCard
+                          vendor={vendor}
+                          onPress={onVendorPress}
+                          onFavoritePress={onFavoritePress}
+                          size="small"
+                        />
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          )}
         </View>
       )}
     </View>

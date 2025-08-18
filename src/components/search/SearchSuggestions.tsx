@@ -29,19 +29,21 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
   const styles = StyleSheet.create({
     container: {
       position: 'absolute',
-      top: '100%',
-      left: 0,
-      right: 0,
+      top: 60, // Position below the header
+      left: 16,
+      right: 16,
       backgroundColor: getColor('background'),
       borderRadius: 8,
       marginTop: 4,
-      elevation: 8,
-      shadowColor: getColor('shadow'),
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      zIndex: 1000,
+      elevation: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+      zIndex: 9999,
       maxHeight: 300,
+      borderWidth: 1,
+      borderColor: getColor('border'),
     },
     suggestionItem: {
       flexDirection: 'row',
@@ -50,30 +52,33 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
       paddingVertical: 12,
       borderBottomWidth: 1,
       borderBottomColor: getColor('border'),
+      backgroundColor: getColor('background'),
     },
     suggestionText: {
-      ...getTypography('body2'),
+      fontSize: getTypography('body'),
       color: getColor('text'),
       flex: 1,
       marginLeft: 12,
+      fontWeight: '500',
     },
     iconContainer: {
       width: 20,
       alignItems: 'center',
     },
     icon: {
-      fontSize: 16,
+      fontSize: 18,
       color: getColor('primary'),
     },
     recentIcon: {
-      color: getColor('secondary'),
+      color: getColor('primary'),
     },
     smartIcon: {
-      color: getColor('accent'),
+      color: getColor('primary'),
     },
     loadingContainer: {
       padding: 16,
       alignItems: 'center',
+      backgroundColor: getColor('background'),
     },
   });
 
@@ -87,7 +92,7 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
     >
       <View style={styles.iconContainer}>
         <MaterialCommunityIcons
-          name={item.icon as any}
+          name={item.icon as string}
           style={[
             styles.icon,
             item.type === 'recent' && styles.recentIcon,

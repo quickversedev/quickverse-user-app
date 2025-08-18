@@ -232,6 +232,21 @@ const useVendorStore = create<VendorStore>((set, get) => ({
     const vendor = vendors.find(v => v.shopId === shopId);
     return vendor ? vendor.name : undefined;
   },
+
+  // New method: search vendors by name and category
+  searchVendorsByQuery: (query: string) => {
+    const { vendors } = get();
+    if (!query.trim()) return [];
+
+    const searchQuery = query.toLowerCase().trim();
+    return vendors.filter(vendor => {
+      const nameMatch = vendor.name.toLowerCase().includes(searchQuery);
+      const categoryMatch = vendor.category.toLowerCase().includes(searchQuery);
+      const descriptionMatch = vendor.description.toLowerCase().includes(searchQuery);
+
+      return nameMatch || categoryMatch || descriptionMatch;
+    });
+  },
 }));
 
 export default useVendorStore;
