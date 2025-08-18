@@ -174,7 +174,7 @@ const FloatingCartsStack: React.FC = () => {
                   itemCount={Object.values(cart.products).reduce((sum, p) => sum + p.quantity, 0)}
                   shopId={cart.cartId.replace('vendor_', '')}
                   cartId={cart.cartId}
-                  isExpanded={expanded}
+                  isExpanded={expanded || allCarts.length === 1}
                   onExpand={() => setExpanded(true)}
                 />
               </Animated.View>
