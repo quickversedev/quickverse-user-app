@@ -112,6 +112,7 @@ const useFeaturedProductsStore = create<FeaturedProductsStore>((set, get) => ({
           inStock: mockProduct.inStock,
           currentStock: mockProduct.currentStock,
           tags: mockProduct.tags,
+          veg: mockProduct.veg,
         }));
 
         const cachedData: CachedFeaturedProducts = {

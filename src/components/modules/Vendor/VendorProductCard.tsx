@@ -116,8 +116,9 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       inStock: item.inStock || true,
       primarySKU: item.primarySKU || item.sku || item.id,
       tags: item.tags || [],
+      veg: item.veg || true,
     };
-
+    console.log('item', item);
     return (
       <ProductCard
         product={mockProduct}

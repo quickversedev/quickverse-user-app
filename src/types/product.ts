@@ -6,6 +6,7 @@ export interface Product {
   image: any; // React Native ImageSourcePropType
   rating: number;
   discount: number;
+  veg: boolean;
   quantity: number;
   sku?: string;
   shopId?: string;
