@@ -606,6 +606,13 @@ const CartScreen: React.FC = () => {
     }
   }, [vendor?.shopId, checkAndFetchOffers]);
 
+  // Auto-close cart screen when cart becomes empty
+  React.useEffect(() => {
+    if (cartItems.length === 0) {
+      navigation.goBack();
+    }
+  }, [cartItems.length, navigation]);
+
   // Get available coupons for current vendor
   const availableCoupons = getAvailableCoupons(vendor?.shopId || '');
 

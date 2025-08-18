@@ -36,16 +36,14 @@ const AppBootstrap: React.FC = () => {
     setBootError(null);
     try {
       const result = await getPermissionAndLocation();
-      console.log('bootstrap result', result);
+
       setLocalPermissionData(result as PermissionAndLocation);
       setPermissionDataInAuth(result as PermissionAndLocation);
     } catch (error) {
-      console.log('bootstrap error', error);
       setBootError(
         error instanceof Error ? error.message : 'Failed to initialize location permissions'
       );
     } finally {
-      console.log('bootstrap finally');
       setBootLoading(false);
     }
   };

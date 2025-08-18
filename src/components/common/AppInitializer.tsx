@@ -238,10 +238,8 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
         ? (async () => {
             if (!cachedAddresses || cachedAddresses.length === 0) {
               // MMKV storage is empty, wait for API call to resolve
-              console.log('AppInitializer initializeApp fetchAddresses wait');
               await fetchAddresses();
             } else {
-              console.log('AppInitializer initializeApp fetchAddresses non-blocking');
               fetchAddresses().catch(() => {
                 // Silently handle API errors for non-blocking calls
               });

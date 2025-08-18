@@ -118,7 +118,6 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       tags: item.tags || [],
       veg: item.veg || true,
     };
-    console.log('item', item);
     return (
       <ProductCard
         product={mockProduct}

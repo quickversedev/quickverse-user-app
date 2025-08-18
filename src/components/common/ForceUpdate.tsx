@@ -157,7 +157,6 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Loading state
   if (loading || isChecking) {
-    console.log('loading ::::::', loading, isChecking);
     return (
       <View style={getStyles(theme).loadingContainer}>
         <Image style={getStyles(theme).loadingLogo} source={Images.logoQv} />
