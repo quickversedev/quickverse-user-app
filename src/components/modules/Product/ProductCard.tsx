@@ -1,5 +1,14 @@
 import React from 'react';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Dimensions,
+  Image,
+  ImageSourcePropType,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Product } from '../../../assets/mock/products';
 import { useTheme } from '../../../theme/ThemeContext';
 import { BadgeTag } from '../../common';
 import RatingBadge from '../../common/badges/RatingBadge';
@@ -12,46 +21,45 @@ const CARD_WIDTH = ((SCREEN_WIDTH - CARD_MARGIN * 4) / 3) * 0.92;
 const EXTRA_SMALL_CARD_WIDTH = ((SCREEN_WIDTH - CARD_MARGIN * 6) / 4) * 0.9;
 
 interface ProductCardProps {
-  image: number;
-  name: string;
-  price: number;
-  mrp: number;
-  rating: number;
-  discount: number;
+  product: Product;
   quantity: number;
   onAdd: () => void;
   onIncrement: () => void;
   onDecrement: () => void;
   size?: 'xs' | 'small' | 'regular';
   disabled?: boolean;
-  numberOfVariants?: number;
   showVariantsCount?: boolean;
   onPress?: () => void;
   backgroundColor?: string;
-  productId?: string; // Add productId prop
-  inStock?: boolean; // Add inStock prop
+  rating?: number; // Optional rating prop
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
-  image,
-  name,
-  price,
-  mrp,
-  rating,
-  discount,
+  product,
   quantity,
   onAdd,
   onIncrement,
   onDecrement,
   size = 'regular',
   disabled = false,
-  numberOfVariants = 1,
   showVariantsCount = false,
   onPress,
   backgroundColor,
-  inStock = true, // Default to true for backward compatibility
+  rating = 0, // Default rating
 }) => {
+  // Destructure product properties
+  const {
+    imageUrl: image,
+    name,
+    sellingPrice: price,
+    mrp,
+    discount,
+    numberOfVariants,
+    inStock,
+    veg,
+  } = product;
   const { getColor, getTypography, theme } = useTheme();
+  const imageSource: ImageSourcePropType = typeof image === 'string' ? { uri: image } : image;
 
   const styles = StyleSheet.create({
     card: {
@@ -70,7 +78,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     },
     imageContainer: {
       width: '100%',
-      aspectRatio: 1,
+      aspectRatio: 7 / 5,
       borderRadius: theme.borderRadius.sm,
       overflow: 'hidden',
       marginBottom: size === 'xs' ? 4 : 8,
@@ -96,14 +104,47 @@ const ProductCard: React.FC<ProductCardProps> = ({
       zIndex: 2,
     },
 
+    nameContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      marginHorizontal: size === 'xs' ? 2 : 4,
+      marginBottom: size === 'xs' ? 2 : 4,
+    },
+    vegIcon: {
+      width: size === 'xs' ? 12 : 14,
+      height: size === 'xs' ? 12 : 14,
+      borderWidth: 1,
+      borderColor: veg ? '#4CAF50' : '#FF6B6B',
+      backgroundColor: 'transparent',
+      marginRight: size === 'xs' ? 4 : 6,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    vegCircle: {
+      width: size === 'xs' ? 6 : 8,
+      height: size === 'xs' ? 6 : 8,
+      borderRadius: size === 'xs' ? 3 : 4,
+      backgroundColor: '#4CAF50',
+    },
+    nonVegTriangle: {
+      width: 0,
+      height: 0,
+      backgroundColor: 'transparent',
+      borderStyle: 'solid',
+      borderLeftWidth: size === 'xs' ? 3 : 4,
+      borderRightWidth: size === 'xs' ? 3 : 4,
+      borderBottomWidth: size === 'xs' ? 6 : 8,
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+      borderBottomColor: '#FF6B6B',
+    },
     name: {
       color: getColor('text'),
       fontSize: size === 'xs' ? getTypography('caption') - 2 : getTypography('caption'),
       fontWeight: 'bold',
-      marginBottom: size === 'xs' ? 2 : 4,
-      alignSelf: 'flex-start',
-      marginHorizontal: size === 'xs' ? 2 : 4,
-      maxWidth: size === 'xs' ? 100 : 140,
+      flex: 1,
+      maxWidth: size === 'xs' ? 90 : 130,
     },
     priceRow: {
       flexDirection: 'row',
@@ -160,14 +201,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
       opacity: 0.5,
     },
   });
-
   const cardContent = (
     <View style={styles.card}>
       {disabled && <View style={styles.disabledOverlay} />}
       {!inStock && <View style={styles.outOfStockOverlay} />}
       <View style={styles.imageContainer}>
         <Image
-          source={image}
+          source={imageSource}
           style={[styles.image, !inStock && styles.grayedOutImage]}
           resizeMode="cover"
         />
@@ -206,11 +246,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
           />
         )}
       </View>
-      <Text style={[styles.name, !inStock && { opacity: 0.6 }]} numberOfLines={1}>
-        {name}
-      </Text>
+      <View style={styles.nameContainer}>
+        <View style={styles.vegIcon}>
+          {veg ? <View style={styles.vegCircle} /> : <View style={styles.nonVegTriangle} />}
+        </View>
+        <Text style={[styles.name, !inStock && { opacity: 0.6 }]} numberOfLines={2}>
+          {name}
+        </Text>
+      </View>
       <View style={styles.priceRow}>
-        <Text style={[styles.mrp, !inStock && { opacity: 0.6 }]}>₹{mrp}</Text>
+        {mrp !== price && <Text style={[styles.mrp, !inStock && { opacity: 0.6 }]}>₹{mrp}</Text>}
         <Text style={[styles.price, !inStock && { opacity: 0.6 }]}>₹{price}</Text>
       </View>
     </View>

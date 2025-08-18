@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Dimensions, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 
 const { width } = Dimensions.get('window');
@@ -37,6 +37,11 @@ const VendorProductSkeleton: React.FC<VendorProductSkeletonProps> = ({ showVendo
     container: {
       flex: 1,
       backgroundColor: getColor('background'),
+      paddingTop: Platform.select({
+        ios: 0,
+        android: StatusBar.currentHeight || 0,
+        default: 0,
+      }),
     },
     header: {
       flexDirection: 'row',

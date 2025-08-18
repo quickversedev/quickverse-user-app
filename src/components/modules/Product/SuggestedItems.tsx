@@ -68,22 +68,43 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
     },
   });
 
-  const renderItem = ({ item }: { item: SuggestedItem }) => (
-    <ProductCard
-      image={item.image}
-      name={item.name}
-      price={item.price}
-      mrp={item.mrp}
-      rating={item.rating || 0}
-      quantity={item.quantity}
-      onAdd={() => onAdd(item)}
-      onIncrement={() => onIncrement(item)}
-      onDecrement={() => onDecrement(item)}
-      size="xs"
-      onPress={() => onItemPress(item)}
-      backgroundColor={getColor('card')}
-    />
-  );
+  const renderItem = ({ item }: { item: SuggestedItem }) => {
+    // Create a mock product object from SuggestedItem
+    const mockProduct = {
+      sku: item.id,
+      shopId: 'suggested_shop',
+      name: item.name,
+      mrp: item.mrp,
+      sellingPrice: item.price,
+      gst: 0,
+      category: 'suggested',
+      division: 'suggested',
+      subDivision: 'suggested',
+      brand: 'suggested',
+      description: '',
+      imageUrl: item.image,
+      discount: 0,
+      numberOfVariants: 1,
+      currentStock: 10,
+      inStock: true,
+      primarySKU: item.id,
+      tags: [],
+    };
+
+    return (
+      <ProductCard
+        product={mockProduct}
+        quantity={item.quantity}
+        onAdd={() => onAdd(item)}
+        onIncrement={() => onIncrement(item)}
+        onDecrement={() => onDecrement(item)}
+        size="xs"
+        onPress={() => onItemPress(item)}
+        backgroundColor={getColor('card')}
+        rating={item.rating || 0}
+      />
+    );
+  };
 
   return (
     <View style={styles.container}>

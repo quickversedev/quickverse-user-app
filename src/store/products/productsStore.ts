@@ -35,7 +35,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
   offset: 0,
   limit: 10,
   total: 0,
-  shopId: '4512',
+  shopId: '',
   hasMore: true,
 
   // Categories initial state
@@ -52,15 +52,15 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       const shopId = get().shopId;
 
       // Use the products service to fetch products
-      const response = await productsService.fetchProducts({
+      const response = await productsService.fetchAllProducts({
         shopId,
-        offset: currentOffset,
+
         limit: currentLimit,
       });
-
-      const newProducts = response.products;
-      const total = response.total;
-
+      // Add null checks and fallbacks to prevent "length of undefined" errors
+      // Handle case where response is directly an array of products
+      const newProducts = Array.isArray(response) ? response : response?.products || [];
+      const total = response?.total || newProducts.length;
       set(state => ({
         products: append ? [...state.products, ...newProducts] : newProducts,
         offset: currentOffset + newProducts.length,
@@ -126,13 +126,15 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
   // Selector: Get products by category from the current store
   // NOTE: API's category.id maps to product.division; so categoryId should be compared with product.division
   getProductsByCategory: (categoryId: string) => {
-    return get().products.filter(product => product.division === categoryId);
+    const products = get().products || [];
+    return products.filter(product => product?.division === categoryId);
   },
 
   // Selector: Get best seller products (tagName === 'BestSeller')
   getBestSellers: () => {
-    return get().products.filter(product => {
-      if (Array.isArray(product.tags)) {
+    const products = get().products || [];
+    return products.filter(product => {
+      if (product?.tags && Array.isArray(product.tags)) {
         return product.tags.some((tag: { tagName: string }) => tag.tagName === 'BestSeller');
       }
       return false;

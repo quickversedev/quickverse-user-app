@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import productsService from '../../services/productsService';
+import { Product as MockProduct } from '../../assets/mock/products';
+import productsService, { ProductsApiResponse } from '../../services/productsService';
 import { Product } from '../../types/product';
 
 interface CachedFeaturedProducts {
@@ -74,20 +75,25 @@ const useFeaturedProductsStore = create<FeaturedProductsStore>((set, get) => ({
       });
 
       // Use productsService to fetch all products with bestSeller filter
-      const fetchPromise = productsService.fetchAllProducts({
+      const fetchPromise = productsService.fetchProducts({
         shopId,
-        filters: { bestSeller: true },
+        filters: { tag: 'BestSeller' },
         limit: 1000, // Fetch all best sellers, then limit in store
       });
+      const response = (await Promise.race([fetchPromise, timeoutPromise])) as
+        | ProductsApiResponse
+        | MockProduct[];
+      if (response) {
+        // Normalize to an array of products whether the API returned an object or array
+        const productsSource: MockProduct[] = Array.isArray(response)
+          ? (response as MockProduct[])
+          : (response as ProductsApiResponse).products ?? [];
 
-      const response = await Promise.race([fetchPromise, timeoutPromise]);
-
-      if (response && response.products) {
         // Apply limit to the fetched products
-        const limitedProducts = response.products.slice(0, limit);
+        const limitedProducts = productsSource.slice(0, limit);
 
         // Convert mock Product type to expected Product type
-        const convertedProducts: Product[] = limitedProducts.map(mockProduct => ({
+        const convertedProducts: Product[] = limitedProducts.map((mockProduct: MockProduct) => ({
           id: mockProduct.sku,
           sku: mockProduct.sku,
           shopId: mockProduct.shopId,

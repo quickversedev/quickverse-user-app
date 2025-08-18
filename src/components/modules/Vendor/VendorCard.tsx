@@ -1,5 +1,13 @@
 import React from 'react';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Dimensions,
+  Image,
+  ImageSourcePropType,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Icons } from '../../../assets';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
@@ -23,8 +31,8 @@ const VendorCard: React.FC<VendorCardProps> = ({
   vendor,
   onPress,
   onFavoritePress,
-  isFavorite = false,
-  favoriteColor = '#FF6B35',
+  isFavorite: _isFavorite = false,
+  favoriteColor: _favoriteColor = '#FF6B35',
   size = 'medium',
   disabled = false,
 }) => {
@@ -127,6 +135,22 @@ const VendorCard: React.FC<VendorCardProps> = ({
     },
   });
 
+  const getCleanUri = (input?: string): string | undefined => {
+    if (!input || typeof input !== 'string') return undefined;
+    const cleaned = input
+      .trim()
+      .replace(/^@/, '')
+      .replace(/^['"]|['"]$/g, '');
+    return cleaned || undefined;
+  };
+
+  const bannerUri = getCleanUri(vendor.banner as string);
+  const logoUri = getCleanUri(vendor.logo as string);
+  const imageSource: ImageSourcePropType | undefined = bannerUri
+    ? { uri: bannerUri }
+    : logoUri
+    ? { uri: logoUri }
+    : undefined;
   return (
     <TouchableOpacity
       style={[styles.vendorCard, disabled && { opacity: 0.4 }]}
@@ -138,7 +162,7 @@ const VendorCard: React.FC<VendorCardProps> = ({
             <Text style={styles.closedText}>Store Closed</Text>
           </View>
         )}
-        <Image source={{ uri: vendor.banner || vendor.logo }} style={styles.vendorImage} />
+        {imageSource && <Image source={imageSource} style={styles.vendorImage} />}
         <TouchableOpacity style={styles.favoriteButton} onPress={() => onFavoritePress?.(vendor)}>
           <Image source={Icons.heart} style={{ width: 20, height: 20 }} />
         </TouchableOpacity>

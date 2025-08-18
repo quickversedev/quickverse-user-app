@@ -1,3 +1,5 @@
+import { ImageSourcePropType } from 'react-native';
+
 export interface VendorAddress {
   address: string;
   city: string;
@@ -19,7 +21,7 @@ export interface Vendor {
   shopId: string;
   name: string;
   logo: string;
-  banner: string;
+  banner: ImageSourcePropType;
   owner: string;
   phone: string;
   openingTime: string;

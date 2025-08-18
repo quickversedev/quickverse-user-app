@@ -399,25 +399,44 @@ const SuggestedItems: React.FC<{ items: SuggestedItem[]; onAdd: (idx: number) =>
     <View style={suggestedStyles.suggestedBox}>
       <Text style={suggestedStyles.suggestedTitle}>Add a little somethin&apos;</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {items.map((item, idx) => (
-          <ProductCard
-            key={idx}
-            image={item.image}
-            name={item.name}
-            price={item.price}
-            mrp={item.price + 10} // Mock MRP
-            rating={4.5}
-            discount={0}
-            quantity={0}
-            onAdd={() => onAdd(idx)}
-            onIncrement={() => onAdd(idx)}
-            onDecrement={() => {}}
-            size="xs"
-            numberOfVariants={1}
-            showVariantsCount={false}
-            backgroundColor={getColor('card')}
-          />
-        ))}
+        {items.map((item, idx) => {
+          // Create a mock product object from SuggestedItem
+          const mockProduct = {
+            sku: `suggested_${idx}`,
+            shopId: 'mock_shop',
+            name: item.name,
+            mrp: item.price + 10,
+            sellingPrice: item.price,
+            gst: 0,
+            category: 'suggested',
+            division: 'suggested',
+            subDivision: 'suggested',
+            brand: 'suggested',
+            description: '',
+            imageUrl: item.image,
+            discount: 0,
+            numberOfVariants: 1,
+            currentStock: 10,
+            inStock: true,
+            primarySKU: `suggested_${idx}`,
+            tags: [],
+          };
+
+          return (
+            <ProductCard
+              key={idx}
+              product={mockProduct}
+              quantity={0}
+              onAdd={() => onAdd(idx)}
+              onIncrement={() => onAdd(idx)}
+              onDecrement={() => {}}
+              size="xs"
+              showVariantsCount={false}
+              backgroundColor={getColor('card')}
+              rating={4.5}
+            />
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -549,15 +568,15 @@ const CartScreen: React.FC = () => {
 
   const handleClearCart = () => {
     if (cart && authData?.jwt) {
-      clearCart(cart.cartId, authData.jwt);
+      clearCart(cart.cartId, authData.jwt, authData.phone || '');
       navigation.goBack();
     }
   };
   const handleInc = (sku: string) => {
-    if (cart && authData?.jwt) increment(cart.cartId, sku, authData.jwt);
+    if (cart && authData?.jwt) increment(cart.cartId, sku, authData.jwt, authData.phone || '');
   };
   const handleDec = (sku: string) => {
-    if (cart && authData?.jwt) decrement(cart.cartId, sku, authData.jwt);
+    if (cart && authData?.jwt) decrement(cart.cartId, sku, authData.jwt, authData.phone || '');
   };
   const handleAddSuggested = (_idx: number) => {};
   const handleCheckout = () => {

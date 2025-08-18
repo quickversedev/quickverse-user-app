@@ -169,7 +169,8 @@ class CartApiService {
   async addToCart(
     shopId: string,
     productSku: string,
-    jwtToken: string
+    jwtToken: string,
+    phone: string
   ): Promise<TransformedCartData> {
     try {
       // Method 1: Using apiCall wrapper (recommended for error handling)
@@ -183,6 +184,7 @@ class CartApiService {
           {
             headers: {
               SessionKey: jwtToken,
+              phone,
             },
           }
         )
@@ -202,7 +204,8 @@ class CartApiService {
     shopId: string,
     productSku: string,
     removeCompletely: boolean = true,
-    jwtToken: string
+    jwtToken: string,
+    phone: string
   ): Promise<TransformedCartData> {
     try {
       // Method 2: Direct axiosInstance usage
@@ -214,6 +217,7 @@ class CartApiService {
         },
         headers: {
           SessionKey: jwtToken,
+          phone,
         },
       });
 
@@ -227,15 +231,16 @@ class CartApiService {
   /**
    * Clear entire cart - Method 3: Using withHeaders helper
    */
-  async clearCart(shopId: string, jwtToken: string): Promise<TransformedCartData> {
+  async clearCart(shopId: string, jwtToken: string, phone: string): Promise<TransformedCartData> {
     try {
       // Method 3: Using withHeaders helper
       const response = await axiosInstance.delete<CartApiResponse>('v2/clearCart', {
         params: { shopId },
-        ...withHeaders({ SessionKey: jwtToken }),
+        ...withHeaders({ SessionKey: jwtToken, phone }),
       });
 
-      return this.transformCartResponse(response.data);
+      // return this.transformCartResponse(response.data);
+      // return response.data/
     } catch (error) {
       console.error('Clear cart error:', error);
       throw error;

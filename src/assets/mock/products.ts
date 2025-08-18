@@ -1,4 +1,5 @@
 // mock/products.ts
+import { ImageSourcePropType } from 'react-native';
 import { Category } from '../../types/product';
 const categories = [
   'scoops',
@@ -60,7 +61,7 @@ export type Product = {
   subDivision: string;
   brand: string;
   description: string;
-  imageUrl: string;
+  imageUrl: ImageSourcePropType;
   discount: number;
   numberOfVariants: number;
   currentStock: number;
@@ -69,6 +70,7 @@ export type Product = {
   tags: Array<{
     tagName: string;
   }>;
+  veg: boolean;
 };
 
 const generateProducts = (shopId: string, count: number, startIndex: number = 0): Product[] => {

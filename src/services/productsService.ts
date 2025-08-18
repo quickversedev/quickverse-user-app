@@ -2,7 +2,7 @@ import { Product } from '../assets/mock/products';
 import axiosInstance, { apiCall } from '../config/api/axios.config';
 
 // Mock data toggle
-const USE_PRODUCTS_MOCKS = true; // Set to false for real API
+const USE_PRODUCTS_MOCKS = false; // Set to false for real API
 
 // Mock products data (imported from existing mock)
 import { mockProducts } from '../assets/mock/products';
@@ -60,7 +60,7 @@ class ProductsService {
     shopId,
     filters = {},
     offset = 0,
-    limit = 10,
+    limit = 1000,
   }: FetchProductsParams): Promise<ProductsApiResponse> {
     try {
       if (USE_PRODUCTS_MOCKS) {
@@ -112,12 +112,35 @@ class ProductsService {
 
       // Real API call
       const response = await apiCall(
-        axiosInstance.post<ProductsApiResponse>(`/v3/products?shopId=${shopId}`, {
-          filters,
-          offset: String(offset),
-          limit: String(limit),
-        })
+        axiosInstance.post<ProductsApiResponse>(
+          `/v3/products?shopId=${shopId}`,
+          {
+            filters,
+            offset: String(offset),
+            limit: String(limit),
+          },
+          {
+            headers: {
+              Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            },
+          }
+        )
       );
+
+      // Ensure response has the expected structure
+      if (!response || typeof response !== 'object') {
+        throw new Error('Invalid response format from API');
+      }
+
+      // Ensure products array exists
+      if (!Array.isArray(response.products)) {
+        response.products = [];
+      }
+
+      // Ensure total is a number
+      if (typeof response.total !== 'number') {
+        response.total = response.products.length;
+      }
 
       return response;
     } catch (error) {
@@ -145,7 +168,6 @@ class ProductsService {
       let currentOffset = 0;
       let total = 0;
       let hasMore = true;
-
       while (hasMore) {
         const response = await this.fetchProducts({
           shopId,
@@ -153,13 +175,13 @@ class ProductsService {
           offset: currentOffset,
           limit,
         });
-
-        allProducts = [...allProducts, ...response.products];
+        const batch: Product[] = response as unknown as Product[];
+        allProducts = [...allProducts, ...batch];
         total = response.total;
-        currentOffset += response.products.length;
+        currentOffset += batch.length;
 
         // Check if we've reached the end
-        if (response.products.length < limit) {
+        if (batch.length < limit) {
           hasMore = false;
         }
       }

@@ -12,6 +12,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import { RootStackParamList } from '../../../routes/AppStack';
 import useCartStore from '../../../store/cart/cartStore';
 import useVendorStore from '../../../store/vendorStore';
@@ -47,6 +48,7 @@ const CartBar: React.FC<CartBarProps> = ({
   const vendorName = getVendorNameById(shopId) || shopId;
   const { navigate } = useNavigation<StackNavigationProp<RootStackParamList>>();
   const clearCart = useCartStore(state => state.clearCart);
+  const { authData } = useAuth();
 
   // Dynamic styles using theme values
   const dynamicStyles = useMemo(
@@ -122,7 +124,9 @@ const CartBar: React.FC<CartBarProps> = ({
   ).current;
 
   const handleRemovePress = () => {
-    clearCart(cartId);
+    const phone = authData?.phone || '';
+    const jwt = authData?.jwt || '';
+    clearCart(cartId, jwt, phone);
     // Reset position
     Animated.spring(translateX, {
       toValue: 0,

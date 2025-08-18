@@ -154,7 +154,8 @@ const VendorProductListComponent: React.FC<VendorProductListProps> = ({
           mrp: product.mrp,
           image: product.image,
         },
-        authData!.jwt
+        authData!.jwt,
+        authData!.phone
       );
     },
     [hasAuth, addToCart, authData]

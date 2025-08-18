@@ -96,28 +96,49 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
     const quantity = cart?.products[item.sku || item.id]?.quantity || 0;
     const isStoreClosed = !vendor.storeActive;
 
+    // Convert Product from types/product to mock Product format
+    const mockProduct = {
+      sku: item.sku || item.id,
+      shopId: item.shopId || vendor.shopId,
+      name: item.name,
+      mrp: item.mrp,
+      sellingPrice: item.price,
+      gst: item.gst || 0,
+      category: item.category || '',
+      division: item.division || '',
+      subDivision: item.subDivision || '',
+      brand: item.brand || '',
+      description: item.description || '',
+      imageUrl: item.imageUrl || item.image,
+      discount: item.discount,
+      numberOfVariants: item.numberOfVariants || 1,
+      currentStock: item.currentStock || 0,
+      inStock: item.inStock || true,
+      primarySKU: item.primarySKU || item.sku || item.id,
+      tags: item.tags || [],
+    };
+
     return (
       <ProductCard
-        image={item.image}
-        name={item.name}
-        price={item.price}
-        mrp={item.mrp}
-        discount={item.discount}
-        rating={item.rating || 0}
+        product={mockProduct}
         quantity={quantity}
         onAdd={() => !isStoreClosed && handleAddToCart(item)}
         onIncrement={() =>
-          !isStoreClosed && authData?.jwt && increment(cartId, item.sku || item.id, authData.jwt)
+          !isStoreClosed &&
+          authData?.jwt &&
+          increment(cartId, item.sku || item.id, authData.jwt, authData.phone)
         }
         onDecrement={() =>
-          !isStoreClosed && authData?.jwt && decrement(cartId, item.sku || item.id, authData.jwt)
+          !isStoreClosed &&
+          authData?.jwt &&
+          decrement(cartId, item.sku || item.id, authData.jwt, authData.phone)
         }
         size="xs"
         disabled={isStoreClosed || !item.inStock}
-        numberOfVariants={item.numberOfVariants || 1}
+        showVariantsCount={false}
         onPress={() => !isStoreClosed && onProductPress(item)}
         backgroundColor={getColor('card')}
-        inStock={item.inStock}
+        rating={item.rating || 0}
       />
     );
   };

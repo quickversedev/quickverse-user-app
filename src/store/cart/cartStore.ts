@@ -28,13 +28,14 @@ interface CartStore {
   addToCart: (
     cartId: string,
     product: Omit<CartProduct, 'quantity'>,
-    jwtToken: string
+    jwtToken: string,
+    phone: string
   ) => Promise<void>;
-  removeFromCart: (cartId: string, sku: string, jwtToken: string) => Promise<void>;
-  increment: (cartId: string, sku: string, jwtToken: string) => Promise<void>;
-  decrement: (cartId: string, sku: string, jwtToken: string) => Promise<void>;
+  removeFromCart: (cartId: string, sku: string, jwtToken: string, phone: string) => Promise<void>;
+  increment: (cartId: string, sku: string, jwtToken: string, phone: string) => Promise<void>;
+  decrement: (cartId: string, sku: string, jwtToken: string, phone: string) => Promise<void>;
   setActiveCart: (cartId: string) => void;
-  clearCart: (cartId: string, jwtToken: string) => Promise<void>;
+  clearCart: (cartId: string, jwtToken: string, phone: string) => Promise<void>;
   getCartCount: (cartId: string) => number;
   getTotalCarts: () => number;
   getAllCarts: () => Cart[];
@@ -47,7 +48,7 @@ const useCartStore = create<CartStore>((set, get) => ({
   loading: false,
   error: null,
 
-  addToCart: async (cartId, product, jwtToken) => {
+  addToCart: async (cartId, product, jwtToken, phone) => {
     set({ loading: true, error: null });
     try {
       if (!jwtToken) {
@@ -58,7 +59,7 @@ const useCartStore = create<CartStore>((set, get) => ({
       const shopId = cartId.replace('vendor_', '');
 
       // Call API to add product
-      const apiResponse = await cartApiService.addToCart(shopId, product.sku, jwtToken);
+      const apiResponse = await cartApiService.addToCart(shopId, product.sku, jwtToken, phone);
 
       // Sync local cart with API response
       get().syncCartWithApi(cartId, apiResponse);
@@ -72,7 +73,7 @@ const useCartStore = create<CartStore>((set, get) => ({
     }
   },
 
-  removeFromCart: async (cartId, sku, jwtToken) => {
+  removeFromCart: async (cartId, sku, jwtToken, phone) => {
     set({ loading: true, error: null });
     try {
       if (!jwtToken) {
@@ -80,7 +81,7 @@ const useCartStore = create<CartStore>((set, get) => ({
       }
 
       const shopId = cartId.replace('vendor_', '');
-      const apiResponse = await cartApiService.deleteFromCart(shopId, sku, true, jwtToken);
+      const apiResponse = await cartApiService.deleteFromCart(shopId, sku, true, jwtToken, phone);
 
       get().syncCartWithApi(cartId, apiResponse);
 
@@ -93,7 +94,7 @@ const useCartStore = create<CartStore>((set, get) => ({
     }
   },
 
-  increment: async (cartId, sku, jwtToken) => {
+  increment: async (cartId, sku, jwtToken, phone) => {
     set({ loading: true, error: null });
     try {
       if (!jwtToken) {
@@ -101,7 +102,7 @@ const useCartStore = create<CartStore>((set, get) => ({
       }
 
       const shopId = cartId.replace('vendor_', '');
-      const apiResponse = await cartApiService.addToCart(shopId, sku, jwtToken);
+      const apiResponse = await cartApiService.addToCart(shopId, sku, jwtToken, phone);
 
       get().syncCartWithApi(cartId, apiResponse);
 
@@ -114,7 +115,7 @@ const useCartStore = create<CartStore>((set, get) => ({
     }
   },
 
-  decrement: async (cartId, sku, jwtToken) => {
+  decrement: async (cartId, sku, jwtToken, phone) => {
     set({ loading: true, error: null });
     try {
       if (!jwtToken) {
@@ -122,7 +123,7 @@ const useCartStore = create<CartStore>((set, get) => ({
       }
 
       const shopId = cartId.replace('vendor_', '');
-      const apiResponse = await cartApiService.deleteFromCart(shopId, sku, false, jwtToken);
+      const apiResponse = await cartApiService.deleteFromCart(shopId, sku, false, jwtToken, phone);
 
       get().syncCartWithApi(cartId, apiResponse);
 
@@ -139,7 +140,7 @@ const useCartStore = create<CartStore>((set, get) => ({
     set({ activeCartId: cartId });
   },
 
-  clearCart: async (cartId, jwtToken) => {
+  clearCart: async (cartId, jwtToken, phone) => {
     set({ loading: true, error: null });
     try {
       if (!jwtToken) {
@@ -147,7 +148,7 @@ const useCartStore = create<CartStore>((set, get) => ({
       }
 
       const shopId = cartId.replace('vendor_', '');
-      await cartApiService.clearCart(shopId, jwtToken);
+      await cartApiService.clearCart(shopId, jwtToken, phone);
 
       // Remove cart from local state
       set(state => {

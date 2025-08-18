@@ -78,18 +78,19 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
         mrp: variant.mrp,
         image: product.imageUrl,
       },
-      authData.jwt
+      authData.jwt,
+      authData.phone
     );
   };
 
   const handleIncrement = (variantId: string) => {
     if (!authData?.jwt) return;
-    increment(cartId, variantId, authData.jwt);
+    increment(cartId, variantId, authData.jwt, authData.phone);
   };
 
   const handleDecrement = (variantId: string) => {
     if (!authData?.jwt) return;
-    decrement(cartId, variantId, authData.jwt);
+    decrement(cartId, variantId, authData.jwt, authData.phone);
   };
 
   const getVariantQuantity = (variantId: string) => {

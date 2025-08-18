@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Dimensions,
+  ImageSourcePropType,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,7 +14,7 @@ import { useTheme } from '../../theme/ThemeContext';
 export interface CategoryItem {
   id: string;
   name: string;
-  icon: number;
+  icon: string | ImageSourcePropType;
 }
 
 interface CategoryTabsProps {
@@ -91,6 +92,10 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({
     },
   });
 
+  const getIconSource = (icon: string | ImageSourcePropType): ImageSourcePropType => {
+    return typeof icon === 'string' ? { uri: icon } : icon;
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -110,7 +115,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({
           >
             <TouchableOpacity style={{ alignItems: 'center' }} onPress={() => onSelect(cat.id)}>
               <Animated.Image
-                source={cat.icon}
+                source={getIconSource(cat.icon)}
                 style={[
                   styles.icon,
                   iconOpacity ? { opacity: iconOpacity } : null,

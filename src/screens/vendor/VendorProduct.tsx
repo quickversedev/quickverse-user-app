@@ -57,6 +57,7 @@ const SCROLL_DELAY = 100;
 const ANIMATION_DURATION = 300;
 
 // Helper: create a row-based list with headers and product rows
+// Optimized with Map for O(1) lookup
 const getRowBasedProductList = (
   categories: Category[],
   products: Product[],
@@ -65,16 +66,26 @@ const getRowBasedProductList = (
   const rows: Array<
     { type: 'header'; category: Category } | { type: 'products'; products: Product[] }
   > = [];
+
+  // Create a Map for O(1) product lookup by division
+  const productsByDivision = new Map<string, Product[]>();
+  products.forEach(product => {
+    const division = product.division;
+    if (!productsByDivision.has(division)) {
+      productsByDivision.set(division, []);
+    }
+    productsByDivision.get(division)!.push(product);
+  });
+
   categories.forEach((cat: Category) => {
     rows.push({ type: 'header', category: cat });
-    // Map category.id to product.division per API contract
-    const catProducts = products.filter((p: Product) => p.division === cat.id);
+
+    // Get products for this category using Map lookup
+    const catProducts = productsByDivision.get(cat.id) || [];
 
     // Sort products within each category: in-stock first, then out-of-stock
     const sortedCatProducts = catProducts.sort((a, b) => {
-      // If both have same stock status, maintain original order
       if (a.inStock === b.inStock) return 0;
-      // In-stock products come first (true > false)
       return a.inStock ? -1 : 1;
     });
 
@@ -125,13 +136,26 @@ const VendorProductComponent: React.FC = () => {
     fetchCategories(vendor.shopId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendor.shopId]);
+  // Optimized search with memoized category lookup
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    categories?.forEach(cat => map.set(cat.id, cat.name.toLowerCase()));
+    return map;
+  }, [categories]);
 
-  // Filter products based on search query
-  const filteredProducts = useMemo(
-    () =>
-      products.filter(product => product.name.toLowerCase().includes(searchQuery.toLowerCase())),
-    [products, searchQuery]
-  );
+  // Filter products based on search query (product name and category name)
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) return products;
+
+    const searchLower = searchQuery.toLowerCase();
+    return products.filter(product => {
+      const productNameMatch = product.name.toLowerCase().includes(searchLower);
+      const categoryName = categoryMap.get(product.division);
+      const categoryNameMatch = categoryName?.includes(searchLower) || false;
+
+      return productNameMatch || categoryNameMatch;
+    });
+  }, [products, searchQuery, categoryMap]);
 
   // Always show filtered products when searching, or all products when not searching
   const productsToShow = useMemo(
@@ -145,7 +169,7 @@ const VendorProductComponent: React.FC = () => {
       (categories || []).map(c => ({
         id: c.id,
         name: c.name,
-        icon: Images.bg1,
+        icon: c.imageURLs?.[0] || Images.bg1,
       })),
     [categories]
   );
@@ -175,9 +199,20 @@ const VendorProductComponent: React.FC = () => {
     [carts, cartId]
   );
 
-  const [selectedCategory, setSelectedCategory] = useState(
-    filteredCategories.length > 0 ? filteredCategories[0].id : ''
-  );
+  const [selectedCategory, setSelectedCategory] = useState('');
+
+  // Update selected category when filtered categories change
+  useEffect(() => {
+    if (filteredCategories.length > 0) {
+      // If current selected category is not in filtered categories, select the first one
+      const isCurrentCategoryValid = filteredCategories.some(cat => cat.id === selectedCategory);
+      if (!isCurrentCategoryValid) {
+        setSelectedCategory(filteredCategories[0].id);
+      }
+    } else {
+      setSelectedCategory('');
+    }
+  }, [filteredCategories, selectedCategory]);
   const scrollY = useRef(new Animated.Value(0)).current;
   const categoryScrollRef = useRef<ScrollView>(null);
 
@@ -255,10 +290,23 @@ const VendorProductComponent: React.FC = () => {
   const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
 
+  // Memoized row product list with optimized dependencies
   const rowProductList = useMemo(
     () => getRowBasedProductList(filteredCategories, productsToShow, NUM_COLUMNS),
     [filteredCategories, productsToShow]
   );
+
+  // Memoized product quantity map for O(1) lookup
+  const productQuantityMap = useMemo(() => {
+    const cart = carts[cartId];
+    if (!cart?.products) return new Map<string, number>();
+
+    const map = new Map<string, number>();
+    Object.entries(cart.products).forEach(([sku, product]) => {
+      map.set(sku, product.quantity);
+    });
+    return map;
+  }, [carts, cartId]);
 
   type RowProductListItem =
     | { type: 'header'; category: Category }
@@ -431,9 +479,13 @@ const VendorProductComponent: React.FC = () => {
           name: product.name,
           price: product.sellingPrice,
           mrp: product.mrp,
-          image: product.imageUrl, // Now a URL string
+          image:
+            typeof product.imageUrl === 'string'
+              ? product.imageUrl
+              : (product.imageUrl as any)?.uri || '',
         },
-        authData!.jwt
+        authData!.jwt,
+        authData!.phone
       );
     },
     [isStoreActive, hasAuth, addToCart, cartId, vendor.shopId, authData]
@@ -451,9 +503,13 @@ const VendorProductComponent: React.FC = () => {
           name: variant.name,
           price: variant.price,
           mrp: variant.mrp,
-          image: selectedProductForVariants.imageUrl,
+          image:
+            typeof selectedProductForVariants.imageUrl === 'string'
+              ? selectedProductForVariants.imageUrl
+              : (selectedProductForVariants.imageUrl as any)?.uri || '',
         },
-        authData!.jwt
+        authData!.jwt,
+        authData!.phone
       );
     },
     [selectedProductForVariants, hasAuth, addToCart, cartId, vendor.shopId, authData]
@@ -465,7 +521,7 @@ const VendorProductComponent: React.FC = () => {
       // Check if the product is in stock before incrementing
       const product = products.find(p => p.sku === sku);
       if (product && !product.inStock) return; // Disable if product is out of stock
-      increment(cartId, sku, authData!.jwt);
+      increment(cartId, sku, authData!.jwt, authData!.phone);
     },
     [isStoreActive, hasAuth, increment, cartId, authData, products]
   );
@@ -473,17 +529,17 @@ const VendorProductComponent: React.FC = () => {
   const handleDecrement = useCallback(
     (sku: string) => {
       if (!isStoreActive || !hasAuth) return; // Disable when store is closed or no auth
-      decrement(cartId, sku, authData!.jwt);
+      decrement(cartId, sku, authData!.jwt, authData!.phone);
     },
     [isStoreActive, hasAuth, decrement, cartId, authData]
   );
 
+  // Optimized product quantity lookup using memoized map
   const getProductQuantity = useCallback(
     (sku: string) => {
-      const cart = useCartStore.getState().carts[cartId];
-      return cart?.products[sku]?.quantity || 0;
+      return productQuantityMap.get(sku) || 0;
     },
-    [cartId]
+    [productQuantityMap]
   );
 
   // Memoize modal handlers
@@ -818,6 +874,64 @@ const VendorProductComponent: React.FC = () => {
           borderColor: getColor('border'),
           alignItems: 'center',
         },
+        zeroStateContainer: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: 32,
+          paddingVertical: 40,
+        },
+        zeroStateIconContainer: {
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: getColor('card'),
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: 24,
+          shadowColor: getColor('shadow').color,
+          shadowOpacity: getColor('shadow').opacity,
+          shadowRadius: getColor('shadow').radius,
+          elevation: 4,
+        },
+        zeroStateIcon: {
+          fontSize: 40,
+        },
+        zeroStateTitle: {
+          color: getColor('text'),
+          fontSize: getTypography('h2'),
+          fontWeight: 'bold',
+          textAlign: 'center',
+          marginBottom: 12,
+        },
+        zeroStateMessage: {
+          color: getColor('subText'),
+          fontSize: getTypography('body'),
+          textAlign: 'center',
+          lineHeight: 22,
+          marginBottom: 24,
+          paddingHorizontal: 16,
+        },
+        businessHoursContainer: {
+          backgroundColor: getColor('card'),
+          padding: 16,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: getColor('border'),
+          alignItems: 'center',
+          marginTop: 8,
+        },
+        businessHoursTitle: {
+          color: getColor('text'),
+          fontSize: getTypography('body'),
+          fontWeight: 'bold',
+          marginBottom: 4,
+        },
+        businessHoursText: {
+          color: getColor('subText'),
+          fontSize: getTypography('caption'),
+          textAlign: 'center',
+        },
       }),
     [getColor, getTypography]
   );
@@ -839,6 +953,9 @@ const VendorProductComponent: React.FC = () => {
     return `row-${idx}`;
   }, []);
 
+  // Memoized ProductCard component for better performance
+  const MemoizedProductCard = useMemo(() => React.memo(ProductCard), []);
+
   // Memoize render item for FlatList
   const renderItem = useCallback(
     ({ item }: { item: RowProductListItem }) => {
@@ -848,24 +965,18 @@ const VendorProductComponent: React.FC = () => {
         return (
           <View style={styles.productRow}>
             {item.products.map((product: Product) => (
-              <ProductCard
+              <MemoizedProductCard
                 key={product.sku}
-                image={Images.bg1}
-                name={product.name}
-                price={product.sellingPrice}
-                mrp={product.mrp}
-                discount={product.discount || 0}
-                rating={0}
+                product={product}
+                quantity={getProductQuantity(product.sku)}
                 onAdd={() => handleAddToCart(product)}
                 onIncrement={() => handleIncrement(product.sku)}
                 onDecrement={() => handleDecrement(product.sku)}
-                quantity={getProductQuantity(product.sku)}
                 disabled={!isStoreActive || !product.inStock}
-                numberOfVariants={product.numberOfVariants}
                 showVariantsCount={true}
                 onPress={() => handleProductPress(product)}
                 backgroundColor={getColor('background')}
-                inStock={product.inStock}
+                rating={0}
               />
             ))}
             {/* Fill empty columns if needed */}
@@ -888,6 +999,7 @@ const VendorProductComponent: React.FC = () => {
       isStoreActive,
       handleProductPress,
       getColor,
+      MemoizedProductCard,
     ]
   );
 
@@ -942,7 +1054,7 @@ const VendorProductComponent: React.FC = () => {
               <TextInput
                 ref={searchInputRef}
                 style={styles.searchInput}
-                placeholder="Search products..."
+                placeholder="Search products or categories..."
                 placeholderTextColor={getColor('subText')}
                 value={searchQuery}
                 onChangeText={handleSearchChange}
@@ -970,64 +1082,92 @@ const VendorProductComponent: React.FC = () => {
             </View>
           )}
 
-          {/* Empty State Message - Show above main container */}
-          {!productsLoading && searchQuery && filteredProducts.length === 0 && (
-            <View style={styles.emptyStateMessageContainer}>
-              <Text style={styles.emptyStateMessage}>
-                {`No products match "${searchQuery}". Try a different search term.`}
+          {/* Zero State - Show when no products available */}
+          {!productsLoading && products.length === 0 && (
+            <View style={styles.zeroStateContainer}>
+              <View style={styles.zeroStateIconContainer}>
+                <Text style={styles.zeroStateIcon}>📦</Text>
+              </View>
+              <Text style={styles.zeroStateTitle}>No Products Available</Text>
+              <Text style={styles.zeroStateMessage}>
+                {!isStoreActive
+                  ? 'This store is currently closed. Please check back during business hours.'
+                  : "This store doesn't have any products available at the moment."}
               </Text>
-              <TouchableOpacity style={styles.clearSearchButton} onPress={handleSearchClose}>
-                <Text style={styles.clearSearchButtonText}>Clear Search</Text>
-              </TouchableOpacity>
+              {!isStoreActive && (
+                <View style={styles.businessHoursContainer}>
+                  <Text style={styles.businessHoursTitle}>Business Hours</Text>
+                  <Text style={styles.businessHoursText}>
+                    {vendor.openingTime} - {vendor.closingTime}
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
-          {/* Main Content: Categories + Products */}
-          <View style={styles.mainContent}>
-            {/* Category List (absolute overlay with animation) */}
-            <Animated.View
-              style={{
-                opacity: timingOpacity,
-                height: timingHeight,
-                overflow: 'hidden',
-              }}
-            >
-              <SectionDivider
-                text={`${vendor.openingTime} - ${vendor.closingTime}`}
-                textStyle={{ fontSize: 14, fontWeight: 'normal' }}
-              />
-            </Animated.View>
+          {/* Search Empty State - Show when search has no results */}
+          {!productsLoading &&
+            searchQuery &&
+            filteredProducts.length === 0 &&
+            products.length > 0 && (
+              <View style={styles.emptyStateMessageContainer}>
+                <Text style={styles.emptyStateMessage}>
+                  {`No products or categories match "${searchQuery}". Try a different search term.`}
+                </Text>
+                <TouchableOpacity style={styles.clearSearchButton} onPress={handleSearchClose}>
+                  <Text style={styles.clearSearchButtonText}>Clear Search</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
-            <CategoryTabs
-              categories={categoriesForTabs}
-              selectedCategoryId={selectedCategory}
-              onSelect={handleCategorySelect}
-              iconOpacity={categoryImageOpacity}
-              iconSize={categoryImageHeight}
-              disabled={!isStoreActive}
-            />
-            {/* Product List with headers */}
-            <Animated.View style={[styles.productList, { width: '100%' }]}>
-              <Animated.FlatList
-                ref={flatListRef}
-                data={getRowBasedProductList(
-                  categoriesForTabs,
-                  searchQuery && filteredProducts.length === 0 ? products : productsToShow,
-                  NUM_COLUMNS
-                )}
-                keyExtractor={keyExtractor}
-                renderItem={renderItem}
-                numColumns={1}
-                key={'row-based'}
-                showsVerticalScrollIndicator={false}
-                getItemLayout={undefined}
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
-                onViewableItemsChanged={onViewableItemsChanged}
-                viewabilityConfig={viewabilityConfig}
+          {/* Main Content: Categories + Products - Only show when products exist */}
+          {products.length > 0 && (
+            <View style={styles.mainContent}>
+              {/* Category List (absolute overlay with animation) */}
+              <Animated.View
+                style={{
+                  opacity: timingOpacity,
+                  height: timingHeight,
+                  overflow: 'hidden',
+                }}
+              >
+                <SectionDivider
+                  text={`${vendor.openingTime} - ${vendor.closingTime}`}
+                  textStyle={{ fontSize: 14, fontWeight: 'normal' }}
+                />
+              </Animated.View>
+
+              <CategoryTabs
+                categories={filteredCategories}
+                selectedCategoryId={selectedCategory}
+                onSelect={handleCategorySelect}
+                iconOpacity={categoryImageOpacity}
+                iconSize={categoryImageHeight}
+                disabled={!isStoreActive}
               />
-            </Animated.View>
-          </View>
+              {/* Product List with headers */}
+              <Animated.View style={[styles.productList, { width: '100%' }]}>
+                <Animated.FlatList
+                  ref={flatListRef}
+                  data={rowProductList}
+                  keyExtractor={keyExtractor}
+                  renderItem={renderItem}
+                  numColumns={1}
+                  key={'row-based'}
+                  showsVerticalScrollIndicator={false}
+                  removeClippedSubviews={true}
+                  maxToRenderPerBatch={10}
+                  updateCellsBatchingPeriod={50}
+                  initialNumToRender={8}
+                  windowSize={10}
+                  onScroll={handleScroll}
+                  scrollEventThrottle={16}
+                  onViewableItemsChanged={onViewableItemsChanged}
+                  viewabilityConfig={viewabilityConfig}
+                />
+              </Animated.View>
+            </View>
+          )}
           {/* CartBar at the bottom */}
           {itemCount > 0 && (
             <CartBar

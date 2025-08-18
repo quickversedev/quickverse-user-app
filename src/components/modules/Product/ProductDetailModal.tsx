@@ -123,18 +123,19 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         mrp: productDetails.mrp,
         image: productDetails.imageUrl,
       },
-      authData.jwt
+      authData.jwt,
+      authData.phone
     );
   };
 
   const handleIncrement = () => {
     if (!authData?.jwt || !productDetails) return;
-    increment(cartId, productDetails.sku, authData.jwt);
+    increment(cartId, productDetails.sku, authData.jwt, authData.phone);
   };
 
   const handleDecrement = () => {
     if (!authData?.jwt || !productDetails) return;
-    decrement(cartId, productDetails.sku, authData.jwt);
+    decrement(cartId, productDetails.sku, authData.jwt, authData.phone);
   };
 
   const suggestedItems: SuggestedItem[] = [
@@ -321,12 +322,12 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   const handleSuggestedItemIncrement = (item: SuggestedItem) => {
     if (!authData?.jwt) return;
-    increment(cartId, item.id, authData.jwt);
+    increment(cartId, item.id, authData.jwt, authData.phone);
   };
 
   const handleSuggestedItemDecrement = (item: SuggestedItem) => {
     if (!authData?.jwt) return;
-    decrement(cartId, item.id, authData.jwt);
+    decrement(cartId, item.id, authData.jwt, authData.phone);
   };
 
   const handleViewAllPress = () => {
