@@ -50,7 +50,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
     if (pendingRequest) {
       pendingRequest.abort();
     }
-    console.log('🔍 [fetchVendors] location', location);
+
     // Create new request ID and abort controller
     const requestId = ++currentRequestId;
     const abortController = new AbortController();
@@ -75,10 +75,10 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         ? {
             latitude: location.latitude,
             longitude: location.longitude,
-            radius: location.radius || 5000,
+            radius: location.radius || 6000,
           }
         : {};
-      console.log('🔍 [fetchVendors] params', params, requestId, currentRequestId);
+      console.log('params', params);
       const response = await axiosInstance.get(VENDOR_API_URL, {
         params,
         headers: {
@@ -86,7 +86,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         },
         signal: abortController.signal,
       });
-      console.log('🔍 [fetchVendors] response', response.data, requestId, currentRequestId);
+      console.log('vendors', response.data);
       // Only update state if this is still the current request
       if (requestId === currentRequestId) {
         const sortedVendors = sortVendorsByActiveStatus(response.data);

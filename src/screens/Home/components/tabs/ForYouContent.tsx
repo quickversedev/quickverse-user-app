@@ -9,6 +9,8 @@ import VendorProductList from '../../../../components/modules/Vendor/VendorProdu
 import { usePages } from '../../../../hooks/usePages';
 import useVendorStore from '../../../../store/vendorStore';
 import { AppNavigationProp } from '../../../../types/navigation';
+import { Product } from '../../../../types/product';
+import { Vendor } from '../../../../types/vendor';
 
 interface ForYouContentProps {
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -35,14 +37,14 @@ const ForYouContentComponent: React.FC<ForYouContentProps> = ({
 
   // Memoize vendor press handler
   const handleVendorPress = useCallback(
-    (vendor: any) => {
+    (vendor: Vendor) => {
       navigation.navigate('VendorProduct', { vendor });
     },
     [navigation]
   );
 
   // Memoize product press handler
-  const handleProductPress = useCallback((_product: any) => {
+  const handleProductPress = useCallback((_product: Product) => {
     // Handle product press if needed
   }, []);
 

@@ -67,8 +67,13 @@ export interface OrderStore {
   pagination: OrderPagination;
 
   // Actions
-  fetchOrders: (cursor?: string | null, pageSize?: number) => Promise<void>;
-  fetchOrderById: (orderId: string) => Promise<void>;
+  fetchOrders: (
+    jwt: string,
+    phone: string,
+    cursor?: string | null,
+    pageSize?: number
+  ) => Promise<void>;
+  fetchOrderById: (orderId: string, jwt: string, phone: string) => Promise<void>;
   setOrders: (orders: Order[]) => void;
   setSelectedOrder: (order: Order | null) => void;
   setLoading: (loading: boolean) => void;

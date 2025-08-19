@@ -1,41 +1,37 @@
 export interface Product {
-  id: string;
   name: string;
-  price: number;
   mrp: number;
-  image: any; // React Native ImageSourcePropType
   rating: number;
   discount: number;
   veg: boolean;
-  quantity: number;
-  sku?: string;
-  shopId?: string;
+  sellingPrice: number;
+  sku: string;
+  shopId: string;
   gst?: number;
   category?: string;
   division?: string;
   subDivision?: string;
   brand?: string;
-  description?: string;
   imageUrl?: string;
-  numberOfVariants?: number;
+  deactivated?: boolean;
+  numberOfVariants: number;
   currentStock?: number;
+  buyableQuantity?: number;
   inStock?: boolean;
-  primarySKU?: string;
+  searchAlias?: string;
+  primarySKU: string;
   attributes?: {
     color: string | null;
-    id: string | null;
+    size: string | null;
     name: string | null;
     description: string | null;
     price: number | null;
-    product: string | null;
+    unit: string | null;
   };
   additionalImages?: Array<{
     url: string | null;
-    id: string | null;
   }>;
-  variantAttributes?: Array<{
-    name: string;
-  }>;
+
   tags?: Array<{
     tagName: string;
   }>;

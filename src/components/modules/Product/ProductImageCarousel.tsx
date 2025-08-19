@@ -1,27 +1,41 @@
 import React from 'react';
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
 // 80% of screen width, max 320px
 interface ProductImageCarouselProps {
   imageUrl: string;
+  additionalImages?: Array<{ url: string | null }>;
   productName: string;
   onAddToStacks: () => void;
-  totalImages?: number;
   currentImageIndex?: number;
+  onImageIndexChange?: (index: number) => void;
 }
 
 const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
   imageUrl,
+  additionalImages = [],
   productName,
   onAddToStacks,
-  totalImages = 5,
   currentImageIndex = 0,
+  onImageIndexChange,
 }) => {
   const { getColor, getTypography } = useTheme();
   const { width: screenWidth } = Dimensions.get('window');
   const imageWidth = screenWidth - 32; // 16px margin on each side
   const imageHeight = imageWidth * 0.55;
+
+  // Calculate total images: main image + additional images
+  const totalImages = 1 + (additionalImages?.length || 0);
+
+  // Get current image URL
+  const getCurrentImageUrl = () => {
+    if (currentImageIndex === 0) {
+      return imageUrl;
+    }
+    const additionalImageIndex = currentImageIndex - 1;
+    return additionalImages?.[additionalImageIndex]?.url || imageUrl;
+  };
   const styles = StyleSheet.create({
     container: {
       paddingVertical: 20,
@@ -92,8 +106,12 @@ const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.imageContainer}>
-        {imageUrl ? (
-          <Text style={styles.placeholderText}>Product Image</Text>
+        {getCurrentImageUrl() ? (
+          <Image
+            source={{ uri: getCurrentImageUrl() }}
+            style={styles.productImage}
+            resizeMode="contain"
+          />
         ) : (
           <View style={styles.imagePlaceholder}>
             <Text style={styles.placeholderText}>{productName}</Text>
@@ -103,9 +121,10 @@ const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
 
       <View style={styles.carouselIndicators}>
         {Array.from({ length: totalImages }, (_, index) => (
-          <View
+          <TouchableOpacity
             key={index}
             style={[styles.indicator, index === currentImageIndex && styles.activeIndicator]}
+            onPress={() => onImageIndexChange?.(index)}
           />
         ))}
       </View>

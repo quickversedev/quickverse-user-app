@@ -5,6 +5,12 @@ export interface SearchProduct {
   productName: string;
   shopId: string;
   productImage: string;
+  // Optional additional fields from variant response
+  veg?: boolean;
+  price?: number; // sellingPrice
+  mrp?: number;
+  discount?: number;
+  inStock?: boolean;
 }
 
 export interface SearchVendor {
@@ -30,6 +36,11 @@ interface ApiSearchItem {
   shopId?: string;
   productImage?: string;
   imageUrl?: string;
+  veg?: boolean;
+  sellingPrice?: number;
+  mrp?: number;
+  discount?: number;
+  inStock?: boolean;
 }
 
 class SearchService {
@@ -62,6 +73,11 @@ class SearchService {
           productName: item.productName || item.name || '',
           shopId: item.shopId || '',
           productImage: item.productImage || item.imageUrl || '',
+          veg: item.veg,
+          price: item.sellingPrice,
+          mrp: item.mrp,
+          discount: item.discount,
+          inStock: item.inStock,
         })),
         vendors: [], // Add vendors when API supports it
       };

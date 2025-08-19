@@ -5,7 +5,7 @@ import { Order, OrderFilters, OrderResponse, OrderStore } from '../../types/orde
 
 const ORDER_API_URL = '/v2/getSMZBIZOrders';
 
-const USE_ORDER_MOCKS = true; // Set to false for real API
+const USE_ORDER_MOCKS = false; // Set to false for real API
 
 const useOrderStore = create<OrderStore>((set, get) => ({
   // Initial state
@@ -21,7 +21,12 @@ const useOrderStore = create<OrderStore>((set, get) => ({
   },
 
   // Actions
-  fetchOrders: async (cursor?: string | null, pageSize: number = 10) => {
+  fetchOrders: async (
+    jwt: string,
+    phone: string,
+    cursor?: string | null,
+    pageSize: number = 10
+  ) => {
     set({ loading: true, error: null });
 
     if (USE_ORDER_MOCKS) {
@@ -53,10 +58,8 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         requestData,
         {
           headers: {
-            SessionKey:
-              'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJtb2JpbGUiOiI5MTkzNzMyNjQ3MjIiLCJpYXQiOjE3NDA5MzYwNTAsImV4cCI6MTc3MjQ3MjA1MH0.GGNlDq0tyva57gb10NBLbgqmt-73MYIlu7d_INDm1Tw',
-            'Request-Origin': 'QUICKVERSE',
-            'Content-Type': 'application/json',
+            SessionKey: jwt,
+            phone: phone,
           },
         }
       );
@@ -86,7 +89,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
     }
   },
 
-  fetchOrderById: async (orderId: string) => {
+  fetchOrderById: async (orderId: string, jwt: string, _phone: string) => {
     set({ loading: true, error: null });
 
     try {
@@ -114,8 +117,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
       // Note: You might need to adjust this endpoint based on your API
       const response = await axiosInstance.get(`${ORDER_API_URL}/${orderId}`, {
         headers: {
-          SessionKey:
-            'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJtb2JpbGUiOiI5MTkzNzMyNjQ3MjIiLCJpYXQiOjE3NDA5MzYwNTAsImV4cCI6MTc3MjQ3MjA1MH0.GGNlDq0tyva57gb10NBLbgqmt-73MYIlu7d_INDm1Tw',
+          SessionKey: jwt,
           'Request-Origin': 'QUICKVERSE',
         },
       });

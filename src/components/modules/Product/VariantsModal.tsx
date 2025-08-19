@@ -10,12 +10,12 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Product } from '../../../assets/mock/products';
+
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useVariants } from '../../../hooks/useVariants';
-import { ProductVariant } from '../../../services/productDetailsService';
 import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
+import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
 import SectionDivider from '../../common/SectionDivider';
 import VariantsModalSkeleton from '../Vendor/VariantsModalSkeleton';
@@ -29,7 +29,7 @@ interface VariantsModalProps {
   onClose: () => void;
   product: Product;
   vendor: Vendor;
-  onVariantSelect?: (variant: ProductVariant) => void;
+  onVariantSelect?: (variant: Product) => void;
 }
 
 const VariantsModal: React.FC<VariantsModalProps> = ({
@@ -43,16 +43,16 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
   const { authData } = useAuth();
   const { variants, loading, error, hasData, fetchVariants, clearError, reset } = useVariants();
   const { addToCart, increment, decrement, carts } = useCartStore();
-
+  console.log('varients', variants);
   // Create vendor-specific cart ID
   const cartId = `vendor_${vendor.shopId}`;
   const cart = carts[cartId];
 
   useEffect(() => {
-    if (visible && product.sku) {
-      fetchVariants(product.sku);
+    if (visible && product.primarySKU) {
+      fetchVariants(product.primarySKU);
     }
-  }, [visible, product.sku, fetchVariants]);
+  }, [visible, product.primarySKU, fetchVariants]);
 
   useEffect(() => {
     if (!visible) {
@@ -60,23 +60,24 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
     }
   }, [visible, reset]);
 
-  const _handleVariantSelect = (variant: ProductVariant) => {
+  const _handleVariantSelect = (variant: Product) => {
     if (onVariantSelect) {
       onVariantSelect(variant);
     }
   };
 
-  const handleAddToCart = (variant: ProductVariant) => {
+  const handleAddToCart = (variant: Product) => {
     if (!authData?.jwt) return;
     addToCart(
       cartId,
       {
-        sku: variant.id,
+        sku: variant.sku,
         shopId: vendor.shopId,
         name: variant.name,
-        price: variant.price,
+        price: variant.sellingPrice,
         mrp: variant.mrp,
-        image: product.imageUrl,
+        image: product.imageUrl || '',
+        veg: product.veg,
       },
       authData.jwt,
       authData.phone
@@ -279,25 +280,27 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       );
     }
 
-    return variants.map(variant => {
-      const quantity = getVariantQuantity(variant.id);
+    return variants.map((variant, index) => {
+      const quantity = getVariantQuantity(variant.sku);
 
       return (
-        <View key={variant.id} style={styles.variantItem}>
+        <View key={variant.sku || `variant-${index}`} style={styles.variantItem}>
           <View style={styles.variantImage} />
           <View style={styles.variantInfo}>
             <Text style={styles.variantName}>{variant.name}</Text>
             <View style={styles.variantPriceContainer}>
-              <Text style={styles.currentPrice}>₹{variant.price}</Text>
-              <Text style={styles.originalPrice}>₹{variant.mrp}</Text>
+              <Text style={styles.currentPrice}>₹{variant.sellingPrice}</Text>
+              {variant.sellingPrice !== variant.mrp && (
+                <Text style={styles.originalPrice}>₹{variant.mrp}</Text>
+              )}
             </View>
           </View>
           <View style={styles.variantRightContainer}>
             {quantity > 0 ? (
               <QuantitySelector
                 quantity={quantity}
-                onIncrement={() => handleIncrement(variant.id)}
-                onDecrement={() => handleDecrement(variant.id)}
+                onIncrement={() => handleIncrement(variant.sku)}
+                onDecrement={() => handleDecrement(variant.sku)}
                 size="regular"
               />
             ) : (

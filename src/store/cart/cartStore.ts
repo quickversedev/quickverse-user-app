@@ -25,7 +25,7 @@ export type CartProduct = {
   name: string;
   price: number;
   mrp: number;
-  image: string | number; // require() returns number, uri is string
+  image: string; // require() returns number, uri is string
   quantity: number;
   veg: boolean;
 };

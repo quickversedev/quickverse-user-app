@@ -16,7 +16,6 @@ import {
   View,
 } from 'react-native';
 import { Images } from '../../assets';
-import { Product } from '../../assets/mock/products';
 import CartBar from '../../components/common/Cart/CartBar';
 import SectionDivider from '../../components/common/SectionDivider';
 import ProductCard from '../../components/modules/Product/ProductCard';
@@ -29,10 +28,10 @@ import VendorHeaderCard from '../../components/vendor/VendorHeaderCard';
 import VendorTopBar from '../../components/vendor/VendorTopBar';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { RootStackParamList } from '../../routes/AppStack';
-import { ProductVariant } from '../../services/productDetailsService';
 import useCartStore from '../../store/cart/cartStore';
 import { useProductsStore } from '../../store/products/productsStore';
 import { useTheme } from '../../theme/ThemeContext';
+import { Product } from '../../types/product';
 import { Vendor } from '../../types/vendor';
 
 // Category type for local use (as expected by CategoryTabs)
@@ -71,17 +70,17 @@ const getRowBasedProductList = (
   const productsByDivision = new Map<string, Product[]>();
   products.forEach(product => {
     const division = product.division;
-    if (!productsByDivision.has(division)) {
-      productsByDivision.set(division, []);
+    if (!productsByDivision.has(division || '')) {
+      productsByDivision.set(division || '', []);
     }
-    productsByDivision.get(division)!.push(product);
+    productsByDivision.get(division || '')!.push(product);
   });
 
   categories.forEach((cat: Category) => {
     rows.push({ type: 'header', category: cat });
 
     // Get products for this category using Map lookup
-    const catProducts = productsByDivision.get(cat.id) || [];
+    const catProducts = productsByDivision.get(cat.id || '') || [];
 
     // Sort products within each category: in-stock first, then out-of-stock
     const sortedCatProducts = catProducts.sort((a, b) => {
@@ -464,7 +463,7 @@ const VendorProductComponent: React.FC = () => {
       if (!isStoreActive || !hasAuth || !product.inStock) return; // Disable when store is closed, no auth, or out of stock
 
       // If product has multiple variants, show variants modal
-      if (product.numberOfVariants > 1) {
+      if (product.numberOfVariants && product.numberOfVariants > 1) {
         setSelectedProductForVariants(product);
         setVariantsModalVisible(true);
         return;
@@ -479,10 +478,8 @@ const VendorProductComponent: React.FC = () => {
           name: product.name,
           price: product.sellingPrice,
           mrp: product.mrp,
-          image:
-            typeof product.imageUrl === 'string'
-              ? product.imageUrl
-              : (product.imageUrl as any)?.uri || '',
+          image: typeof product.imageUrl === 'string' ? product.imageUrl : '',
+          veg: product.veg,
         },
         authData!.jwt,
         authData!.phone
@@ -492,21 +489,22 @@ const VendorProductComponent: React.FC = () => {
   );
 
   const handleVariantSelect = useCallback(
-    (variant: ProductVariant) => {
+    (variant: Product) => {
       if (!selectedProductForVariants || !hasAuth) return;
 
       addToCart(
         cartId,
         {
-          sku: variant.id,
+          sku: variant.sku,
           shopId: vendor.shopId,
           name: variant.name,
-          price: variant.price,
+          price: variant.sellingPrice,
           mrp: variant.mrp,
           image:
             typeof selectedProductForVariants.imageUrl === 'string'
               ? selectedProductForVariants.imageUrl
-              : (selectedProductForVariants.imageUrl as any)?.uri || '',
+              : '',
+          veg: selectedProductForVariants.veg ?? true,
         },
         authData!.jwt,
         authData!.phone
@@ -955,8 +953,7 @@ const VendorProductComponent: React.FC = () => {
 
   // Memoized ProductCard component for better performance
   const MemoizedProductCard = useMemo(() => React.memo(ProductCard), []);
-
-  // Memoize render item for FlatList
+  //  Memoize render item for FlatList
   const renderItem = useCallback(
     ({ item }: { item: RowProductListItem }) => {
       if (item.type === 'header') {
@@ -1200,7 +1197,7 @@ const VendorProductComponent: React.FC = () => {
         <ProductDetailModal
           visible={productDetailModalVisible}
           onClose={handleCloseProductDetailModal}
-          productId={selectedProductForDetail.sku}
+          product={selectedProductForDetail}
           vendor={vendor}
         />
       )}

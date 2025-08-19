@@ -10,7 +10,6 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
 import { RatingBadge } from '../../common';
-import FeaturedProductsError from '../../common/featuredProducts/FeaturedProductsError';
 import FeaturedProductsSkeleton from '../../common/featuredProducts/FeaturedProductsSkeleton';
 import ProductCard from '../Product/ProductCard';
 import VariantsModal from '../Product/VariantsModal';
@@ -36,7 +35,12 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Use the new hook for featured products
-  const { featuredProducts, loading, error, refetch } = useFeaturedProducts({
+  const {
+    featuredProducts,
+    loading,
+    error,
+    refetch: _refetch,
+  } = useFeaturedProducts({
     shopId: vendor.shopId,
     limit: 5,
     autoFetch: true,
@@ -51,7 +55,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       return a.inStock ? -1 : 1;
     });
   }, [featuredProducts]);
-
+  // console.log('sortedFeaturedProducts', sortedFeaturedProducts);
   const cartId = `vendor_${vendor.shopId}`;
   const cart = useCartStore(state => state.carts[cartId]);
   const increment = useCartStore(state => state.increment);
@@ -88,36 +92,38 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
   const convertProductForVariantsModal = (product: Product) => {
     return {
       ...product,
-      sellingPrice: product.price, // Map price to sellingPrice
+      sellingPrice: product.sellingPrice, // Map price to sellingPrice
     } as any; // Type assertion to bypass type checking
   };
 
   const renderProductItem = ({ item }: { item: Product }) => {
-    const quantity = cart?.products[item.sku || item.id]?.quantity || 0;
+    console.log('item', item);
+    const quantity = cart?.products[item.sku]?.quantity || 0;
     const isStoreClosed = !vendor.storeActive;
 
     // Convert Product from types/product to mock Product format
     const mockProduct = {
-      sku: item.sku || item.id,
+      sku: item.sku,
       shopId: item.shopId || vendor.shopId,
       name: item.name,
       mrp: item.mrp,
-      sellingPrice: item.price,
+      sellingPrice: item.sellingPrice,
       gst: item.gst || 0,
       category: item.category || '',
       division: item.division || '',
       subDivision: item.subDivision || '',
       brand: item.brand || '',
-      description: item.description || '',
-      imageUrl: item.imageUrl || item.image,
+
+      imageUrl: item.imageUrl,
       discount: item.discount,
       numberOfVariants: item.numberOfVariants || 1,
       currentStock: item.currentStock || 0,
       inStock: item.inStock || true,
-      primarySKU: item.primarySKU || item.sku || item.id,
+      primarySKU: item.primarySKU,
       tags: item.tags || [],
       veg: item.veg || true,
     };
+    console.log('mockProduct', mockProduct);
     return (
       <ProductCard
         product={mockProduct}
@@ -126,12 +132,12 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
         onIncrement={() =>
           !isStoreClosed &&
           authData?.jwt &&
-          increment(cartId, item.sku || item.id, authData.jwt, authData.phone)
+          increment(cartId, item.sku, authData.jwt, authData.phone)
         }
         onDecrement={() =>
           !isStoreClosed &&
           authData?.jwt &&
-          decrement(cartId, item.sku || item.id, authData.jwt, authData.phone)
+          decrement(cartId, item.sku, authData.jwt, authData.phone)
         }
         size="xs"
         disabled={isStoreClosed || !item.inStock}
@@ -148,23 +154,16 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       return <FeaturedProductsSkeleton count={5} />;
     }
 
-    if (error) {
-      return <FeaturedProductsError error={error} onRetry={refetch} loading={loading} />;
-    }
-
-    if (sortedFeaturedProducts.length === 0) {
-      return (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No featured products available</Text>
-        </View>
-      );
+    // Don't show error or empty state - just return null
+    if (error || sortedFeaturedProducts.length === 0) {
+      return null;
     }
 
     return (
       <FlatList
         data={sortedFeaturedProducts}
         renderItem={renderProductItem}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.sku}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.productsList}
@@ -189,6 +188,12 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       flexDirection: 'row',
       alignItems: 'center',
       marginBottom: 16,
+    },
+    vendorLogo: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      marginRight: 12,
     },
     vendorInfo: {
       flex: 1,
@@ -348,6 +353,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
     <View style={styles.container}>
       {/* Vendor Header */}
       <TouchableOpacity style={styles.header} onPress={() => onVendorPress(vendor)}>
+        <Image source={{ uri: vendor.logo }} style={styles.vendorLogo} />
         <View style={styles.vendorInfo}>
           <Text style={styles.vendorName}>{vendor.name}</Text>
           <View style={styles.vendorMeta}>

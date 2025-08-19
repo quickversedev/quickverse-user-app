@@ -1,6 +1,5 @@
 // mock/products.ts
-import { ImageSourcePropType } from 'react-native';
-import { Category } from '../../types/product';
+import { Category, Product } from '../../types/product';
 const categories = [
   'scoops',
   'sundaes',
@@ -48,30 +47,6 @@ const tags = [
   'Organic',
   'Sugar Free',
 ];
-
-export type Product = {
-  sku: string;
-  shopId: string;
-  name: string;
-  mrp: number;
-  sellingPrice: number;
-  gst: number;
-  category: string;
-  division: string;
-  subDivision: string;
-  brand: string;
-  description: string;
-  imageUrl: ImageSourcePropType;
-  discount: number;
-  numberOfVariants: number;
-  currentStock: number;
-  inStock: boolean;
-  primarySKU: string;
-  tags: Array<{
-    tagName: string;
-  }>;
-  veg: boolean;
-};
 
 const generateProducts = (shopId: string, count: number, startIndex: number = 0): Product[] => {
   return Array.from({ length: count }, (_, i) => {
@@ -168,19 +143,19 @@ const generateProducts = (shopId: string, count: number, startIndex: number = 0)
       name,
       mrp,
       sellingPrice,
+      rating: Math.floor(Math.random() * 5) + 1,
       gst,
       category,
       division,
       subDivision,
       brand,
-      description: `${division} ${subDivision} from ${brand}`,
-      imageUrl: `https://via.placeholder.com/150?text=${encodeURIComponent(name)}`,
+      imageUrl: require('../../assets/images/food.png'),
       discount,
       numberOfVariants: numberOfVariants,
       currentStock: stock,
       inStock: stock > 0,
       primarySKU: sku,
-
+      veg: Math.random() > 0.5, // Randomly assign vegetarian status
       tags: [
         {
           tagName: tag,
@@ -218,17 +193,19 @@ const CATEGORY_ICON_URLS: Record<string, string[]> = {
 export const getMockCategoriesForShop = (shopId: string): Category[] => {
   const shopProducts = mockProducts.filter(p => p.shopId === shopId);
   const counts = shopProducts.reduce<Record<string, number>>((acc, p) => {
-    acc[p.division] = (acc[p.division] || 0) + 1;
+    if (p.division) {
+      acc[p.division] = (acc[p.division] || 0) + 1;
+    }
     return acc;
   }, {});
-  const divisionsUnique = Array.from(new Set(shopProducts.map(p => p.division)));
+  const divisionsUnique = Array.from(new Set(shopProducts.map(p => p.division).filter(Boolean)));
   return divisionsUnique.map(div => ({
-    id: div, // maps to product.division
-    name: div,
+    id: div!, // maps to product.division
+    name: div!,
     description: null,
-    imageURLs: CATEGORY_ICON_URLS[div] || null,
+    imageURLs: CATEGORY_ICON_URLS[div!] || null,
     type: div === 'Cold' || div === 'Hot' ? 'MANAGED' : 'CUSTOM',
     parentCategory: null,
-    countOfSkus: counts[div] || 0,
+    countOfSkus: counts[div!] || 0,
   }));
 };

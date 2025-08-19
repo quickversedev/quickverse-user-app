@@ -147,12 +147,13 @@ const VendorProductListComponent: React.FC<VendorProductListProps> = ({
       addToCart(
         cartId,
         {
-          sku: product.sku || product.id,
+          sku: product.sku,
           shopId: vendor.shopId,
           name: product.name,
-          price: product.price,
+          price: product.sellingPrice,
           mrp: product.mrp,
-          image: product.image,
+          image: product.imageUrl || '',
+          veg: product.veg,
         },
         authData!.jwt,
         authData!.phone
@@ -165,9 +166,9 @@ const VendorProductListComponent: React.FC<VendorProductListProps> = ({
   const handleProductPress = useCallback((product: Product, vendor: Vendor) => {
     const productWithSellingPrice = {
       ...product,
-      sku: product.sku || product.id,
-      shopId: product.shopId || vendor.shopId,
-      sellingPrice: product.price,
+      sku: product.sku,
+      shopId: product.shopId,
+      sellingPrice: product.sellingPrice,
     };
 
     setSelectedProductForDetail(productWithSellingPrice);
@@ -267,7 +268,7 @@ const VendorProductListComponent: React.FC<VendorProductListProps> = ({
         <ProductDetailModal
           visible={productDetailModalVisible}
           onClose={handleCloseModal}
-          productId={selectedProductId}
+          product={selectedProductForDetail}
           vendor={selectedVendorForDetail}
         />
       )}

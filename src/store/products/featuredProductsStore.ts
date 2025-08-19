@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { Product as MockProduct } from '../../assets/mock/products';
 import productsService, { ProductsApiResponse } from '../../services/productsService';
-import { Product } from '../../types/product';
+import { Product as MockProduct, Product } from '../../types/product';
 
 interface CachedFeaturedProducts {
   products: Product[];
@@ -94,20 +93,20 @@ const useFeaturedProductsStore = create<FeaturedProductsStore>((set, get) => ({
 
         // Convert mock Product type to expected Product type
         const convertedProducts: Product[] = limitedProducts.map((mockProduct: MockProduct) => ({
-          id: mockProduct.sku,
           sku: mockProduct.sku,
           shopId: mockProduct.shopId,
           name: mockProduct.name,
           price: mockProduct.sellingPrice,
           mrp: mockProduct.mrp,
-          image: mockProduct.imageUrl,
+          imageUrl: mockProduct.imageUrl,
           numberOfVariants: mockProduct.numberOfVariants,
           variantAttributes: [], // Mock products don't have variant attributes
-          rating: 4.0 + Math.random() * 1.0, // Random rating between 4.0 and 5.0
+          rating: mockProduct.rating, // Random rating between 4.0 and 5.0
           discount: mockProduct.discount,
           quantity: 0,
           category: mockProduct.category,
-          description: mockProduct.description,
+          sellingPrice: mockProduct.sellingPrice,
+          primarySKU: mockProduct.primarySKU,
           brand: mockProduct.brand,
           inStock: mockProduct.inStock,
           currentStock: mockProduct.currentStock,
