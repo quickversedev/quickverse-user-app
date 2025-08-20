@@ -13,32 +13,46 @@ interface PaymentSummaryProps {
 const PaymentSummary: React.FC<PaymentSummaryProps> = ({ expanded, onToggle, cart }) => {
   const { getColor, getTypography, theme } = useTheme();
 
-  const { subtotal, deliveryFee, total, totalDiscountOnItems } = useMemo(() => {
+  const { subtotal, deliveryFee, total, totalDiscountOnItems, couponDiscount } = useMemo(() => {
     if (!cart) {
       return {
         subtotal: 0,
         deliveryFee: 0,
         total: 0,
         totalDiscountOnItems: 0,
+        couponDiscount: 0,
       };
     }
 
-    const totalCartAmount = cart.totalCartAmountWithBenefit || 0;
-    const totalCartAmountWithBenefit = cart.finalCartAmount || 0;
+    const apiSubtotal = cart.totalCartAmount ?? 0;
 
     const localSubtotal = Object.values(cart.products).reduce(
       (sum, product) => sum + product.price * product.quantity,
       0
     );
 
-    const subtotal = totalCartAmount > 0 ? totalCartAmount : localSubtotal;
-    const deliveryFee = subtotal > 0 ? 28 : 0;
-    const totalDiscountOnItems =
-      totalCartAmount > 0 ? totalCartAmount - totalCartAmountWithBenefit : 0;
-    const total =
-      totalCartAmountWithBenefit > 0 ? totalCartAmountWithBenefit : subtotal + deliveryFee;
+    const calculatedSubtotal = apiSubtotal > 0 ? apiSubtotal : localSubtotal;
+    const calculatedDeliveryFee = cart.deliveryFee ?? (calculatedSubtotal > 0 ? 28 : 0);
+    const calculatedCouponDiscount = cart.smartBizOffer?.totalBenefit ?? 0;
+    const calculatedTotalDiscountOnItems = cart.totalDiscountOnItems ?? 0;
+    const apiTotal = cart.totalCartAmountWithDeliveryFeeAndBenefit ?? 0;
 
-    return { subtotal, deliveryFee, total, totalDiscountOnItems };
+    // Use API total if available, otherwise calculate manually
+    const calculatedTotal =
+      apiTotal > 0
+        ? apiTotal
+        : calculatedSubtotal -
+          calculatedTotalDiscountOnItems -
+          calculatedCouponDiscount +
+          calculatedDeliveryFee;
+
+    return {
+      subtotal: calculatedSubtotal,
+      deliveryFee: calculatedDeliveryFee,
+      total: calculatedTotal,
+      totalDiscountOnItems: calculatedTotalDiscountOnItems,
+      couponDiscount: calculatedCouponDiscount,
+    };
   }, [cart]);
 
   const styles = StyleSheet.create({
@@ -155,6 +169,17 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({ expanded, onToggle, car
                   <Text style={styles.billLabel}>Item Discount</Text>
                   <Text style={[styles.billAmount, { color: getColor('primary') }]}>
                     -₹{totalDiscountOnItems}
+                  </Text>
+                </View>
+              </>
+            )}
+            {couponDiscount > 0 && (
+              <>
+                <View style={styles.dottedLine} />
+                <View style={styles.billRow}>
+                  <Text style={styles.billLabel}>Coupon Discount</Text>
+                  <Text style={[styles.billAmount, { color: getColor('primary') }]}>
+                    -₹{couponDiscount}
                   </Text>
                 </View>
               </>

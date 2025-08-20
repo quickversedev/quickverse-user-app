@@ -25,9 +25,11 @@ export interface CartApiResponse {
 
 export interface SmartBizOffer {
   offerId: string;
+  offerCode?: string | null;
   offerName: string;
   offerType: string;
   discountValue: number;
+  totalBenefit?: number;
   // Add more fields as needed
 }
 
@@ -149,6 +151,10 @@ export interface TransformedCartData {
   finalCartAmount: number;
   totalCartAmount?: number;
   totalDiscountOnItems?: number;
+  deliveryFee?: number;
+  totalCartAmountWithDeliveryFee?: number;
+  totalCartAmountWithDeliveryFeeAndBenefit?: number;
+  smartBizOffer?: SmartBizOffer | null;
   products: Record<string, TransformedCartProduct>;
 }
 
@@ -178,7 +184,7 @@ class CartApiService {
       // Method 1: Using apiCall wrapper (recommended for error handling)
       const response = await apiCall(
         axiosInstance.post<CartApiResponse>(
-          'v2/addCart',
+          '/v2/addCart',
           {
             shopId,
             sku: productSku,
@@ -210,7 +216,7 @@ class CartApiService {
   ): Promise<TransformedCartData> {
     try {
       // Method 2: Direct axiosInstance usage
-      const response = await axiosInstance.delete<CartApiResponse>('v2/deleteCart', {
+      const response = await axiosInstance.delete<CartApiResponse>('/v2/deleteCart', {
         params: {
           shopId,
           productSku,
@@ -235,7 +241,7 @@ class CartApiService {
   async clearCart(shopId: string, jwtToken: string, phone: string): Promise<TransformedCartData> {
     try {
       // Method 3: Using withHeaders helper
-      const response = await axiosInstance.delete<CartApiResponse>('v2/clearCart', {
+      const response = await axiosInstance.delete<CartApiResponse>('/v2/clearCart', {
         params: { shopId },
         ...withHeaders({ SessionKey: jwtToken, phone }),
       });
@@ -246,6 +252,8 @@ class CartApiService {
       throw error;
     }
   }
+
+  // applyOffer moved to couponService
 
   /**
    * Transform API response to store-friendly format
@@ -275,6 +283,20 @@ class CartApiService {
       finalCartAmount: apiResponse.finalCartAmount || 0,
       totalCartAmount: apiResponse.totalCartAmount || 0,
       totalDiscountOnItems: apiResponse.totalDiscountOnItems || 0,
+      deliveryFee: apiResponse.deliveryFee || 0,
+      totalCartAmountWithDeliveryFee: apiResponse.totalCartAmountWithDeliveryFee || 0,
+      totalCartAmountWithDeliveryFeeAndBenefit:
+        apiResponse.totalCartAmountWithDeliveryFeeAndBenefit || 0,
+      smartBizOffer: apiResponse.smartBizOffer
+        ? {
+            offerId: apiResponse.smartBizOffer.offerId,
+            offerCode: apiResponse.smartBizOffer.offerCode ?? null,
+            offerName: apiResponse.smartBizOffer.offerName,
+            offerType: apiResponse.smartBizOffer.offerType,
+            discountValue: apiResponse.smartBizOffer.discountValue,
+            totalBenefit: apiResponse.smartBizOffer.totalBenefit ?? 0,
+          }
+        : null,
       products,
     };
   }

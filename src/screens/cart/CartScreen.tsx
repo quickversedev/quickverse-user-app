@@ -47,8 +47,10 @@ const CartScreen: React.FC = () => {
     removeCoupon,
     getAvailableCoupons,
     checkAndFetchOffers,
-    loading: couponLoading,
-    error: couponError,
+    vendorOffersLoading,
+    customerOffersLoading,
+    vendorOffersError,
+    customerOffersError,
   } = useCouponStore();
 
   // Auth hooks
@@ -172,8 +174,8 @@ const CartScreen: React.FC = () => {
 
         <CouponSection
           appliedCoupon={appliedCoupon}
-          couponLoading={couponLoading}
-          couponError={couponError}
+          couponLoading={vendorOffersLoading || customerOffersLoading}
+          couponError={Boolean(vendorOffersError || customerOffersError)}
           availableCoupons={availableCoupons}
           onCouponNavigation={handleCouponNavigation}
           onRemoveCoupon={handleRemoveCoupon}

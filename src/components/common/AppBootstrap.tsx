@@ -23,14 +23,14 @@ import { HomeScreenSkeleton } from './skeleton';
  * - After permissions → AppInitializer + AppStack
  */
 const AppBootstrap: React.FC = () => {
-  const { isNewUser } = useAuth();
+  const { isNewUser, authData } = useAuth();
   const [permissionsCompleted, setPermissionsCompleted] = useState(false);
   const { getPermissionAndLocation } = useLocation();
   const [permissionData, setLocalPermissionData] = useState<PermissionAndLocation | null>(null);
   const [bootLoading, setBootLoading] = useState(false);
   const { setPermissionDataInAuth } = useAuth();
   const [bootError, setBootError] = useState<string | null>(null);
-
+  console.log('jwt', authData);
   const bootstrap = async () => {
     setBootLoading(true);
     setBootError(null);

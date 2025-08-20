@@ -3,6 +3,7 @@ import { getVendorMockCoupons, simulateApiDelay } from '../../assets/mock/coupon
 import { ApiError } from '../../config/api/axios.types';
 import couponService from '../../services/couponService';
 import { AuthSession } from '../../services/localStorage/storage.service';
+import useCartStore from './cartStore';
 
 export interface Coupon {
   id: string;
@@ -33,9 +34,19 @@ export interface Coupon {
 interface CouponStore {
   appliedCoupons: Record<string, Coupon>; // key is cartId
   availableCoupons: Record<string, Coupon[]>; // key is vendorId
-  loading: boolean;
-  error: string | null;
+  vendorOffersLoading: boolean;
+  vendorOffersError: string | null;
+  customerOffersLoading: boolean;
+  customerOffersError: string | null;
+  applyCouponLoading: boolean;
+  applyCouponError: string | null;
   applyCoupon: (cartId: string, coupon: Coupon) => void;
+  applyOfferToCart: (
+    cartId: string,
+    vendorId: string,
+    coupon: Coupon,
+    authData?: AuthSession
+  ) => Promise<void>;
   removeCoupon: (cartId: string) => void;
   getAppliedCoupon: (cartId: string) => Coupon | undefined;
   getAvailableCoupons: (vendorId: string) => Coupon[];
@@ -59,8 +70,12 @@ let pendingRequest: AbortController | null = null;
 const useCouponStore = create<CouponStore>((set, get) => ({
   appliedCoupons: {},
   availableCoupons: {},
-  loading: false,
-  error: null,
+  vendorOffersLoading: false,
+  vendorOffersError: null,
+  customerOffersLoading: false,
+  customerOffersError: null,
+  applyCouponLoading: false,
+  applyCouponError: null,
 
   applyCoupon: (cartId: string, coupon: Coupon) => {
     set(state => ({
@@ -69,6 +84,43 @@ const useCouponStore = create<CouponStore>((set, get) => ({
         [cartId]: coupon,
       },
     }));
+  },
+
+  applyOfferToCart: async (cartId, vendorId, coupon, authData) => {
+    try {
+      set({ applyCouponLoading: true, applyCouponError: null });
+      const shopId = vendorId;
+      const offerIdOrCode = coupon.id;
+
+      if (!authData?.jwt) {
+        throw new Error('No authentication token available');
+      }
+
+      const apiResponse = await couponService.applyOffer(shopId, offerIdOrCode, false, authData);
+
+      // Sync cart store with latest totals/products
+      useCartStore.getState().syncCartWithApi(cartId, apiResponse);
+
+      // Mark coupon as applied in this store
+      set(state => ({
+        appliedCoupons: {
+          ...state.appliedCoupons,
+          [cartId]: coupon,
+        },
+        applyCouponLoading: false,
+      }));
+    } catch (err: unknown) {
+      const error = err as ApiError | Error;
+      let errorMessage = 'Failed to apply coupon';
+      if ('code' in (error as any) && 'status' in (error as any)) {
+        const apiError = error as ApiError;
+        errorMessage = apiError.message || errorMessage;
+      } else if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      }
+      set({ applyCouponError: errorMessage, applyCouponLoading: false });
+      throw error;
+    }
   },
 
   removeCoupon: (cartId: string) => {
@@ -98,7 +150,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
     const abortController = new AbortController();
     pendingRequest = abortController;
 
-    set({ loading: true, error: null });
+    set({ vendorOffersLoading: true, vendorOffersError: null });
 
     try {
       if (USE_COUPON_MOCKS) {
@@ -115,7 +167,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
               ...state.availableCoupons,
               [vendorId]: mockCoupons,
             },
-            loading: false,
+            vendorOffersLoading: false,
           }));
         }
       } else {
@@ -129,7 +181,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
               ...state.availableCoupons,
               [vendorId]: offers,
             },
-            loading: false,
+            vendorOffersLoading: false,
           }));
         }
       }
@@ -161,7 +213,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
           errorMessage = error.message || 'Failed to fetch vendor offers';
         }
 
-        set({ error: errorMessage, loading: false });
+        set({ vendorOffersError: errorMessage, vendorOffersLoading: false });
       }
     } finally {
       // Clear pending request if this was the current one
@@ -182,7 +234,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
     const abortController = new AbortController();
     pendingRequest = abortController;
 
-    set({ loading: true, error: null });
+    set({ customerOffersLoading: true, customerOffersError: null });
 
     try {
       if (USE_COUPON_MOCKS) {
@@ -199,7 +251,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
               ...state.availableCoupons,
               [vendorId]: mockCoupons,
             },
-            loading: false,
+            customerOffersLoading: false,
           }));
         }
       } else {
@@ -213,7 +265,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
               ...state.availableCoupons,
               [vendorId]: offers,
             },
-            loading: false,
+            customerOffersLoading: false,
           }));
         }
       }
@@ -245,7 +297,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
           errorMessage = error.message || 'Failed to fetch customer offers';
         }
 
-        set({ error: errorMessage, loading: false });
+        set({ customerOffersError: errorMessage, customerOffersLoading: false });
       }
     } finally {
       // Clear pending request if this was the current one
@@ -266,7 +318,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
     const abortController = new AbortController();
     pendingRequest = abortController;
 
-    set({ loading: true, error: null });
+    set({ vendorOffersLoading: true, vendorOffersError: null });
 
     try {
       if (USE_COUPON_MOCKS) {
@@ -283,7 +335,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
               ...state.availableCoupons,
               [vendorId]: mockCoupons,
             },
-            loading: false,
+            vendorOffersLoading: false,
           }));
         }
       } else {
@@ -297,7 +349,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
               ...state.availableCoupons,
               [vendorId]: offers,
             },
-            loading: false,
+            vendorOffersLoading: false,
           }));
         }
       }
@@ -329,7 +381,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
           errorMessage = error.message || 'Failed to check and fetch offers';
         }
 
-        set({ error: errorMessage, loading: false });
+        set({ vendorOffersError: errorMessage, vendorOffersLoading: false });
       }
     } finally {
       // Clear pending request if this was the current one

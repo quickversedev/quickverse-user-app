@@ -169,9 +169,7 @@ const CouponSection: React.FC<CouponSectionProps> = ({
         ) : (
           <>
             {!couponLoading && !couponError && (
-              <Text style={styles.couponAvailable}>
-                {availableCoupons.length} Coupons Available
-              </Text>
+              <Text style={styles.couponAvailable}>{availableCoupons.length} Available</Text>
             )}
             <MaterialCommunityIcons name="chevron-right" size={24} color={getColor('primary')} />
           </>

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -164,16 +165,14 @@ const CouponCard: React.FC<{
 
     const messages: string[] = [];
 
-    // Check minimum order amount using minimumOrderAmount field
-    if (coupon.minimumOrderAmount && coupon.totalAmountRequired) {
-      const amountNeeded = coupon.minimumOrderAmount - coupon.totalAmountRequired;
-      if (amountNeeded > 0) {
-        messages.push(`Add ₹${amountNeeded} more to cart`);
-      }
+    // Minimum order not met: API provides totalAmountRequired as the remaining amount needed
+    if (typeof coupon.totalAmountRequired === 'number' && coupon.totalAmountRequired > 0) {
+      const amountNeeded = Math.ceil(coupon.totalAmountRequired);
+      messages.push(`Add ₹${amountNeeded} more to cart`);
     }
 
-    // Check minimum product count
-    if (coupon.minProductCount && coupon.minProductCount > 0) {
+    // Check minimum product count if provided
+    if (typeof coupon.minProductCount === 'number' && coupon.minProductCount > 0) {
       messages.push(`Add at least ${coupon.minProductCount} items to cart`);
     }
 
@@ -240,8 +239,17 @@ const CouponCard: React.FC<{
 const CouponsScreen: React.FC = () => {
   const { carts, activeCartId } = useCartStore();
   const { vendors } = useVendorStore();
-  const { getAvailableCoupons, applyCoupon, loading, error, checkAndFetchOffers } =
-    useCouponStore();
+  const {
+    getAvailableCoupons,
+    checkAndFetchOffers,
+    applyOfferToCart,
+    vendorOffersLoading,
+    customerOffersLoading,
+    vendorOffersError,
+    customerOffersError,
+    applyCouponLoading,
+    applyCouponError,
+  } = useCouponStore();
   const navigation = useNavigation<AppNavigationProp>();
   const { getColor, getTypography, theme } = useTheme();
   const [couponCode, setCouponCode] = useState('');
@@ -261,21 +269,51 @@ const CouponsScreen: React.FC = () => {
     }
   }, [vendorId, checkAndFetchOffers, authData]);
 
-  const handleApplyCoupon = (code: string) => {
+  const handleApplyCoupon = async (code: string) => {
     const cartId = activeCartId || (carts && Object.keys(carts)[0]);
-    if (!cartId) return;
+    if (!cartId || !vendorId) return;
 
-    const coupon = availableCoupons.find((c: Coupon) => c.code === code);
+    const coupon = availableCoupons.find((c: Coupon) => c.code === code || c.id === code);
     if (coupon) {
-      applyCoupon(cartId, coupon);
-      navigation.goBack();
+      try {
+        await applyOfferToCart(cartId, vendorId, coupon, authData);
+        navigation.goBack();
+      } catch (e) {
+        // Error handled by store and shown in modal
+      }
     }
   };
 
   const handleManualApply = () => {
-    if (couponCode.trim()) {
-      handleApplyCoupon(couponCode.trim());
+    const code = couponCode.trim();
+    if (!code) return;
+    const cartId = activeCartId || (carts && Object.keys(carts)[0]);
+    if (!cartId || !vendorId) return;
+    const existing = availableCoupons.find((c: Coupon) => c.code === code || c.id === code);
+    const coupon: Coupon =
+      existing ||
+      ({
+        id: code,
+        code,
+        description: code,
+        discount: '',
+        minOrder: 0,
+        expiryDate: '',
+      } as Coupon);
+    applyOfferToCart(cartId, vendorId, coupon, authData)
+      .then(() => navigation.goBack())
+      .catch(() => {});
+  };
+
+  const handleRetry = () => {
+    if (vendorId) {
+      checkAndFetchOffers(vendorId, authData);
     }
+  };
+
+  const handleCloseErrorModal = () => {
+    // Clear the error state by calling the store method
+    useCouponStore.setState({ applyCouponError: null });
   };
 
   const styles = StyleSheet.create({
@@ -436,13 +474,60 @@ const CouponsScreen: React.FC = () => {
       fontFamily: theme.typography.fontFamily,
       marginLeft: 12,
     },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    errorModal: {
+      backgroundColor: getColor('card'),
+      borderRadius: theme.borderRadius.md,
+      padding: 24,
+      alignItems: 'center',
+      width: '80%',
+      ...Platform.select({
+        ios: {
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: theme.colors.shadow.offset,
+          shadowOpacity: theme.colors.shadow.opacity,
+          shadowRadius: theme.colors.shadow.radius,
+        },
+        android: {
+          elevation: 5,
+        },
+      }),
+    },
+    errorModalIcon: {
+      marginBottom: 16,
+    },
+    errorModalTitle: {
+      color: getColor('error'),
+      fontSize: getTypography('subtitle'),
+      fontWeight: '600',
+      fontFamily: theme.typography.fontFamily,
+      marginBottom: 8,
+    },
+    errorModalMessage: {
+      color: getColor('subText'),
+      fontSize: getTypography('body'),
+      textAlign: 'center',
+      fontFamily: theme.typography.fontFamily,
+      marginBottom: 24,
+    },
+    errorModalButton: {
+      backgroundColor: getColor('primary'),
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: theme.borderRadius.md,
+    },
+    errorModalButtonText: {
+      color: getColor('black'),
+      fontSize: getTypography('body'),
+      fontWeight: 'bold',
+      fontFamily: theme.typography.fontFamily,
+    },
   });
-
-  const handleRetry = () => {
-    if (vendorId) {
-      checkAndFetchOffers(vendorId, authData);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -477,20 +562,22 @@ const CouponsScreen: React.FC = () => {
                 },
               ]}
               onPress={handleManualApply}
-              disabled={!couponCode.trim()}
+              disabled={!couponCode.trim() || applyCouponLoading}
             >
-              <Text style={styles.applyButtonLargeText}>APPLY</Text>
+              <Text style={styles.applyButtonLargeText}>
+                {applyCouponLoading ? 'APPLYING...' : 'APPLY'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Available Coupons */}
         <Text style={styles.sectionTitle}>Available Coupons</Text>
-        {loading ? (
+        {vendorOffersLoading || customerOffersLoading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color={getColor('primary')} />
           </View>
-        ) : error ? (
+        ) : vendorOffersError || customerOffersError ? (
           <View style={styles.errorContainer}>
             <MaterialCommunityIcons
               name="alert-circle-outline"
@@ -499,7 +586,7 @@ const CouponsScreen: React.FC = () => {
               style={styles.errorIcon}
             />
             <Text style={styles.errorText}>Failed to load coupons</Text>
-            <Text style={styles.errorSubtext}>{error}</Text>
+            <Text style={styles.errorSubtext}>{vendorOffersError || customerOffersError}</Text>
             <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
               <Text style={styles.retryButtonText}>Try Again</Text>
             </TouchableOpacity>
@@ -517,13 +604,41 @@ const CouponsScreen: React.FC = () => {
         ) : (
           <FlatList
             data={availableCoupons}
-            renderItem={({ item }) => <CouponCard coupon={item} onApply={handleApplyCoupon} />}
-            keyExtractor={item => item.id}
+            renderItem={({ item }: { item: Coupon }) => (
+              <CouponCard coupon={item} onApply={handleApplyCoupon} />
+            )}
+            keyExtractor={(item: Coupon) => item.id}
             contentContainerStyle={styles.couponList}
             showsVerticalScrollIndicator={false}
           />
         )}
       </View>
+
+      {/* Error Modal for Apply Coupon */}
+      <Modal
+        visible={Boolean(applyCouponError)}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseErrorModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.errorModal}>
+            <MaterialCommunityIcons
+              name="alert-circle-outline"
+              size={48}
+              color={getColor('error')}
+              style={styles.errorModalIcon}
+            />
+            <Text style={styles.errorModalTitle}>Unable to Apply Coupon</Text>
+            <Text style={styles.errorModalMessage}>
+              {applyCouponError || 'Something went wrong. Please try again.'}
+            </Text>
+            <TouchableOpacity style={styles.errorModalButton} onPress={handleCloseErrorModal}>
+              <Text style={styles.errorModalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

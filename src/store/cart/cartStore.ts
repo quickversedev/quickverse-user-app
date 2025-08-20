@@ -38,6 +38,17 @@ export type Cart = {
   finalCartAmount?: number;
   totalCartAmount?: number;
   totalDiscountOnItems?: number;
+  deliveryFee?: number;
+  totalCartAmountWithDeliveryFee?: number;
+  totalCartAmountWithDeliveryFeeAndBenefit?: number;
+  smartBizOffer?: {
+    offerId: string;
+    offerCode?: string | null;
+    offerName: string;
+    offerType: string;
+    discountValue: number;
+    totalBenefit?: number;
+  } | null;
   products: Record<string, CartProduct>; // key: sku
 };
 
@@ -253,6 +264,11 @@ const useCartStore = create<CartStore>()(
             finalCartAmount: apiData.finalCartAmount,
             totalCartAmount: apiData.totalCartAmount || apiData.totalCartAmountWithBenefit,
             totalDiscountOnItems: apiData.totalDiscountOnItems || 0,
+            deliveryFee: apiData.deliveryFee,
+            totalCartAmountWithDeliveryFee: apiData.totalCartAmountWithDeliveryFee,
+            totalCartAmountWithDeliveryFeeAndBenefit:
+              apiData.totalCartAmountWithDeliveryFeeAndBenefit,
+            smartBizOffer: apiData.smartBizOffer || null,
             products: transformedProducts,
           };
 

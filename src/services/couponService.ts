@@ -1,6 +1,7 @@
 import axiosInstance from '../config/api/axios.config';
 import { AuthSession } from '../services/localStorage/storage.service';
 import { Coupon } from '../store/cart/couponStore';
+import { CartApiResponse, TransformedCartData, TransformedCartProduct } from './cartApiService';
 
 // Vendor Offers Response
 export interface VendorOffersResponse {
@@ -199,7 +200,21 @@ class CouponService {
       return []; // No offers available
     } catch (error) {
       console.error('Error fetching vendor offers:', error);
-      return this.mockCoupons; // Fallback to mock data on error
+      return [];
+    }
+  }
+
+  async getVendorOffersPresence(vendorId: string): Promise<VendorOffersResponse> {
+    try {
+      const response = await axiosInstance.get(`/v3/${vendorId}/Offers`, {
+        headers: {
+          Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+        },
+      });
+      return response.data as VendorOffersResponse;
+    } catch (error) {
+      console.error('Error fetching vendor offers presence:', error);
+      throw error;
     }
   }
 
@@ -223,7 +238,7 @@ class CouponService {
           phone: authData?.phone || '',
         },
       });
-
+      // console.log('customer offer response', response);
       const data: CustomerOffersResponse = response.data;
 
       // Transform both eligible and non-eligible offers to Coupon format
@@ -242,6 +257,76 @@ class CouponService {
       console.error('Error fetching customer offers:', error);
       return this.mockCoupons; // Fallback to mock data on error
     }
+  }
+
+  /**
+   * Apply offer/coupon to cart and return transformed cart data
+   */
+  async applyOffer(
+    shopId: string,
+    offerIdOrCode: string,
+    isBuyNow: boolean,
+    authData?: AuthSession
+  ): Promise<TransformedCartData> {
+    try {
+      console.log('apply offer params', { shopId, offerIdOrCode, isBuyNow });
+      const response = await axiosInstance.post<CartApiResponse>('/v3/Offers/Apply', null, {
+        params: { shopId, offerId: offerIdOrCode, isBuyNow },
+        headers: {
+          Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+          SessionKey: authData?.jwt || '',
+          phone: authData?.phone || '',
+        },
+      });
+      console.log('apply offer response', response);
+      return this.transformCartResponse(response.data);
+    } catch (error) {
+      console.error('Apply offer error:', error);
+      throw error;
+    }
+  }
+
+  // Transform API response to store-friendly format (copied from cartApiService)
+  private transformCartResponse(apiResponse: CartApiResponse): TransformedCartData {
+    const products: Record<string, TransformedCartProduct> = {};
+
+    if (apiResponse.skuDetailsGrouped && Array.isArray(apiResponse.skuDetailsGrouped)) {
+      apiResponse.skuDetailsGrouped.forEach(skuDetail => {
+        products[skuDetail.sku] = {
+          sku: skuDetail.sku,
+          itemCount: skuDetail.itemCount,
+          appliedOffers: skuDetail.appliedOffers,
+          productDetails: skuDetail.productDetails,
+          shopPrice: skuDetail.shopPrice,
+          productMRP: skuDetail.productMRP,
+          finalPrice: skuDetail.finalPrice,
+        };
+      });
+    }
+
+    return {
+      smartBizCartId: apiResponse.cartIdStr || '',
+      customerId: apiResponse.customerIdStr || '',
+      totalCartAmountWithBenefit: apiResponse.totalCartAmountWithBenefit || 0,
+      finalCartAmount: apiResponse.finalCartAmount || 0,
+      totalCartAmount: apiResponse.totalCartAmount || 0,
+      totalDiscountOnItems: apiResponse.totalDiscountOnItems || 0,
+      deliveryFee: apiResponse.deliveryFee || 0,
+      totalCartAmountWithDeliveryFee: apiResponse.totalCartAmountWithDeliveryFee || 0,
+      totalCartAmountWithDeliveryFeeAndBenefit:
+        apiResponse.totalCartAmountWithDeliveryFeeAndBenefit || 0,
+      smartBizOffer: apiResponse.smartBizOffer
+        ? {
+            offerId: apiResponse.smartBizOffer.offerId,
+            offerCode: apiResponse.smartBizOffer.offerCode ?? null,
+            offerName: apiResponse.smartBizOffer.offerName,
+            offerType: apiResponse.smartBizOffer.offerType,
+            discountValue: apiResponse.smartBizOffer.discountValue,
+            totalBenefit: apiResponse.smartBizOffer.totalBenefit ?? 0,
+          }
+        : null,
+      products,
+    };
   }
 }
 
