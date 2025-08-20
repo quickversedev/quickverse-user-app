@@ -4,21 +4,11 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import MapView, { Circle, Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
+import { Images } from '../../assets';
 import { useAuth } from '../../contexts/login/AuthProvider';
+import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
-
-// Vendor data type
-interface Vendor {
-  id: string;
-  name: string;
-  type: 'restaurant' | 'grocery' | 'pharmacy' | 'retail';
-  rating: number;
-  distance: number;
-  coordinate: {
-    latitude: number;
-    longitude: number;
-  };
-}
+import { Vendor } from '../../types/vendor';
 
 const ExploreScreen = () => {
   const { getColor, theme } = useTheme();
@@ -30,8 +20,8 @@ const ExploreScreen = () => {
       return {
         latitude: selectedAddress.coordinates.latitude,
         longitude: selectedAddress.coordinates.longitude,
-        latitudeDelta: 0.062, // Even larger view to show more area
-        longitudeDelta: 0.062,
+        latitudeDelta: 0.08, // Even larger view to show more area
+        longitudeDelta: 0.08,
       };
     }
     return {
@@ -44,73 +34,69 @@ const ExploreScreen = () => {
 
   const [region, setRegion] = useState(getRegion());
   const [shouldRenderMap, setShouldRenderMap] = useState(false);
-  const [vendors, setVendors] = useState<Vendor[]>([]);
+
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
   // const mapRef = useRef<MapView>(null);
 
-  // Generate vendors in 5km radius around selected address
-  const generateVendors = useCallback((centerLat: number, centerLng: number): Vendor[] => {
-    const vendorTypes: Vendor['type'][] = ['restaurant', 'grocery', 'pharmacy', 'retail'];
-    const vendorNames = [
-      'Quick Bites',
-      'Fresh Mart',
-      'Health Plus',
-      'Urban Store',
-      'Tasty Corner',
-      'Green Grocery',
-      'MediCare',
-      'City Market',
-      'Food Hub',
-      'Daily Needs',
-      'Wellness Store',
-      'Local Mart',
-    ];
+  // Get vendors from vendor store
+  const { vendors, getVendorsNearLocation } = useVendorStore();
 
-    const vendors: Vendor[] = [];
-    const maxRadius = 5; // 5km radius
-
-    for (let i = 0; i < 15; i++) {
-      // Generate random distance within 5km
-      const distance = Math.random() * maxRadius;
-
-      // Generate random angle
-      const angle = Math.random() * 2 * Math.PI;
-
-      // Convert distance to degrees (approximate)
-      // 1 degree latitude ≈ 111km, 1 degree longitude ≈ 111km * cos(latitude)
-      const latDelta = distance / 111;
-      const lngDelta = distance / (111 * Math.cos((centerLat * Math.PI) / 180));
-
-      // Calculate new coordinates
-      const latitude = centerLat + latDelta * Math.cos(angle);
-      const longitude = centerLng + lngDelta * Math.sin(angle);
-
-      const vendor: Vendor = {
-        id: `vendor_${i}`,
-        name: vendorNames[Math.floor(Math.random() * vendorNames.length)],
-        type: vendorTypes[Math.floor(Math.random() * vendorTypes.length)],
-        rating: Math.floor(Math.random() * 5) + 1,
-        distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
-        coordinate: { latitude, longitude },
+  // Helper function to get vendor coordinates
+  const getVendorCoordinates = useCallback((vendor: Vendor) => {
+    if (vendor.coordinates) {
+      return {
+        latitude: vendor.coordinates.latitude,
+        longitude: vendor.coordinates.longitude,
       };
+    } else if (vendor.location) {
+      return {
+        latitude: vendor.location.coordinates[1], // latitude
+        longitude: vendor.location.coordinates[0], // longitude
+      };
+    }
+    return null;
+  }, []);
 
-      vendors.push(vendor);
+  // Helper function to get vendor pin based on category
+  const getVendorPin = useCallback((vendor: Vendor) => {
+    const category = vendor.category?.toLowerCase();
+
+    if (
+      category?.includes('food') ||
+      category?.includes('restaurant') ||
+      category?.includes('cafe')
+    ) {
+      return Images.foodPin;
+    } else if (
+      category?.includes('grocery') ||
+      category?.includes('supermarket') ||
+      category?.includes('mart')
+    ) {
+      return Images.groceryPin;
+    } else if (
+      category?.includes('pharmacy') ||
+      category?.includes('medical') ||
+      category?.includes('health')
+    ) {
+      return Images.pharmacyPin;
     }
 
-    return vendors;
+    // Default to food pin if category doesn't match
+    return Images.foodPin;
   }, []);
 
   // Memoized vendors based on selected address
   const memoizedVendors = useMemo(() => {
     if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
-      return generateVendors(
-        selectedAddress.coordinates.latitude,
-        selectedAddress.coordinates.longitude
-      );
+      return getVendorsNearLocation({
+        latitude: selectedAddress.coordinates.latitude,
+        longitude: selectedAddress.coordinates.longitude,
+        radius: 5, // 5km radius
+      });
     }
     return [];
-  }, [selectedAddress, generateVendors]);
+  }, [selectedAddress, getVendorsNearLocation, vendors]);
 
   // Initialize map when component mounts
   useEffect(() => {
@@ -126,9 +112,8 @@ const ExploreScreen = () => {
     if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
       const newRegion = getRegion();
       setRegion(newRegion);
-      setVendors(memoizedVendors);
     }
-  }, [selectedAddress]);
+  }, [selectedAddress, memoizedVendors]);
 
   // Auto-refresh when screen comes into focus
   useFocusEffect(
@@ -143,19 +128,13 @@ const ExploreScreen = () => {
     setIsRefreshing(true);
     setIsAutoRefreshing(true);
     setShouldRenderMap(false);
-    setVendors([]);
 
-    // Reset map and regenerate everything after a short delay
+    // Reset map and update vendors after a short delay
     setTimeout(() => {
       if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
         const newRegion = getRegion();
-        const newVendors = generateVendors(
-          selectedAddress.coordinates.latitude,
-          selectedAddress.coordinates.longitude
-        );
 
         setRegion(newRegion);
-        setVendors(newVendors);
         setShouldRenderMap(true);
         setIsRefreshing(false);
 
@@ -166,7 +145,7 @@ const ExploreScreen = () => {
       }
     }, 100);
   };
-
+  console.log('vendors', vendors);
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -263,14 +242,15 @@ const ExploreScreen = () => {
       fontSize: 12,
     },
     customMapPin: {
+      flex: 1,
       width: 50,
       height: 50,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      borderRadius: 25,
-      borderWidth: 2,
-      borderColor: '#FF6B6B',
+      // backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      // borderRadius: 25,
+      // borderWidth: 2,
+      // borderColor: '#FF6B6B',
     },
   });
 
@@ -337,19 +317,21 @@ const ExploreScreen = () => {
             )}
 
             {/* Show vendor markers */}
-            {vendors.map(vendor => (
-              <Marker
-                key={vendor.id}
-                coordinate={vendor.coordinate}
-                title={vendor.name}
-                description={`${vendor.type} • ${vendor.rating}★ • ${vendor.distance}km`}
-                anchor={{ x: 0.5, y: 1.0 }}
-              >
-                <View style={styles.customMapPin}>
-                  <MaterialCommunityIcons name="map-marker" size={30} color="#FF6B6B" />
-                </View>
-              </Marker>
-            ))}
+            {vendors.map(vendor => {
+              const coordinates = getVendorCoordinates(vendor);
+              if (!coordinates) return null;
+
+              return (
+                <Marker
+                  key={vendor.shopId}
+                  coordinate={coordinates}
+                  title={vendor.name}
+                  description={`${vendor.category} • ${vendor.rating || 0}★`}
+                  anchor={{ x: 0.5, y: 1.0 }}
+                  image={getVendorPin(vendor)}
+                />
+              );
+            })}
           </MapView>
         ) : (
           <View style={styles.mapLoadingContainer}>

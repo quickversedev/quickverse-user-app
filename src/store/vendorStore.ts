@@ -78,7 +78,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
             radius: location.radius || 6000,
           }
         : {};
-      console.log('params', params);
+
       const response = await axiosInstance.get(VENDOR_API_URL, {
         params,
         headers: {
@@ -86,7 +86,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         },
         signal: abortController.signal,
       });
-      console.log('vendors', response.data);
+
       // Only update state if this is still the current request
       if (requestId === currentRequestId) {
         const sortedVendors = sortVendorsByActiveStatus(response.data);
@@ -235,7 +235,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
   getVendorById: (shopId: string) => {
     const { vendors } = get();
     const vendor = vendors.find(v => v.shopId === shopId);
-    return vendor;
+    return vendor || null;
   },
 
   // New method: search vendors by name and category
