@@ -115,7 +115,7 @@ const useAddressStore = create<AddressStore>((set, get) => ({
         axiosInstance.post('/v2/addresses', addressData, {
           headers: {
             SessionKey: authSession.jwt,
-            phone: '',
+            phone: authSession.phone,
           },
         })
       );

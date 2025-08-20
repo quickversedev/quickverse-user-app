@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { getVendorMockCoupons, simulateApiDelay } from '../../assets/mock/couponMockData';
 import { ApiError } from '../../config/api/axios.types';
 import couponService from '../../services/couponService';
+import { AuthSession } from '../../services/localStorage/storage.service';
 
 export interface Coupon {
   id: string;
@@ -21,6 +22,12 @@ export interface Coupon {
     quantityLimit: number | null;
   }>;
   minProductCount?: number;
+  // Eligibility information
+  isEligible?: boolean;
+  constraintSuggestions?: string[];
+  benefitSuggestions?: string[];
+  totalAmountRequired?: number;
+  minimumOrderAmount?: number; // API field name
 }
 
 interface CouponStore {
@@ -32,14 +39,18 @@ interface CouponStore {
   removeCoupon: (cartId: string) => void;
   getAppliedCoupon: (cartId: string) => Coupon | undefined;
   getAvailableCoupons: (vendorId: string) => Coupon[];
-  fetchVendorOffers: (vendorId: string) => Promise<void>;
-  fetchCustomerOffers: (vendorId: string, _shopId?: string) => Promise<void>;
-  checkAndFetchOffers: (vendorId: string) => Promise<void>;
+  fetchVendorOffers: (vendorId: string, authData?: AuthSession) => Promise<void>;
+  fetchCustomerOffers: (
+    vendorId: string,
+    _shopId?: string,
+    authData?: AuthSession
+  ) => Promise<void>;
+  checkAndFetchOffers: (vendorId: string, authData?: AuthSession) => Promise<void>;
   clearVendorOffers: (vendorId: string) => void;
 }
 
 // Mock data control
-const USE_COUPON_MOCKS = true; // Set to false for real API
+const USE_COUPON_MOCKS = false; // Set to false for real API
 
 // Request debouncing mechanism
 let currentRequestId = 0;
@@ -76,7 +87,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
     return get().availableCoupons[vendorId] || [];
   },
 
-  fetchVendorOffers: async (vendorId: string) => {
+  fetchVendorOffers: async (vendorId: string, authData?: AuthSession) => {
     // Cancel any pending request
     if (pendingRequest) {
       pendingRequest.abort();
@@ -109,7 +120,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
         }
       } else {
         // Use real API
-        const offers = await couponService.getVendorOffers(vendorId);
+        const offers = await couponService.getVendorOffers(vendorId, authData);
 
         // Only update if this is still the current request
         if (requestId === currentRequestId) {
@@ -160,7 +171,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
     }
   },
 
-  fetchCustomerOffers: async (vendorId: string, _shopId?: string) => {
+  fetchCustomerOffers: async (vendorId: string, _shopId?: string, authData?: AuthSession) => {
     // Cancel any pending request
     if (pendingRequest) {
       pendingRequest.abort();
@@ -193,7 +204,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
         }
       } else {
         // Use real API
-        const offers = await couponService.getCustomerOffers(_shopId);
+        const offers = await couponService.getCustomerOffers(_shopId, authData);
 
         // Only update if this is still the current request
         if (requestId === currentRequestId) {
@@ -244,7 +255,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
     }
   },
 
-  checkAndFetchOffers: async (vendorId: string) => {
+  checkAndFetchOffers: async (vendorId: string, authData?: AuthSession) => {
     // Cancel any pending request
     if (pendingRequest) {
       pendingRequest.abort();
@@ -276,8 +287,8 @@ const useCouponStore = create<CouponStore>((set, get) => ({
           }));
         }
       } else {
-        // Use real API
-        const offers = await couponService.getVendorOffers(vendorId);
+        // Use real API - first check vendor offers, then fetch customer offers if available
+        const offers = await couponService.getVendorOffers(vendorId, authData);
 
         // Only update if this is still the current request
         if (requestId === currentRequestId) {

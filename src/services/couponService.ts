@@ -1,4 +1,5 @@
 import axiosInstance from '../config/api/axios.config';
+import { AuthSession } from '../services/localStorage/storage.service';
 import { Coupon } from '../store/cart/couponStore';
 
 // Vendor Offers Response
@@ -68,7 +69,10 @@ interface ApiCoupon {
   isActive: boolean;
 }
 
-const transformCustomerOffer = (customerOffer: CustomerOffer): Coupon => ({
+const transformCustomerOffer = (
+  customerOffer: CustomerOffer,
+  isEligible: boolean = true
+): Coupon => ({
   id: customerOffer.offerId,
   code: customerOffer.offerCode || '',
   description: customerOffer.offerName,
@@ -87,6 +91,12 @@ const transformCustomerOffer = (customerOffer: CustomerOffer): Coupon => ({
   offerClass: customerOffer.offerClass,
   applicableEntities: customerOffer.applicableEntities,
   minProductCount: customerOffer.minProductCount,
+  // Eligibility information
+  isEligible,
+  constraintSuggestions: customerOffer.offerConstraintSuggestions,
+  benefitSuggestions: customerOffer.offerBenefitSuggestions,
+  totalAmountRequired: customerOffer.totalAmountRequired,
+  minimumOrderAmount: customerOffer.minimumOrderAmount,
 });
 
 class CouponService {
@@ -104,6 +114,7 @@ class CouponService {
       offerClass: 'CART',
       applicableEntities: [],
       minProductCount: 0,
+      isEligible: true,
     },
     {
       id: '2',
@@ -118,6 +129,7 @@ class CouponService {
       offerClass: 'CART',
       applicableEntities: [],
       minProductCount: 0,
+      isEligible: true,
     },
     {
       id: '3',
@@ -143,6 +155,7 @@ class CouponService {
         },
       ],
       minProductCount: 2,
+      isEligible: true,
     },
     {
       id: '4',
@@ -157,12 +170,13 @@ class CouponService {
       offerClass: 'CART',
       applicableEntities: [],
       minProductCount: 0,
+      isEligible: true,
     },
   ];
 
   private readonly useMockData = false; // Toggle this to switch between mock and API
 
-  async getVendorOffers(vendorId: string): Promise<Coupon[]> {
+  async getVendorOffers(vendorId: string, authData?: AuthSession): Promise<Coupon[]> {
     if (this.useMockData) {
       return this.mockCoupons;
     }
@@ -179,7 +193,7 @@ class CouponService {
       // Check if any offers are present
       if (data.publicOffersPresent || data.privateOffersPresent) {
         // If offers are present, fetch customer offers
-        return await this.getCustomerOffers(vendorId);
+        return await this.getCustomerOffers(vendorId, authData);
       }
 
       return []; // No offers available
@@ -189,7 +203,7 @@ class CouponService {
     }
   }
 
-  async getCustomerOffers(shopId: string = ''): Promise<Coupon[]> {
+  async getCustomerOffers(shopId: string = '', authData?: AuthSession): Promise<Coupon[]> {
     if (this.useMockData) {
       return this.mockCoupons;
     }
@@ -198,33 +212,36 @@ class CouponService {
       const response = await axiosInstance.get('/v3/Offers/Customer', {
         params: {
           shopId: shopId || 'null',
-          sortBy: 'null',
-          state: 'null',
-          limit: 'null',
-          isBuyNow: 'null',
+          sortBy: 'MAX_DISCOUNT',
+          state: 'ACTIVE',
+          limit: '500',
+          isBuyNow: 'false',
         },
         headers: {
           Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
-          SessionKey: await this.getSessionKey(),
-          'Request-Origin': 'CUSTOMER',
+          SessionKey: authData?.jwt || '',
+          phone: authData?.phone || '',
         },
       });
 
       const data: CustomerOffersResponse = response.data;
 
-      // Transform eligible offers to Coupon format
-      const eligibleCoupons = data.listOfEligibleOffers.map(transformCustomerOffer);
+      // Transform both eligible and non-eligible offers to Coupon format
+      const eligibleCoupons = data.listOfEligibleOffers.map(offer =>
+        transformCustomerOffer(offer, true)
+      );
+      const nonEligibleCoupons = data.listOfNonEligibleOffers.map(offer =>
+        transformCustomerOffer(offer, false)
+      );
 
-      return eligibleCoupons;
+      // Combine both arrays - eligible offers first, then non-eligible
+      const allCoupons = [...eligibleCoupons, ...nonEligibleCoupons];
+
+      return allCoupons;
     } catch (error) {
       console.error('Error fetching customer offers:', error);
       return this.mockCoupons; // Fallback to mock data on error
     }
-  }
-
-  private async getSessionKey(): Promise<string> {
-    // TODO: Implement session key retrieval from your auth system
-    return 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...';
   }
 }
 

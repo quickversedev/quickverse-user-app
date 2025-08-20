@@ -16,6 +16,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import { SectionDivider } from '../../components/common';
 import PromoBanner from '../../components/common/promo/PromoBanner';
+import { useAuth } from '../../contexts/login/AuthProvider';
 import useCouponStore from '../../store/cart/couponStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Promotion } from '../../types/pages';
@@ -63,6 +64,7 @@ const VendorProfileComponent: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<VendorProfileRouteProp>();
   const { vendor } = route.params;
+  const { authData } = useAuth();
 
   // Coupon store integration
   const { availableCoupons, loading: couponsLoading, fetchVendorOffers } = useCouponStore();
@@ -81,8 +83,8 @@ const VendorProfileComponent: React.FC = () => {
 
   // Fetch coupons when component mounts
   useEffect(() => {
-    fetchVendorOffers(vendor.shopId);
-  }, [fetchVendorOffers, vendor.shopId]);
+    fetchVendorOffers(vendor.shopId, authData);
+  }, [fetchVendorOffers, vendor.shopId, authData]);
 
   // Get coupons for this vendor
   const vendorCoupons = useMemo(() => {

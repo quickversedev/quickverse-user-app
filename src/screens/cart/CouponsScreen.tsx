@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useAuth } from '../../contexts/login/AuthProvider';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
 
@@ -68,22 +69,49 @@ const CouponCard: React.FC<{
       paddingVertical: 6,
       borderRadius: theme.borderRadius.sm,
     },
+    applyButtonDisabled: {
+      borderWidth: 1,
+      borderColor: getColor('subText'),
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      borderRadius: theme.borderRadius.sm,
+      opacity: 0.6,
+    },
     applyButtonText: {
       color: getColor('primary'),
       fontSize: getTypography('caption'),
       fontWeight: 'bold',
       fontFamily: theme.typography.fontFamily,
     },
+    applyButtonTextDisabled: {
+      color: getColor('subText'),
+      fontSize: getTypography('caption'),
+      fontWeight: 'bold',
+      fontFamily: theme.typography.fontFamily,
+    },
     code: {
       color: getColor('text'),
-      fontSize: getTypography('subtitle'),
-      fontWeight: 'bold',
+      fontSize: getTypography('caption'),
+      fontWeight: 'normal',
       marginBottom: 8,
       fontFamily: theme.typography.fontFamily,
     },
-    description: {
+    codeLabel: {
       color: getColor('subText'),
+      fontSize: getTypography('caption'),
+      fontWeight: 'normal',
+      fontFamily: theme.typography.fontFamily,
+    },
+    codeValue: {
+      color: getColor('primary'),
       fontSize: getTypography('body'),
+      fontWeight: 'bold',
+      fontFamily: theme.typography.fontFamily,
+    },
+    description: {
+      color: getColor('text'),
+      fontSize: getTypography('subtitle'),
+      fontWeight: '500',
       marginBottom: 12,
       fontFamily: theme.typography.fontFamily,
     },
@@ -101,20 +129,106 @@ const CouponCard: React.FC<{
       fontSize: getTypography('small'),
       fontFamily: theme.typography.fontFamily,
     },
+    eligibilityInfo: {
+      marginTop: 8,
+      padding: 8,
+      backgroundColor: getColor('background'),
+      borderRadius: theme.borderRadius.sm,
+    },
+    eligibilityText: {
+      color: getColor('primary'),
+      fontSize: getTypography('small'),
+      fontWeight: '600',
+      fontFamily: theme.typography.fontFamily,
+      marginBottom: 4,
+    },
+    constraintText: {
+      color: getColor('error'),
+      fontSize: getTypography('small'),
+      fontFamily: theme.typography.fontFamily,
+      marginBottom: 2,
+    },
+    benefitText: {
+      color: getColor('primary'),
+      fontSize: getTypography('small'),
+      fontFamily: theme.typography.fontFamily,
+      marginBottom: 2,
+    },
   });
+
+  const isEligible = coupon.isEligible !== false; // Default to true if not specified
+
+  // Helper function to get specific eligibility message
+  const getEligibilityMessage = () => {
+    if (isEligible) return null;
+
+    const messages: string[] = [];
+
+    // Check minimum order amount using minimumOrderAmount field
+    if (coupon.minimumOrderAmount && coupon.totalAmountRequired) {
+      const amountNeeded = coupon.minimumOrderAmount - coupon.totalAmountRequired;
+      if (amountNeeded > 0) {
+        messages.push(`Add ₹${amountNeeded} more to cart`);
+      }
+    }
+
+    // Check minimum product count
+    if (coupon.minProductCount && coupon.minProductCount > 0) {
+      messages.push(`Add at least ${coupon.minProductCount} items to cart`);
+    }
+
+    // Add constraint suggestions if available
+    if (coupon.constraintSuggestions) {
+      coupon.constraintSuggestions.forEach(constraint => {
+        const message = constraint
+          .replace(/_/g, ' ')
+          .toLowerCase()
+          .replace('min order amount rule failure', 'Order amount too low')
+          .replace('min product count rule failure', 'Not enough items in cart')
+          .replace('rule failure', 'Requirements not met');
+        messages.push(message);
+      });
+    }
+
+    return messages;
+  };
+
+  const eligibilityMessages = getEligibilityMessage();
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
         <View style={styles.discountBadge}>
-          <Text style={styles.discountText}>{coupon.discount}</Text>
+          <Text style={styles.discountText}>Get {coupon.discount}</Text>
         </View>
-        <TouchableOpacity style={styles.applyButton} onPress={() => onApply(coupon.code)}>
-          <Text style={styles.applyButtonText}>APPLY</Text>
+        <TouchableOpacity
+          style={isEligible ? styles.applyButton : styles.applyButtonDisabled}
+          onPress={() => isEligible && onApply(coupon.code)}
+          disabled={!isEligible}
+        >
+          <Text style={isEligible ? styles.applyButtonText : styles.applyButtonTextDisabled}>
+            {isEligible ? 'APPLY' : 'NOT ELIGIBLE'}
+          </Text>
         </TouchableOpacity>
       </View>
-      <Text style={styles.code}>{coupon.code}</Text>
+      <Text style={styles.code}>
+        <Text style={styles.codeLabel}>apply coupon code: </Text>
+        <Text style={styles.codeValue}>{coupon.code}</Text>
+      </Text>
       <Text style={styles.description}>{coupon.description}</Text>
+
+      {/* Show eligibility information for non-eligible offers */}
+      {!isEligible && eligibilityMessages && eligibilityMessages.length > 0 && (
+        <View style={styles.eligibilityInfo}>
+          <Text style={styles.eligibilityText}>Why not eligible?</Text>
+          {eligibilityMessages.map((message, index) => (
+            <Text key={index} style={styles.constraintText}>
+              • {message}
+            </Text>
+          ))}
+        </View>
+      )}
+
       <View style={styles.footer}>
         <Text style={styles.minOrder}>Min. Order: ₹{coupon.minOrder}</Text>
         <Text style={styles.expiryDate}>{coupon.expiryDate}</Text>
@@ -131,6 +245,7 @@ const CouponsScreen: React.FC = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const { getColor, getTypography, theme } = useTheme();
   const [couponCode, setCouponCode] = useState('');
+  const { authData } = useAuth();
 
   // Get current cart and vendor
   const cart = activeCartId ? carts[activeCartId] : Object.values(carts)[0];
@@ -142,9 +257,9 @@ const CouponsScreen: React.FC = () => {
 
   useEffect(() => {
     if (vendorId) {
-      checkAndFetchOffers(vendorId);
+      checkAndFetchOffers(vendorId, authData);
     }
-  }, [vendorId, checkAndFetchOffers]);
+  }, [vendorId, checkAndFetchOffers, authData]);
 
   const handleApplyCoupon = (code: string) => {
     const cartId = activeCartId || (carts && Object.keys(carts)[0]);
@@ -325,7 +440,7 @@ const CouponsScreen: React.FC = () => {
 
   const handleRetry = () => {
     if (vendorId) {
-      checkAndFetchOffers(vendorId);
+      checkAndFetchOffers(vendorId, authData);
     }
   };
 

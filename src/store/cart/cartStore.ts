@@ -36,6 +36,8 @@ export type Cart = {
   customerId?: string;
   totalCartAmountWithBenefit?: number;
   finalCartAmount?: number;
+  totalCartAmount?: number;
+  totalDiscountOnItems?: number;
   products: Record<string, CartProduct>; // key: sku
 };
 
@@ -249,6 +251,8 @@ const useCartStore = create<CartStore>()(
             customerId: apiData.customerId,
             totalCartAmountWithBenefit: apiData.totalCartAmountWithBenefit,
             finalCartAmount: apiData.finalCartAmount,
+            totalCartAmount: apiData.totalCartAmount || apiData.totalCartAmountWithBenefit,
+            totalDiscountOnItems: apiData.totalDiscountOnItems || 0,
             products: transformedProducts,
           };
 

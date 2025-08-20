@@ -147,6 +147,8 @@ export interface TransformedCartData {
   customerId: string;
   totalCartAmountWithBenefit: number;
   finalCartAmount: number;
+  totalCartAmount?: number;
+  totalDiscountOnItems?: number;
   products: Record<string, TransformedCartProduct>;
 }
 
@@ -189,7 +191,6 @@ class CartApiService {
           }
         )
       );
-
       return this.transformCartResponse(response);
     } catch (error) {
       console.error('Add to cart error:', error);
@@ -239,8 +240,7 @@ class CartApiService {
         ...withHeaders({ SessionKey: jwtToken, phone }),
       });
 
-      // return this.transformCartResponse(response.data);
-      // return response.data/
+      return this.transformCartResponse(response.data);
     } catch (error) {
       console.error('Clear cart error:', error);
       throw error;
@@ -253,24 +253,28 @@ class CartApiService {
   private transformCartResponse(apiResponse: CartApiResponse): TransformedCartData {
     const products: Record<string, TransformedCartProduct> = {};
 
-    // Transform skuDetailsGrouped to products
-    apiResponse.skuDetailsGrouped.forEach(skuDetail => {
-      products[skuDetail.sku] = {
-        sku: skuDetail.sku,
-        itemCount: skuDetail.itemCount,
-        appliedOffers: skuDetail.appliedOffers,
-        productDetails: skuDetail.productDetails,
-        shopPrice: skuDetail.shopPrice,
-        productMRP: skuDetail.productMRP,
-        finalPrice: skuDetail.finalPrice,
-      };
-    });
+    // Transform skuDetailsGrouped to products with null check
+    if (apiResponse.skuDetailsGrouped && Array.isArray(apiResponse.skuDetailsGrouped)) {
+      apiResponse.skuDetailsGrouped.forEach(skuDetail => {
+        products[skuDetail.sku] = {
+          sku: skuDetail.sku,
+          itemCount: skuDetail.itemCount,
+          appliedOffers: skuDetail.appliedOffers,
+          productDetails: skuDetail.productDetails,
+          shopPrice: skuDetail.shopPrice,
+          productMRP: skuDetail.productMRP,
+          finalPrice: skuDetail.finalPrice,
+        };
+      });
+    }
 
     return {
-      smartBizCartId: apiResponse.cartIdStr, // Map cartId to smartBizCartId
-      customerId: apiResponse.customerIdStr,
-      totalCartAmountWithBenefit: apiResponse.totalCartAmountWithBenefit,
-      finalCartAmount: apiResponse.finalCartAmount,
+      smartBizCartId: apiResponse.cartIdStr || '', // Map cartId to smartBizCartId
+      customerId: apiResponse.customerIdStr || '',
+      totalCartAmountWithBenefit: apiResponse.totalCartAmountWithBenefit || 0,
+      finalCartAmount: apiResponse.finalCartAmount || 0,
+      totalCartAmount: apiResponse.totalCartAmount || 0,
+      totalDiscountOnItems: apiResponse.totalDiscountOnItems || 0,
       products,
     };
   }

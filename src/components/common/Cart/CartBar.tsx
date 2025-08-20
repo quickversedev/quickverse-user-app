@@ -64,6 +64,7 @@ const CartBar: React.FC<CartBarProps> = ({
           alignSelf: 'center',
           backgroundColor: getColor('primary'),
           borderRadius: 16,
+          overflow: 'hidden',
         },
         divider: {
           width: 1,
@@ -233,6 +234,8 @@ const CartBar: React.FC<CartBarProps> = ({
                 styles.cartText,
                 { fontSize: getTypography('subtitle'), color: getColor('background') },
               ]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
             >
               {vendorName}
             </Text>
@@ -242,8 +245,10 @@ const CartBar: React.FC<CartBarProps> = ({
                 styles.itemCount,
                 { color: getColor('background'), fontSize: getTypography('body') },
               ]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
             >
-              {itemCount} Item{itemCount > 1 ? 's' : ''}{' '}
+              {itemCount} Item{itemCount > 1 ? 's' : ''}
             </Text>
             <MaterialCommunityIcons
               name="chevron-right"
@@ -267,11 +272,14 @@ const styles = StyleSheet.create({
   },
   cartText: {
     fontWeight: 'bold',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
+    flex: 1,
+    // marginRight: 8,
   },
   itemCount: {
     fontWeight: 'bold',
     marginRight: 2,
+    flexShrink: 0,
   },
   removeButtonContent: {
     justifyContent: 'center',

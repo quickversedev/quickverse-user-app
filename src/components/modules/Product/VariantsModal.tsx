@@ -43,7 +43,7 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
   const { authData } = useAuth();
   const { variants, loading, error, hasData, fetchVariants, clearError, reset } = useVariants();
   const { addToCart, increment, decrement, carts } = useCartStore();
-  console.log('varients', variants);
+
   // Create vendor-specific cart ID
   const cartId = `vendor_${vendor.shopId}`;
   const cart = carts[cartId];

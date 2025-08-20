@@ -110,7 +110,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       const variantsData = await productDetailsService.getProductVariants(
         product.primarySKU || product.sku
       );
-      console.log('varients response:', variantsData);
+
       setVariants(variantsData.data);
 
       // Auto-select the variant that matches the current product SKU

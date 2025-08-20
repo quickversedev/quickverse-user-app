@@ -97,7 +97,6 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
   };
 
   const renderProductItem = ({ item }: { item: Product }) => {
-    console.log('item', item);
     const quantity = cart?.products[item.sku]?.quantity || 0;
     const isStoreClosed = !vendor.storeActive;
 
@@ -123,7 +122,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       tags: item.tags || [],
       veg: item.veg || true,
     };
-    console.log('mockProduct', mockProduct);
+
     return (
       <ProductCard
         product={mockProduct}
