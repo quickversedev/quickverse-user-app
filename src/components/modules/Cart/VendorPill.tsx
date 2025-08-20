@@ -74,7 +74,7 @@ const VendorPill: React.FC<VendorPillProps> = ({ vendor }) => {
       </View>
       <View style={styles.deliveryBadgeBox}>
         <Image source={Icons.lightning} style={styles.deliveryBadgeBoxIcon} />
-        <Text style={styles.deliveryBadgeBoxText}>{preparationTime}</Text>
+        <Text style={styles.deliveryBadgeBoxText}>{preparationTime} mins</Text>
       </View>
     </View>
   );
