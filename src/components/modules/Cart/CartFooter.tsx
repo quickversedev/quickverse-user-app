@@ -110,11 +110,7 @@ const CartFooter: React.FC<CartFooterProps> = ({
         activeOpacity={disabled ? 1 : 0.8}
       >
         <Text style={[styles.checkoutText, disabled && { color: getColor('subText') }]}>
-          {loading
-            ? 'Processing Order...'
-            : disabled
-            ? 'Select Payment Method'
-            : 'Proceed To Checkout'}
+          {loading ? 'Processing Order...' : disabled ? 'Select Payment Method' : 'Place Order..'}
         </Text>
       </TouchableOpacity>
     </View>
