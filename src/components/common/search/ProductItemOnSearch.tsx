@@ -1,14 +1,11 @@
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
+import { Product } from '../../../types/product';
 
 interface ProductItemOnSearchProps {
-  product: {
-    id: string;
-    name: string;
-    image: string;
-  };
-  onPress: (product: any) => void;
+  product: Product;
+  onPress: (product: Product) => void;
 }
 
 const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPress }) => {
@@ -54,7 +51,7 @@ const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPr
   return (
     <TouchableOpacity style={styles.container} onPress={() => onPress(product)}>
       <View style={styles.imageContainer}>
-        <Image source={{ uri: product.image }} style={styles.image} />
+        <Image source={{ uri: product.imageUrl || '' }} style={styles.image} />
       </View>
       <View style={styles.textContainer}>
         <Text style={styles.productName} numberOfLines={2}>

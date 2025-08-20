@@ -41,6 +41,7 @@ type Category = CategoryItem;
 
 interface VendorProductRouteParams {
   vendor: Vendor;
+  searchQuery?: string;
 }
 type VendorProductRouteProp = RouteProp<
   { VendorProduct: VendorProductRouteParams },
@@ -100,11 +101,11 @@ const VendorProductComponent: React.FC = () => {
   const { authData } = useAuth();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<VendorProductRouteProp>();
-  const { vendor } = route.params;
+  const { vendor, searchQuery: initialSearchQuery } = route.params;
 
   // Search state
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchVisible, setIsSearchVisible] = useState(!!initialSearchQuery);
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
   const searchInputRef = useRef<TextInput>(null);
 
   // Search bar animation
@@ -135,6 +136,13 @@ const VendorProductComponent: React.FC = () => {
     fetchCategories(vendor.shopId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendor.shopId]);
+
+  // Show search bar and focus input when initialSearchQuery is provided
+  useEffect(() => {
+    if (initialSearchQuery) {
+      showSearchBar();
+    }
+  }, [initialSearchQuery]);
   // Optimized search with memoized category lookup
   const categoryMap = useMemo(() => {
     const map = new Map<string, string>();

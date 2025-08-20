@@ -2,16 +2,11 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
+import { Product } from '../../types/product';
 import { Vendor } from '../../types/vendor';
 import ProductItemOnSearch from '../common/search/ProductItemOnSearch';
 import SectionDivider from '../common/SectionDivider';
 import VendorCard from '../modules/Vendor/VendorCard';
-
-interface Product {
-  id: string;
-  name: string;
-  image: string;
-}
 
 interface SearchResultsProps {
   vendors: Vendor[];
@@ -166,7 +161,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           >
             <View style={styles.productsGrid}>
               {displayedProducts.map(product => (
-                <View key={product.id} style={styles.productGridItem}>
+                <View key={`search-${product.sku}`} style={styles.productGridItem}>
                   <ProductItemOnSearch product={product} onPress={onProductPress} />
                 </View>
               ))}
@@ -198,7 +193,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 if (!vendorDetails) return null;
 
                 return (
-                  <View key={vendor.shopId} style={styles.horizontalVendorCard}>
+                  <View key={`search-${vendor.shopId}`} style={styles.horizontalVendorCard}>
                     <VendorCard
                       vendor={vendorDetails}
                       onPress={onVendorPress}

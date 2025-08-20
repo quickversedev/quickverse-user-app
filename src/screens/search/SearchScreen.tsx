@@ -12,13 +12,8 @@ import { useRecentSearches } from '../../hooks/useRecentSearches';
 import { useSearch } from '../../hooks/useSearch';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
+import { Product } from '../../types/product';
 import { Vendor } from '../../types/vendor';
-
-interface Product {
-  id: string;
-  name: string;
-  image: string;
-}
 
 const SearchScreen: React.FC = () => {
   const { getColor } = useTheme();
@@ -37,7 +32,7 @@ const SearchScreen: React.FC = () => {
   const { addSearch } = useRecentSearches();
 
   // Get vendors from vendor store
-  const { getFeaturedVendors, searchVendorsByQuery } = useVendorStore();
+  const { getFeaturedVendors, searchVendorsByQuery, getVendorById } = useVendorStore();
 
   // Handle search input change - only update query, don't make API calls
   const handleSearchChange = (text: string) => {
@@ -87,9 +82,22 @@ const SearchScreen: React.FC = () => {
   };
 
   const handleProductPress = (product: Product) => {
-    // TODO: Navigate to product details
-    // eslint-disable-next-line no-console
-    console.log('Product pressed:', product.name);
+    // Find the vendor for this product
+    console.log('product', product);
+    const vendor = getVendorById(product?.shopId);
+
+    if (vendor) {
+      // Navigate to vendor product page with the product name pre-filled in search
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (navigation as any).navigate('VendorProduct', {
+        vendor,
+        searchQuery: product.name,
+      });
+    } else {
+      // Fallback: just log if vendor not found
+      // eslint-disable-next-line no-console
+      console.log('Vendor not found for product:', product.name);
+    }
   };
 
   const handleFavoritePress = (_vendor: Vendor) => {
@@ -146,7 +154,10 @@ const SearchScreen: React.FC = () => {
                     {/* First row - first half of stores */}
                     <View style={{ flexDirection: 'row', marginBottom: 12 }}>
                       {nearbyStores.slice(0, Math.ceil(nearbyStores.length / 2)).map(vendor => (
-                        <View key={vendor.shopId} style={{ width: 160, marginRight: 12 }}>
+                        <View
+                          key={`nearby-${vendor.shopId}`}
+                          style={{ width: 160, marginRight: 12 }}
+                        >
                           <VendorCard
                             vendor={vendor}
                             onPress={handleVendorPress}
@@ -160,7 +171,10 @@ const SearchScreen: React.FC = () => {
                     {nearbyStores.length > Math.ceil(nearbyStores.length / 2) && (
                       <View style={{ flexDirection: 'row', marginBottom: 12 }}>
                         {nearbyStores.slice(Math.ceil(nearbyStores.length / 2)).map(vendor => (
-                          <View key={vendor.shopId} style={{ width: 160, marginRight: 12 }}>
+                          <View
+                            key={`nearby-${vendor.shopId}`}
+                            style={{ width: 160, marginRight: 12 }}
+                          >
                             <VendorCard
                               vendor={vendor}
                               onPress={handleVendorPress}

@@ -9,7 +9,7 @@ import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
 import CartScreen from '../screens/cart/CartScreen';
 import CouponsScreen from '../screens/cart/CouponsScreen';
-import PaymentScreen from '../screens/cart/PaymentScreen';
+
 import OrderFailureScreen from '../screens/order/OrderFailureScreen';
 import OrderSuccessScreen from '../screens/order/OrderSuccessScreen';
 import AddressScreen from '../screens/profile/Address/AddressScreen';
@@ -24,7 +24,7 @@ import { Vendor } from '../types/vendor';
 export type RootStackParamList = {
   MainApp: undefined;
   Profile: undefined;
-  VendorProduct: { vendor: Vendor };
+  VendorProduct: { vendor: Vendor; searchQuery?: string };
   VendorProfile: { vendor: Vendor };
   VendorDetails: { vendor: Vendor };
   ProductDetailDemo: undefined;
@@ -34,7 +34,7 @@ export type RootStackParamList = {
   OrderSuccess: { orderId: string; amount: number; date: string };
   OrderFailure: { errorMessage?: string };
   Coupons: undefined;
-  Payment: undefined;
+
   Search: undefined;
   Address: undefined;
 };
@@ -90,7 +90,7 @@ export const AppStack = () => {
       <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
       <Stack.Screen name="OrderFailure" component={OrderFailureScreen} />
       <Stack.Screen name="Coupons" component={CouponsScreen} />
-      <Stack.Screen name="Payment" component={PaymentScreen} />
+
       <Stack.Screen
         name="Search"
         component={SearchScreen}

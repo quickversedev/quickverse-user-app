@@ -232,6 +232,11 @@ const useVendorStore = create<VendorStore>((set, get) => ({
     const vendor = vendors.find(v => v.shopId === shopId);
     return vendor ? vendor.name : undefined;
   },
+  getVendorById: (shopId: string) => {
+    const { vendors } = get();
+    const vendor = vendors.find(v => v.shopId === shopId);
+    return vendor;
+  },
 
   // New method: search vendors by name and category
   searchVendorsByQuery: (query: string) => {

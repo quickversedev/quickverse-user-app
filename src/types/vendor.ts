@@ -72,6 +72,7 @@ export interface VendorStore {
   clearFilters: () => void;
 
   // Computed values
+  getVendorById: (shopId: string) => Vendor | null;
   getActiveVendors: () => Vendor[];
   getVendorsByCategory: (category: string) => Vendor[];
   getFeaturedVendors: () => Vendor[];

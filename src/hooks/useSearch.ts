@@ -1,13 +1,8 @@
 import { useCallback, useState } from 'react';
 import searchService, { SearchResponse } from '../services/api/searchService';
 import useVendorStore from '../store/vendorStore';
+import { Product } from '../types/product';
 import { Vendor } from '../types/vendor';
-
-interface Product {
-  id: string;
-  name: string;
-  image: string;
-}
 
 // Toggle for using real API vs mock data
 const USE_REAL_SEARCH_API = true; // Set to true to use real API
@@ -69,9 +64,17 @@ export const useSearch = (): UseSearchReturn => {
       const filteredProducts: Product[] = searchResponse.products
         .filter(product => validShopIds.has(product.shopId))
         .map(product => ({
-          id: product.productSKU,
+          sku: product.productSKU,
           name: product.productName,
-          image: product.productImage,
+          imageUrl: product.productImage,
+          shopId: product.shopId,
+          mrp: product.mrp || 0,
+          sellingPrice: product.price || 0,
+          rating: 0,
+          discount: product.discount || 0,
+          veg: product.veg ?? true,
+          numberOfVariants: 1,
+          primarySKU: product.productSKU,
         }));
 
       // Get vendors that have products in the search results
