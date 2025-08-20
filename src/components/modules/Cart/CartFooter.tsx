@@ -8,9 +8,15 @@ interface CartFooterProps {
   address: string;
   onSelectAddress: () => void;
   onCheckout: () => void;
+  disabled?: boolean;
 }
 
-const CartFooter: React.FC<CartFooterProps> = ({ address, onSelectAddress, onCheckout }) => {
+const CartFooter: React.FC<CartFooterProps> = ({
+  address,
+  onSelectAddress,
+  onCheckout,
+  disabled = false,
+}) => {
   const { getColor, getTypography, theme, getButtonColor } = useTheme();
 
   const styles = StyleSheet.create({
@@ -92,8 +98,18 @@ const CartFooter: React.FC<CartFooterProps> = ({ address, onSelectAddress, onChe
           color={getColor('button').default.background}
         />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckoutPress}>
-        <Text style={styles.checkoutText}>Proceed To Checkout</Text>
+      <TouchableOpacity
+        style={[
+          styles.checkoutBtn,
+          disabled && { opacity: 0.5, backgroundColor: getColor('border') },
+        ]}
+        onPress={handleCheckoutPress}
+        disabled={disabled}
+        activeOpacity={disabled ? 1 : 0.8}
+      >
+        <Text style={[styles.checkoutText, disabled && { color: getColor('subText') }]}>
+          {disabled ? 'Select Payment Method' : 'Proceed To Checkout'}
+        </Text>
       </TouchableOpacity>
     </View>
   );

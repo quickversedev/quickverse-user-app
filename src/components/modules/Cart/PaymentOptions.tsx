@@ -1,0 +1,146 @@
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTheme } from '../../../theme/ThemeContext';
+
+interface PaymentOptionsProps {
+  onPress: () => void;
+  selectedOption?: string | undefined;
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
+}
+
+const PaymentOptions: React.FC<PaymentOptionsProps> = ({
+  onPress,
+  selectedOption,
+  loading = false,
+  error = null,
+  onRetry,
+}) => {
+  const { getColor, getTypography, theme } = useTheme();
+
+  const styles = StyleSheet.create({
+    paymentOptionsBox: {
+      backgroundColor: getColor('card'),
+      borderRadius: theme.borderRadius.md,
+      margin: 16,
+      padding: 16,
+    },
+    paymentOptionsHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    paymentOptionsContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    paymentOptionsIcon: {
+      marginRight: 12,
+    },
+    paymentOptionsText: {
+      flex: 1,
+    },
+    paymentOptionsTitle: {
+      color: getColor('text'),
+      fontWeight: '600',
+      fontSize: getTypography('body'),
+    },
+    paymentOptionsSubtitle: {
+      color: getColor('subText'),
+      fontSize: getTypography('caption'),
+      marginTop: 2,
+    },
+    paymentOptionsArrow: {
+      marginLeft: 8,
+    },
+    retryButton: {
+      backgroundColor: getColor('primary'),
+      borderRadius: theme.borderRadius.sm,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      marginTop: 8,
+      alignSelf: 'flex-end',
+    },
+    retryButtonText: {
+      color: getColor('white'),
+      fontSize: getTypography('caption'),
+      fontWeight: '600',
+    },
+  });
+
+  const getPaymentOptionDisplay = () => {
+    if (error) {
+      return { title: 'Payment Methods Unavailable', subtitle: error };
+    }
+
+    if (loading) {
+      return { title: 'Loading payment methods...', subtitle: 'Please wait' };
+    }
+
+    if (!selectedOption) {
+      return { title: 'Select Payment Method', subtitle: 'Choose your preferred payment option' };
+    }
+
+    switch (selectedOption) {
+      case 'phonepe':
+        return { title: 'PhonePe', subtitle: 'UPI Payment' };
+      case 'gpay':
+        return { title: 'Google Pay', subtitle: 'UPI Payment' };
+      case 'cod':
+        return { title: 'Cash on Delivery', subtitle: 'Pay when you receive' };
+      default:
+        return { title: 'Select Payment Method', subtitle: 'Choose your preferred payment option' };
+    }
+  };
+
+  const { title, subtitle } = getPaymentOptionDisplay();
+
+  return (
+    <View style={styles.paymentOptionsBox}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={loading || Boolean(error) ? 1 : 0.8}
+        disabled={loading || Boolean(error)}
+      >
+        <View style={styles.paymentOptionsHeader}>
+          <View style={styles.paymentOptionsContent}>
+            <View style={styles.paymentOptionsIcon}>
+              <MaterialCommunityIcons
+                name={error ? 'alert-circle-outline' : 'credit-card-outline'}
+                size={20}
+                color={error ? getColor('error') : getColor('button').default.background}
+              />
+            </View>
+            <View style={styles.paymentOptionsText}>
+              <Text style={[styles.paymentOptionsTitle, error && { color: getColor('error') }]}>
+                {title}
+              </Text>
+              <Text style={[styles.paymentOptionsSubtitle, error && { color: getColor('error') }]}>
+                {subtitle}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.paymentOptionsArrow}>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={getColor('subText')} />
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      {error && onRetry && (
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={onRetry}
+          activeOpacity={0.8}
+          disabled={loading}
+        >
+          <Text style={styles.retryButtonText}>{loading ? 'Retrying...' : 'Retry'}</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
+
+export default PaymentOptions;

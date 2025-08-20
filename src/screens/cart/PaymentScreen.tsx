@@ -1,15 +1,7 @@
-import { useNavigation } from '@react-navigation/native';
 import React, { useMemo, useState } from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { getAvailablePaymentOptions } from '../../services/paymentService';
 import { useTheme } from '../../theme/ThemeContext';
 
 type PaymentOptionKey = 'phonepe' | 'gpay' | 'cod';
@@ -18,72 +10,100 @@ type PaymentOption = {
   key: PaymentOptionKey;
   title: string;
   subtitle?: string;
+  available?: boolean;
 };
 
-const PaymentScreen: React.FC = () => {
-  const navigation = useNavigation();
+interface PaymentScreenProps {
+  onClose: () => void;
+  onConfirm: (selectedOption: PaymentOptionKey, upiId?: string) => void;
+  paymentMethods?: Array<{
+    paymentMethodType: string;
+    paymentConfiguration: {
+      paymentMethodStatus: string;
+      codCharges: number;
+      minimumAllowedCartAmount: number;
+      maximumAllowedCartAmount: number;
+    };
+  }>;
+  error?: string | null;
+  loading?: boolean;
+  onRetry?: () => void;
+}
+
+const PaymentScreen: React.FC<PaymentScreenProps> = ({
+  onClose,
+  onConfirm,
+  paymentMethods = [],
+  error = null,
+  loading = false,
+  onRetry,
+}) => {
   const { getColor, getButtonColor } = useTheme();
   const [selected, setSelected] = useState<PaymentOptionKey>('cod');
   const [upiId, setUpiId] = useState<string>('');
 
-  const options: PaymentOption[] = useMemo(
-    () => [
-      { key: 'phonepe', title: 'PhonePe' },
-      { key: 'gpay', title: 'Google Pay' },
-      { key: 'cod', title: 'Cash on Delivery', subtitle: 'Pay with cash when your order arrives' },
-    ],
-    []
-  );
+  const options: PaymentOption[] = useMemo(() => {
+    const availableOptions = getAvailablePaymentOptions(paymentMethods);
+    return availableOptions.map(option => ({
+      key: option.key as PaymentOptionKey,
+      title: option.title,
+      subtitle: option.subtitle,
+      available: option.available,
+    }));
+  }, [paymentMethods]);
 
   const handleConfirm = () => {
-    // In a real flow, trigger the appropriate payment handler based on `selected`
-    // For now, simply navigate back or show a toast in the parent flow
-  };
-
-  const handleBack = () => {
-    navigation.goBack();
+    onConfirm(selected, upiId);
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: getColor('background') }]}>
+    <View style={[styles.container, { backgroundColor: getColor('background') }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
+        <TouchableOpacity onPress={onClose} style={styles.backButton}>
+          <MaterialCommunityIcons name="close" size={24} color={getColor('text')} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: getColor('text') }]}>Checkout</Text>
+        <Text style={[styles.headerTitle, { color: getColor('text') }]}>Payment Options</Text>
         <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Section 1: Payment breakdown */}
-        <Text style={[styles.sectionTitle, { color: getColor('subText') }]}>Payment breakdown</Text>
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: getColor('card'), borderColor: getColor('border') },
-          ]}
-        >
-          <View style={styles.row}>
-            <Text style={[styles.rowLabel, { color: getColor('subText') }]}>Items total</Text>
-            <Text style={[styles.rowValue, { color: getColor('text') }]}>₹ 540.00</Text>
+        {error && (
+          <View style={[styles.errorCard, { backgroundColor: getColor('error'), opacity: 0.1 }]}>
+            <View style={styles.errorContent}>
+              <MaterialCommunityIcons
+                name="alert-circle-outline"
+                size={24}
+                color={getColor('error')}
+              />
+              <Text style={[styles.errorText, { color: getColor('error') }]}>{error}</Text>
+            </View>
+            {onRetry && (
+              <TouchableOpacity
+                style={[styles.retryButton, { backgroundColor: getColor('primary') }]}
+                onPress={onRetry}
+                activeOpacity={0.8}
+                disabled={loading}
+              >
+                <Text style={[styles.retryButtonText, { color: getColor('white') }]}>
+                  {loading ? 'Retrying...' : 'Retry'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
-          <View style={styles.row}>
-            <Text style={[styles.rowLabel, { color: getColor('subText') }]}>Delivery fee</Text>
-            <Text style={[styles.rowValue, { color: getColor('text') }]}>₹ 30.00</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={[styles.rowLabel, { color: getColor('subText') }]}>Discount</Text>
-            <Text style={[styles.rowValuePositive, { color: getColor('text') }]}>- ₹ 40.00</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.row}>
-            <Text style={[styles.totalLabel, { color: getColor('text') }]}>Total</Text>
-            <Text style={[styles.totalValue, { color: getColor('text') }]}>₹ 530.00</Text>
-          </View>
-        </View>
+        )}
 
-        {/* Section 2: UPI applications */}
-        <Text style={[styles.sectionTitle, { color: getColor('subText') }]}>UPI applications</Text>
+        {loading && (
+          <View style={[styles.loadingCard, { backgroundColor: getColor('card') }]}>
+            <Text style={[styles.loadingText, { color: getColor('subText') }]}>
+              Loading payment methods...
+            </Text>
+          </View>
+        )}
+
+        {/* Section 1: UPI applications */}
+        <Text style={[styles.sectionTitle, { color: getColor('subText') }]}>
+          UPI applications (Unavailable for now)
+        </Text>
         <View
           style={[
             styles.card,
@@ -94,15 +114,16 @@ const PaymentScreen: React.FC = () => {
             .filter(o => o.key === 'phonepe' || o.key === 'gpay')
             .map((item, idx) => {
               const isActive = selected === item.key;
+              const isDisabled = true; // Always disabled for now
               return (
                 <View key={item.key}>
                   {idx > 0 ? (
                     <View style={[styles.itemDivider, { backgroundColor: getColor('border') }]} />
                   ) : null}
                   <TouchableOpacity
-                    onPress={() => setSelected(item.key)}
-                    activeOpacity={0.85}
-                    style={styles.innerOption}
+                    onPress={() => !isDisabled && setSelected(item.key)}
+                    activeOpacity={isDisabled ? 1 : 0.85}
+                    style={[styles.innerOption, isDisabled && { opacity: 0.5 }]}
                   >
                     <View style={styles.optionContent}>
                       <View
@@ -161,33 +182,36 @@ const PaymentScreen: React.FC = () => {
                   backgroundColor: getColor('background'),
                   borderColor: getColor('border'),
                   color: getColor('text'),
+                  opacity: 0.5, // Disabled appearance
                 },
               ]}
               keyboardType="default"
               autoCapitalize="none"
               autoCorrect={false}
-              onFocus={() => setSelected('phonepe')}
+              editable={false} // Make it non-editable
               returnKeyType="done"
             />
           </View>
         </View>
 
-        {/* Section 3: Cash on Delivery */}
+        {/* Section 2: Cash on Delivery */}
         <Text style={[styles.sectionTitle, { color: getColor('subText') }]}>Cash on Delivery</Text>
         {options
           .filter(o => o.key === 'cod')
           .map(item => {
             const isActive = selected === item.key;
+            const isDisabled = !item.available;
             return (
               <TouchableOpacity
                 key={item.key}
-                onPress={() => setSelected(item.key)}
-                activeOpacity={0.85}
+                onPress={() => !isDisabled && setSelected(item.key)}
+                activeOpacity={isDisabled ? 1 : 0.85}
                 style={[
                   styles.option,
                   {
                     backgroundColor: getColor('card'),
                     borderColor: getColor(isActive ? 'primary' : 'border'),
+                    opacity: isDisabled ? 0.5 : 1,
                   },
                 ]}
               >
@@ -230,7 +254,7 @@ const PaymentScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -277,15 +301,6 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
   },
-  cardHeader: {
-    marginBottom: 8,
-  },
-  cardHeaderTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
   innerOption: {
     paddingVertical: 10,
   },
@@ -309,35 +324,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  row: {
+  errorCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  errorContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
   },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginVertical: 6,
-  },
-  rowLabel: {
+  errorText: {
     fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 8,
   },
-  rowValue: {
+  loadingCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  loadingText: {
     fontSize: 14,
+    fontWeight: '500',
+  },
+  retryButton: {
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: 8,
+    alignSelf: 'flex-end',
+  },
+  retryButtonText: {
+    fontSize: 12,
     fontWeight: '600',
-  },
-  rowValuePositive: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  totalValue: {
-    fontSize: 16,
-    fontWeight: '700',
   },
   option: {
     borderWidth: 1,

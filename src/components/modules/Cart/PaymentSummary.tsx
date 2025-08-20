@@ -8,52 +8,67 @@ interface PaymentSummaryProps {
   expanded: boolean;
   onToggle: () => void;
   cart?: Cart;
+  codCharges?: number;
+  selectedPaymentOption?: string | undefined;
 }
 
-const PaymentSummary: React.FC<PaymentSummaryProps> = ({ expanded, onToggle, cart }) => {
+const PaymentSummary: React.FC<PaymentSummaryProps> = ({
+  expanded,
+  onToggle,
+  cart,
+  codCharges = 0,
+  selectedPaymentOption,
+}) => {
   const { getColor, getTypography, theme } = useTheme();
 
-  const { subtotal, deliveryFee, total, totalDiscountOnItems, couponDiscount } = useMemo(() => {
-    if (!cart) {
+  const { subtotal, deliveryFee, total, totalDiscountOnItems, couponDiscount, finalTotal } =
+    useMemo(() => {
+      if (!cart) {
+        return {
+          subtotal: 0,
+          deliveryFee: 0,
+          total: 0,
+          totalDiscountOnItems: 0,
+          couponDiscount: 0,
+          finalTotal: 0,
+        };
+      }
+
+      const apiSubtotal = cart.totalCartAmount ?? 0;
+
+      const localSubtotal = Object.values(cart.products).reduce(
+        (sum, product) => sum + product.price * product.quantity,
+        0
+      );
+
+      const calculatedSubtotal = apiSubtotal > 0 ? apiSubtotal : localSubtotal;
+      const calculatedDeliveryFee = cart.deliveryFee ?? (calculatedSubtotal > 0 ? 28 : 0);
+      const calculatedCouponDiscount = cart.smartBizOffer?.totalBenefit ?? 0;
+      const calculatedTotalDiscountOnItems = cart.totalDiscountOnItems ?? 0;
+      const apiTotal = cart.totalCartAmountWithDeliveryFeeAndBenefit ?? 0;
+
+      // Use API total if available, otherwise calculate manually
+      const calculatedTotal =
+        apiTotal > 0
+          ? apiTotal
+          : calculatedSubtotal -
+            calculatedTotalDiscountOnItems -
+            calculatedCouponDiscount +
+            calculatedDeliveryFee;
+
+      // Calculate final total including COD charges if COD is selected
+      const calculatedFinalTotal =
+        selectedPaymentOption === 'cod' ? calculatedTotal + codCharges : calculatedTotal;
+
       return {
-        subtotal: 0,
-        deliveryFee: 0,
-        total: 0,
-        totalDiscountOnItems: 0,
-        couponDiscount: 0,
+        subtotal: calculatedSubtotal,
+        deliveryFee: calculatedDeliveryFee,
+        total: calculatedTotal,
+        totalDiscountOnItems: calculatedTotalDiscountOnItems,
+        couponDiscount: calculatedCouponDiscount,
+        finalTotal: calculatedFinalTotal,
       };
-    }
-
-    const apiSubtotal = cart.totalCartAmount ?? 0;
-
-    const localSubtotal = Object.values(cart.products).reduce(
-      (sum, product) => sum + product.price * product.quantity,
-      0
-    );
-
-    const calculatedSubtotal = apiSubtotal > 0 ? apiSubtotal : localSubtotal;
-    const calculatedDeliveryFee = cart.deliveryFee ?? (calculatedSubtotal > 0 ? 28 : 0);
-    const calculatedCouponDiscount = cart.smartBizOffer?.totalBenefit ?? 0;
-    const calculatedTotalDiscountOnItems = cart.totalDiscountOnItems ?? 0;
-    const apiTotal = cart.totalCartAmountWithDeliveryFeeAndBenefit ?? 0;
-
-    // Use API total if available, otherwise calculate manually
-    const calculatedTotal =
-      apiTotal > 0
-        ? apiTotal
-        : calculatedSubtotal -
-          calculatedTotalDiscountOnItems -
-          calculatedCouponDiscount +
-          calculatedDeliveryFee;
-
-    return {
-      subtotal: calculatedSubtotal,
-      deliveryFee: calculatedDeliveryFee,
-      total: calculatedTotal,
-      totalDiscountOnItems: calculatedTotalDiscountOnItems,
-      couponDiscount: calculatedCouponDiscount,
-    };
-  }, [cart]);
+    }, [cart, codCharges, selectedPaymentOption]);
 
   const styles = StyleSheet.create({
     paymentSummaryBox: {
@@ -143,7 +158,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({ expanded, onToggle, car
         />
         <Text style={styles.paymentSummaryTitle}>Total Bill (Inc. Taxes and Charges)</Text>
         <View style={{ flex: 1 }} />
-        <Text style={styles.paymentSummaryAmount}>₹{total}</Text>
+        <Text style={styles.paymentSummaryAmount}>₹{finalTotal}</Text>
         <MaterialCommunityIcons
           name={expanded ? 'chevron-up' : 'chevron-down'}
           size={22}
@@ -189,10 +204,19 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({ expanded, onToggle, car
               <Text style={styles.billLabel}>Delivery Fee</Text>
               <Text style={styles.billAmount}>₹{deliveryFee}</Text>
             </View>
+            {selectedPaymentOption === 'cod' && codCharges > 0 && (
+              <>
+                <View style={styles.dottedLine} />
+                <View style={styles.billRow}>
+                  <Text style={styles.billLabel}>COD Charges</Text>
+                  <Text style={styles.billAmount}>₹{codCharges}</Text>
+                </View>
+              </>
+            )}
             <View style={styles.dottedLine} />
             <View style={styles.billRowLast}>
               <Text style={styles.billLabel}>Total Pay</Text>
-              <Text style={styles.billAmount}>₹{total}</Text>
+              <Text style={styles.billAmount}>₹{finalTotal}</Text>
             </View>
           </View>
         </View>
