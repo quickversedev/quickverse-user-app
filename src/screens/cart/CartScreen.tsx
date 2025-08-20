@@ -17,6 +17,8 @@ import { AddressSelectionModal } from '../../components/modules/Header/AddressSe
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { RootStackParamList } from '../../routes/AppStack';
+import orderService, { CreateOrderRequest } from '../../services/createOrderService';
+import createPaymentService, { CreatePaymentRequest } from '../../services/createPaymentService';
 import { getCODCharges } from '../../services/paymentService';
 import useCartStore from '../../store/cart/cartStore';
 import useCouponStore from '../../store/cart/couponStore';
@@ -67,6 +69,7 @@ const CartScreen: React.FC = () => {
   const [selectedPaymentOption, setSelectedPaymentOption] = React.useState<string | undefined>(
     'cod'
   ); // Default to COD
+  const [isOrderLoading, setIsOrderLoading] = React.useState(false);
 
   // Theme
   const { getColor } = useTheme();
@@ -101,7 +104,8 @@ const CartScreen: React.FC = () => {
     { name: 'Choco Lava Cake', price: 20, image: require('../../assets/images/bg_1.png') },
     { name: 'Choco Lava Cake', price: 20, image: require('../../assets/images/bg_1.png') },
   ];
-
+  // console.log('cart', cart);
+  // console.log('vendor', vendor);
   // Event handlers
   const handleClearCart = () => {
     if (cart && authData?.jwt) {
@@ -126,7 +130,7 @@ const CartScreen: React.FC = () => {
     // TODO: Implement suggested item addition
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     const shouldShowCompulsoryModal =
       !permissionDataInAuth?.permission ||
       permissionDataInAuth?.permission !== 'granted' ||
@@ -142,9 +146,101 @@ const CartScreen: React.FC = () => {
       return;
     }
 
-    // Proceed with checkout since payment option is selected
-    // Here you can navigate to the actual checkout/payment processing screen
-    // navigation.navigate('Checkout', { paymentOption: selectedPaymentOption });
+    // Validate required data
+    if (!cart || !vendor || !selectedAddress || !authData?.jwt || !authData?.phone) {
+      navigation.navigate('OrderFailure', {
+        errorMessage: 'Missing required information. Please try again.',
+      });
+      return;
+    }
+
+    setIsOrderLoading(true);
+
+    try {
+      // Step 1: Create Order
+      const orderRequest: CreateOrderRequest = {
+        shopId: parseInt(vendor.shopId, 10),
+        cartId: cart.smartBizCartId,
+        orderSource: 'CONSTELLATION',
+        customerAddressId: selectedAddress.addressID,
+        fulfillmentOption: 'DELIVERY',
+        notificationMobileNumber: selectedAddress.phone,
+        notificationEmail: null,
+        customerName: selectedAddress.name || 'Customer',
+        paymentMethod: selectedPaymentOption.toUpperCase(),
+      };
+
+      const orderResponse = await orderService.createOrder(
+        orderRequest,
+        authData.jwt,
+        authData.phone
+      );
+
+      // Step 2: Create Payment
+      const paymentRequest: CreatePaymentRequest = {
+        customerId: orderResponse.customerId,
+        mobileNumber: authData.phone,
+        name: selectedAddress.name,
+        orderId: orderResponse.orderId,
+        tenders: [
+          {
+            amount: orderResponse.totalOrderAmount,
+            status: 'CREATED',
+            type: 'COMPLETION',
+            paymentMethod: selectedPaymentOption.toUpperCase(),
+            additionalTenderCharges: 10, // This should come from payment configuration
+          },
+        ],
+      };
+
+      await createPaymentService.createPayment(paymentRequest, authData.jwt);
+
+      // Both APIs successful - Navigate to success screen
+      const currentDate = new Date();
+      const formattedDate = `${currentDate.getDate()}${getOrdinalSuffix(
+        currentDate.getDate()
+      )} ${currentDate.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      })} • ${currentDate.toLocaleDateString('en-US', { weekday: 'long' })}`;
+
+      navigation.navigate('OrderSuccess', {
+        orderId: orderResponse.orderId,
+        amount: orderResponse.totalOrderAmount,
+        date: formattedDate,
+      });
+
+      // TODO: Clear the cart after successful order placement
+      // if (cart && authData?.jwt) {
+      //   await clearCart(cart.cartId, authData.jwt, authData.phone);
+      // }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Order creation failed. Please try again.';
+      console.error('Order/Payment creation failed:', error);
+
+      // Navigate to failure screen with error message
+      navigation.navigate('OrderFailure', {
+        errorMessage,
+      });
+    } finally {
+      setIsOrderLoading(false);
+    }
+  };
+
+  // Helper function to get ordinal suffix
+  const getOrdinalSuffix = (day: number) => {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
+    }
   };
 
   const handleAddressSelect = (address: Address) => {
@@ -260,7 +356,8 @@ const CartScreen: React.FC = () => {
         address={getFormattedAddress()}
         onSelectAddress={() => setShowAddressModal(true)}
         onCheckout={handleCheckout}
-        disabled={!selectedPaymentOption || Boolean(paymentMethodsError)}
+        disabled={!selectedPaymentOption || Boolean(paymentMethodsError) || isOrderLoading}
+        loading={isOrderLoading}
       />
 
       <AddressSelectionModal

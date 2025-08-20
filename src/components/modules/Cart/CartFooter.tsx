@@ -9,6 +9,7 @@ interface CartFooterProps {
   onSelectAddress: () => void;
   onCheckout: () => void;
   disabled?: boolean;
+  loading?: boolean;
 }
 
 const CartFooter: React.FC<CartFooterProps> = ({
@@ -16,6 +17,7 @@ const CartFooter: React.FC<CartFooterProps> = ({
   onSelectAddress,
   onCheckout,
   disabled = false,
+  loading = false,
 }) => {
   const { getColor, getTypography, theme, getButtonColor } = useTheme();
 
@@ -108,7 +110,11 @@ const CartFooter: React.FC<CartFooterProps> = ({
         activeOpacity={disabled ? 1 : 0.8}
       >
         <Text style={[styles.checkoutText, disabled && { color: getColor('subText') }]}>
-          {disabled ? 'Select Payment Method' : 'Proceed To Checkout'}
+          {loading
+            ? 'Processing Order...'
+            : disabled
+            ? 'Select Payment Method'
+            : 'Proceed To Checkout'}
         </Text>
       </TouchableOpacity>
     </View>
