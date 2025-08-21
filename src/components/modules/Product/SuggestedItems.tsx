@@ -1,7 +1,8 @@
-import React from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import React, { useEffect, useState } from 'react';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { useProductsStore } from '../../../store/products/productsStore';
 import { useTheme } from '../../../theme/ThemeContext';
+import { Product } from '../../../types/product';
 import ProductCard from './ProductCard';
 
 interface SuggestedItem {
@@ -15,23 +16,58 @@ interface SuggestedItem {
 }
 
 interface SuggestedItemsProps {
-  items: SuggestedItem[];
+  categories?: string; // Comma-separated categories
+  products?: Product[]; // Direct products to show
   onItemPress: (item: SuggestedItem) => void;
-  onViewAllPress: () => void;
   onAdd: (item: SuggestedItem) => void;
   onIncrement: (item: SuggestedItem) => void;
   onDecrement: (item: SuggestedItem) => void;
 }
 
 const SuggestedItems: React.FC<SuggestedItemsProps> = ({
-  items,
+  categories,
+  products,
   onItemPress,
-  onViewAllPress,
   onAdd,
   onIncrement,
   onDecrement,
 }) => {
   const { getColor, getTypography } = useTheme();
+  const { getProductsByCategories } = useProductsStore();
+  const [suggestedProducts, setSuggestedProducts] = useState<SuggestedItem[]>([]);
+  // Resolve items from provided products or categories
+  useEffect(() => {
+    if (products && products.length > 0) {
+      const fromProducts: SuggestedItem[] = products.slice(0, 10).map(p => ({
+        id: p.sku,
+        name: p.name,
+        price: p.sellingPrice,
+        mrp: p.mrp,
+        rating: (p as any).rating || 4.5,
+        image: (p.imageUrl as unknown as number) || 0,
+        quantity: 0,
+      }));
+      setSuggestedProducts(fromProducts);
+      return;
+    }
+
+    if (categories && categories.trim()) {
+      const categoryProducts = getProductsByCategories(categories);
+      const convertedItems: SuggestedItem[] = categoryProducts.slice(0, 10).map(product => ({
+        id: product.sku,
+        name: product.name,
+        price: product.sellingPrice,
+        mrp: product.mrp,
+        rating: 4.5,
+        image: (product.imageUrl as unknown as number) || 0,
+        quantity: 0,
+      }));
+      setSuggestedProducts(convertedItems);
+      return;
+    }
+
+    setSuggestedProducts([]);
+  }, [products, categories, getProductsByCategories]);
 
   const styles = StyleSheet.create({
     container: {
@@ -106,18 +142,19 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
     );
   };
 
+  // Don't render if no suggested products
+  if (suggestedProducts.length === 0) {
+    return null;
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Add a little somethin&apos;</Text>
-        <TouchableOpacity style={styles.viewAllButton} onPress={onViewAllPress}>
-          <Text style={styles.viewAllText}>View All</Text>
-          <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('primary')} />
-        </TouchableOpacity>
       </View>
 
       <FlatList
-        data={items}
+        data={suggestedProducts}
         renderItem={renderItem}
         keyExtractor={item => item.id}
         horizontal

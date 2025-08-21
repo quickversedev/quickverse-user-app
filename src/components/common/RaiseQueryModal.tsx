@@ -50,7 +50,6 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  console.log('orderId', orderId);
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const day = date.getDate().toString().padStart(2, '0');
@@ -96,11 +95,11 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
     setIsSubmitting(true);
     try {
       // TODO: Implement API call to submit the query
-      console.log('Submitting query:', {
-        orderId,
-        category: selectedCategory,
-        description: description.trim(),
-      });
+      // console.log('Submitting query:', {
+      //   orderId,
+      //   category: selectedCategory,
+      //   description: description.trim(),
+      // });
 
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -137,6 +136,7 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
       borderTopRightRadius: 20,
       maxHeight: '90%',
       minHeight: '80%',
+      overflow: 'hidden',
     },
     header: {
       flexDirection: 'row',
@@ -203,6 +203,7 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
       flex: 1,
       paddingHorizontal: 16,
       paddingBottom: 20,
+      paddingTop: 8,
     },
     formSection: {
       marginBottom: 24,
@@ -228,6 +229,7 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
       fontSize: getTypography('body'),
       color: selectedCategory ? getColor('text') : getColor('placeholder'),
       flex: 1,
+      marginRight: 8,
     },
     dropdownContainer: {
       backgroundColor: getColor('card'),
@@ -236,16 +238,30 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
       borderWidth: 1,
       borderColor: getColor('border'),
       maxHeight: 200,
+      width: '100%',
+      position: 'absolute',
+      top: 56, // below the input
+      left: 0,
+      zIndex: 1000,
+      elevation: 5,
+      shadowColor: getColor('shadow').color,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: getColor('shadow').opacity,
+      shadowRadius: getColor('shadow').radius,
+      overflow: 'hidden',
     },
     dropdownItem: {
       paddingHorizontal: 16,
       paddingVertical: 12,
       borderBottomWidth: 1,
       borderBottomColor: getColor('border'),
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     dropdownItemText: {
       fontSize: getTypography('body'),
       color: getColor('text'),
+      flex: 1,
     },
     descriptionInput: {
       backgroundColor: getColor('card'),
@@ -341,52 +357,61 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
             {/* Issue Category */}
             <View style={styles.formSection}>
               <Text style={styles.label}>Issue Category</Text>
-              <TouchableOpacity
-                style={[
-                  styles.categoryInput,
-                  { backgroundColor: getColor('card'), borderColor: getColor('border') },
-                ]}
-                onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                activeOpacity={0.7}
-              >
-                <Text
+              <View style={{ position: 'relative' }}>
+                <TouchableOpacity
                   style={[
-                    styles.categoryText,
-                    { color: selectedCategory ? getColor('text') : getColor('placeholder') },
-                  ]}
-                >
-                  {selectedCategory ? selectedCategory.label : 'Select an issue category'}
-                </Text>
-                <Icon
-                  name={showCategoryDropdown ? 'chevron-up' : 'chevron-down'}
-                  size={20}
-                  color={getColor('subText')}
-                />
-              </TouchableOpacity>
-
-              {showCategoryDropdown && (
-                <View
-                  style={[
-                    styles.dropdownContainer,
+                    styles.categoryInput,
                     { backgroundColor: getColor('card'), borderColor: getColor('border') },
                   ]}
+                  onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                  activeOpacity={0.7}
                 >
-                  {ISSUE_CATEGORIES.map(category => (
-                    <TouchableOpacity
-                      key={category.id}
-                      style={[styles.dropdownItem, { borderBottomColor: getColor('border') }]}
-                      onPress={() => {
-                        setSelectedCategory(category);
-                        setShowCategoryDropdown(false);
-                      }}
-                    >
-                      <Text style={[styles.dropdownItemText, { color: getColor('text') }]}>
-                        {category.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      { color: selectedCategory ? getColor('text') : getColor('placeholder') },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {selectedCategory ? selectedCategory.label : 'Select an issue category'}
+                  </Text>
+                  <Icon
+                    name={showCategoryDropdown ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={getColor('subText')}
+                  />
+                </TouchableOpacity>
+
+                {showCategoryDropdown && (
+                  <View
+                    style={[
+                      styles.dropdownContainer,
+                      { backgroundColor: getColor('card'), borderColor: getColor('border') },
+                    ]}
+                  >
+                    <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                      {ISSUE_CATEGORIES.map(category => (
+                        <TouchableOpacity
+                          key={category.id}
+                          style={[styles.dropdownItem, { borderBottomColor: getColor('border') }]}
+                          onPress={() => {
+                            setSelectedCategory(category);
+                            setShowCategoryDropdown(false);
+                          }}
+                        >
+                          <Text
+                            style={[styles.dropdownItemText, { color: getColor('text') }]}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >
+                            {category.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
             </View>
 
             {/* Issue Description */}

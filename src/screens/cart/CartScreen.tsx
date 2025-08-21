@@ -10,10 +10,10 @@ import {
   CouponSection,
   PaymentOptions,
   PaymentSummary,
-  SuggestedItems,
   VendorPill,
 } from '../../components/modules/Cart';
 import { AddressSelectionModal } from '../../components/modules/Header/AddressSelectionModal';
+import SuggestedItems from '../../components/modules/Product/SuggestedItems';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { RootStackParamList } from '../../routes/AppStack';
@@ -22,19 +22,15 @@ import createPaymentService, { CreatePaymentRequest } from '../../services/creat
 import { getCODCharges } from '../../services/paymentService';
 import useCartStore from '../../store/cart/cartStore';
 import useCouponStore from '../../store/cart/couponStore';
+import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Address } from '../../types/address';
+import { Product } from '../../types/product';
 import PaymentScreen from './PaymentScreen';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
-
-interface SuggestedItem {
-  name: string;
-  price: number;
-  image: number;
-}
 
 // ============================================================================
 // MAIN CART SCREEN COMPONENT
@@ -73,7 +69,9 @@ const CartScreen: React.FC = () => {
 
   // Theme
   const { getColor } = useTheme();
-
+  const { getFeaturedProducts } = useFeaturedProductsStore();
+  const [featuredProducts, setFeaturedProducts] = React.useState<Product[]>([]);
+  console.log('featuredProducts', featuredProducts);
   // Derived state
   const cart = cartId ? carts[cartId] : activeCartId ? carts[activeCartId] : undefined;
   const cartItems = cart ? Object.values(cart.products) : [];
@@ -98,12 +96,6 @@ const CartScreen: React.FC = () => {
   // Get COD charges from payment methods
   const codCharges = getCODCharges(paymentMethods);
 
-  // Mock data
-  const suggestedItems: SuggestedItem[] = [
-    { name: 'Choco Lava Cake', price: 20, image: require('../../assets/images/bg_1.png') },
-    { name: 'Choco Lava Cake', price: 20, image: require('../../assets/images/bg_1.png') },
-    { name: 'Choco Lava Cake', price: 20, image: require('../../assets/images/bg_1.png') },
-  ];
   // console.log('cart', cart);
   // console.log('vendor', vendor);
   // Event handlers
@@ -126,8 +118,9 @@ const CartScreen: React.FC = () => {
     }
   };
 
-  const handleAddSuggested = (_idx: number) => {
+  const handleAddSuggested = (_item: any) => {
     // TODO: Implement suggested item addition
+    // console.log('Adding suggested item:', item);
   };
 
   const handleCheckout = async () => {
@@ -306,6 +299,23 @@ const CartScreen: React.FC = () => {
     }
   }, [availableOptions, selectedPaymentOption]);
 
+  // Fetch featured products for vendor as suggested items
+  React.useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        if (vendor?.shopId) {
+          const products = await getFeaturedProducts(vendor.shopId);
+          setFeaturedProducts(products || []);
+        } else {
+          setFeaturedProducts([]);
+        }
+      } catch (_err) {
+        setFeaturedProducts([]);
+      }
+    };
+    fetchFeatured();
+  }, [vendor?.shopId, getFeaturedProducts]);
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: getColor('background') }}
@@ -349,7 +359,13 @@ const CartScreen: React.FC = () => {
           selectedPaymentOption={selectedPaymentOption}
         />
 
-        <SuggestedItems items={suggestedItems} onAdd={handleAddSuggested} />
+        <SuggestedItems
+          products={featuredProducts}
+          onItemPress={handleAddSuggested}
+          onAdd={handleAddSuggested}
+          onIncrement={handleAddSuggested}
+          onDecrement={handleAddSuggested}
+        />
       </ScrollView>
 
       <CartFooter

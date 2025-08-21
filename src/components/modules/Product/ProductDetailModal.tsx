@@ -154,45 +154,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     decrement(cartId, displaySku, authData.jwt, authData.phone);
   };
 
-  const suggestedItems: SuggestedItem[] = [
-    {
-      id: '1',
-      name: 'Choco Lava Cake',
-      price: 120,
-      mrp: 150,
-      rating: 4.5,
-      image: require('../../../assets/images/bg_1.png'),
-      quantity: 0,
-    },
-    {
-      id: '2',
-      name: 'Vanilla Ice Cream',
-      price: 80,
-      mrp: 100,
-      rating: 4.2,
-      image: require('../../../assets/images/bg_1.png'),
-      quantity: 0,
-    },
-    {
-      id: '3',
-      name: 'Chocolate Brownie',
-      price: 90,
-      mrp: 120,
-      rating: 4.7,
-      image: require('../../../assets/images/bg_1.png'),
-      quantity: 0,
-    },
-    {
-      id: '4',
-      name: 'Strawberry Cake',
-      price: 110,
-      mrp: 140,
-      rating: 4.3,
-      image: require('../../../assets/images/bg_1.png'),
-      quantity: 0,
-    },
-  ];
-
   const styles = StyleSheet.create({
     modalOverlay: {
       flex: 1,
@@ -451,12 +412,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </View>
 
             <SuggestedItems
-              items={suggestedItems.map(item => ({
-                ...item,
-                quantity: cart?.products[item.id]?.quantity || 0,
-              }))}
+              categories={product.division || ''}
               onItemPress={handleSuggestedItemPress}
-              onViewAllPress={handleViewAllPress}
               onAdd={handleSuggestedItemAdd}
               onIncrement={handleSuggestedItemIncrement}
               onDecrement={handleSuggestedItemDecrement}

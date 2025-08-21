@@ -23,6 +23,8 @@ interface ProductsStore {
   setShopId: (shopId: string) => void;
   // Selector: Get products by category from the current store
   getProductsByCategory: (categoryId: string) => Product[];
+  // Selector: Get products by multiple categories (comma-separated string)
+  getProductsByCategories: (categoriesString: string) => Product[];
   // Selector: Get best seller products (tagName === 'BestSeller')
   getBestSellers: () => Product[];
 }
@@ -128,6 +130,17 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
   getProductsByCategory: (categoryId: string) => {
     const products = get().products || [];
     return products.filter(product => product?.division === categoryId);
+  },
+
+  // Selector: Get products by multiple categories (comma-separated string)
+  getProductsByCategories: (categoriesString: string) => {
+    const products = get().products || [];
+    if (!categoriesString || categoriesString.trim() === '') {
+      return [];
+    }
+
+    const categories = categoriesString.split(',').map(cat => cat.trim());
+    return products.filter(product => product?.division && categories.includes(product.division));
   },
 
   // Selector: Get best seller products (tagName === 'BestSeller')
