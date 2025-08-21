@@ -20,6 +20,7 @@ import { RootStackParamList } from '../../routes/AppStack';
 import orderService, { CreateOrderRequest } from '../../services/createOrderService';
 import createPaymentService, { CreatePaymentRequest } from '../../services/createPaymentService';
 import { getCODCharges } from '../../services/paymentService';
+import smartBizAddressService from '../../services/smartBizAddressService';
 import useCartStore from '../../store/cart/cartStore';
 import useCouponStore from '../../store/cart/couponStore';
 import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
@@ -71,14 +72,14 @@ const CartScreen: React.FC = () => {
   const { getColor } = useTheme();
   const { getFeaturedProducts } = useFeaturedProductsStore();
   const [featuredProducts, setFeaturedProducts] = React.useState<Product[]>([]);
-  console.log('featuredProducts', featuredProducts);
+  const [smartBizAddressId, setSmartBizAddressId] = React.useState<string | null>(null);
   // Derived state
   const cart = cartId ? carts[cartId] : activeCartId ? carts[activeCartId] : undefined;
   const cartItems = cart ? Object.values(cart.products) : [];
   const vendor = vendors.find(v => v.shopId === cart?.cartId.replace('vendor_', ''));
   const appliedCoupon = cart ? getAppliedCoupon(cart.cartId) : undefined;
   const availableCoupons = getAvailableCoupons(vendor?.shopId || '');
-
+  console.log('smartBizAddressId', smartBizAddressId);
   // Payment methods hook
   const {
     paymentMethods,
@@ -155,7 +156,7 @@ const CartScreen: React.FC = () => {
         shopId: parseInt(vendor.shopId, 10),
         cartId: cart.smartBizCartId,
         orderSource: 'CONSTELLATION',
-        customerAddressId: selectedAddress.addressID,
+        customerAddressId: smartBizAddressId || selectedAddress.addressID,
         fulfillmentOption: 'DELIVERY',
         notificationMobileNumber: selectedAddress.phone,
         notificationEmail: null,
@@ -298,6 +299,29 @@ const CartScreen: React.FC = () => {
       }
     }
   }, [availableOptions, selectedPaymentOption]);
+
+  // Resolve SmartBiz AddressId for selected address tag when landing on Cart
+  React.useEffect(() => {
+    const resolveSmartBizAddress = async () => {
+      try {
+        if (!vendor?.shopId || !authData?.jwt || !authData?.phone || !selectedAddress?.tag) {
+          setSmartBizAddressId(null);
+          return;
+        }
+        const map = await smartBizAddressService.fetchSmartBizAddressIds(
+          vendor.shopId,
+          authData.jwt,
+          authData.phone
+        );
+        const tag = selectedAddress.tag;
+        const matched = map[tag];
+        setSmartBizAddressId(matched || null);
+      } catch (_e) {
+        setSmartBizAddressId(null);
+      }
+    };
+    resolveSmartBizAddress();
+  }, [vendor?.shopId, authData?.jwt, authData?.phone, selectedAddress?.tag]);
 
   // Fetch featured products for vendor as suggested items
   React.useEffect(() => {

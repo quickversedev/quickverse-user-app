@@ -15,31 +15,6 @@ const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, getStatusColor }) 
   return (
     <View style={[styles.orderCard, { backgroundColor: getColor('card') }]}>
       {/* Source (Restaurant) */}
-      <View style={styles.locationRow}>
-        <View style={styles.iconContainer}>
-          <Icon name="map-marker" size={20} color={getColor('primary')} />
-        </View>
-        <View style={styles.locationInfo}>
-          <Text style={[styles.locationTitle, { color: getColor('text') }]}>{order.shopName}</Text>
-          <Text style={[styles.locationAddress, { color: getColor('subText') }]}>
-            {order.deliveryAddress.address}
-          </Text>
-        </View>
-      </View>
-
-      {/* Connecting Line */}
-      <View style={styles.connectingLine}>
-        {[...Array(4)].map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.dot,
-              { backgroundColor: getColor('border') },
-              { marginBottom: index < 3 ? 2 : 0 },
-            ]}
-          />
-        ))}
-      </View>
 
       {/* Destination (Delivery Address) */}
       <View style={styles.locationRow}>

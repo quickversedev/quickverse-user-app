@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { useAuth } from '../contexts/login/AuthProvider';
 import useOrderStore from '../store/cart/orderStore';
 import { Order, OrderFilters } from '../types/order';
 
@@ -24,44 +25,50 @@ export const useOrders = () => {
     getOrderById,
     getRecentOrders,
   } = useOrderStore();
+  const { authData } = useAuth();
 
-  // Load orders on mount
+  // Load orders on mount (requires auth)
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    if (authData?.jwt && authData?.phone) {
+      fetchOrders(authData.jwt, authData.phone, null, 10);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authData?.jwt, authData?.phone]);
 
   // Memoized functions for better performance
   const loadOrders = useCallback(
     async (cursor?: string | null, pageSize?: number) => {
-      await fetchOrders(cursor, pageSize);
+      if (!authData?.jwt || !authData?.phone) return;
+      await fetchOrders(authData.jwt, authData.phone, cursor ?? null, pageSize);
     },
-    [fetchOrders]
+    [fetchOrders, authData?.jwt, authData?.phone]
   );
 
   const loadMoreOrders = useCallback(
     async (pageSize?: number) => {
-      // Use the current cursor from pagination state for next page
+      if (!authData?.jwt || !authData?.phone) return;
       const currentCursor = pagination.cursor;
       if (currentCursor && pagination.hasMore) {
-        await fetchOrders(currentCursor, pageSize);
+        await fetchOrders(authData.jwt, authData.phone, currentCursor, pageSize);
       }
     },
-    [fetchOrders, pagination.cursor, pagination.hasMore]
+    [fetchOrders, pagination.cursor, pagination.hasMore, authData?.jwt, authData?.phone]
   );
 
   const refreshOrders = useCallback(
     async (pageSize?: number) => {
-      // Reset to first page by passing null cursor
-      await fetchOrders(null, pageSize);
+      if (!authData?.jwt || !authData?.phone) return;
+      await fetchOrders(authData.jwt, authData.phone, null, pageSize);
     },
-    [fetchOrders]
+    [fetchOrders, authData?.jwt, authData?.phone]
   );
 
   const loadOrderById = useCallback(
     async (orderId: string) => {
-      await fetchOrderById(orderId);
+      if (!authData?.jwt || !authData?.phone) return;
+      await fetchOrderById(orderId, authData.jwt, authData.phone);
     },
-    [fetchOrderById]
+    [fetchOrderById, authData?.jwt, authData?.phone]
   );
 
   const updateFilters = useCallback(

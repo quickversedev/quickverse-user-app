@@ -6,12 +6,17 @@ import {
   getAuthSession,
   getNewUser,
   getSkipLoginFlow,
+  removeAuthSession,
+  removeNewUser,
+  removeRecentSearches,
+  removeRegionId,
   removeUserAddresses,
   setAuthSession,
   setNewUser,
   setSkipLoginFlow,
   StorageService,
 } from '../../services/localStorage/storage.service';
+import useCartStore from '../../store/cart/cartStore';
 import { Address } from '../../types/address';
 
 type AuthContextData = {
@@ -108,6 +113,22 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setSkipUserLogin(undefined);
     setSelectedAddress(null);
     removeUserAddresses();
+    removeAuthSession();
+    removeRecentSearches();
+    removeRegionId();
+    removeNewUser();
+    // Clear persisted cart storage and in-memory cart state on logout
+    try {
+      StorageService.removeItem('cart-storage');
+    } catch {
+      // noop
+    }
+    try {
+      useCartStore.setState({ carts: {}, activeCartId: null });
+    } catch {
+      // noop
+    }
+    // Optionally clear all remaining app storage (kept to preserve existing behavior)
     StorageService.clearAll();
   };
 

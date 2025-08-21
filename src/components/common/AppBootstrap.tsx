@@ -35,6 +35,7 @@ const AppBootstrap: React.FC = () => {
   const bootstrap = async () => {
     setBootLoading(true);
     setBootError(null);
+    console.log('bootstrap', authData?.jwt);
     try {
       const result = await getPermissionAndLocation();
 

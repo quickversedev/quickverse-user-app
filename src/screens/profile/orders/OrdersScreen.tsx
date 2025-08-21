@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import OrderList from '../../../components/common/order/OrderList';
@@ -11,13 +11,16 @@ const OrdersScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const { getColor, getTypography } = useTheme();
 
-  const handleOrderPress = (order: Order) => {
-    navigation.navigate('OrderDetails', { orderId: order.orderId });
-  };
+  const handleOrderPress = useCallback(
+    (order: Order) => {
+      navigation.navigate('OrderDetails', { orderId: order.orderId });
+    },
+    [navigation]
+  );
 
-  const handleBackPress = () => {
+  const handleBackPress = useCallback(() => {
     navigation.goBack();
-  };
+  }, [navigation]);
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: getColor('background') }]}>

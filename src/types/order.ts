@@ -46,15 +46,21 @@ export interface OrderFilters {
   shopId?: string;
 }
 
+export type OrderCursor = {
+  creationTime: string;
+  orderId: string;
+  customerId: string;
+};
+
 export interface OrderPagination {
-  cursor: string | null;
+  cursor: OrderCursor | null;
   pageSize: number;
   hasMore: boolean;
 }
 
 export interface OrderResponse {
-  orders: Order[];
-  pagination: OrderPagination;
+  ordersMetadata: any[];
+  cursor: OrderCursor | null;
 }
 
 export interface OrderStore {
@@ -70,7 +76,7 @@ export interface OrderStore {
   fetchOrders: (
     jwt: string,
     phone: string,
-    cursor?: string | null,
+    cursor: OrderCursor | null,
     pageSize?: number
   ) => Promise<void>;
   fetchOrderById: (orderId: string, jwt: string, phone: string) => Promise<void>;

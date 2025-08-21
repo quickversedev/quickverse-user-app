@@ -1,20 +1,32 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
 
 interface BillSummaryCardProps {
   totalAmount: number;
+  subtotal: number;
+  deliveryFee: number;
   onPress: () => void;
 }
 
-const BillSummaryCard: React.FC<BillSummaryCardProps> = ({ totalAmount, onPress }) => {
+const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
+  totalAmount,
+  subtotal,
+  deliveryFee,
+  onPress,
+}) => {
   const { getColor } = useTheme();
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const handlePress = useCallback(() => {
+    setIsExpanded(!isExpanded);
+  }, [isExpanded]);
 
   return (
     <TouchableOpacity
       style={[styles.billCard, { backgroundColor: getColor('card') }]}
-      onPress={onPress}
+      onPress={handlePress}
     >
       <View style={styles.billContent}>
         <View style={styles.billInfo}>
@@ -24,12 +36,40 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({ totalAmount, onPress 
               Total Bill (Inc. Taxes and Charges)
             </Text>
             <Text style={[styles.billAmount, { color: getColor('text') }]}>
-              INR. {totalAmount.toFixed(0)}
+              ₹{totalAmount.toFixed(2)}
             </Text>
           </View>
         </View>
-        <Text style={[styles.billAction, { color: '#FFA500' }]}>View summary {'>'}</Text>
+        <View style={styles.billAction}>
+          <Text style={[styles.billActionText, { color: '#FFA500' }]}>
+            {isExpanded ? 'Hide details' : 'View details'}
+          </Text>
+          <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={20} color="#FFA500" />
+        </View>
       </View>
+
+      {isExpanded && (
+        <View style={styles.expandedContent}>
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>Subtotal</Text>
+            <Text style={[styles.summaryValue, { color: getColor('text') }]}>
+              ₹{subtotal.toFixed(2)}
+            </Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>Delivery Fee</Text>
+            <Text style={[styles.summaryValue, { color: getColor('text') }]}>
+              ₹{deliveryFee.toFixed(2)}
+            </Text>
+          </View>
+          <View style={[styles.summaryRow, styles.summaryTotalRow]}>
+            <Text style={[styles.summaryTotalLabel, { color: getColor('text') }]}>Total</Text>
+            <Text style={[styles.summaryTotalValue, { color: getColor('text') }]}>
+              ₹{totalAmount.toFixed(2)}
+            </Text>
+          </View>
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
@@ -62,8 +102,45 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   billAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  billActionText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  expandedContent: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E0E0E0',
+    gap: 8,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  summaryLabel: {
+    fontSize: 14,
+  },
+  summaryValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  summaryTotalRow: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E0E0E0',
+    paddingTop: 8,
+  },
+  summaryTotalLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  summaryTotalValue: {
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
 

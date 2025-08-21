@@ -1,13 +1,21 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
-import React from 'react';
-import { Platform, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import {
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SectionDivider } from '../../../components/common';
 import {
   BillSummaryCard,
   HelpCard,
   OrderHeader,
   OrderInfoCard,
-  OrderItemsSection,
   OrderProgress,
 } from '../../../components/common/OrderDetails';
 import { useOrders } from '../../../hooks/useOrders';
@@ -28,21 +36,21 @@ const OrderDetailsScreen = () => {
     }
   }, [orderId, loadOrderById]);
 
-  const handleBackPress = () => {
+  const handleBackPress = useCallback(() => {
     navigation.goBack();
-  };
+  }, [navigation]);
 
-  const handleViewSummary = () => {
+  const handleViewSummary = useCallback(() => {
     // TODO: Navigate to bill summary screen
     // console.log('View summary pressed');
-  };
+  }, []);
 
-  const handleGetHelp = () => {
+  const handleGetHelp = useCallback(() => {
     // TODO: Navigate to help screen
     // console.log('Get help pressed');
-  };
+  }, []);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case 'delivered':
         return '#4CAF50';
@@ -59,7 +67,82 @@ const OrderDetailsScreen = () => {
       default:
         return '#666666';
     }
+  }, []);
+
+  // Types to avoid 'any' and map API shape safely
+  type DerivedItem = { id: string; name: string; quantity: number; price: number; image?: string };
+  type ApiSkuGroup = {
+    id?: string;
+    sku?: string;
+    itemCount?: number;
+    finalPrice?: number;
+    shopPrice?: number;
+    productDetails?: {
+      sku?: string;
+      productName?: string;
+      productImageUrl?: string;
+      additionalAttributes?: { quantity?: number };
+    };
   };
+  type ApiOrderShape = {
+    items?: Array<{
+      id?: string;
+      sku?: string;
+      name?: string;
+      productName?: string;
+      quantity?: number;
+      totalPrice?: number;
+      price?: number;
+      image?: string;
+      imageUrl?: string;
+    }>;
+    skuDetailsGrouped?: ApiSkuGroup[];
+    deliveryDetails?: { deliveryFees?: number };
+  };
+
+  // Derive items either from typed order.items or API's skuDetailsGrouped
+  const derivedItems = React.useMemo<DerivedItem[]>(() => {
+    const base: DerivedItem[] = [];
+    const apiOrder = selectedOrder as unknown as ApiOrderShape;
+    if (Array.isArray(apiOrder?.items) && apiOrder.items.length > 0) {
+      return apiOrder.items.map(it => ({
+        id: String(it.id ?? it.sku ?? Math.random()),
+        name: String(it.name ?? it.productName ?? 'Item'),
+        quantity: Number(it.quantity ?? 1),
+        price: Number(it.totalPrice ?? it.price ?? 0),
+        image: it.image ?? it.imageUrl,
+      }));
+    }
+    const groups = apiOrder?.skuDetailsGrouped;
+    if (Array.isArray(groups)) {
+      return groups.map((g: ApiSkuGroup) => {
+        const pd = g.productDetails || {};
+        return {
+          id: String(g.id ?? g.sku ?? pd.sku ?? Math.random()),
+          name: String(pd.productName ?? 'Item'),
+          quantity: Number(g.itemCount ?? pd.additionalAttributes?.quantity ?? 1),
+          price: Number(g.finalPrice ?? g.shopPrice ?? 0),
+          image: pd.productImageUrl,
+        };
+      });
+    }
+    return base;
+  }, [selectedOrder]);
+
+  // Payment summary derived from items + order delivery details
+  const summary = useMemo(() => {
+    if (!selectedOrder) return { subTotal: 0, deliveryFee: 0, total: 0 };
+
+    const apiOrder = selectedOrder as unknown as ApiOrderShape;
+    const subTotal = derivedItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
+    const deliveryFee = Number(apiOrder?.deliveryDetails?.deliveryFees ?? 0);
+    const total = Number(selectedOrder.totalAmount ?? subTotal + deliveryFee);
+    return { subTotal, deliveryFee, total };
+  }, [derivedItems, selectedOrder]);
+
+  const [showAllItems, setShowAllItems] = React.useState(false);
+  const displayedItems = showAllItems ? derivedItems : derivedItems.slice(0, 2);
+  const hasMoreItems = derivedItems.length > 2;
 
   if (!selectedOrder) {
     return (
@@ -88,13 +171,62 @@ const OrderDetailsScreen = () => {
         >
           <OrderInfoCard order={selectedOrder} getStatusColor={getStatusColor} />
 
-          {selectedOrder.status !== 'cancelled' && <OrderProgress status={selectedOrder.status} />}
+          {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (
+            <OrderProgress status={selectedOrder.status} />
+          )}
 
-          <SectionDivider text="Order Details" />
+          <SectionDivider text="Order Items" />
+          <View style={[styles.itemsCard, { backgroundColor: getColor('card') }]}>
+            {derivedItems.length === 0 ? (
+              <Text style={[styles.emptyText, { color: getColor('subText') }]}>No items found</Text>
+            ) : (
+              <View style={styles.itemsContainer}>
+                {displayedItems.map((item: DerivedItem) => (
+                  <View key={item.id} style={[styles.itemRow, { borderColor: getColor('border') }]}>
+                    {item.image ? (
+                      <Image source={{ uri: item.image }} style={styles.itemImage} />
+                    ) : (
+                      <View
+                        style={[styles.itemImage, { backgroundColor: getColor('background') }]}
+                      />
+                    )}
+                    <View style={styles.itemInfo}>
+                      <Text
+                        style={[styles.itemName, { color: getColor('text') }]}
+                        numberOfLines={2}
+                      >
+                        {item.name}
+                      </Text>
+                      <Text style={[styles.itemMeta, { color: getColor('subText') }]}>
+                        Qty: {item.quantity}
+                      </Text>
+                    </View>
+                    <Text style={[styles.itemPrice, { color: getColor('text') }]}>
+                      ₹{(item.price * item.quantity).toFixed(2)}
+                    </Text>
+                  </View>
+                ))}
+                {hasMoreItems && (
+                  <TouchableOpacity
+                    style={styles.showMoreButton}
+                    onPress={() => setShowAllItems(!showAllItems)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.showMoreText, { color: '#FFA500' }]}>
+                      {showAllItems ? 'Show Less' : `Show ${derivedItems.length - 2} More Items`}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
 
-          <OrderItemsSection order={selectedOrder} />
-
-          <BillSummaryCard totalAmount={selectedOrder.totalAmount} onPress={handleViewSummary} />
+          <BillSummaryCard
+            totalAmount={summary.total}
+            subtotal={summary.subTotal}
+            deliveryFee={summary.deliveryFee}
+            onPress={handleViewSummary}
+          />
 
           <HelpCard onPress={handleGetHelp} order={selectedOrder} />
         </ScrollView>
@@ -127,6 +259,107 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     fontFamily: 'BricolageGrotesque-Regular',
+  },
+  emptyText: {
+    marginTop: 8,
+  },
+  itemsContainer: {
+    marginTop: 8,
+    gap: 8,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  itemImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  itemInfo: {
+    flex: 1,
+  },
+  itemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  itemMeta: {
+    fontSize: 12,
+  },
+  itemPrice: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  itemsCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  billHeader: {
+    marginTop: 16,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  billHeaderText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  billHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  billHeaderAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  summaryContainer: {
+    marginTop: 12,
+    gap: 8,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  summaryLabel: {
+    fontSize: 14,
+  },
+  summaryValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  summaryTotalRow: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 8,
+  },
+  summaryTotalLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  summaryTotalValue: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  showMoreButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E0E0E0',
+    marginTop: 8,
+  },
+  showMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

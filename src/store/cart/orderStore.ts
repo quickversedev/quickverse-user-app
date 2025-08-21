@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { mockOrders } from '../../assets/mock/orders';
 import axiosInstance from '../../config/api/axios.config';
-import { Order, OrderFilters, OrderResponse, OrderStore } from '../../types/order';
+import { Order, OrderCursor, OrderFilters, OrderResponse, OrderStore } from '../../types/order';
 
-const ORDER_API_URL = '/v2/getSMZBIZOrders';
+const ORDER_API_URL = '/v2/order/getSMZBIZOrders';
 
-const USE_ORDER_MOCKS = true; // Set to false for real API
+const USE_ORDER_MOCKS = false; // Set to false for real API
 
 const useOrderStore = create<OrderStore>((set, get) => ({
   // Initial state
@@ -24,7 +24,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
   fetchOrders: async (
     jwt: string,
     phone: string,
-    cursor?: string | null,
+    cursor: OrderCursor | null,
     pageSize: number = 10
   ) => {
     set({ loading: true, error: null });
@@ -52,7 +52,6 @@ const useOrderStore = create<OrderStore>((set, get) => ({
       const requestData = {
         cursor: currentCursor,
       };
-
       const response = await axiosInstance.post<OrderResponse>(
         `${ORDER_API_URL}?pageSize=${pageSize}`,
         requestData,
@@ -63,20 +62,91 @@ const useOrderStore = create<OrderStore>((set, get) => ({
           },
         }
       );
+      const { ordersMetadata, cursor: nextCursor } = response.data;
 
-      const { orders, pagination } = response.data;
-
-      // Update pagination with the new cursor from response
-      const updatedPagination = {
-        ...pagination,
-        cursor: pagination.cursor, // Save the cursor from response
-        hasMore: pagination.cursor !== null, // Check if there are more pages
+      type SkuGroup = {
+        id?: string;
+        sku?: string;
+        itemCount?: number;
+        finalPrice?: number;
+        shopPrice?: number;
+        productDetails?: {
+          sku?: string;
+          productName?: string;
+          productDescription?: string;
+          productImageUrl?: string;
+        };
+      };
+      type OrderMeta = {
+        orderId?: string | number;
+        totalOrderAmount?: number;
+        state?: string;
+        creationTime?: string | number;
+        customerDeliveryAddress?: {
+          addressLine1?: string;
+          city?: string;
+          state?: string;
+          pincode?: string;
+        };
+        paymentMethod?: string;
+        notificationDetail?: { customerName?: string; mobileNumber?: string | number };
+        skuDetailsGrouped?: SkuGroup[];
       };
 
-      // If this is the first page (cursor is null), replace orders
-      // Otherwise, append to existing orders
+      const normalizeStatus = (state?: string): Order['status'] => {
+        const s = String(state || '').toLowerCase();
+        if (s === 'rejected') return 'cancelled';
+        if (s === 'delivered') return 'delivered';
+        if (s === 'confirmed') return 'confirmed';
+        if (s === 'preparing') return 'preparing';
+        if (s === 'ready') return 'ready';
+        return 'pending';
+      };
+
+      const mappedOrders: Order[] = (ordersMetadata || []).map((m: OrderMeta) => {
+        const firstGroup = m.skuDetailsGrouped && m.skuDetailsGrouped[0];
+        const items = (m.skuDetailsGrouped || []).map((g: SkuGroup) => ({
+          id: String(g.id || g.sku || g.productDetails?.sku || ''),
+          name: String(g.productDetails?.productName || 'Item'),
+          quantity: Number(g.itemCount ?? 1),
+          price: Number(g.finalPrice ?? g.shopPrice ?? 0),
+          totalPrice: Number((g.finalPrice ?? g.shopPrice ?? 0) * (g.itemCount ?? 1)),
+          description: g.productDetails?.productDescription,
+          image: g.productDetails?.productImageUrl,
+        }));
+
+        return {
+          orderId: String(m.orderId ?? ''),
+          shopId: String((firstGroup as any)?.shopId ?? ''),
+          shopName: '',
+          items,
+          totalAmount: Number(m.totalOrderAmount ?? 0),
+          status: normalizeStatus(m.state),
+          orderDate:
+            typeof m.creationTime === 'string' && /\D/.test(m.creationTime)
+              ? new Date(m.creationTime).toISOString()
+              : new Date(Number(m.creationTime ?? Date.now())).toISOString(),
+          deliveryAddress: {
+            address: m.customerDeliveryAddress?.addressLine1 ?? '',
+            city: m.customerDeliveryAddress?.city ?? '',
+            state: m.customerDeliveryAddress?.state ?? '',
+            postalCode: m.customerDeliveryAddress?.pincode ?? '',
+          },
+          paymentMethod: (m.paymentMethod?.toLowerCase() as Order['paymentMethod']) || 'cash',
+          paymentStatus: 'paid',
+          customerName: m.notificationDetail?.customerName ?? '',
+          customerPhone: String(m.notificationDetail?.mobileNumber ?? ''),
+        } as Order;
+      });
+
+      const updatedPagination = {
+        cursor: (nextCursor as OrderCursor | null) ?? null,
+        pageSize,
+        hasMore: nextCursor !== null,
+      };
+
       set(state => ({
-        orders: currentCursor === null ? orders : [...state.orders, ...orders],
+        orders: currentCursor === null ? mappedOrders : [...state.orders, ...mappedOrders],
         pagination: updatedPagination,
         loading: false,
       }));
