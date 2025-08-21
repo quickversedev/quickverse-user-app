@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/login/AuthProvider';
 import { AppStack } from '../../routes/AppStack';
 
 import { PermissionAndLocation, useLocation } from '../../hooks/Permissions/useLocation';
+import { useDeviceInfo } from '../../hooks/useDeviceInfo';
 import Registration from '../../screens/login/Registration';
 import PermissionsScreen from '../../screens/permission/PermissionsScreen';
 import AppInitializer from './AppInitializer';
@@ -30,7 +31,7 @@ const AppBootstrap: React.FC = () => {
   const [bootLoading, setBootLoading] = useState(false);
   const { setPermissionDataInAuth } = useAuth();
   const [bootError, setBootError] = useState<string | null>(null);
-  console.log('jwt', authData);
+  const { updateDeviceInfo } = useDeviceInfo();
   const bootstrap = async () => {
     setBootLoading(true);
     setBootError(null);
@@ -39,6 +40,14 @@ const AppBootstrap: React.FC = () => {
 
       setLocalPermissionData(result as PermissionAndLocation);
       setPermissionDataInAuth(result as PermissionAndLocation);
+
+      // Update device info non-blocking after bootstrap completes
+      if (authData?.jwt) {
+        updateDeviceInfo(result?.location?.longitude, result?.location?.latitude).catch(error => {
+          // Don't block app initialization if device info update fails
+          console.warn('Failed to update device info during bootstrap:', error);
+        });
+      }
     } catch (error) {
       setBootError(
         error instanceof Error ? error.message : 'Failed to initialize location permissions'

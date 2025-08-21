@@ -28,6 +28,7 @@ interface VerifyOtpResponse {
   phone: string;
   newUser: boolean;
   userName?: string;
+  defaultAddressId?: string;
 }
 
 interface SignUpResponse {
@@ -166,6 +167,7 @@ const verifyOtp = async (
         }
       )
     );
+
     // Validate response
     if (!data?.jwt) {
       throw {
@@ -189,6 +191,7 @@ const verifyOtp = async (
         phoneNumber: data.phone,
         newUser: data.newUser ?? false,
         name: data?.userName || '',
+        defaultAddressId: data?.defaultAddressId || '',
       },
     };
   } catch (error) {

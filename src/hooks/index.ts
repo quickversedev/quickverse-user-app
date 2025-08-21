@@ -1,5 +1,6 @@
 export { useAddress } from './useAddress';
 export { useConfig } from './useConfig';
+export { useDeviceInfo } from './useDeviceInfo';
 export { default as useFeaturedProducts } from './useFeaturedProducts';
 export { default as useFeaturedProductsStore } from './useFeaturedProductsStore';
 export { default as useFetchUpdateData } from './useFetchUpdateData';
