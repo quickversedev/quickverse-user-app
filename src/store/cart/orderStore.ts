@@ -5,7 +5,7 @@ import { Order, OrderFilters, OrderResponse, OrderStore } from '../../types/orde
 
 const ORDER_API_URL = '/v2/getSMZBIZOrders';
 
-const USE_ORDER_MOCKS = false; // Set to false for real API
+const USE_ORDER_MOCKS = true; // Set to false for real API
 
 const useOrderStore = create<OrderStore>((set, get) => ({
   // Initial state

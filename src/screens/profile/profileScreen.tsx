@@ -41,7 +41,9 @@ const ProfileScreen = () => {
       id: 'help',
       title: 'Help',
       icon: 'help-circle-outline',
-      onPress: () => {},
+      onPress: () => {
+        navigation.navigate('HelpDesk');
+      },
     },
     {
       id: 'about',

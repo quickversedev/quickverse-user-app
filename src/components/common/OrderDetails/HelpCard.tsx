@@ -1,33 +1,63 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
+import { Order } from '../../../types/order';
+import RaiseQueryModal from '../RaiseQueryModal';
 
 interface HelpCardProps {
-  onPress: () => void;
+  onPress?: () => void;
+  order?: Order;
 }
 
-const HelpCard: React.FC<HelpCardProps> = ({ onPress }) => {
+const HelpCard: React.FC<HelpCardProps> = ({ onPress, order }) => {
   const { getColor } = useTheme();
+  const [showQueryModal, setShowQueryModal] = useState(false);
+
+  const handleGetHelp = () => {
+    if (order) {
+      setShowQueryModal(true);
+    } else if (onPress) {
+      onPress();
+    }
+  };
+
+  const handleCloseQueryModal = () => {
+    setShowQueryModal(false);
+  };
 
   return (
-    <TouchableOpacity
-      style={[styles.helpCard, { backgroundColor: getColor('card') }]}
-      onPress={onPress}
-    >
-      <View style={styles.helpContent}>
-        <View style={styles.helpInfo}>
-          <Icon name="help-circle-outline" size={20} color={getColor('text')} />
-          <View style={styles.helpText}>
-            <Text style={[styles.helpLabel, { color: getColor('subText') }]}>Need Help?</Text>
-            <Text style={[styles.helpMessage, { color: getColor('text') }]}>
-              We are here for you
-            </Text>
+    <>
+      <TouchableOpacity
+        style={[styles.helpCard, { backgroundColor: getColor('card') }]}
+        onPress={handleGetHelp}
+      >
+        <View style={styles.helpContent}>
+          <View style={styles.helpInfo}>
+            <Icon name="help-circle-outline" size={20} color={getColor('text')} />
+            <View style={styles.helpText}>
+              <Text style={[styles.helpLabel, { color: getColor('subText') }]}>Need Help?</Text>
+              <Text style={[styles.helpMessage, { color: getColor('text') }]}>
+                We are here for you
+              </Text>
+            </View>
           </View>
+          <Text style={[styles.helpAction, { color: '#FFA500' }]}>Get Help {'>'}</Text>
         </View>
-        <Text style={[styles.helpAction, { color: '#FFA500' }]}>Get Help {'>'}</Text>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+
+      {/* Raise Query Modal */}
+      {order && (
+        <RaiseQueryModal
+          visible={showQueryModal}
+          onClose={handleCloseQueryModal}
+          orderId={order.orderId}
+          orderDate={order.orderDate}
+          customerName={order.customerName}
+          orderStatus={order.status}
+        />
+      )}
+    </>
   );
 };
 

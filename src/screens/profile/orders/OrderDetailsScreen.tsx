@@ -96,7 +96,7 @@ const OrderDetailsScreen = () => {
 
           <BillSummaryCard totalAmount={selectedOrder.totalAmount} onPress={handleViewSummary} />
 
-          <HelpCard onPress={handleGetHelp} />
+          <HelpCard onPress={handleGetHelp} order={selectedOrder} />
         </ScrollView>
       </View>
     </SafeAreaView>

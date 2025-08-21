@@ -13,6 +13,7 @@ import CouponsScreen from '../screens/cart/CouponsScreen';
 import OrderFailureScreen from '../screens/order/OrderFailureScreen';
 import OrderSuccessScreen from '../screens/order/OrderSuccessScreen';
 import AddressScreen from '../screens/profile/Address/AddressScreen';
+import HelpDeskScreen from '../screens/profile/HelpDeskScreen';
 import OrderDetailsScreen from '../screens/profile/orders/OrderDetailsScreen';
 import SearchScreen from '../screens/search/SearchScreen';
 import ProductDetailDemo from '../screens/vendor/ProductDetailDemo';
@@ -37,6 +38,7 @@ export type RootStackParamList = {
 
   Search: undefined;
   Address: undefined;
+  HelpDesk: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -120,6 +122,7 @@ export const AppStack = () => {
         }}
       />
       <Stack.Screen name="Address" component={AddressScreen} />
+      <Stack.Screen name="HelpDesk" component={HelpDeskScreen} />
     </Stack.Navigator>
   );
 };
