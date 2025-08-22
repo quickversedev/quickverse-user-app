@@ -155,6 +155,13 @@ export interface TransformedCartData {
   totalCartAmountWithDeliveryFee?: number;
   totalCartAmountWithDeliveryFeeAndBenefit?: number;
   smartBizOffer?: SmartBizOffer | null;
+  appliedCoupon?: {
+    code: string;
+    discount: string;
+    minOrder: number;
+    offerId?: string;
+    totalBenefit?: number;
+  } | null;
   products: Record<string, TransformedCartProduct>;
 }
 
@@ -236,6 +243,27 @@ class CartApiService {
   }
 
   /**
+   * Get cart details - Method 4: Using withHeaders helper
+   */
+  async getCart(shopId: string, jwtToken: string, phone: string): Promise<TransformedCartData> {
+    try {
+      console.log('get cart shopId', shopId);
+      console.log('get cart jwtToken', jwtToken);
+      console.log('get cart phone', phone);
+      // Method 4: Using withHeaders helper
+      const response = await axiosInstance.get<CartApiResponse>('/v2/getCart', {
+        params: { shopId },
+        ...withHeaders({ SessionKey: jwtToken, phone }),
+      });
+      console.log('get cart response', response);
+      return this.transformCartResponse(response.data);
+    } catch (error) {
+      console.error('Get cart error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Clear entire cart - Method 3: Using withHeaders helper
    */
   async clearCart(shopId: string, jwtToken: string, phone: string): Promise<TransformedCartData> {
@@ -275,6 +303,20 @@ class CartApiService {
         };
       });
     }
+    console.log('apiResponse', apiResponse);
+    // Extract applied coupon from smartBizOffer if it exists
+    const appliedCoupon = apiResponse.smartBizOffer
+      ? {
+          code: apiResponse.smartBizOffer.offerCode || apiResponse.smartBizOffer.offerId,
+          discount:
+            apiResponse.smartBizOffer.discountValue > 0
+              ? `${apiResponse.smartBizOffer.discountValue}%`
+              : `₹${apiResponse.smartBizOffer.totalBenefit || 0}`,
+          minOrder: 0, // This might need to come from a different field
+          offerId: apiResponse.smartBizOffer.offerId,
+          totalBenefit: apiResponse.smartBizOffer.totalBenefit || 0,
+        }
+      : null;
 
     return {
       smartBizCartId: apiResponse.cartIdStr || '', // Map cartId to smartBizCartId
@@ -297,6 +339,7 @@ class CartApiService {
             totalBenefit: apiResponse.smartBizOffer.totalBenefit ?? 0,
           }
         : null,
+      appliedCoupon,
       products,
     };
   }

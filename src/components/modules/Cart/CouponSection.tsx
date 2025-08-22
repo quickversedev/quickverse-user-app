@@ -8,12 +8,12 @@ interface CouponSectionProps {
     code: string;
     discount: string;
     minOrder: number;
-  };
+  } | null;
   couponLoading: boolean;
   couponError: boolean;
   availableCoupons: unknown[];
   onCouponNavigation: () => void;
-  onRemoveCoupon: () => void;
+  onEditCoupon: () => void;
 }
 
 const CouponSection: React.FC<CouponSectionProps> = ({
@@ -22,7 +22,7 @@ const CouponSection: React.FC<CouponSectionProps> = ({
   couponError,
   availableCoupons,
   onCouponNavigation,
-  onRemoveCoupon,
+  onEditCoupon,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
 
@@ -93,7 +93,7 @@ const CouponSection: React.FC<CouponSectionProps> = ({
       fontWeight: '500',
       fontFamily: theme.typography.fontFamily,
     },
-    removeCoupon: {
+    editCoupon: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: 'transparent',
@@ -101,11 +101,11 @@ const CouponSection: React.FC<CouponSectionProps> = ({
       paddingVertical: 4,
       borderRadius: theme.borderRadius.sm,
       borderWidth: 1,
-      borderColor: getColor('error'),
+      borderColor: getColor('primary'),
       marginLeft: 'auto',
     },
-    removeCouponText: {
-      color: getColor('error'),
+    editCouponText: {
+      color: getColor('primary'),
       fontSize: getTypography('small'),
       marginLeft: 4,
       fontWeight: '600',
@@ -128,9 +128,9 @@ const CouponSection: React.FC<CouponSectionProps> = ({
     onCouponNavigation();
   }, [onCouponNavigation]);
 
-  const handleRemovePress = useCallback(() => {
-    onRemoveCoupon();
-  }, [onRemoveCoupon]);
+  const handleEditPress = useCallback(() => {
+    onEditCoupon();
+  }, [onEditCoupon]);
 
   return (
     <TouchableOpacity style={styles.couponBox} onPress={handleCouponPress} disabled={couponLoading}>
@@ -150,7 +150,7 @@ const CouponSection: React.FC<CouponSectionProps> = ({
               </Text>
             </View>
             <View style={styles.couponDivider} />
-            <Text style={styles.minOrderText}>Min order: ₹{appliedCoupon.minOrder}</Text>
+            {/* <Text style={styles.minOrderText}>Min order: ₹{appliedCoupon.minOrder}</Text> */}
           </View>
         ) : (
           <View style={styles.couponLeft}>
@@ -162,9 +162,9 @@ const CouponSection: React.FC<CouponSectionProps> = ({
       </View>
       <View style={styles.couponRight}>
         {appliedCoupon ? (
-          <TouchableOpacity onPress={handleRemovePress} style={styles.removeCoupon}>
-            <MaterialCommunityIcons name="close" size={20} color={getColor('error')} />
-            <Text style={styles.removeCouponText}>Remove</Text>
+          <TouchableOpacity onPress={handleEditPress} style={styles.editCoupon}>
+            <MaterialCommunityIcons name="pencil" size={20} color={getColor('primary')} />
+            <Text style={styles.editCouponText}>Edit</Text>
           </TouchableOpacity>
         ) : (
           <>

@@ -49,6 +49,13 @@ export type Cart = {
     discountValue: number;
     totalBenefit?: number;
   } | null;
+  appliedCoupon?: {
+    code: string;
+    discount: string;
+    minOrder: number;
+    offerId?: string;
+    totalBenefit?: number;
+  } | null;
   products: Record<string, CartProduct>; // key: sku
 };
 
@@ -68,10 +75,17 @@ interface CartStore {
   decrement: (cartId: string, sku: string, jwtToken: string, phone: string) => Promise<void>;
   setActiveCart: (cartId: string) => void;
   clearCart: (cartId: string, jwtToken: string, phone: string) => Promise<void>;
+  getCart: (cartId: string, jwtToken: string, phone: string) => Promise<void>;
+  refreshCart: (cartId: string, jwtToken: string, phone: string) => Promise<void>;
+  refreshAllCarts: (jwtToken: string, phone: string) => Promise<void>;
+  refreshActiveCart: (jwtToken: string, phone: string) => Promise<void>;
   getCartCount: (cartId: string) => number;
   getTotalCarts: () => number;
   getAllCarts: () => Cart[];
   syncCartWithApi: (cartId: string, apiData: TransformedCartData) => void;
+  setAppliedCoupon: (cartId: string, coupon: Cart['appliedCoupon']) => void;
+  getAppliedCoupon: (cartId: string) => Cart['appliedCoupon'];
+  removeAppliedCoupon: (cartId: string) => void;
 }
 
 const useCartStore = create<CartStore>()(
@@ -142,8 +156,10 @@ const useCartStore = create<CartStore>()(
           }
 
           const shopId = cartId.replace('vendor_', '');
+
           const apiResponse = await cartApiService.addToCart(shopId, sku, jwtToken, phone);
 
+          // Sync cart with API response (includes updated smartBizOffer)
           get().syncCartWithApi(cartId, apiResponse);
 
           set({ loading: false });
@@ -163,15 +179,14 @@ const useCartStore = create<CartStore>()(
           }
 
           const shopId = cartId.replace('vendor_', '');
-          const apiResponse = await cartApiService.deleteFromCart(
-            shopId,
-            sku,
-            false,
-            jwtToken,
-            phone
-          );
 
-          get().syncCartWithApi(cartId, apiResponse);
+          await cartApiService.deleteFromCart(shopId, sku, false, jwtToken, phone);
+
+          // Call getCart API to get the latest cart state
+          const getCartResponse = await cartApiService.getCart(shopId, jwtToken, phone);
+
+          // Sync cart with getCart API response
+          get().syncCartWithApi(cartId, getCartResponse);
 
           set({ loading: false });
         } catch (error) {
@@ -184,6 +199,119 @@ const useCartStore = create<CartStore>()(
 
       setActiveCart: cartId => {
         set({ activeCartId: cartId });
+      },
+
+      getCart: async (cartId, jwtToken, phone) => {
+        set({ loading: true, error: null });
+        try {
+          if (!jwtToken) {
+            throw new Error('No authentication token available');
+          }
+
+          // Get the smartBizCartId from the cart
+          const cart = get().carts[cartId];
+          let smartBizCartId = cart?.smartBizCartId;
+
+          // If smartBizCartId is not available, try to extract shopId as fallback
+          if (!smartBizCartId) {
+            const shopId = cartId.replace('vendor_', '');
+            smartBizCartId = shopId;
+          }
+
+          const apiResponse = await cartApiService.getCart(smartBizCartId, jwtToken, phone);
+
+          // Sync local cart with API response
+          get().syncCartWithApi(cartId, apiResponse);
+
+          set({ loading: false });
+        } catch (error) {
+          set({
+            error: error instanceof Error ? error.message : 'Failed to get cart',
+            loading: false,
+          });
+        }
+      },
+
+      refreshCart: async (cartId, jwtToken, phone) => {
+        try {
+          if (!jwtToken) {
+            throw new Error('No authentication token available');
+          }
+
+          // Extract shopId from cartId (assuming format: vendor_shopId)
+          const shopId = cartId.replace('vendor_', '');
+
+          const apiResponse = await cartApiService.getCart(shopId, jwtToken, phone);
+
+          // Sync local cart with API response
+          get().syncCartWithApi(cartId, apiResponse);
+        } catch (error) {
+          // Don't set error state for refresh operations
+          console.error('Failed to refresh cart:', error);
+        }
+      },
+
+      refreshAllCarts: async (jwtToken, phone) => {
+        try {
+          if (!jwtToken) {
+            throw new Error('No authentication token available');
+          }
+
+          const state = get();
+          const cartIds = Object.keys(state.carts);
+
+          // Refresh all existing carts
+          const refreshPromises = cartIds.map(cartId => {
+            const cart = state.carts[cartId];
+            let smartBizCartId = cart?.smartBizCartId;
+
+            // If smartBizCartId is not available, try to extract shopId as fallback
+            if (!smartBizCartId) {
+              const shopId = cartId.replace('vendor_', '');
+              smartBizCartId = shopId;
+            }
+
+            return cartApiService
+              .getCart(smartBizCartId, jwtToken, phone)
+              .then(apiResponse => {
+                get().syncCartWithApi(cartId, apiResponse);
+              })
+              .catch(error => {
+                console.error(`Failed to refresh cart ${cartId}:`, error);
+              });
+          });
+
+          await Promise.allSettled(refreshPromises);
+        } catch (error) {
+          console.error('Failed to refresh all carts:', error);
+        }
+      },
+
+      refreshActiveCart: async (jwtToken, phone) => {
+        try {
+          if (!jwtToken) {
+            throw new Error('No authentication token available');
+          }
+
+          const state = get();
+          const activeCartId = state.activeCartId;
+
+          if (activeCartId) {
+            const cart = state.carts[activeCartId];
+            let smartBizCartId = cart?.smartBizCartId;
+
+            // If smartBizCartId is not available, try to extract shopId as fallback
+            if (!smartBizCartId) {
+              const shopId = activeCartId.replace('vendor_', '');
+              smartBizCartId = shopId;
+            }
+
+            const apiResponse = await cartApiService.getCart(smartBizCartId, jwtToken, phone);
+            get().syncCartWithApi(activeCartId, apiResponse);
+          }
+        } catch (error) {
+          console.error('Failed to refresh active cart:', error);
+        }
       },
 
       clearCart: async (cartId, jwtToken, phone) => {
@@ -256,6 +384,29 @@ const useCartStore = create<CartStore>()(
             };
           }
 
+          // Determine if coupon is applied based on smartBizOffer
+          const isCouponApplied =
+            apiData.smartBizOffer !== null && apiData.smartBizOffer !== undefined;
+
+          // Sync appliedCoupon with smartBizOffer
+          // If smartBizOffer is null, remove appliedCoupon
+          // If smartBizOffer exists, use the appliedCoupon from API or create from smartBizOffer
+          const appliedCoupon = isCouponApplied
+            ? apiData.appliedCoupon ||
+              (apiData.smartBizOffer
+                ? {
+                    code: apiData.smartBizOffer.offerCode || apiData.smartBizOffer.offerId,
+                    discount:
+                      apiData.smartBizOffer.discountValue > 0
+                        ? `${apiData.smartBizOffer.discountValue}%`
+                        : `₹${apiData.smartBizOffer.totalBenefit || 0}`,
+                    minOrder: 0,
+                    offerId: apiData.smartBizOffer.offerId,
+                    totalBenefit: apiData.smartBizOffer.totalBenefit || 0,
+                  }
+                : null)
+            : null;
+
           const updatedCart: Cart = {
             cartId,
             smartBizCartId: apiData.smartBizCartId,
@@ -269,6 +420,7 @@ const useCartStore = create<CartStore>()(
             totalCartAmountWithDeliveryFeeAndBenefit:
               apiData.totalCartAmountWithDeliveryFeeAndBenefit,
             smartBizOffer: apiData.smartBizOffer || null,
+            appliedCoupon: appliedCoupon,
             products: transformedProducts,
           };
 
@@ -278,6 +430,66 @@ const useCartStore = create<CartStore>()(
               [cartId]: updatedCart,
             },
             activeCartId: cartId,
+          };
+        });
+      },
+
+      setAppliedCoupon: (cartId, coupon) => {
+        set(state => {
+          const cart = state.carts[cartId];
+          if (!cart) return state;
+
+          return {
+            carts: {
+              ...state.carts,
+              [cartId]: {
+                ...cart,
+                appliedCoupon: coupon,
+              },
+            },
+          };
+        });
+      },
+
+      getAppliedCoupon: cartId => {
+        const cart = get().carts[cartId];
+
+        // Sync with smartBizOffer: if smartBizOffer is null, no coupon is applied
+        if (!cart?.smartBizOffer) {
+          return null;
+        }
+
+        // If smartBizOffer exists, return appliedCoupon or create from smartBizOffer
+        if (cart.appliedCoupon) {
+          return cart.appliedCoupon;
+        } else {
+          // Create appliedCoupon from smartBizOffer
+          return {
+            code: cart.smartBizOffer.offerCode || cart.smartBizOffer.offerId,
+            discount:
+              cart.smartBizOffer.discountValue > 0
+                ? `${cart.smartBizOffer.discountValue}%`
+                : `₹${cart.smartBizOffer.totalBenefit || 0}`,
+            minOrder: 0,
+            offerId: cart.smartBizOffer.offerId,
+            totalBenefit: cart.smartBizOffer.totalBenefit || 0,
+          };
+        }
+      },
+
+      removeAppliedCoupon: cartId => {
+        set(state => {
+          const cart = state.carts[cartId];
+          if (!cart) return state;
+
+          return {
+            carts: {
+              ...state.carts,
+              [cartId]: {
+                ...cart,
+                appliedCoupon: null,
+              },
+            },
           };
         });
       },

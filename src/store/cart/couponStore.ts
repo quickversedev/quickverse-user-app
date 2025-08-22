@@ -47,9 +47,16 @@ interface CouponStore {
     coupon: Coupon,
     authData?: AuthSession
   ) => Promise<void>;
-  removeCoupon: (cartId: string) => void;
-  getAppliedCoupon: (cartId: string) => Coupon | undefined;
+
+  getAppliedCoupon: (cartId: string) => {
+    code: string;
+    discount: string;
+    minOrder: number;
+    offerId?: string;
+    totalBenefit?: number;
+  } | null;
   getAvailableCoupons: (vendorId: string) => Coupon[];
+  removeAppliedCoupon: (cartId: string) => void;
   fetchVendorOffers: (vendorId: string, authData?: AuthSession) => Promise<void>;
   fetchCustomerOffers: (
     vendorId: string,
@@ -95,20 +102,16 @@ const useCouponStore = create<CouponStore>((set, get) => ({
       if (!authData?.jwt) {
         throw new Error('No authentication token available');
       }
-
+      console.log('applyOfferToCart shopId', shopId);
       const apiResponse = await couponService.applyOffer(shopId, offerIdOrCode, false, authData);
 
       // Sync cart store with latest totals/products
       useCartStore.getState().syncCartWithApi(cartId, apiResponse);
 
-      // Mark coupon as applied in this store
-      set(state => ({
-        appliedCoupons: {
-          ...state.appliedCoupons,
-          [cartId]: coupon,
-        },
-        applyCouponLoading: false,
-      }));
+      // The API response now includes the applied coupon information
+      // No need to manually set it as it's handled by syncCartWithApi
+
+      set({ applyCouponLoading: false });
     } catch (err: unknown) {
       const error = err as ApiError | Error;
       let errorMessage = 'Failed to apply coupon';
@@ -123,20 +126,17 @@ const useCouponStore = create<CouponStore>((set, get) => ({
     }
   },
 
-  removeCoupon: (cartId: string) => {
-    set(state => {
-      const newAppliedCoupons = { ...state.appliedCoupons };
-      delete newAppliedCoupons[cartId];
-      return { appliedCoupons: newAppliedCoupons };
-    });
-  },
-
   getAppliedCoupon: (cartId: string) => {
-    return get().appliedCoupons[cartId];
+    const appliedCoupon = useCartStore.getState().getAppliedCoupon(cartId);
+    return appliedCoupon || null;
   },
 
   getAvailableCoupons: (vendorId: string) => {
     return get().availableCoupons[vendorId] || [];
+  },
+
+  removeAppliedCoupon: (cartId: string) => {
+    useCartStore.getState().removeAppliedCoupon(cartId);
   },
 
   fetchVendorOffers: async (vendorId: string, authData?: AuthSession) => {
@@ -151,7 +151,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
     pendingRequest = abortController;
 
     set({ vendorOffersLoading: true, vendorOffersError: null });
-
+    console.log('fetchVendorOffers vendorId', vendorId);
     try {
       if (USE_COUPON_MOCKS) {
         // Use mock data from separate file
@@ -228,7 +228,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
     if (pendingRequest) {
       pendingRequest.abort();
     }
-
+    console.log('fetchCustomerOffers vendorId', vendorId);
     // Create new request ID and abort controller
     const requestId = ++currentRequestId;
     const abortController = new AbortController();

@@ -19,6 +19,7 @@ import { usePromotions } from '../../../../hooks/usePromotions';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import useVendorStore from '../../../../store/vendorStore';
 import { useTheme } from '../../../../theme/ThemeContext';
+import { getStoreStatus } from '../../../../utils/storeUtils';
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 48) / 2; // 2 columns with margins
@@ -229,15 +230,18 @@ const GroceryContentComponent: React.FC<GroceryContentProps> = ({
           {/* Vendors Grid */}
           <Text style={styles.sectionTitle}>Grocery Delivery</Text>
           <View style={styles.vendorGrid}>
-            {groceryVendors.map(vendor => (
-              <VendorCard
-                key={vendor.shopId}
-                vendor={vendor}
-                onPress={handleVendorPress}
-                favoriteColor="#4CAF50"
-                disabled={!vendor.storeActive}
-              />
-            ))}
+            {groceryVendors.map(vendor => {
+              const storeStatus = getStoreStatus(vendor);
+              return (
+                <VendorCard
+                  key={vendor.shopId}
+                  vendor={vendor}
+                  onPress={handleVendorPress}
+                  favoriteColor="#4CAF50"
+                  disabled={!storeStatus.isOpen}
+                />
+              );
+            })}
           </View>
         </>
       ) : (

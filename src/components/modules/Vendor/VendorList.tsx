@@ -1,10 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import type { RootStackParamList } from '../../../routes/AppStack';
 import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
+import { getStoreStatus } from '../../../utils/storeUtils';
 import VendorCard from './VendorCard';
 
 const VendorList = () => {
@@ -33,19 +34,26 @@ const VendorList = () => {
     },
   });
 
+  const vendorsWithStatus = useMemo(() => {
+    return vendors.map(vendor => ({
+      ...vendor,
+      storeStatus: getStoreStatus(vendor),
+    }));
+  }, [vendors]);
+
   if (loading) return null;
   if (error) return null;
   return (
     <View style={styles.container}>
       <FlatList
-        data={vendors}
+        data={vendorsWithStatus}
         keyExtractor={item => item.shopId}
         renderItem={({ item }) => (
           <VendorCard
             vendor={item}
             size="small"
             onPress={() => navigation.navigate('VendorProduct', { vendor: item })}
-            disabled={!item.storeActive}
+            disabled={!item.storeStatus.isOpen}
           />
         )}
         horizontal

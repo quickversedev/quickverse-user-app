@@ -304,6 +304,20 @@ class CouponService {
       });
     }
 
+    // Extract applied coupon from smartBizOffer if it exists
+    const appliedCoupon = apiResponse.smartBizOffer
+      ? {
+          code: apiResponse.smartBizOffer.offerCode || apiResponse.smartBizOffer.offerId,
+          discount:
+            apiResponse.smartBizOffer.discountValue > 0
+              ? `${apiResponse.smartBizOffer.discountValue}%`
+              : `₹${apiResponse.smartBizOffer.totalBenefit || 0}`,
+          minOrder: 0, // This might need to come from a different field
+          offerId: apiResponse.smartBizOffer.offerId,
+          totalBenefit: apiResponse.smartBizOffer.totalBenefit || 0,
+        }
+      : null;
+
     return {
       smartBizCartId: apiResponse.cartIdStr || '',
       customerId: apiResponse.customerIdStr || '',
@@ -325,6 +339,7 @@ class CouponService {
             totalBenefit: apiResponse.smartBizOffer.totalBenefit ?? 0,
           }
         : null,
+      appliedCoupon,
       products,
     };
   }

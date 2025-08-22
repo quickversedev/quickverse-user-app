@@ -21,6 +21,7 @@ import useCouponStore from '../../store/cart/couponStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Promotion } from '../../types/pages';
 import { Vendor } from '../../types/vendor';
+import { formatTimeToAMPM } from '../../utils/storeUtils';
 
 interface VendorProfileRouteParams {
   vendor: Vendor;
@@ -399,7 +400,7 @@ const VendorProfileComponent: React.FC = () => {
               style={styles.statIcon}
             />
             <Text style={styles.statValue}>
-              {vendor.openingTime} - {vendor.closingTime}
+              {formatTimeToAMPM(vendor.openingTime)} - {formatTimeToAMPM(vendor.closingTime)}
             </Text>
             <Text style={styles.statLabel}>Timings</Text>
           </View>

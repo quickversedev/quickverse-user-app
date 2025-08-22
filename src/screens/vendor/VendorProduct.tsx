@@ -33,6 +33,7 @@ import { useProductsStore } from '../../store/products/productsStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Product } from '../../types/product';
 import { Vendor } from '../../types/vendor';
+import { formatTimeToAMPM, getStoreStatus } from '../../utils/storeUtils';
 
 // Category type for local use (as expected by CategoryTabs)
 type Category = CategoryItem;
@@ -126,7 +127,8 @@ const VendorProductComponent: React.FC = () => {
 
   // Memoized values
   const hasAuth = useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
-  const isStoreActive = useMemo(() => vendor.storeActive, [vendor.storeActive]);
+  const storeStatus = useMemo(() => getStoreStatus(vendor), [vendor]);
+  const isStoreActive = useMemo(() => storeStatus.isOpen, [storeStatus.isOpen]);
 
   // Fetch products and categories on mount or when vendor.shopId changes
   useEffect(() => {
@@ -1103,7 +1105,7 @@ const VendorProductComponent: React.FC = () => {
                 <View style={styles.businessHoursContainer}>
                   <Text style={styles.businessHoursTitle}>Business Hours</Text>
                   <Text style={styles.businessHoursText}>
-                    {vendor.openingTime} - {vendor.closingTime}
+                    {formatTimeToAMPM(vendor.openingTime)} - {formatTimeToAMPM(vendor.closingTime)}
                   </Text>
                 </View>
               )}
@@ -1137,7 +1139,9 @@ const VendorProductComponent: React.FC = () => {
                 }}
               >
                 <SectionDivider
-                  text={`${vendor.openingTime} - ${vendor.closingTime}`}
+                  text={`${formatTimeToAMPM(vendor.openingTime)} - ${formatTimeToAMPM(
+                    vendor.closingTime
+                  )}`}
                   textStyle={{ fontSize: 14, fontWeight: 'normal' }}
                 />
               </Animated.View>

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { mockVendors } from '../assets/mock/vendor';
 import axiosInstance from '../config/api/axios.config';
 import { LocationFilter, Vendor, VendorFilters, VendorStore } from '../types/vendor';
+import { getStoreStatus } from '../utils/storeUtils';
 
 // Request debouncing mechanism
 let currentRequestId = 0;
@@ -156,7 +157,10 @@ const useVendorStore = create<VendorStore>((set, get) => ({
   // Computed values
   getActiveVendors: () => {
     const { vendors } = get();
-    return vendors.filter(vendor => vendor.storeActive && vendor.storeEnabled);
+    return vendors.filter(vendor => {
+      const storeStatus = getStoreStatus(vendor);
+      return storeStatus.isOpen && vendor.storeEnabled;
+    });
   },
 
   getVendorsByCategory: (category: string) => {

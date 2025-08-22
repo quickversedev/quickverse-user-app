@@ -1,6 +1,6 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Modal, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -43,11 +43,10 @@ const CartScreen: React.FC = () => {
   const { cartId } = route.params || {};
 
   // Store hooks
-  const { carts, activeCartId, increment, decrement, clearCart } = useCartStore();
+  const { carts, activeCartId, increment, decrement, clearCart, getAppliedCoupon, refreshCart } =
+    useCartStore();
   const { vendors } = useVendorStore();
   const {
-    getAppliedCoupon,
-    removeCoupon,
     getAvailableCoupons,
     checkAndFetchOffers,
     vendorOffersLoading,
@@ -73,13 +72,28 @@ const CartScreen: React.FC = () => {
   const { getFeaturedProducts } = useFeaturedProductsStore();
   const [featuredProducts, setFeaturedProducts] = React.useState<Product[]>([]);
   const [smartBizAddressId, setSmartBizAddressId] = React.useState<string | null>(null);
-  // Derived state
-  const cart = cartId ? carts[cartId] : activeCartId ? carts[activeCartId] : undefined;
-  const cartItems = cart ? Object.values(cart.products) : [];
-  const vendor = vendors.find(v => v.shopId === cart?.cartId.replace('vendor_', ''));
-  const appliedCoupon = cart ? getAppliedCoupon(cart.cartId) : undefined;
-  const availableCoupons = getAvailableCoupons(vendor?.shopId || '');
-  console.log('smartBizAddressId', smartBizAddressId);
+
+  // Memoized derived state
+  const cart = useMemo(() => {
+    return cartId ? carts[cartId] : activeCartId ? carts[activeCartId] : undefined;
+  }, [cartId, activeCartId, carts]);
+
+  const cartItems = useMemo(() => {
+    return cart ? Object.values(cart.products) : [];
+  }, [cart]);
+
+  const vendor = useMemo(() => {
+    return vendors.find(v => v.shopId === cart?.cartId.replace('vendor_', ''));
+  }, [vendors, cart?.cartId]);
+
+  const appliedCoupon = useMemo(() => {
+    return cart ? getAppliedCoupon(cart.cartId) : undefined;
+  }, [cart, getAppliedCoupon]);
+
+  const availableCoupons = useMemo(() => {
+    return getAvailableCoupons(vendor?.shopId || '');
+  }, [getAvailableCoupons, vendor?.shopId]);
+
   // Payment methods hook
   const {
     paymentMethods,
@@ -95,36 +109,41 @@ const CartScreen: React.FC = () => {
   });
 
   // Get COD charges from payment methods
-  const codCharges = getCODCharges(paymentMethods);
+  const codCharges = useMemo(() => {
+    return getCODCharges(paymentMethods);
+  }, [paymentMethods]);
 
-  // console.log('cart', cart);
-  // console.log('vendor', vendor);
-  // Event handlers
-  const handleClearCart = () => {
+  // Memoized event handlers
+  const handleClearCart = useCallback(() => {
     if (cart && authData?.jwt) {
       clearCart(cart.cartId, authData.jwt, authData.phone || '');
       navigation.goBack();
     }
-  };
+  }, [cart, authData?.jwt, authData?.phone, clearCart, navigation]);
 
-  const handleInc = (sku: string) => {
-    if (cart && authData?.jwt) {
-      increment(cart.cartId, sku, authData.jwt, authData.phone || '');
-    }
-  };
+  const handleInc = useCallback(
+    (sku: string) => {
+      if (cart && authData?.jwt) {
+        increment(cart.cartId, sku, authData.jwt, authData.phone || '');
+      }
+    },
+    [cart, authData?.jwt, authData?.phone, increment]
+  );
 
-  const handleDec = (sku: string) => {
-    if (cart && authData?.jwt) {
-      decrement(cart.cartId, sku, authData.jwt, authData.phone || '');
-    }
-  };
+  const handleDec = useCallback(
+    (sku: string) => {
+      if (cart && authData?.jwt) {
+        decrement(cart.cartId, sku, authData.jwt, authData.phone || '');
+      }
+    },
+    [cart, authData?.jwt, authData?.phone, decrement]
+  );
 
-  const handleAddSuggested = (_item: any) => {
+  const handleAddSuggested = useCallback((_item: any) => {
     // TODO: Implement suggested item addition
-    // console.log('Adding suggested item:', item);
-  };
+  }, []);
 
-  const handleCheckout = async () => {
+  const handleCheckout = useCallback(async () => {
     const shouldShowCompulsoryModal =
       !permissionDataInAuth?.permission ||
       permissionDataInAuth?.permission !== 'granted' ||
@@ -203,15 +222,9 @@ const CartScreen: React.FC = () => {
         amount: orderResponse.totalOrderAmount,
         date: formattedDate,
       });
-
-      // TODO: Clear the cart after successful order placement
-      // if (cart && authData?.jwt) {
-      //   await clearCart(cart.cartId, authData.jwt, authData.phone);
-      // }
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Order creation failed. Please try again.';
-      console.error('Order/Payment creation failed:', error);
 
       // Navigate to failure screen with error message
       navigation.navigate('OrderFailure', {
@@ -220,10 +233,20 @@ const CartScreen: React.FC = () => {
     } finally {
       setIsOrderLoading(false);
     }
-  };
+  }, [
+    permissionDataInAuth?.permission,
+    selectedAddress,
+    selectedPaymentOption,
+    cart,
+    vendor,
+    authData?.jwt,
+    authData?.phone,
+    smartBizAddressId,
+    navigation,
+  ]);
 
   // Helper function to get ordinal suffix
-  const getOrdinalSuffix = (day: number) => {
+  const getOrdinalSuffix = useCallback((day: number) => {
     if (day > 3 && day < 21) return 'th';
     switch (day % 10) {
       case 1:
@@ -235,39 +258,41 @@ const CartScreen: React.FC = () => {
       default:
         return 'th';
     }
-  };
+  }, []);
 
-  const handleAddressSelect = (address: Address) => {
-    setSelectedAddress(address);
-    setShowAddressModal(false);
-  };
+  const handleAddressSelect = useCallback(
+    (address: Address) => {
+      setSelectedAddress(address);
+      setShowAddressModal(false);
+    },
+    [setSelectedAddress]
+  );
 
-  const handleCouponNavigation = () => {
+  const handleCouponNavigation = useCallback(() => {
     if (vendor?.shopId) {
       navigation.navigate('Coupons');
     }
-  };
+  }, [vendor?.shopId, navigation]);
 
-  const handleRemoveCoupon = () => {
-    removeCoupon(cart?.cartId || '');
-  };
+  const handleEditCoupon = useCallback(() => {
+    navigation.navigate('Coupons');
+  }, [navigation]);
 
-  const handlePaymentOptionsPress = () => {
+  const handlePaymentOptionsPress = useCallback(() => {
     setShowPaymentModal(true);
-  };
+  }, []);
 
-  const handlePaymentModalClose = () => {
+  const handlePaymentModalClose = useCallback(() => {
     setShowPaymentModal(false);
-  };
+  }, []);
 
-  const handlePaymentConfirm = (selectedOption: string, _upiId?: string) => {
+  const handlePaymentConfirm = useCallback((selectedOption: string, _upiId?: string) => {
     setSelectedPaymentOption(selectedOption);
     setShowPaymentModal(false);
-    // Here you can handle the payment confirmation logic
-  };
+  }, []);
 
-  // Utility functions
-  const getFormattedAddress = () => {
+  // Memoized utility functions
+  const getFormattedAddress = useCallback(() => {
     if (!selectedAddress) {
       return 'Select delivery address';
     }
@@ -275,7 +300,11 @@ const CartScreen: React.FC = () => {
     const { addressLine1, city, state } = selectedAddress;
     const parts = [addressLine1, city, state].filter(Boolean);
     return parts.join(', ');
-  };
+  }, [selectedAddress]);
+
+  const isCheckoutDisabled = useMemo(() => {
+    return !selectedPaymentOption || Boolean(paymentMethodsError) || isOrderLoading;
+  }, [selectedPaymentOption, paymentMethodsError, isOrderLoading]);
 
   // Effects
   React.useEffect(() => {
@@ -283,6 +312,22 @@ const CartScreen: React.FC = () => {
       checkAndFetchOffers(vendor.shopId, authData);
     }
   }, [vendor?.shopId, checkAndFetchOffers, authData]);
+
+  // Revalidate coupons when cart contents change
+  React.useEffect(() => {
+    if (vendor?.shopId && cart) {
+      // Revalidate coupons when cart items or total amount changes
+      checkAndFetchOffers(vendor.shopId, authData);
+    }
+  }, [cartItems.length, cart?.totalCartAmount, vendor?.shopId, checkAndFetchOffers, authData]);
+
+  // Refresh cart data when screen loads
+  React.useEffect(() => {
+    if (cart && authData?.jwt && authData?.phone) {
+      // Refresh cart data to ensure we have the latest state from server
+      refreshCart(cart.cartId, authData.jwt, authData.phone);
+    }
+  }, [cart?.cartId, authData?.jwt, authData?.phone, refreshCart]);
 
   React.useEffect(() => {
     if (cartItems.length === 0) {
@@ -364,7 +409,7 @@ const CartScreen: React.FC = () => {
           couponError={Boolean(vendorOffersError || customerOffersError)}
           availableCoupons={availableCoupons}
           onCouponNavigation={handleCouponNavigation}
-          onRemoveCoupon={handleRemoveCoupon}
+          onEditCoupon={handleEditCoupon}
         />
 
         <PaymentOptions
@@ -396,7 +441,7 @@ const CartScreen: React.FC = () => {
         address={getFormattedAddress()}
         onSelectAddress={() => setShowAddressModal(true)}
         onCheckout={handleCheckout}
-        disabled={!selectedPaymentOption || Boolean(paymentMethodsError) || isOrderLoading}
+        disabled={isCheckoutDisabled}
         loading={isOrderLoading}
       />
 
@@ -427,4 +472,4 @@ const CartScreen: React.FC = () => {
   );
 };
 
-export default CartScreen;
+export default React.memo(CartScreen);

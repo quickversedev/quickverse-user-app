@@ -9,6 +9,7 @@ import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
+import { getStoreStatus } from '../../../utils/storeUtils';
 import { RatingBadge } from '../../common';
 import FeaturedProductsSkeleton from '../../common/featuredProducts/FeaturedProductsSkeleton';
 import ProductCard from '../Product/ProductCard';
@@ -98,7 +99,8 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
 
   const renderProductItem = ({ item }: { item: Product }) => {
     const quantity = cart?.products[item.sku]?.quantity || 0;
-    const isStoreClosed = !vendor.storeActive;
+    const storeStatus = getStoreStatus(vendor);
+    const isStoreClosed = !storeStatus.isOpen;
 
     // Convert Product from types/product to mock Product format
     const mockProduct = {
@@ -364,14 +366,27 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
         <RatingBadge rating={vendor.rating || 0} size="small" />
       </TouchableOpacity>
 
-      {!vendor.storeActive && (
-        <View style={styles.closedBanner}>
-          <Text style={styles.closedText}>WE ARE CLOSED</Text>
-        </View>
-      )}
+      {(() => {
+        const storeStatus = getStoreStatus(vendor);
+        if (!storeStatus.isOpen) {
+          return (
+            <View style={styles.closedBanner}>
+              <Text style={styles.closedText}>{storeStatus.reason.toUpperCase()}</Text>
+            </View>
+          );
+        }
+        return null;
+      })()}
 
       {/* Featured Products */}
-      <View style={[!vendor.storeActive && styles.productsDisabled]}>
+      <View
+        style={[
+          (() => {
+            const storeStatus = getStoreStatus(vendor);
+            return !storeStatus.isOpen;
+          })() && styles.productsDisabled,
+        ]}
+      >
         {renderFeaturedProducts()}
       </View>
 

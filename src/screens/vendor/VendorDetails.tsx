@@ -4,6 +4,7 @@ import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
+import { formatTimeToAMPM } from '../../utils/storeUtils';
 
 // Define the route params type
 interface VendorProductRouteParams {
@@ -137,7 +138,9 @@ const VendorDetailsComponent: React.FC = () => {
 
         <Text style={styles.info}>Owner: {vendor.owner}</Text>
         <Text style={styles.info}>Phone: {vendor.phone}</Text>
-        <Text style={styles.hours}>{`Hours: ${vendor.openingTime} - ${vendor.closingTime}`}</Text>
+        <Text style={styles.hours}>{`Hours: ${formatTimeToAMPM(
+          vendor.openingTime
+        )} - ${formatTimeToAMPM(vendor.closingTime)}`}</Text>
         <Text style={styles.info}>Preparation Time: {vendor.preparationTime}</Text>
         <Text style={styles.info}>Category: {vendor.category}</Text>
         <Text style={styles.address}>{formatAddress()}</Text>

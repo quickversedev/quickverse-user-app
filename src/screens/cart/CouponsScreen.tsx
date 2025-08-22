@@ -24,7 +24,8 @@ import useVendorStore from '../../store/vendorStore';
 const CouponCard: React.FC<{
   coupon: Coupon;
   onApply: (code: string) => void;
-}> = ({ coupon, onApply }) => {
+  isApplied?: boolean;
+}> = ({ coupon, onApply, isApplied = false }) => {
   const { getColor, getTypography, theme } = useTheme();
 
   const styles = StyleSheet.create({
@@ -86,6 +87,20 @@ const CouponCard: React.FC<{
     },
     applyButtonTextDisabled: {
       color: getColor('subText'),
+      fontSize: getTypography('caption'),
+      fontWeight: 'bold',
+      fontFamily: theme.typography.fontFamily,
+    },
+    applyButtonApplied: {
+      borderWidth: 1,
+      borderColor: getColor('primary'),
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      borderRadius: theme.borderRadius.sm,
+      backgroundColor: getColor('primary'),
+    },
+    applyButtonTextApplied: {
+      color: getColor('black'),
       fontSize: getTypography('caption'),
       fontWeight: 'bold',
       fontFamily: theme.typography.fontFamily,
@@ -201,12 +216,26 @@ const CouponCard: React.FC<{
           <Text style={styles.discountText}>Get {coupon.discount}</Text>
         </View>
         <TouchableOpacity
-          style={isEligible ? styles.applyButton : styles.applyButtonDisabled}
-          onPress={() => isEligible && onApply(coupon.code)}
-          disabled={!isEligible}
+          style={
+            isApplied
+              ? styles.applyButtonApplied
+              : isEligible
+              ? styles.applyButton
+              : styles.applyButtonDisabled
+          }
+          onPress={() => isEligible && !isApplied && onApply(coupon.code)}
+          disabled={!isEligible || isApplied}
         >
-          <Text style={isEligible ? styles.applyButtonText : styles.applyButtonTextDisabled}>
-            {isEligible ? 'APPLY' : 'NOT ELIGIBLE'}
+          <Text
+            style={
+              isApplied
+                ? styles.applyButtonTextApplied
+                : isEligible
+                ? styles.applyButtonText
+                : styles.applyButtonTextDisabled
+            }
+          >
+            {isApplied ? 'APPLIED' : isEligible ? 'APPLY' : 'NOT ELIGIBLE'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -243,6 +272,7 @@ const CouponsScreen: React.FC = () => {
     getAvailableCoupons,
     checkAndFetchOffers,
     applyOfferToCart,
+    getAppliedCoupon,
     vendorOffersLoading,
     customerOffersLoading,
     vendorOffersError,
@@ -262,12 +292,34 @@ const CouponsScreen: React.FC = () => {
 
   // Get vendor-specific coupons
   const availableCoupons = getAvailableCoupons(vendorId);
+  const appliedCoupon = cart ? getAppliedCoupon(cart.cartId) : null;
+  console.log('CouponsScreen - appliedCoupon check:', {
+    cartId: cart?.cartId,
+    appliedCoupon,
+    cartAppliedCoupon: cart?.appliedCoupon,
+    cartSmartBizOffer: cart?.smartBizOffer,
+    isCouponApplied: cart?.smartBizOffer !== null && cart?.smartBizOffer !== undefined,
+  });
 
   useEffect(() => {
     if (vendorId) {
       checkAndFetchOffers(vendorId, authData);
     }
   }, [vendorId, checkAndFetchOffers, authData]);
+
+  // Revalidate coupons when cart contents change
+  useEffect(() => {
+    if (vendorId && cart) {
+      // Revalidate coupons when cart items or total amount changes
+      checkAndFetchOffers(vendorId, authData);
+    }
+  }, [
+    cart?.totalCartAmount,
+    Object.keys(cart?.products || {}).length,
+    vendorId,
+    checkAndFetchOffers,
+    authData,
+  ]);
 
   const handleApplyCoupon = async (code: string) => {
     const cartId = activeCartId || (carts && Object.keys(carts)[0]);
@@ -604,9 +656,17 @@ const CouponsScreen: React.FC = () => {
         ) : (
           <FlatList
             data={availableCoupons}
-            renderItem={({ item }: { item: Coupon }) => (
-              <CouponCard coupon={item} onApply={handleApplyCoupon} />
-            )}
+            renderItem={({ item }: { item: Coupon }) => {
+              // Sync with smartBizOffer: if smartBizOffer is null, no coupon is applied
+              const isApplied = cart?.smartBizOffer
+                ? cart.smartBizOffer.offerId === item.id ||
+                  cart.smartBizOffer.offerCode === item.code ||
+                  appliedCoupon?.code === item.code ||
+                  appliedCoupon?.offerId === item.id
+                : false;
+
+              return <CouponCard coupon={item} onApply={handleApplyCoupon} isApplied={isApplied} />;
+            }}
             keyExtractor={(item: Coupon) => item.id}
             contentContainerStyle={styles.couponList}
             showsVerticalScrollIndicator={false}
