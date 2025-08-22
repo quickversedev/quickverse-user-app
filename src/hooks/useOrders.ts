@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/login/AuthProvider';
 import useOrderStore from '../store/cart/orderStore';
-import { Order, OrderFilters } from '../types/order';
+import { Order, OrderCursor, OrderFilters } from '../types/order';
 
 export const useOrders = () => {
   const {
@@ -37,7 +37,7 @@ export const useOrders = () => {
 
   // Memoized functions for better performance
   const loadOrders = useCallback(
-    async (cursor?: string | null, pageSize?: number) => {
+    async (cursor?: OrderCursor | null, pageSize?: number) => {
       if (!authData?.jwt || !authData?.phone) return;
       await fetchOrders(authData.jwt, authData.phone, cursor ?? null, pageSize);
     },
@@ -64,9 +64,9 @@ export const useOrders = () => {
   );
 
   const loadOrderById = useCallback(
-    async (orderId: string) => {
+    async (orderId: string, shopId?: string) => {
       if (!authData?.jwt || !authData?.phone) return;
-      await fetchOrderById(orderId, authData.jwt, authData.phone);
+      await fetchOrderById(orderId, authData.jwt, authData.phone, shopId);
     },
     [fetchOrderById, authData?.jwt, authData?.phone]
   );

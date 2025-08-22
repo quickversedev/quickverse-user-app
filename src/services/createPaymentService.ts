@@ -1,4 +1,4 @@
-import axios from '../config/api/axios.config';
+import axiosInstance from '../config/api/axios.config';
 
 export interface PaymentTender {
   amount: number;
@@ -35,24 +35,25 @@ export interface CreatePaymentError {
 class CreatePaymentService {
   async createPayment(
     requestData: CreatePaymentRequest,
-    sessionKey: string
+    sessionKey: string,
+    phone: string
   ): Promise<CreatePaymentResponse> {
     try {
-      const response = await axios.post<CreatePaymentResponse>(
-        '/v3/payment/createPayment',
+      const response = await axiosInstance.post<CreatePaymentResponse>(
+        '/v3/payment/create',
         requestData,
         {
           headers: {
             SessionKey: sessionKey,
             Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
-            'Request-Origin': 'CUSTOMER',
-            'Content-Type': 'application/json',
+            phone,
           },
         }
       );
-
+      console.log('create payment response', response);
       return response.data;
     } catch (error: unknown) {
+      console.error('create payment error', error);
       // Handle different types of errors
       if (error && typeof error === 'object' && 'response' in error) {
         // Server responded with error status

@@ -7,26 +7,28 @@ import { Order } from '../../../types/order';
 interface OrderInfoCardProps {
   order: Order;
   getStatusColor: (status: string) => string;
+  actionButton?: React.ReactNode;
 }
 
-const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, getStatusColor }) => {
+const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, getStatusColor, actionButton }) => {
   const { getColor } = useTheme();
 
   return (
     <View style={[styles.orderCard, { backgroundColor: getColor('card') }]}>
-      {/* Source (Restaurant) */}
-
-      {/* Destination (Delivery Address) */}
+      {/* Top Row with Location and Action Button */}
       <View style={styles.locationRow}>
-        <View style={styles.iconContainer}>
-          <Icon name="home" size={20} color={getColor('primary')} />
+        <View style={styles.leftSection}>
+          <View style={styles.iconContainer}>
+            <Icon name="home" size={20} color={getColor('primary')} />
+          </View>
+          <View style={styles.locationInfo}>
+            <Text style={[styles.locationTitle, { color: getColor('text') }]}>Home</Text>
+            <Text style={[styles.locationAddress, { color: getColor('subText') }]}>
+              {order.deliveryAddress.city}, {order.deliveryAddress.state}
+            </Text>
+          </View>
         </View>
-        <View style={styles.locationInfo}>
-          <Text style={[styles.locationTitle, { color: getColor('text') }]}>Home</Text>
-          <Text style={[styles.locationAddress, { color: getColor('subText') }]}>
-            {order.deliveryAddress.city}, {order.deliveryAddress.state}
-          </Text>
-        </View>
+        {actionButton && <View style={styles.actionButtonContainer}>{actionButton}</View>}
       </View>
 
       {/* Delivery Details and Status */}
@@ -51,10 +53,12 @@ const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, getStatusColor }) 
             </Text>
           )}
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}>
-          <Text style={styles.statusText}>
-            {order.status === 'delivered' ? 'DELIVERED' : order.status.toUpperCase()}
-          </Text>
+        <View style={styles.rightSection}>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}>
+            <Text style={styles.statusText}>
+              {order.status === 'delivered' ? 'DELIVERED' : order.status.toUpperCase()}
+            </Text>
+          </View>
         </View>
       </View>
     </View>
@@ -62,6 +66,15 @@ const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, getStatusColor }) 
 };
 
 const styles = StyleSheet.create({
+  leftSection: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  actionButtonContainer: {
+    marginLeft: 12,
+    alignSelf: 'center',
+  },
   orderCard: {
     borderRadius: 12,
     padding: 20,
@@ -69,7 +82,8 @@ const styles = StyleSheet.create({
   },
   locationRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   iconContainer: {

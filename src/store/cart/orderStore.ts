@@ -52,16 +52,20 @@ const useOrderStore = create<OrderStore>((set, get) => ({
       const requestData = {
         cursor: currentCursor,
       };
+      console.log('requestData', requestData, `${ORDER_API_URL}?pageSize=${pageSize}`);
       const response = await axiosInstance.post<OrderResponse>(
         `${ORDER_API_URL}?pageSize=${pageSize}`,
         requestData,
         {
           headers: {
             SessionKey: jwt,
+            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            'Request-Origin': 'CUSTOMER',
             phone: phone,
           },
         }
       );
+      console.log('response', response.data);
       const { ordersMetadata, cursor: nextCursor } = response.data;
 
       type SkuGroup = {
@@ -95,12 +99,25 @@ const useOrderStore = create<OrderStore>((set, get) => ({
 
       const normalizeStatus = (state?: string): Order['status'] => {
         const s = String(state || '').toLowerCase();
-        if (s === 'rejected') return 'cancelled';
-        if (s === 'delivered') return 'delivered';
-        if (s === 'confirmed') return 'confirmed';
-        if (s === 'preparing') return 'preparing';
-        if (s === 'ready') return 'ready';
-        return 'pending';
+        switch (s) {
+          case 'open':
+            return 'payment_pending';
+          case 'pending':
+            return 'processing';
+          case 'accepted':
+            return 'confirmed';
+          case 'shipped':
+            return 'shipped';
+          case 'packed':
+            return 'ready';
+          case 'completed':
+            return 'delivered';
+          case 'cancelled':
+          case 'rejected':
+            return 'cancelled';
+          default:
+            return 'processing';
+        }
       };
 
       const mappedOrders: Order[] = (ordersMetadata || []).map((m: OrderMeta) => {
@@ -159,7 +176,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
     }
   },
 
-  fetchOrderById: async (orderId: string, jwt: string, _phone: string) => {
+  fetchOrderById: async (orderId: string, jwt: string, phone: string, shopId?: string) => {
     set({ loading: true, error: null });
 
     try {
@@ -183,16 +200,57 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         return;
       }
 
-      // If not found in state, fetch from API
-      // Note: You might need to adjust this endpoint based on your API
-      const response = await axiosInstance.get(`${ORDER_API_URL}/${orderId}`, {
-        headers: {
-          SessionKey: jwt,
-          'Request-Origin': 'QUICKVERSE',
-        },
-      });
+      // Fetch single order from API
+      const response = await axiosInstance.get(
+        `/v2/order/fetchOrder?groupify=true&viewMode=CONSTELLATION_VIEW&shopId=${
+          shopId || ''
+        }&orderId=${orderId}`,
+        {
+          headers: {
+            SessionKey: jwt,
+            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
 
-      set({ selectedOrder: response.data, loading: false });
+            phone: phone,
+          },
+        }
+      );
+
+      // Transform the API response to match our Order type
+      const apiOrder = response.data;
+
+      // Map the API response to our Order type
+      const mappedOrder: Order = {
+        orderId: String(apiOrder.orderId || orderId),
+        shopId: String(apiOrder.shopId || ''),
+        shopName: String(apiOrder.shopName || ''),
+        items: (apiOrder.skuDetailsGrouped || []).map((item: any) => ({
+          id: String(item.id || item.sku || ''),
+          name: String(item.productDetails?.productName || 'Item'),
+          quantity: Number(item.itemCount || 1),
+          price: Number(item.finalPrice || item.shopPrice || 0),
+          totalPrice: Number((item.finalPrice || item.shopPrice || 0) * (item.itemCount || 1)),
+          description: item.productDetails?.productDescription,
+          image: item.productDetails?.productImageUrl,
+        })),
+        totalAmount: Number(apiOrder.totalOrderAmount || 0),
+        status: normalizeStatus(apiOrder.state),
+        orderDate:
+          typeof apiOrder.creationTime === 'string' && /\D/.test(apiOrder.creationTime)
+            ? new Date(apiOrder.creationTime).toISOString()
+            : new Date(Number(apiOrder.creationTime || Date.now())).toISOString(),
+        deliveryAddress: {
+          address: apiOrder.customerDeliveryAddress?.addressLine1 || '',
+          city: apiOrder.customerDeliveryAddress?.city || '',
+          state: apiOrder.customerDeliveryAddress?.state || '',
+          postalCode: apiOrder.customerDeliveryAddress?.pincode || '',
+        },
+        paymentMethod: (apiOrder.paymentMethod?.toLowerCase() as Order['paymentMethod']) || 'cash',
+        paymentStatus: 'paid',
+        customerName: apiOrder.notificationDetail?.customerName || '',
+        customerPhone: String(apiOrder.notificationDetail?.mobileNumber || ''),
+      };
+
+      set({ selectedOrder: mappedOrder, loading: false });
     } catch (err: unknown) {
       const errorMessage =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||

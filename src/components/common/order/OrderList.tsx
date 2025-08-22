@@ -26,22 +26,61 @@ const OrderList: React.FC<OrderListProps> = ({
   showStatusFilter = true,
   navigation,
 }) => {
+  // Theme and data hooks
   const { getColor } = useTheme();
   const { orders, loading, error, loadMoreOrders, refreshOrders, hasMoreOrders, isLoading } =
     useOrders();
 
+  // State hooks
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('7 Days');
 
+  // Memoized values
   const timeFilterOptions = useMemo(() => ['7 Days', '2 Weeks', '1 Month', '2 Month'], []);
-
-  const filteredOrders = useMemo(() => orders, [orders]); // For now, show all orders
-
+  const filteredOrders = useMemo(() => {
+    // Always return fresh orders when loading or refreshing
+    if (loading || refreshing) return [];
+    return orders;
+  }, [orders, loading, refreshing]);
+  const keyExtractor = useMemo(() => (item: Order) => item.orderId, []);
+  const getStatusColor = useMemo(
+    () => (status: Order['status']) => {
+      switch (status) {
+        case 'payment_pending':
+          return { background: '#FFA726', text: '#FFFFFF' }; // Orange
+        case 'processing':
+          return { background: '#42A5F5', text: '#FFFFFF' }; // Light Blue
+        case 'confirmed':
+          return { background: '#2196F3', text: '#FFFFFF' }; // Blue
+        case 'shipped':
+          return { background: '#7E57C2', text: '#FFFFFF' }; // Deep Purple
+        case 'ready':
+          return { background: '#26A69A', text: '#FFFFFF' }; // Teal
+        case 'delivered':
+          return { background: '#66BB6A', text: '#FFFFFF' }; // Green
+        case 'cancelled':
+          return { background: '#EF5350', text: '#FFFFFF' }; // Red
+        default:
+          return { background: '#78909C', text: '#FFFFFF' }; // Blue Grey
+      }
+    },
+    []
+  );
+  console.log('filteredOrders', filteredOrders);
   const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await refreshOrders();
-    setRefreshing(false);
-  }, [refreshOrders]);
+    if (!refreshing && !loading) {
+      setRefreshing(true);
+      try {
+        await refreshOrders(10); // Pass pageSize to ensure we get fresh data
+        // Clear any existing filters after refresh
+        setSelectedTimeFilter('7 Days');
+      } catch (error) {
+        console.error('Refresh failed:', error);
+      } finally {
+        setRefreshing(false);
+      }
+    }
+  }, [refreshOrders, refreshing, loading]);
 
   const handleLoadMore = useCallback(() => {
     if (hasMoreOrders && !isLoading) {
@@ -72,25 +111,6 @@ const OrderList: React.FC<OrderListProps> = ({
     },
     [onOrderPress, navigation]
   );
-
-  const getStatusColor = useCallback((status: Order['status']) => {
-    switch (status) {
-      case 'delivered':
-        return { background: '#4CAF50', text: '#FFFFFF' };
-      case 'cancelled':
-        return { background: '#F44336', text: '#FFFFFF' };
-      case 'pending':
-        return { background: '#FF9800', text: '#FFFFFF' };
-      case 'confirmed':
-        return { background: '#2196F3', text: '#FFFFFF' };
-      case 'preparing':
-        return { background: '#9C27B0', text: '#FFFFFF' };
-      case 'ready':
-        return { background: '#00BCD4', text: '#FFFFFF' };
-      default:
-        return { background: '#666666', text: '#FFFFFF' };
-    }
-  }, []);
 
   const renderOrderItem = useCallback(
     ({ item }: { item: Order }) => {
@@ -289,7 +309,9 @@ const OrderList: React.FC<OrderListProps> = ({
     [getColor, timeFilterOptions, selectedTimeFilter, handleTimeFilter]
   );
 
-  if (error) {
+  // Memoize the error component
+  const errorComponent = useMemo(() => {
+    if (!error) return null;
     return (
       <View style={[styles.errorContainer, { backgroundColor: getColor('background') }]}>
         <Text style={[styles.errorText, { color: getColor('error') }]}>Error: {error}</Text>
@@ -301,6 +323,11 @@ const OrderList: React.FC<OrderListProps> = ({
         </TouchableOpacity>
       </View>
     );
+  }, [error, getColor, refreshOrders]);
+
+  // If there's an error, render the error component
+  if (error) {
+    return errorComponent;
   }
 
   return (
@@ -310,14 +337,16 @@ const OrderList: React.FC<OrderListProps> = ({
       <FlatList
         data={filteredOrders}
         renderItem={renderOrderItem}
-        keyExtractor={useCallback((item: Order) => item.orderId, [])}
+        keyExtractor={keyExtractor}
         contentContainerStyle={styles.listContainer}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={refreshing || loading}
             onRefresh={handleRefresh}
             tintColor={getColor('text')}
             colors={[getColor('primary')]}
+            progressBackgroundColor={getColor('card')}
+            progressViewOffset={showStatusFilter ? 60 : 0}
           />
         }
         onEndReached={handleLoadMore}
@@ -332,7 +361,9 @@ const OrderList: React.FC<OrderListProps> = ({
           ) : null
         }
         ListEmptyComponent={
-          !loading ? (
+          loading || refreshing ? (
+            <ActivityIndicator size="large" color={getColor('primary')} style={styles.loader} />
+          ) : (
             <View style={styles.emptyContainer}>
               <Image source={Images.orderZero} style={styles.emptyImage} resizeMode="contain" />
               <Text style={[styles.emptyTitle, { color: getColor('text') }]}>No orders yet?</Text>
@@ -349,7 +380,7 @@ const OrderList: React.FC<OrderListProps> = ({
                 </Text>
               </TouchableOpacity>
             </View>
-          ) : null
+          )
         }
       />
     </View>

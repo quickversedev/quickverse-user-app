@@ -17,6 +17,7 @@ class SmartBizAddressService {
           phone,
         },
       });
+      console.log('fetchSmartBizAddressIds response', response);
       return response.data || {};
     } catch (error: any) {
       // Swallow errors and return empty map to avoid blocking cart

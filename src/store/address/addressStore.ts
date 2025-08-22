@@ -38,7 +38,7 @@ const useAddressStore = create<AddressStore>((set, get) => ({
           phone: authSession.phone,
         },
       });
-
+      console.log('fetchAddresses response', response);
       const addresses = response.data || [];
 
       // Add isSavedAddress: true to each address

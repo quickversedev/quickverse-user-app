@@ -32,7 +32,7 @@ export type RootStackParamList = {
   Cart: { cartId: string } | undefined;
   Orders: undefined;
   OrderDetails: { orderId: string };
-  OrderSuccess: { orderId: string; amount: number; date: string };
+  OrderSuccess: { orderId: string; amount: number; date: string; shopId?: string };
   OrderFailure: { errorMessage?: string };
   Coupons: undefined;
 

@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Platform, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import VendorLocationEmptyState from '../../components/common/VendorLocationEmptyState';
@@ -49,14 +49,14 @@ const HomeMainScreen = React.memo(() => {
     setShowAddressModal(false);
   }, []);
 
-  // Check if we need to show the compulsory address modal
-  useEffect(() => {
-    const shouldShowCompulsoryModal = permissionDataInAuth?.permission !== 'granted'; // Selected address is not a saved address
+  // // Check if we need to show the compulsory address modal
+  // useEffect(() => {
+  //   const shouldShowCompulsoryModal = permissionDataInAuth?.permission !== 'granted'; // Selected address is not a saved address
 
-    if (shouldShowCompulsoryModal) {
-      setShowAddressModal(true);
-    }
-  }, [permissionDataInAuth?.permission]);
+  //   if (shouldShowCompulsoryModal) {
+  //     setShowAddressModal(true);
+  //   }
+  // }, [permissionDataInAuth?.permission]);
 
   // Memoize content props to prevent unnecessary re-renders
   const contentProps = useMemo(

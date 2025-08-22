@@ -1,4 +1,4 @@
-import axios from '../config/api/axios.config';
+import axiosInstance from '../config/api/axios.config';
 
 export interface CreateOrderRequest {
   shopId: number;
@@ -81,29 +81,64 @@ class OrderService {
     sessionKey: string,
     phone: string
   ): Promise<CreateOrderResponse> {
-    console.log('requestData', requestData);
     try {
-      const response = await axios.post<CreateOrderResponse>('/v2/order/createOrder', requestData, {
-        headers: {
-          SessionKey: sessionKey,
-          Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
-          phone: phone,
-        },
-      });
-
+      const response = await axiosInstance.post<CreateOrderResponse>(
+        '/v2/order/createOrder',
+        requestData,
+        {
+          headers: {
+            SessionKey: sessionKey,
+            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            phone: phone,
+          },
+        }
+      );
       return response.data;
-    } catch (error: any) {
-      // Handle different types of errors
-      if (error.response) {
-        // Server responded with error status
-        const errorData = error.response.data;
-        throw new Error(errorData?.message || `Order creation failed: ${error.response.status}`);
-      } else if (error.request) {
-        // Network error
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const errorData = (error as any).response?.data;
+        throw new Error(
+          errorData?.message || `Order creation failed: ${(error as any).response.status}`
+        );
+      } else if (error && typeof error === 'object' && 'request' in error) {
         throw new Error('Network error: Unable to connect to server');
       } else {
-        // Other errors
-        throw new Error(error.message || 'An unexpected error occurred');
+        throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
+      }
+    }
+  }
+
+  async cancelOrder(
+    orderId: string,
+    shopId: string,
+    cancelReason: string,
+    sessionKey: string,
+    phone: string
+  ): Promise<void> {
+    try {
+      await axiosInstance.put(
+        `/v2/order/cancelOrder?orderId=${orderId}&shopId=${shopId}`,
+        { cancelReason },
+        {
+          headers: {
+            SessionKey: sessionKey,
+            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            'Request-Origin': 'CUSTOMER',
+            phone,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const errorData = (error as any).response?.data;
+        throw new Error(
+          errorData?.message || `Failed to cancel order: ${(error as any).response.status}`
+        );
+      } else if (error && typeof error === 'object' && 'request' in error) {
+        throw new Error('Network error: Unable to connect to server');
+      } else {
+        throw new Error(error instanceof Error ? error.message : 'Failed to cancel order');
       }
     }
   }

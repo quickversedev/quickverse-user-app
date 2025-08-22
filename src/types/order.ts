@@ -25,7 +25,14 @@ export interface Order {
   shopName: string;
   items: OrderItem[];
   totalAmount: number;
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  status:
+    | 'payment_pending'
+    | 'processing'
+    | 'confirmed'
+    | 'shipped'
+    | 'ready'
+    | 'delivered'
+    | 'cancelled';
   orderDate: string;
   estimatedDeliveryTime?: string;
   actualDeliveryTime?: string;

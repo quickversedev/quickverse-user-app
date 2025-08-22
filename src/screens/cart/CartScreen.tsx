@@ -139,15 +139,17 @@ const CartScreen: React.FC = () => {
     [cart, authData?.jwt, authData?.phone, decrement]
   );
 
-  const handleAddSuggested = useCallback((_item: any) => {
+  const handleAddSuggested = useCallback((_item: unknown) => {
     // TODO: Implement suggested item addition
   }, []);
 
   const handleCheckout = useCallback(async () => {
     const shouldShowCompulsoryModal =
       !permissionDataInAuth?.permission ||
-      permissionDataInAuth?.permission !== 'granted' ||
       (selectedAddress && selectedAddress.isSavedAddress === false);
+    console.log('shouldShowCompulsoryModal', shouldShowCompulsoryModal);
+    console.log('selectedAddress', selectedAddress);
+    console.log('permissionDataInAuth', permissionDataInAuth);
 
     if (shouldShowCompulsoryModal) {
       setShowAddressModal(true);
@@ -182,13 +184,13 @@ const CartScreen: React.FC = () => {
         customerName: selectedAddress.name || 'Customer',
         paymentMethod: selectedPaymentOption.toUpperCase(),
       };
-
+      console.log('orderRequest', orderRequest);
       const orderResponse = await orderService.createOrder(
         orderRequest,
         authData.jwt,
         authData.phone
       );
-
+      console.log('orderResponse', orderResponse);
       // Step 2: Create Payment
       const paymentRequest: CreatePaymentRequest = {
         customerId: orderResponse.customerId,
@@ -205,10 +207,14 @@ const CartScreen: React.FC = () => {
           },
         ],
       };
+      console.log('paymentRequest', paymentRequest);
+      await createPaymentService.createPayment(paymentRequest, authData.jwt, authData.phone);
 
-      await createPaymentService.createPayment(paymentRequest, authData.jwt);
+      // Both APIs successful - Clear cart and navigate to success screen
+      if (cart && authData?.jwt && authData?.phone) {
+        await clearCart(cart.cartId, authData.jwt, authData.phone);
+      }
 
-      // Both APIs successful - Navigate to success screen
       const currentDate = new Date();
       const formattedDate = `${currentDate.getDate()}${getOrdinalSuffix(
         currentDate.getDate()
@@ -221,6 +227,7 @@ const CartScreen: React.FC = () => {
         orderId: orderResponse.orderId,
         amount: orderResponse.totalOrderAmount,
         date: formattedDate,
+        shopId: vendor.shopId,
       });
     } catch (error: unknown) {
       const errorMessage =
@@ -243,6 +250,7 @@ const CartScreen: React.FC = () => {
     authData?.phone,
     smartBizAddressId,
     navigation,
+    clearCart,
   ]);
 
   // Helper function to get ordinal suffix

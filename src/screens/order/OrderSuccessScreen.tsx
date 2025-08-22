@@ -1,8 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Dimensions, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemeText } from '../../components/common/theme/ThemeText';
+import { useOrders } from '../../hooks/useOrders';
 import { RootStackParamList } from '../../routes/AppStack';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -14,6 +15,7 @@ interface OrderSuccessScreenProps {
       orderId: string;
       amount: number;
       date: string;
+      shopId?: string;
     };
   };
 }
@@ -23,15 +25,32 @@ const { width, height } = Dimensions.get('window');
 const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
   const { getColor } = useTheme();
   const navigation = useNavigation<OrderSuccessScreenNavigationProp>();
-  const { orderId, amount, date } = route.params;
+  const { orderId, amount, date, shopId } = route.params;
+  const { loadOrderById } = useOrders();
 
-  const handleBackToHome = () => {
+  // Fetch order details when component mounts
+  useEffect(() => {
+    const fetchOrder = async () => {
+      if (orderId) {
+        try {
+          await loadOrderById(orderId, shopId);
+        } catch (err) {
+          console.error('Failed to fetch order details:', err);
+        }
+      }
+    };
+
+    fetchOrder();
+  }, [orderId, shopId, loadOrderById]);
+
+  const handleBackToHome = useCallback(() => {
     navigation.navigate('MainApp');
-  };
+  }, [navigation]);
 
-  const handleTrackOrder = () => {
+  const handleTrackOrder = useCallback(() => {
+    // Navigate to OrderDetails with orderId
     navigation.navigate('OrderDetails', { orderId });
-  };
+  }, [navigation, orderId]);
 
   return (
     <View style={[styles.container, { backgroundColor: getColor('background') }]}>

@@ -1,6 +1,8 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   Platform,
   SafeAreaView,
@@ -18,7 +20,9 @@ import {
   OrderInfoCard,
   OrderProgress,
 } from '../../../components/common/OrderDetails';
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useOrders } from '../../../hooks/useOrders';
+import orderService from '../../../services/createOrderService';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AppNavigationProp } from '../../../types/navigation';
 
@@ -26,8 +30,8 @@ const OrderDetailsScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const route = useRoute();
   const { getColor } = useTheme();
-  const { selectedOrder, loadOrderById } = useOrders();
-
+  const { selectedOrder, loadOrderById, refreshOrders } = useOrders();
+  const { authData } = useAuth();
   const { orderId } = route.params as { orderId: string };
 
   React.useEffect(() => {
@@ -44,6 +48,68 @@ const OrderDetailsScreen = () => {
     // TODO: Navigate to bill summary screen
     // console.log('View summary pressed');
   }, []);
+
+  const [cancellingOrder, setCancellingOrder] = useState(false);
+  const [retryingPayment, setRetryingPayment] = useState(false);
+
+  const handleRetryPayment = useCallback(async () => {
+    if (!selectedOrder) return;
+    setRetryingPayment(true);
+    try {
+      // TODO: Implement retry payment logic
+      Alert.alert('Retry Payment', 'Redirecting to payment gateway...');
+      // After implementing:
+      // await retryPayment(selectedOrder.orderId);
+      // await loadOrderById(selectedOrder.orderId);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to retry payment. Please try again.');
+    } finally {
+      setRetryingPayment(false);
+    }
+  }, [selectedOrder]);
+
+  const handleCancelOrder = useCallback(async () => {
+    if (!selectedOrder || !authData?.jwt || !authData?.phone) return;
+    Alert.alert(
+      'Cancel Order',
+      'Are you sure you want to cancel this order?',
+      [
+        {
+          text: 'No',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes',
+          style: 'destructive',
+          onPress: async () => {
+            setCancellingOrder(true);
+            try {
+              await orderService.cancelOrder(
+                selectedOrder.orderId,
+                selectedOrder.shopId,
+                'Need to change address', // Default reason
+                authData.jwt,
+                authData.phone
+              );
+
+              // Refresh orders list and navigate back
+              await refreshOrders();
+              navigation.goBack();
+              Alert.alert('Success', 'Order cancelled successfully');
+            } catch (error) {
+              Alert.alert(
+                'Error',
+                error instanceof Error ? error.message : 'Failed to cancel order. Please try again.'
+              );
+            } finally {
+              setCancellingOrder(false);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  }, [selectedOrder, authData?.jwt, authData?.phone, refreshOrders, navigation]);
 
   const handleGetHelp = useCallback(() => {
     // TODO: Navigate to help screen
@@ -169,7 +235,41 @@ const OrderDetailsScreen = () => {
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
-          <OrderInfoCard order={selectedOrder} getStatusColor={getStatusColor} />
+          <OrderInfoCard
+            order={selectedOrder}
+            getStatusColor={getStatusColor}
+            actionButton={
+              selectedOrder.status === 'payment_pending' ? (
+                <TouchableOpacity
+                  style={[styles.actionButton, { borderWidth: 1, borderColor: '#2196F3' }]}
+                  onPress={handleRetryPayment}
+                  disabled={retryingPayment}
+                >
+                  {retryingPayment ? (
+                    <ActivityIndicator size="small" color="#2196F3" />
+                  ) : (
+                    <Text style={[styles.actionButtonText, { color: '#2196F3' }]}>
+                      Retry Payment
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ) : selectedOrder.status === 'processing' ? (
+                <TouchableOpacity
+                  style={[styles.actionButton, { borderWidth: 1, borderColor: '#F44336' }]}
+                  onPress={handleCancelOrder}
+                  disabled={cancellingOrder}
+                >
+                  {cancellingOrder ? (
+                    <ActivityIndicator size="small" color="#F44336" />
+                  ) : (
+                    <Text style={[styles.actionButtonText, { color: '#F44336' }]}>
+                      Cancel Order
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ) : null
+            }
+          />
 
           {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (
             <OrderProgress status={selectedOrder.status} />
@@ -238,6 +338,28 @@ const OrderDetailsScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+  },
+  actionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+    marginBottom: 8,
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'BricolageGrotesque-Regular',
   },
   container: {
     flex: 1,
