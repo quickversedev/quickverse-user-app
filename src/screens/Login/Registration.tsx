@@ -28,7 +28,11 @@ import { useTheme } from '../../theme/ThemeContext';
 const { height } = Dimensions.get('window');
 type LoginScreenNavigationProp = StackNavigationProp<LoginStackParamList, 'LoginScreen'>;
 
-const Registration: React.FC = () => {
+interface RegistrationProps {
+  onRegistrationSuccess?: () => Promise<void>;
+}
+
+const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) => {
   const _navigation = useNavigation<LoginScreenNavigationProp>();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -129,7 +133,10 @@ const Registration: React.FC = () => {
         // Format date as YYYY-MM-DD
         const formattedDate = formatDateForAPI(dateOfBirth);
         await auth.signUp(fullName, gender, email, formattedDate);
-        // Optional success feedback
+        // Call onRegistrationSuccess if provided
+        if (onRegistrationSuccess) {
+          await onRegistrationSuccess();
+        }
       }
     } catch (error: unknown) {
       // Map to friendly error

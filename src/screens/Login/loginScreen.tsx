@@ -64,10 +64,11 @@ const LoginScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      await auth.sendOtp(phoneNumber);
+      const verificationId = await auth.sendOtp(phoneNumber);
+
       navigation.navigate({
         name: 'OTPScreen',
-        params: { phoneNumber, verificationId: 'abc' },
+        params: { phoneNumber, verificationId },
       });
     } catch (err) {
       Alert.alert('Error', 'Login failed');

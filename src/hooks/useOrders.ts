@@ -39,6 +39,7 @@ export const useOrders = () => {
   const loadOrders = useCallback(
     async (cursor?: OrderCursor | null, pageSize?: number) => {
       if (!authData?.jwt || !authData?.phone) return;
+      console.log('cursor', cursor);
       await fetchOrders(authData.jwt, authData.phone, cursor ?? null, pageSize);
     },
     [fetchOrders, authData?.jwt, authData?.phone]
@@ -58,6 +59,7 @@ export const useOrders = () => {
   const refreshOrders = useCallback(
     async (pageSize?: number) => {
       if (!authData?.jwt || !authData?.phone) return;
+      console.log('refreshOrders');
       await fetchOrders(authData.jwt, authData.phone, null, pageSize);
     },
     [fetchOrders, authData?.jwt, authData?.phone]

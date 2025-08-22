@@ -43,7 +43,7 @@ const AppBootstrap: React.FC = () => {
       setPermissionDataInAuth(result as PermissionAndLocation);
 
       // Update device info non-blocking after bootstrap completes
-      if (authData?.jwt) {
+      if (!isNewUser && authData?.jwt) {
         updateDeviceInfo(result?.location?.longitude, result?.location?.latitude).catch(error => {
           // Don't block app initialization if device info update fails
           console.warn('Failed to update device info during bootstrap:', error);
@@ -63,7 +63,20 @@ const AppBootstrap: React.FC = () => {
   }, []);
   // CASE 1: New user - show registration
   if (isNewUser) {
-    return <Registration />;
+    return (
+      <Registration
+        onRegistrationSuccess={async () => {
+          if (permissionData?.location) {
+            await updateDeviceInfo(
+              permissionData.location.longitude,
+              permissionData.location.latitude
+            ).catch(error => {
+              console.warn('Failed to update device info after registration:', error);
+            });
+          }
+        }}
+      />
+    );
   }
 
   // CASE 2: User exists but permissions not completed - show permissions screen

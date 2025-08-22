@@ -86,7 +86,7 @@ export interface OrderStore {
     cursor: OrderCursor | null,
     pageSize?: number
   ) => Promise<void>;
-  fetchOrderById: (orderId: string, jwt: string, phone: string) => Promise<void>;
+  fetchOrderById: (orderId: string, jwt: string, phone: string, shopId?: string) => Promise<void>;
   setOrders: (orders: Order[]) => void;
   setSelectedOrder: (order: Order | null) => void;
   setLoading: (loading: boolean) => void;

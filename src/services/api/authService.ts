@@ -66,7 +66,7 @@ const sendOtp = async (phoneNumber: string): Promise<string> => {
       axiosInstance.post(
         '/v1/requestOtp',
         {
-          mobile: phoneNumber,
+          phone: phoneNumber,
         },
         {
           headers: {

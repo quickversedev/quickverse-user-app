@@ -11,6 +11,7 @@ import {
 import { Icons } from '../../../assets';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
+import { getCleanImageUri } from '../../../utils/imageUtils';
 import { RatingBadge } from '../../common';
 
 const { width } = Dimensions.get('window');
@@ -135,17 +136,8 @@ const VendorCard: React.FC<VendorCardProps> = ({
     },
   });
 
-  const getCleanUri = (input?: string): string | undefined => {
-    if (!input || typeof input !== 'string') return undefined;
-    const cleaned = input
-      .trim()
-      .replace(/^@/, '')
-      .replace(/^['"]|['"]$/g, '');
-    return cleaned || undefined;
-  };
-
-  const bannerUri = getCleanUri(vendor.banner as string);
-  const logoUri = getCleanUri(vendor.logo as string);
+  const bannerUri = getCleanImageUri(vendor.banner as string);
+  const logoUri = getCleanImageUri(vendor.logo as string);
   const imageSource: ImageSourcePropType | undefined = bannerUri
     ? { uri: bannerUri }
     : logoUri

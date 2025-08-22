@@ -203,7 +203,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
     return (
       <View style={[styles.attributeRow, isLast && styles.lastAttributeRow]}>
         <Text style={styles.attributeLabel}>{label}</Text>
-        <Text style={styles.attributeValue}>{value}</Text>
+        <Text style={styles.attributeValue} numberOfLines={3}>
+          {value}
+        </Text>
       </View>
     );
   };

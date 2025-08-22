@@ -93,10 +93,10 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const currentQuantity = cart?.products[displaySku]?.quantity || 0;
 
   useEffect(() => {
-    if (visible && product.numberOfVariants > 1) {
+    if (visible) {
       fetchVariants();
     }
-  }, [visible, product.numberOfVariants]);
+  }, [visible]);
 
   // Update selected variant when product changes
   useEffect(() => {
@@ -301,7 +301,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       name: item.name,
       price: item.price,
       mrp: item.mrp,
-      image: item.image,
+      image: item.image.toString(),
       veg: true, // Default to vegetarian for suggested items
     };
     addToCart(cartId, cartProduct, authData.jwt, authData.phone);
@@ -315,10 +315,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const handleSuggestedItemDecrement = (item: SuggestedItem) => {
     if (!authData?.jwt) return;
     decrement(cartId, item.id, authData.jwt, authData.phone);
-  };
-
-  const handleViewAllPress = () => {
-    // View all suggested items
   };
 
   // Create variants for ProductInfo component
@@ -337,7 +333,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <MaterialCommunityIcons name="close" size={20} color={getColor('error')} />
+              <MaterialCommunityIcons name="close" size={20} color={getColor('text')} />
             </TouchableOpacity>
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={getColor('primary')} />
@@ -386,7 +382,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           <View style={styles.dragIndicator} />
 
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <MaterialCommunityIcons name="close" size={20} color={getColor('error')} />
+            <MaterialCommunityIcons name="close" size={20} color={getColor('text')} />
           </TouchableOpacity>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

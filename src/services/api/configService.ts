@@ -17,6 +17,7 @@ const AUTH_HEADERS = {
 export const fetchInitialConfig = async (
   params: InitialConfigParams
 ): Promise<InitialConfigResponse> => {
+  console.log('fetching initial config');
   const response = await apiCall(
     axiosInstance.get<InitialConfigResponse>(CONFIG_ENDPOINTS.initialConfig, {
       params,
@@ -25,14 +26,4 @@ export const fetchInitialConfig = async (
   );
   return response;
 };
-
-
-
-
-
-
-
-
-
-
 
