@@ -188,7 +188,7 @@ const CartScreen: React.FC = () => {
       const product = convertToProduct(item, index);
 
       if (!cart || !authData?.jwt || !authData?.phone) return;
-      console.log('product************', product);
+
       const cartProduct = {
         sku: product.id,
         shopId: product.shopId,
@@ -198,7 +198,7 @@ const CartScreen: React.FC = () => {
         image: product.imageUrl || '',
         veg: product.veg,
       };
-      console.log('cartProduct', cartProduct);
+
       addToCart(cart.cartId, cartProduct, authData.jwt, authData.phone);
     },
     [cart, authData, addToCart, featuredProducts, convertToProduct]
@@ -236,9 +236,6 @@ const CartScreen: React.FC = () => {
     const shouldShowCompulsoryModal =
       !permissionDataInAuth?.permission ||
       (selectedAddress && selectedAddress.isSavedAddress === false);
-    console.log('shouldShowCompulsoryModal', shouldShowCompulsoryModal);
-    console.log('selectedAddress', selectedAddress);
-    console.log('permissionDataInAuth', permissionDataInAuth);
 
     if (shouldShowCompulsoryModal) {
       setShowAddressModal(true);
@@ -273,13 +270,13 @@ const CartScreen: React.FC = () => {
         customerName: selectedAddress.name || 'Customer',
         paymentMethod: selectedPaymentOption.toUpperCase(),
       };
-      console.log('orderRequest', orderRequest);
+
       const orderResponse = await orderService.createOrder(
         orderRequest,
         authData.jwt,
         authData.phone
       );
-      console.log('orderResponse', orderResponse);
+
       // Step 2: Create Payment
       const paymentRequest: CreatePaymentRequest = {
         customerId: orderResponse.customerId,
@@ -296,7 +293,7 @@ const CartScreen: React.FC = () => {
           },
         ],
       };
-      console.log('paymentRequest', paymentRequest);
+
       await createPaymentService.createPayment(paymentRequest, authData.jwt, authData.phone);
 
       // Both APIs successful - Clear cart and navigate to success screen

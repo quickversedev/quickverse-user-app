@@ -176,8 +176,6 @@ export interface TransformedCartProduct {
 }
 
 class CartApiService {
-  private baseUrl = 'http://192.168.1.37:8080/quickVerse/v2';
-
   /**
    * Add product to cart - Method 1: Using apiCall wrapper (Recommended)
    */
@@ -188,10 +186,6 @@ class CartApiService {
     phone: string
   ): Promise<TransformedCartData> {
     try {
-      console.log('add to cart shopId', shopId);
-      console.log('add to cart productSku', productSku);
-      console.log('add to cart jwtToken', jwtToken);
-      console.log('add to cart phone', phone);
       // Method 1: Using apiCall wrapper (recommended for error handling)
       const response = await apiCall(
         axiosInstance.post<CartApiResponse>(
@@ -251,9 +245,6 @@ class CartApiService {
    */
   async getCart(shopId: string, jwtToken: string, phone: string): Promise<TransformedCartData> {
     try {
-      console.log('get cart shopId', shopId);
-      console.log('get cart jwtToken', jwtToken);
-      console.log('get cart phone', phone);
       // Method 4: Using withHeaders helper
       const response = await axiosInstance.get<CartApiResponse>('/v2/getCart', {
         params: { shopId },

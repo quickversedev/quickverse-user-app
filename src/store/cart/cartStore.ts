@@ -98,10 +98,7 @@ const useCartStore = create<CartStore>()(
 
       addToCart: async (cartId, product, jwtToken, phone) => {
         set({ loading: true, error: null });
-        console.log('addToCart cartId', cartId);
-        console.log('addToCart product', product);
-        console.log('addToCart jwtToken', jwtToken);
-        console.log('addToCart phone', phone);
+
         try {
           if (!jwtToken) {
             throw new Error('No authentication token available');
@@ -184,14 +181,17 @@ const useCartStore = create<CartStore>()(
 
           const shopId = cartId.replace('vendor_', '');
 
-          await cartApiService.deleteFromCart(shopId, sku, false, jwtToken, phone);
+          const response = await cartApiService.deleteFromCart(shopId, sku, false, jwtToken, phone);
 
-          // Call getCart API to get the latest cart state
-          const getCartResponse = await cartApiService.getCart(shopId, jwtToken, phone);
-
-          // Sync cart with getCart API response
-          get().syncCartWithApi(cartId, getCartResponse);
-
+          get().syncCartWithApi(cartId, response);
+          //  Check if there are items left in the cart before calling getCart
+          const currentCart = get().carts[cartId];
+          console.log('currentCart', currentCart);
+          if (currentCart && Object.keys(currentCart.products).length > 0) {
+            // Call getCart API to get the latest cart state
+            const getCartResponse = await cartApiService.getCart(shopId, jwtToken, phone);
+            get().syncCartWithApi(cartId, getCartResponse);
+          }
           set({ loading: false });
         } catch (error) {
           set({
