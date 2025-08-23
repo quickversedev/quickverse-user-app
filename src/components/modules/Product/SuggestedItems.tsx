@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
+import useCartStore from '../../../store/cart/cartStore';
 import { useProductsStore } from '../../../store/products/productsStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
@@ -22,6 +23,7 @@ interface SuggestedItemsProps {
   onAdd: (item: SuggestedItem) => void;
   onIncrement: (item: SuggestedItem) => void;
   onDecrement: (item: SuggestedItem) => void;
+  isStoreClosed?: boolean;
 }
 
 const SuggestedItems: React.FC<SuggestedItemsProps> = ({
@@ -31,21 +33,28 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
   onAdd,
   onIncrement,
   onDecrement,
+  isStoreClosed,
 }) => {
   const { getColor, getTypography } = useTheme();
   const { getProductsByCategories } = useProductsStore();
+  const { carts, activeCartId } = useCartStore();
   const [suggestedProducts, setSuggestedProducts] = useState<SuggestedItem[]>([]);
+
   // Resolve items from provided products or categories
   useEffect(() => {
+    // Get active cart's products
+    const activeCart = activeCartId ? carts[activeCartId] : null;
+    const cartProducts = activeCart?.products || {};
+
     if (products && products.length > 0) {
       const fromProducts: SuggestedItem[] = products.slice(0, 10).map(p => ({
         id: p.sku,
         name: p.name,
         price: p.sellingPrice,
         mrp: p.mrp,
-        rating: (p as any).rating || 4.5,
+        rating: (p.rating as number) || 4.5,
         image: (p.imageUrl as unknown as number) || 0,
-        quantity: 0,
+        quantity: cartProducts[p.sku]?.quantity || 0,
       }));
       setSuggestedProducts(fromProducts);
       return;
@@ -60,14 +69,14 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
         mrp: product.mrp,
         rating: 4.5,
         image: (product.imageUrl as unknown as number) || 0,
-        quantity: 0,
+        quantity: cartProducts[product.sku]?.quantity || 0,
       }));
       setSuggestedProducts(convertedItems);
       return;
     }
 
     setSuggestedProducts([]);
-  }, [products, categories, getProductsByCategories]);
+  }, [products, categories, getProductsByCategories, activeCartId, carts]);
 
   const styles = StyleSheet.create({
     container: {
@@ -106,7 +115,7 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
 
   const renderItem = ({ item }: { item: SuggestedItem }) => {
     // Create a mock product object from SuggestedItem
-    const mockProduct = {
+    const mockProduct: Product = {
       sku: item.id,
       shopId: 'suggested_shop',
       name: item.name,
@@ -117,14 +126,23 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
       division: 'suggested',
       subDivision: 'suggested',
       brand: 'suggested',
-      description: '',
-      imageUrl: item.image,
+      attributes: {
+        color: null,
+        size: null,
+        name: null,
+        description: null,
+        price: null,
+        unit: null,
+      },
+      imageUrl: item.image.toString(),
       discount: 0,
       numberOfVariants: 1,
       currentStock: 10,
       inStock: true,
       primarySKU: item.id,
       tags: [],
+      rating: item.rating || 0,
+      veg: true,
     };
 
     return (
@@ -138,6 +156,7 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
         onPress={() => onItemPress(item)}
         backgroundColor={getColor('card')}
         rating={item.rating || 0}
+        isStoreClosed={isStoreClosed}
       />
     );
   };

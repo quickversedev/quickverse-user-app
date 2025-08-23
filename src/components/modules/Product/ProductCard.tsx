@@ -8,8 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Product } from '../../../assets/mock/products';
 import { useTheme } from '../../../theme/ThemeContext';
+import { Product } from '../../../types/product';
 import { BadgeTag, VegIcon } from '../../common';
 import RatingBadge from '../../common/badges/RatingBadge';
 import AddButton from './AddButton';
@@ -32,14 +32,15 @@ interface ProductCardProps {
   onPress?: () => void;
   backgroundColor?: string;
   rating?: number;
+  isStoreClosed?: boolean;
 }
 
 // Extract styles outside component to prevent recreation on every render
 const createStyles = (
   size: 'xs' | 'small' | 'regular',
-  getColor: any,
-  getTypography: any,
-  theme: any,
+  getColor: (color: string) => string,
+  getTypography: (size: string) => number,
+  theme: { borderRadius: { sm: number } },
   veg: boolean,
   backgroundColor?: string
 ) =>
@@ -169,6 +170,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onPress,
   backgroundColor,
   rating = 0,
+  isStoreClosed = false,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
 
@@ -185,7 +187,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
   } = product;
 
   const imageSource: ImageSourcePropType = useMemo(
-    () => (typeof image === 'string' ? { uri: image } : image),
+    () =>
+      typeof image === 'string'
+        ? { uri: image }
+        : image || require('../../../assets/images/food.png'),
     [image]
   );
 
@@ -236,9 +241,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </View>
         )}
 
-        {isOutOfStock ? (
+        {isOutOfStock || isStoreClosed ? (
           <View style={styles.outOfStockOverlay}>
-            <Text style={styles.outOfStockText}>OUT OF STOCK</Text>
+            <Text style={styles.outOfStockText}>
+              {isStoreClosed ? 'STORE CLOSED' : 'OUT OF STOCK'}
+            </Text>
           </View>
         ) : !hasQuantity ? (
           <AddButton
@@ -246,6 +253,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             size={size}
             numberOfVariants={numberOfVariants}
             showVariantsCount={showVariantsCount}
+            disabled={isStoreClosed}
           />
         ) : (
           <QuantitySelector
@@ -253,6 +261,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             onIncrement={onIncrement}
             onDecrement={onDecrement}
             size={size}
+            disabled={isStoreClosed}
           />
         )}
       </View>

@@ -16,6 +16,8 @@ import productDetailsService from '../../../services/productDetailsService';
 import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
+import { Vendor } from '../../../types/vendor';
+import { getStoreStatus } from '../../../utils/storeUtils';
 import AddButton from './AddButton';
 import ProductImageCarousel from './ProductImageCarousel';
 import ProductInfo from './ProductInfo';
@@ -34,11 +36,6 @@ const getResponsiveValue = (small: number, medium: number, large: number) => {
   if (isMediumScreen) return medium;
   return large;
 };
-
-interface Vendor {
-  name: string;
-  shopId: string;
-}
 
 interface SuggestedItem {
   id: string;
@@ -63,6 +60,12 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   product,
   vendor,
 }) => {
+  const storeStatus = getStoreStatus({
+    storeActive: vendor.storeActive,
+    openingTime: vendor.openingTime,
+    closingTime: vendor.closingTime,
+  });
+  const isStoreClosed = !storeStatus.isOpen;
   const { getColor, getTypography, theme } = useTheme();
   const { authData } = useAuth();
   const insets = useSafeAreaInsets();
@@ -75,7 +78,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   // Create vendor-specific cart ID
   const cartId = `vendor_${vendor.shopId}`;
-
+  console.log('isStoreClosed', isStoreClosed);
   // Get current cart
   const cart = carts[cartId];
 
@@ -127,7 +130,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   // Cart handlers
   const handleAddToCart = () => {
-    if (!authData?.jwt) return;
+    if (!authData?.jwt || isStoreClosed) return;
     addToCart(
       cartId,
       {
@@ -145,12 +148,12 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   const handleIncrement = () => {
-    if (!authData?.jwt) return;
+    if (!authData?.jwt || isStoreClosed) return;
     increment(cartId, displaySku, authData.jwt, authData.phone);
   };
 
   const handleDecrement = () => {
-    if (!authData?.jwt) return;
+    if (!authData?.jwt || isStoreClosed) return;
     decrement(cartId, displaySku, authData.jwt, authData.phone);
   };
 
@@ -266,6 +269,16 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       fontSize: getTypography('body'),
       fontWeight: 'bold',
     },
+    bottomBarDisabled: {
+      backgroundColor: getColor('background'),
+      borderTopColor: getColor('border'),
+    },
+    storeClosedText: {
+      color: getColor('error'),
+      fontSize: getTypography('body'),
+      fontWeight: 'bold',
+      fontFamily: 'BricolageGrotesque-Regular',
+    },
   });
 
   const handleAddToStacks = () => {
@@ -295,6 +308,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const handleSuggestedItemAdd = (item: SuggestedItem) => {
     if (!authData?.jwt) return;
     // Add suggested item to cart
+    console.log('item', item);
     const cartProduct = {
       sku: item.id,
       shopId: vendor.shopId,
@@ -413,17 +427,20 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               onAdd={handleSuggestedItemAdd}
               onIncrement={handleSuggestedItemIncrement}
               onDecrement={handleSuggestedItemDecrement}
+              isStoreClosed={isStoreClosed}
             />
           </ScrollView>
 
           {/* Fixed Bottom Bar */}
-          <View style={styles.bottomBar}>
+          <View style={[styles.bottomBar, isStoreClosed && styles.bottomBarDisabled]}>
             <View style={styles.priceContainer}>
+              {isStoreClosed && <Text style={styles.storeClosedText}>{storeStatus.reason}</Text>}
+
               {displayMrp !== displayPrice && <Text style={styles.mrpText}>MRP ₹{displayMrp}</Text>}
               <Text style={styles.sellingPriceText}>₹{displayPrice}</Text>
             </View>
 
-            <View style={styles.buttonContainer}>
+            <View style={[styles.buttonContainer, isStoreClosed && { opacity: 0.5 }]}>
               {currentQuantity === 0 ? (
                 <AddButton onPress={handleAddToCart} size="regular" />
               ) : (

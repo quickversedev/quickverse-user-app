@@ -1,9 +1,13 @@
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useAuth } from '../../../contexts/login/AuthProvider';
+import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
+import { Product } from '../../../types/product';
 import ProductCard from '../Product/ProductCard';
 
-interface SuggestedItem {
+export interface SuggestedItem {
+  sku: string;
   name: string;
   price: number;
   image: number;
@@ -11,10 +15,9 @@ interface SuggestedItem {
 
 interface SuggestedItemsProps {
   items: SuggestedItem[];
-  onAdd: (idx: number) => void;
 }
 
-const SuggestedItems: React.FC<SuggestedItemsProps> = ({ items, onAdd }) => {
+const SuggestedItems: React.FC<SuggestedItemsProps> = ({ items }) => {
   const { getColor, getTypography, theme } = useTheme();
 
   const styles = StyleSheet.create({
@@ -35,7 +38,7 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({ items, onAdd }) => {
   const suggestedProducts = useMemo(
     () =>
       items.map((item, idx) => ({
-        sku: `suggested_${idx}`,
+        sku: `${idx}`,
         shopId: 'mock_shop',
         name: item.name,
         mrp: item.price + 10,
@@ -46,7 +49,7 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({ items, onAdd }) => {
         subDivision: 'suggested',
         brand: 'suggested',
         description: '',
-        imageUrl: item.image,
+        imageUrl: item.image.toString(),
         discount: 0,
         numberOfVariants: 1,
         currentStock: 10,
@@ -54,27 +57,57 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({ items, onAdd }) => {
         primarySKU: `suggested_${idx}`,
         tags: [],
         veg: true,
+        rating: 4.5,
       })),
     [items]
   );
 
-  const renderSuggestedItem = useMemo(
-    () => (product: any, idx: number) =>
-      (
-        <ProductCard
-          key={idx}
-          product={product}
-          quantity={0}
-          onAdd={() => onAdd(idx)}
-          onIncrement={() => onAdd(idx)}
-          onDecrement={() => {}}
-          size="xs"
-          showVariantsCount={false}
-          backgroundColor={getColor('card')}
-          rating={4.5}
-        />
-      ),
-    [onAdd, getColor]
+  const { carts, activeCartId, addToCart, increment, decrement } = useCartStore();
+  const { authData } = useAuth();
+  const activeCart = activeCartId ? carts[activeCartId] : null;
+
+  const handleAdd = (idx: number) => {
+    const product = suggestedProducts[idx];
+    if (activeCartId && authData?.jwt && authData?.phone) {
+      const cartProduct = {
+        sku: product.sku,
+        shopId: product.shopId,
+        name: product.name,
+        price: product.sellingPrice,
+        mrp: product.mrp,
+        image: product.imageUrl,
+        veg: product.veg,
+      };
+      addToCart(activeCartId, cartProduct, authData.jwt, authData.phone);
+    }
+  };
+
+  const handleIncrement = (idx: number) => {
+    const product = suggestedProducts[idx];
+    if (activeCartId && authData?.jwt && authData?.phone) {
+      increment(activeCartId, product.sku, authData.jwt, authData.phone);
+    }
+  };
+
+  const handleDecrement = (idx: number) => {
+    const product = suggestedProducts[idx];
+    if (activeCartId && authData?.jwt && authData?.phone) {
+      decrement(activeCartId, product.sku, authData.jwt, authData.phone);
+    }
+  };
+
+  const renderSuggestedItem = (product: Product, idx: number) => (
+    <ProductCard
+      key={idx}
+      product={product}
+      quantity={activeCart?.products[product.sku]?.quantity || 0}
+      onAdd={() => handleAdd(idx)}
+      onIncrement={() => handleIncrement(idx)}
+      onDecrement={() => handleDecrement(idx)}
+      size="xs"
+      backgroundColor={getColor('card')}
+      rating={4.5}
+    />
   );
 
   return (

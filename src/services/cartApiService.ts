@@ -188,6 +188,10 @@ class CartApiService {
     phone: string
   ): Promise<TransformedCartData> {
     try {
+      console.log('add to cart shopId', shopId);
+      console.log('add to cart productSku', productSku);
+      console.log('add to cart jwtToken', jwtToken);
+      console.log('add to cart phone', phone);
       // Method 1: Using apiCall wrapper (recommended for error handling)
       const response = await apiCall(
         axiosInstance.post<CartApiResponse>(

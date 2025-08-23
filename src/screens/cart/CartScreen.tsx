@@ -12,6 +12,7 @@ import {
   PaymentSummary,
   VendorPill,
 } from '../../components/modules/Cart';
+import { SuggestedItem } from '../../components/modules/Cart/SuggestedItems';
 import { AddressSelectionModal } from '../../components/modules/Header/AddressSelectionModal';
 import SuggestedItems from '../../components/modules/Product/SuggestedItems';
 import { useAuth } from '../../contexts/login/AuthProvider';
@@ -43,8 +44,16 @@ const CartScreen: React.FC = () => {
   const { cartId } = route.params || {};
 
   // Store hooks
-  const { carts, activeCartId, increment, decrement, clearCart, getAppliedCoupon, refreshCart } =
-    useCartStore();
+  const {
+    carts,
+    activeCartId,
+    increment,
+    decrement,
+    clearCart,
+    getAppliedCoupon,
+    refreshCart,
+    addToCart,
+  } = useCartStore();
   const { vendors } = useVendorStore();
   const {
     getAvailableCoupons,
@@ -139,9 +148,89 @@ const CartScreen: React.FC = () => {
     [cart, authData?.jwt, authData?.phone, decrement]
   );
 
-  const handleAddSuggested = useCallback((_item: unknown) => {
-    // TODO: Implement suggested item addition
-  }, []);
+  const convertToProduct = useCallback(
+    (item: Product | SuggestedItem, index: number): Product => {
+      const isSuggestedItem = (i: any): i is SuggestedItem => !('rating' in i);
+      if (!isSuggestedItem(item)) return item as Product;
+      if (index === -1) throw new Error('Invalid suggested item');
+      const shopId = cart?.cartId.replace('vendor_', '') || '';
+      return {
+        sku: item.sku,
+        shopId,
+        name: item.name,
+        mrp: item.price + 10,
+        sellingPrice: item.price,
+        imageUrl: item.image.toString(),
+        veg: true,
+        rating: 4.5,
+        discount: 0,
+        category: 'suggested',
+        division: 'suggested',
+        subDivision: 'suggested',
+        brand: 'suggested',
+        numberOfVariants: 1,
+        currentStock: 10,
+        inStock: true,
+        primarySKU: item.sku,
+        id: item.sku,
+        tags: [],
+      };
+    },
+    [cart]
+  );
+
+  const handleAddSuggested = useCallback(
+    (item: Product | SuggestedItem) => {
+      const isSuggestedItem = (i: Product | SuggestedItem): i is SuggestedItem => !('sku' in i);
+      const index = isSuggestedItem(item)
+        ? featuredProducts.findIndex(p => p.sku === item.sku)
+        : -1;
+      const product = convertToProduct(item, index);
+
+      if (!cart || !authData?.jwt || !authData?.phone) return;
+      console.log('product************', product);
+      const cartProduct = {
+        sku: product.id,
+        shopId: product.shopId,
+        name: product.name,
+        price: product.sellingPrice,
+        mrp: product.mrp,
+        image: product.imageUrl || '',
+        veg: product.veg,
+      };
+      console.log('cartProduct', cartProduct);
+      addToCart(cart.cartId, cartProduct, authData.jwt, authData.phone);
+    },
+    [cart, authData, addToCart, featuredProducts, convertToProduct]
+  );
+
+  const handleIncrementSuggested = useCallback(
+    (item: Product | SuggestedItem) => {
+      const isSuggestedItem = (i: Product | SuggestedItem): i is SuggestedItem => !('sku' in i);
+      const index = isSuggestedItem(item)
+        ? featuredProducts.findIndex(p => p.name === item.name)
+        : -1;
+      const product = convertToProduct(item, index);
+
+      if (!cart || !authData?.jwt || !authData?.phone) return;
+      increment(cart.cartId, product.sku, authData.jwt, authData.phone);
+    },
+    [cart, authData, increment, featuredProducts, convertToProduct]
+  );
+
+  const handleDecrementSuggested = useCallback(
+    (item: Product | SuggestedItem) => {
+      const isSuggestedItem = (i: Product | SuggestedItem): i is SuggestedItem => !('sku' in i);
+      const index = isSuggestedItem(item)
+        ? featuredProducts.findIndex(p => p.name === item.name)
+        : -1;
+      const product = convertToProduct(item, index);
+
+      if (!cart || !authData?.jwt || !authData?.phone) return;
+      decrement(cart.cartId, product.sku, authData.jwt, authData.phone);
+    },
+    [cart, authData, decrement, featuredProducts, convertToProduct]
+  );
 
   const handleCheckout = useCallback(async () => {
     const shouldShowCompulsoryModal =
@@ -440,8 +529,8 @@ const CartScreen: React.FC = () => {
           products={featuredProducts}
           onItemPress={handleAddSuggested}
           onAdd={handleAddSuggested}
-          onIncrement={handleAddSuggested}
-          onDecrement={handleAddSuggested}
+          onIncrement={handleIncrementSuggested}
+          onDecrement={handleDecrementSuggested}
         />
       </ScrollView>
 

@@ -1211,6 +1211,7 @@ const VendorProductComponent: React.FC = () => {
           onClose={handleCloseProductDetailModal}
           product={selectedProductForDetail}
           vendor={vendor}
+          isStoreClosed={!isStoreActive}
         />
       )}
     </>

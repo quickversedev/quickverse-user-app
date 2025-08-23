@@ -217,27 +217,29 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
         {veg !== undefined && <VegIcon veg={veg} size="small" />}
       </View>
 
-      <View style={styles.variantsContainer}>
-        <View style={styles.variantsList}>
-          {variants.map(variant => {
-            const isSelected = variant.id === selectedVariantId;
-            return (
-              <TouchableOpacity
-                key={variant.id}
-                style={[styles.variantOption, isSelected && styles.selectedVariant]}
-                onPress={() => onVariantSelect(variant.id)}
-              >
-                <View style={[styles.radioButton, isSelected && styles.selectedRadioButton]}>
-                  {isSelected && <View style={styles.radioButtonInner} />}
-                </View>
-                <Text style={[styles.variantText, isSelected && styles.selectedVariantText]}>
-                  {variant.value}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+      {variants.length > 1 && (
+        <View style={styles.variantsContainer}>
+          <View style={styles.variantsList}>
+            {variants.map(variant => {
+              const isSelected = variant.id === selectedVariantId;
+              return (
+                <TouchableOpacity
+                  key={variant.id}
+                  style={[styles.variantOption, isSelected && styles.selectedVariant]}
+                  onPress={() => onVariantSelect(variant.id)}
+                >
+                  <View style={[styles.radioButton, isSelected && styles.selectedRadioButton]}>
+                    {isSelected && <View style={styles.radioButtonInner} />}
+                  </View>
+                  <Text style={[styles.variantText, isSelected && styles.selectedVariantText]}>
+                    {variant.value}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Product Info Collapsible Section */}
 

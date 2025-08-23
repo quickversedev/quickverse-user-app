@@ -98,6 +98,10 @@ const useCartStore = create<CartStore>()(
 
       addToCart: async (cartId, product, jwtToken, phone) => {
         set({ loading: true, error: null });
+        console.log('addToCart cartId', cartId);
+        console.log('addToCart product', product);
+        console.log('addToCart jwtToken', jwtToken);
+        console.log('addToCart phone', phone);
         try {
           if (!jwtToken) {
             throw new Error('No authentication token available');

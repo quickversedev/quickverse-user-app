@@ -7,6 +7,7 @@ interface QuantitySelectorProps {
   onIncrement: () => void;
   onDecrement: () => void;
   size?: 'xs' | 'small' | 'regular';
+  disabled?: boolean;
 }
 
 const QuantitySelector: React.FC<QuantitySelectorProps> = ({
@@ -14,6 +15,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   onIncrement,
   onDecrement,
   size = 'regular',
+  disabled = false,
 }) => {
   const { getColor, getTypography } = useTheme();
 
@@ -79,12 +81,12 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
 
   return (
     <View style={styles.quantitySelector}>
-      <TouchableOpacity style={styles.qtyBtn} onPress={onDecrement}>
-        <Text style={styles.qtyText}>-</Text>
+      <TouchableOpacity style={styles.qtyBtn} onPress={onDecrement} disabled={disabled}>
+        <Text style={[styles.qtyText, disabled && { opacity: 0.5 }]}>-</Text>
       </TouchableOpacity>
-      <Text style={styles.qtyNum}>{quantity}</Text>
-      <TouchableOpacity style={styles.qtyBtn} onPress={onIncrement}>
-        <Text style={styles.qtyText}>+</Text>
+      <Text style={[styles.qtyNum, disabled && { opacity: 0.5 }]}>{quantity}</Text>
+      <TouchableOpacity style={styles.qtyBtn} onPress={onIncrement} disabled={disabled}>
+        <Text style={[styles.qtyText, disabled && { opacity: 0.5 }]}>+</Text>
       </TouchableOpacity>
     </View>
   );

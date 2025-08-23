@@ -11,6 +11,7 @@ interface AddButtonProps {
   size?: 'xs' | 'small' | 'regular';
   numberOfVariants?: number;
   showVariantsCount?: boolean;
+  disabled?: boolean;
 }
 
 const AddButton: React.FC<AddButtonProps> = ({
@@ -18,6 +19,7 @@ const AddButton: React.FC<AddButtonProps> = ({
   size = 'regular',
   numberOfVariants = 1,
   showVariantsCount = false,
+  disabled = false,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
   const { authData } = useAuth();
@@ -28,6 +30,9 @@ const AddButton: React.FC<AddButtonProps> = ({
   const shouldShowVariantsCount = size === 'regular' && showVariantsCount && hasMultipleVariants;
 
   const handleSafePress = () => {
+    if (disabled) {
+      return;
+    }
     if (authData?.jwt) {
       // Haptic feedback for successful add intent
       triggerAddToCartHaptic();
