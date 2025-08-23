@@ -97,7 +97,7 @@ const createStyles = (
 
     name: {
       color: getColor('text'),
-      fontSize: size === 'xs' ? getTypography('caption') - 2 : getTypography('caption'),
+      fontSize: size === 'xs' ? getTypography('caption') - 3 : getTypography('caption') - 2,
       fontWeight: 'bold',
       flex: 1,
       maxWidth: size === 'xs' ? 90 : 130,
@@ -267,7 +267,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       </View>
 
       <View style={styles.nameContainer}>
-        <VegIcon veg={veg} size={size} />
+        <VegIcon veg={veg} size="xs" />
         <Text style={[styles.name, isOutOfStock && { opacity: 0.6 }]} numberOfLines={2}>
           {name}
         </Text>

@@ -209,7 +209,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
     };
   }, []);
 
-  if (isLoading) {
+  if (isLoading || isDenied) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.secondary} />
@@ -226,6 +226,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
       console.warn('Permission request failed:', error);
     }
   };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView

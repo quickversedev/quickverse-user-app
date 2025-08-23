@@ -293,6 +293,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     searchInput: {
       flex: 1,
       height: 40,
+      color: getColor('text'),
       fontSize: getTypography('body'),
     },
     resultsContainer: {
@@ -614,13 +615,13 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                   <Text style={themedStyles.loadingText}>Getting address...</Text>
                 </View>
               ) : (
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                   <Image
                     source={Icons.selectedAddress}
                     style={{ width: 25, height: 25, marginRight: 5 }}
                   />
 
-                  <Text style={themedStyles.selectedLocationText} numberOfLines={3}>
+                  <Text style={[themedStyles.selectedLocationText, { flex: 1 }]} numberOfLines={3}>
                     {selectedAddressDescription.formatted_address ||
                       selectedAddressDescription.city ||
                       selectedAddressDescription.state ||

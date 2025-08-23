@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    margin: 16,
   },
   text: {
     fontSize: 16,

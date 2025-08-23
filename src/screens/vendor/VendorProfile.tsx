@@ -221,7 +221,7 @@ const VendorProfileComponent: React.FC = () => {
         },
         name: {
           color: getColor('text'),
-          fontSize: getTypography('h1'),
+          fontSize: getTypography('h2'),
           fontWeight: 'bold',
           marginBottom: 2,
         },
@@ -257,7 +257,7 @@ const VendorProfileComponent: React.FC = () => {
           alignItems: 'center',
           marginHorizontal: 16,
           marginTop: 18,
-          marginBottom: 8,
+          marginBottom: 18,
         },
         statCol: {
           alignItems: 'center',
@@ -280,8 +280,8 @@ const VendorProfileComponent: React.FC = () => {
         offersRow: {
           flexDirection: 'row',
           marginHorizontal: 16,
-          marginTop: 8,
-          marginBottom: 8,
+          marginTop: 16,
+          marginBottom: 16,
         },
         offerCard: {
           width: cardWidth,
@@ -302,7 +302,7 @@ const VendorProfileComponent: React.FC = () => {
         },
         mapContainer: {
           marginHorizontal: 16,
-          marginTop: 8,
+          marginTop: 28,
           marginBottom: 24,
           backgroundColor: getColor('card'),
           borderRadius: 12,
@@ -381,16 +381,16 @@ const VendorProfileComponent: React.FC = () => {
             <MaterialCommunityIcons
               name="flash"
               size={18}
-              color={getColor('subText')}
+              color={getColor('primary')}
               style={styles.statIcon}
             />
             <Text style={styles.statValue}>{vendor.preparationTime}</Text>
-            <Text style={styles.statLabel}>Delivery Time</Text>
+            <Text style={styles.statLabel}>Prepare Time</Text>
           </View>
           <View style={styles.statCol}>
             <MaterialCommunityIcons name="star" size={18} color="#1ec28b" style={styles.statIcon} />
             {renderRating()}
-            <Text style={styles.statLabel}>Ratings</Text>
+            <Text style={styles.statLabel}>Rating</Text>
           </View>
           <View style={styles.statCol}>
             <MaterialCommunityIcons
@@ -400,13 +400,13 @@ const VendorProfileComponent: React.FC = () => {
               style={styles.statIcon}
             />
             <Text style={styles.statValue}>
-              {formatTimeToAMPM(vendor.openingTime)} - {formatTimeToAMPM(vendor.closingTime)}
+              {formatTimeToAMPM(vendor.openingTime)}--{formatTimeToAMPM(vendor.closingTime)}
             </Text>
             <Text style={styles.statLabel}>Timings</Text>
           </View>
         </View>
         {/* Offers/Coupons */}
-        {couponPromotions.length > 0 ? (
+        {couponPromotions.length > 0 && (
           <ScrollView
             ref={offersScrollRef}
             horizontal
@@ -433,17 +433,13 @@ const VendorProfileComponent: React.FC = () => {
               </View>
             ))}
           </ScrollView>
-        ) : (
-          !couponsLoading && (
-            <Text style={styles.noOffersText}>No offers available at the moment</Text>
-          )
         )}
         {/* Directions/Map Section */}
 
-        <SectionDivider text="Location Details" />
+        <SectionDivider text="Location Details" fontSize={20} />
         <View style={styles.mapContainer}>
           <Text style={styles.mapAddress}>{formattedAddress}</Text>
-          <Text style={styles.mapSubAddress}>{formattedAddress}</Text>
+
           {vendorCoordinates && (
             <MapView
               style={styles.map}

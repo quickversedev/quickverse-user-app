@@ -1,7 +1,7 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo } from 'react';
-import { Modal, ScrollView } from 'react-native';
+import { Alert, Modal, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   CartFooter,
@@ -147,7 +147,7 @@ const CartScreen: React.FC = () => {
     },
     [cart, authData?.jwt, authData?.phone, decrement]
   );
-
+  console.log('vendor', vendor);
   const convertToProduct = useCallback(
     (item: Product | SuggestedItem, index: number): Product => {
       const isSuggestedItem = (i: any): i is SuggestedItem => !('rating' in i);
@@ -316,6 +316,26 @@ const CartScreen: React.FC = () => {
         shopId: vendor.shopId,
       });
     } catch (error: unknown) {
+      console.log('error in cart screen', error);
+
+      // Check for specific store not active error
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === 'STORE_NOT_ACTIVE_UNSUPPORTED_OPERATION'
+      ) {
+        Alert.alert('Store Closed', 'The store is closed at the moment. Please try again later.', [
+          {
+            text: 'OK',
+            onPress: async () => {
+              navigation.navigate('MainApp');
+            },
+          },
+        ]);
+        return;
+      }
+
       const errorMessage =
         error instanceof Error ? error.message : 'Order creation failed. Please try again.';
 

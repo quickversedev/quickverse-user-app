@@ -319,6 +319,7 @@ const useCartStore = create<CartStore>()(
       },
 
       clearCart: async (cartId, jwtToken, phone) => {
+        console.log('clearCart', cartId, jwtToken, phone);
         set({ loading: true, error: null });
         try {
           if (!jwtToken) {

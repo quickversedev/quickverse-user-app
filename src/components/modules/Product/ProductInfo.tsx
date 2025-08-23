@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
+import { cleanHtmlText } from '../../../utils/htmlUtils';
 import VegIcon from '../../common/VegIcon';
 
 interface Variant {
@@ -38,7 +39,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
 }) => {
   const { getColor, getTypography } = useTheme();
   const [isProductInfoExpanded, setIsProductInfoExpanded] = useState(false);
-  const [isAttributesExpanded, setIsAttributesExpanded] = useState(false);
+  const [isAttributesExpanded, setIsAttributesExpanded] = useState(true);
 
   const styles = StyleSheet.create({
     container: {
@@ -200,11 +201,14 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
 
   const renderAttributeRow = (label: string, value: string | number | null, isLast = false) => {
     if (value === null || value === undefined) return null;
+    const cleanValue = cleanHtmlText(value.toString());
+    console.log('cleanValue', cleanValue);
+    console.log('value', value);
     return (
       <View style={[styles.attributeRow, isLast && styles.lastAttributeRow]}>
         <Text style={styles.attributeLabel}>{label}</Text>
         <Text style={styles.attributeValue} numberOfLines={3}>
-          {value}
+          {cleanValue}
         </Text>
       </View>
     );
@@ -214,7 +218,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
     <View style={styles.container}>
       <View style={styles.productNameContainer}>
         <Text style={styles.productName}>{productName}</Text>
-        {veg !== undefined && <VegIcon veg={veg} size="small" />}
+        {veg !== undefined && <VegIcon veg={veg} size="regular" />}
       </View>
 
       {variants.length > 1 && (

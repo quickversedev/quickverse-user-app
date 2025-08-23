@@ -1,4 +1,4 @@
-import axiosInstance from '../config/api/axios.config';
+import axiosInstance, { apiCall } from '../config/api/axios.config';
 
 export interface CreateOrderRequest {
   shopId: number;
@@ -14,39 +14,30 @@ export interface CreateOrderRequest {
 
 export interface CreateOrderResponse {
   orderId: string;
-  customerId: number;
-  orderNote: string | null;
-  shopId: number;
+  customerId: string;
   totalOrderAmount: number;
-  totalDiscount: number;
-  refundStatus: string;
-  totalInvoiceAmount: number;
-  creationTime: number;
-  additionalPaymentCharges: number;
-  totalOrderAmountIncludingPaymentCharges: number;
-  totalInvoiceAmountIncludingPaymentCharges: number;
-  paymentMethod: string | null;
-  cancelReason: string | null;
-  state: string;
-  customerName: string | null;
-  customerMobileNumber: string | null;
-  customerDeliveryAddress: any;
-  customerNotificationDetails: any;
-  deliveryFees: number;
-  totalItemCount: number;
-  amountExcludingDeliveryFee: number;
-  fulfillmentOption: string;
-  selfDeliveryMode: string | null;
-  deliveryAgentName: string | null;
-  deliveryAgentMobileNumber: string | null;
-  deliveryPartnerName: string | null;
-  trackingId: string | null;
-  shippingDetails: any | null;
-  deliveryTime: number;
-  trackingUrl: string | null;
-  orderProcessingPlatform: string | null;
-  smartBizTotalDiscountValue: number;
-  platform: string | null;
+  orderStatus: string;
+  orderDate: string;
+  estimatedDeliveryTime: string;
+  deliveryAddress: {
+    addressLine1: string;
+    addressLine2: string;
+    city: string;
+    state: string;
+    postalCode: string;
+  };
+  items: Array<{
+    sku: string;
+    name: string;
+    quantity: number;
+    price: number;
+    totalPrice: number;
+  }>;
+  paymentDetails: {
+    method: string;
+    status: string;
+    amount: number;
+  };
   smartBizOffers: Array<{
     offerId: string;
     offerCode: string;
@@ -82,29 +73,27 @@ class OrderService {
     phone: string
   ): Promise<CreateOrderResponse> {
     try {
-      const response = await axiosInstance.post<CreateOrderResponse>(
-        '/v2/order/createOrder',
-        requestData,
-        {
+      const response = await apiCall(
+        axiosInstance.post<CreateOrderResponse>('/v2/order/createOrder', requestData, {
           headers: {
             SessionKey: sessionKey,
             Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
             phone: phone,
           },
-        }
+        })
       );
-      return response.data;
+      return response;
     } catch (error: unknown) {
-      if (error && typeof error === 'object' && 'response' in error) {
-        const errorData = (error as any).response?.data;
-        throw new Error(
-          errorData?.message || `Order creation failed: ${(error as any).response.status}`
-        );
-      } else if (error && typeof error === 'object' && 'request' in error) {
-        throw new Error('Network error: Unable to connect to server');
-      } else {
-        throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
-      }
+      console.error('Create Order Error:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        code: (error as any)?.code || 'UNKNOWN',
+        status: (error as any)?.status || 'UNKNOWN',
+        apiEndpoint: (error as any)?.apiEndpoint || 'Unknown',
+        requestData,
+        sessionKey: sessionKey ? '***' : 'MISSING',
+        phone: phone ? '***' : 'MISSING',
+      });
+      throw error;
     }
   }
 

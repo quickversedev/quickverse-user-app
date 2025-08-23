@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Icons } from '../../../assets';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import useFeaturedProducts from '../../../hooks/useFeaturedProducts';
 import { ProductVariant } from '../../../services/productDetailsService';
@@ -177,7 +176,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       backgroundColor: getColor('card'),
       borderRadius: 16,
       marginHorizontal: 16,
-      marginVertical: 8,
+      marginVertical: 16,
       padding: 16,
       shadowColor: getColor('shadow').color,
       shadowOffset: getColor('shadow').offset,
@@ -358,7 +357,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
         <View style={styles.vendorInfo}>
           <Text style={styles.vendorName}>{vendor.name}</Text>
           <View style={styles.vendorMeta}>
-            <Image source={Icons.lightning} />
+            <MaterialCommunityIcons name="flash" size={18} color={getColor('primary')} />
             <Text style={styles.deliveryTime}>30 mins</Text>
             <Text style={styles.location}>• {vendor.shopAddress?.city || 'Location'}</Text>
           </View>

@@ -133,6 +133,7 @@ export const apiCall = async <T>(promise: Promise<AxiosResponse<T>>): Promise<T>
     const response = await promise;
     return response.data;
   } catch (error) {
+    console.error('error', error);
     throw handleAxiosError(error as AxiosError);
   }
 };

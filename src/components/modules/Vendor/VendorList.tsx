@@ -30,7 +30,7 @@ const VendorList = () => {
       paddingHorizontal: 16,
     },
     separator: {
-      width: 12,
+      width: 20,
     },
   });
 

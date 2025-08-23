@@ -497,7 +497,7 @@ const AddressDetailsStep = ({
     },
     saveButtonText: {
       fontWeight: 'bold',
-      color: isFormValid() && !addingLoading ? getColor('white') : getColor('text'),
+      color: isFormValid() && !addingLoading ? getColor('background') : getColor('text'),
       fontSize: getTypography('body'),
       includeFontPadding: false,
       textAlignVertical: 'center',
@@ -802,7 +802,7 @@ const AddressDetailsStep = ({
           </View>
         )}
 
-        {renderInputRow('name', 'Name (Eg. Rahul Yadav)', 'phoneNumber', 'Phone Number', {
+        {renderInputRow('name', 'Name (Eg. John Wick)', 'phoneNumber', 'Phone Number', {
           required1: true,
           required2: true,
           keyboardType2: 'numeric',

@@ -197,7 +197,7 @@ const FoodContentComponent: React.FC<FoodContentProps> = ({
       }),
     [theme.colors.background, theme.colors.text, theme.colors.card, theme.colors.subText]
   );
-
+  console.log('foodVendors', foodVendors);
   return (
     <Animated.ScrollView
       style={styles.container}

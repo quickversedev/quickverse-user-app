@@ -191,7 +191,7 @@ const SearchScreen: React.FC = () => {
             )}
 
             {/* Trending Vendors Section - only show if no search query or no nearby stores */}
-            {(!searchQuery.trim() || nearbyStores.length === 0) && (
+            {(!searchQuery.trim() || nearbyStores.length === 0) && featuredVendors.length > 0 && (
               <View style={styles.trendingVendorsGrid}>
                 <SectionDivider
                   text="Featured Vendors"

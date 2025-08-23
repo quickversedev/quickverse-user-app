@@ -32,8 +32,8 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
           : size === 'small'
           ? getTypography('small')
           : getTypography('caption'),
-      minWidth: size === 'xs' ? 50 : size === 'small' ? 60 : 80,
-      height: size === 'xs' ? 24 : size === 'small' ? 28 : 36,
+      minWidth: size === 'xs' ? 60 : size === 'small' ? 70 : 80,
+      height: size === 'xs' ? 28 : size === 'small' ? 32 : 36,
       paddingHorizontal: 0,
       paddingVertical: 0,
       flexDirection: 'row',
@@ -55,7 +55,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       color: getColor('primary'),
       fontSize:
         size === 'xs'
-          ? getTypography('small') - 2
+          ? getTypography('small')
           : size === 'small'
           ? getTypography('small')
           : getTypography('caption'),

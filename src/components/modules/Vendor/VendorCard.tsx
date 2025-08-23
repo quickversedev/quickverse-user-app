@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Icons } from '../../../assets';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
@@ -138,6 +139,7 @@ const VendorCard: React.FC<VendorCardProps> = ({
 
   const bannerUri = getCleanImageUri(vendor.banner as string);
   const logoUri = getCleanImageUri(vendor.logo as string);
+
   const imageSource: ImageSourcePropType | undefined = bannerUri
     ? { uri: bannerUri }
     : logoUri
@@ -167,9 +169,9 @@ const VendorCard: React.FC<VendorCardProps> = ({
           <RatingBadge rating={vendor.rating || 0} size="small" />
         </View>
         <View style={styles.vendorMeta}>
-          <Image source={Icons.lightning} />
+          <MaterialCommunityIcons name="flash" size={18} color={getColor('primary')} />
           <Text style={styles.metaText} numberOfLines={1}>
-            30 mins • FC Road
+            {vendor.preparationTime || '30 mins'}
           </Text>
         </View>
       </View>

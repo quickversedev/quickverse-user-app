@@ -108,7 +108,6 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, st
               <MaterialCommunityIcons name="star" size={14} color="#fff" />
               {renderRating()}
             </View>
-            <Text style={styles.metaText}>(242+)</Text>
           </View>
         </View>
         <MaterialCommunityIcons name="chevron-right" size={28} color={getColor('primary')} />

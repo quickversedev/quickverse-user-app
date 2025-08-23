@@ -243,6 +243,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       left: 0,
       right: 0,
       height: MODAL_HEIGHT,
+      paddingBottom: 26,
       backgroundColor: getColor('background'),
       borderTopLeftRadius: theme.borderRadius.md,
       borderTopRightRadius: theme.borderRadius.md,

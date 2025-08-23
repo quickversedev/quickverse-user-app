@@ -52,8 +52,8 @@ const AddButton: React.FC<AddButtonProps> = ({
       borderWidth: 1,
       borderColor: getColor('primary'),
       borderRadius: theme.borderRadius.sm,
-      minWidth: size === 'xs' ? 40 : size === 'small' ? 40 : 60,
-      height: size === 'xs' ? 24 : size === 'small' ? 28 : 36,
+      minWidth: size === 'xs' ? 45 : size === 'small' ? 40 : 60,
+      height: size === 'xs' ? 28 : size === 'small' ? 32 : 36,
 
       flexDirection: 'row',
       alignItems: 'center',

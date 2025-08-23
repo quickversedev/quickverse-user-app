@@ -28,14 +28,14 @@ const CartHeader: React.FC<CartHeaderProps> = ({ onBack, onClearCart }) => {
     clearCartBtn: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#F6285F',
+      // backgroundColor: '#F6285F',
       borderRadius: theme.borderRadius.md,
       paddingHorizontal: 12,
       paddingVertical: 6,
       marginLeft: 'auto',
     },
     clearCartText: {
-      color: getColor('text'),
+      color: getColor('error'),
       marginLeft: 4,
       fontWeight: 'bold',
     },
@@ -57,7 +57,7 @@ const CartHeader: React.FC<CartHeaderProps> = ({ onBack, onClearCart }) => {
       <Text style={styles.headerTitle}>Cart</Text>
       <View style={{ flex: 1 }} />
       <TouchableOpacity style={styles.clearCartBtn} onPress={handleClearCartPress}>
-        <MaterialCommunityIcons name="close-circle" size={22} color={getColor('white')} />
+        <MaterialCommunityIcons name="close-circle" size={22} color={getColor('error')} />
         <Text style={styles.clearCartText}>Remove</Text>
       </TouchableOpacity>
     </View>

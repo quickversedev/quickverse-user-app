@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
-import { Icons } from '../../../assets';
+import { StyleSheet, Text, View } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
 
@@ -60,6 +60,9 @@ const VendorPill: React.FC<VendorPillProps> = ({ vendor }) => {
       height: 16,
       marginRight: 4,
     },
+    statIcon: {
+      marginRight: 4,
+    },
   });
 
   const preparationTime = useMemo(
@@ -73,8 +76,13 @@ const VendorPill: React.FC<VendorPillProps> = ({ vendor }) => {
         <Text style={styles.vendorPillTabText}>{vendor.name}</Text>
       </View>
       <View style={styles.deliveryBadgeBox}>
-        <Image source={Icons.lightning} style={styles.deliveryBadgeBoxIcon} />
-        <Text style={styles.deliveryBadgeBoxText}>{preparationTime} mins</Text>
+        <MaterialCommunityIcons
+          name="flash"
+          size={18}
+          color={getColor('primary')}
+          style={styles.statIcon}
+        />
+        <Text style={styles.deliveryBadgeBoxText}>{preparationTime}</Text>
       </View>
     </View>
   );
