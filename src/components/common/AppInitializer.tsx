@@ -80,7 +80,11 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   // Exclude addressLoading if we have cached addresses (non-blocking API call)
   const isLoading =
     vendorLoading || (!hasCachedAddresses && addressLoading) || configLoading || pagesLoading;
+  // console.log('isLoading', isLoading, vendorLoading, addressLoading, configLoading, pagesLoading);
+  // console.log('isInitialized', isInitialized);
   const error = vendorError;
+  // console.log('error', error);
+
   const { longitude: currentLongitude, latitude: currentLatitude } = locationData?.location || {};
   const permissionStatus = locationData?.permission;
   const initializeSelectedAddress = useCallback(async (): Promise<void> => {
@@ -88,6 +92,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       if (selectedAddress) {
         return;
       }
+
       const addresses: Address[] = useAddressStore.getState().addresses as unknown as Address[];
       if (permissionStatus === 'granted' && currentLatitude && currentLongitude) {
         if (addresses && addresses.length > 0) {
@@ -104,29 +109,55 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
             return;
           }
         }
-        const components = await getAddressFromCoordinates({
-          latitude: currentLatitude,
-          longitude: currentLongitude,
-        });
-        const currentAddress: Address = {
-          addressID: 'current-location',
-          name: components.postalCode,
-          phone: '',
-          city: components.city || '',
-          state: components.state || '',
-          tag: 'QV_Current_Location',
-          addressLine1: components.formatted_address || 'Current Location',
-          addressLine2: '',
-          addressLine3: '',
-          postalCode: components.postalCode || '',
-          coordinates: {
-            longitude: currentLongitude,
+
+        try {
+          const components = await getAddressFromCoordinates({
             latitude: currentLatitude,
-          },
-          isSavedAddress: false,
-        };
-        setSelectedAddress(currentAddress);
-        return;
+            longitude: currentLongitude,
+          });
+
+          const currentAddress: Address = {
+            addressID: 'current-location',
+            name: components.postalCode,
+            phone: '',
+            city: components.city || '',
+            state: components.state || '',
+            tag: 'QV_Current_Location',
+            addressLine1: components.formatted_address || 'Current Location',
+            addressLine2: '',
+            addressLine3: '',
+            postalCode: components.postalCode || '',
+            coordinates: {
+              longitude: currentLongitude,
+              latitude: currentLatitude,
+            },
+            isSavedAddress: false,
+          };
+          setSelectedAddress(currentAddress);
+          return;
+        } catch (geocodeError) {
+          console.warn('Failed to reverse geocode current location:', geocodeError);
+          // Fallback to a default address if geocoding fails
+          const fallbackAddress: Address = {
+            addressID: 'fallback-current-location',
+            name: 'Current Location',
+            phone: '',
+            city: 'unknown',
+            state: 'unknown',
+            tag: 'QV_Current_Location',
+            addressLine1: 'Current Location',
+            addressLine2: '',
+            addressLine3: '',
+            postalCode: '',
+            coordinates: {
+              longitude: currentLongitude,
+              latitude: currentLatitude,
+            },
+            isSavedAddress: false,
+          };
+          setSelectedAddress(fallbackAddress);
+          return;
+        }
       } else if (
         (!permissionStatus || permissionStatus !== 'granted') &&
         addresses &&

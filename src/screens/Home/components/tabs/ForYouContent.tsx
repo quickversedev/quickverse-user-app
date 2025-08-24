@@ -58,7 +58,7 @@ const ForYouContentComponent: React.FC<ForYouContentProps> = ({
     >
       {bannerData?.length > 0 && <AutoScrollBanner bannerData={bannerData} />}
 
-      <SectionDivider text="RESTAURANTS" fontSize={16} style={{ marginVertical: 12 }} />
+      <SectionDivider text="Shops" fontSize={16} style={{ marginVertical: 12 }} />
       <VendorList />
       {/* <BadgeTagDemo /> */}
       <SectionDivider text="BESTSELLERS" fontSize={16} style={{ marginVertical: 12 }} />

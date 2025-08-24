@@ -11,7 +11,6 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import CategoryLogo from '../../../../components/common/CategoryLogo';
 import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
 import VendorCard from '../../../../components/modules/Vendor/VendorCard';
 import VendorEmptyState from '../../../../components/modules/Vendor/VendorEmptyState';
@@ -62,6 +61,7 @@ const GroceryContentComponent: React.FC<GroceryContentProps> = ({
         container: {
           flex: 1,
           backgroundColor: theme.colors.background,
+          paddingVertical: 25,
           marginBottom: 100,
         },
         header: {
@@ -218,11 +218,11 @@ const GroceryContentComponent: React.FC<GroceryContentProps> = ({
       {hasVendors ? (
         <>
           {/* Header */}
-          <View style={styles.header}>
+          {/* <View style={styles.header}>
             <View style={styles.logoContainer}>
               <CategoryLogo category="Grocery" style={styles.logo} resizeMode="cover" />
             </View>
-          </View>
+          </View> */}
 
           {/* Promotional Banner */}
           {hasPromotions && <AutoScrollBanner bannerData={bannerData} />}

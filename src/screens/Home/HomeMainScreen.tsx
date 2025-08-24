@@ -2,6 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Platform, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
+
 import VendorLocationEmptyState from '../../components/common/VendorLocationEmptyState';
 import { AddressSelectionModal } from '../../components/modules/Header/AddressSelectionModal';
 import { Header } from '../../components/modules/Header/Header';
@@ -125,6 +126,7 @@ const HomeMainScreen = React.memo(() => {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <Header translateY={translateY} hiddenSectionsOpacity={opacity} />
+        {/* OrderProgressBar moved inside FloatingCartsStack */}
         <View style={styles.content}>{renderContent()}</View>
       </View>
 

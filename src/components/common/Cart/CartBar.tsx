@@ -57,6 +57,7 @@ const CartBar: React.FC<CartBarProps> = ({
         cartBar: {
           flexDirection: 'row',
           alignItems: 'center',
+          justifyContent: 'space-between',
           paddingVertical: 12,
           paddingHorizontal: 18,
           width: width - 30,
@@ -229,33 +230,35 @@ const CartBar: React.FC<CartBarProps> = ({
               style={styles.cartIcon}
             />
             <View style={dynamicStyles.divider} />
-            <Text
-              style={[
-                styles.cartText,
-                { fontSize: getTypography('subtitle'), color: getColor('background') },
-              ]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {vendorName}
-            </Text>
-            <View style={styles.flexSpacer} />
-            <Text
-              style={[
-                styles.itemCount,
-                { color: getColor('background'), fontSize: getTypography('body') },
-              ]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {itemCount} Item{itemCount > 1 ? 's' : ''}
-            </Text>
-            <MaterialCommunityIcons
-              name="chevron-right"
-              size={22}
-              color={getColor('background')}
-              style={styles.chevronIcon}
-            />
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+              <Text
+                style={[
+                  styles.cartText,
+                  { fontSize: getTypography('subtitle'), color: getColor('background') },
+                ]}
+                numberOfLines={1}
+                // ellipsizeMode="tail"
+              >
+                {vendorName}
+              </Text>
+              <View style={styles.flexSpacer} />
+              <Text
+                style={[
+                  styles.itemCount,
+                  { color: getColor('background'), fontSize: getTypography('body') },
+                ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {itemCount} Item{itemCount > 1 ? 's' : ''}
+              </Text>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={22}
+                color={getColor('background')}
+                style={styles.chevronIcon}
+              />
+            </View>
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
@@ -273,7 +276,7 @@ const styles = StyleSheet.create({
   cartText: {
     fontWeight: 'bold',
     letterSpacing: 0.1,
-    flex: 1,
+    // flex: 1,
     // marginRight: 8,
   },
   itemCount: {

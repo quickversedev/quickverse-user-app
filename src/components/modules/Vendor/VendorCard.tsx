@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Icons } from '../../../assets';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
 import { getCleanImageUri } from '../../../utils/imageUtils';
@@ -112,7 +111,7 @@ const VendorCard: React.FC<VendorCardProps> = ({
       position: 'absolute',
       top: size === 'small' ? 4 : 8,
       right: size === 'small' ? 4 : 8,
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      // backgroundColor: 'rgba(255, 255, 255, 0.9)',
       borderRadius: size === 'small' ? 8 : 12,
       padding: size === 'small' ? 2 : 4,
       zIndex: 20,
@@ -158,7 +157,11 @@ const VendorCard: React.FC<VendorCardProps> = ({
         )}
         {imageSource && <Image source={imageSource} style={styles.vendorImage} />}
         <TouchableOpacity style={styles.favoriteButton} onPress={() => onFavoritePress?.(vendor)}>
-          <Image source={Icons.heart} style={{ width: 20, height: 20 }} />
+          <MaterialCommunityIcons
+            name={_isFavorite ? 'heart' : 'heart-outline'}
+            size={20}
+            color={_isFavorite ? _favoriteColor : getColor('error')}
+          />
         </TouchableOpacity>
       </View>
       <View style={styles.vendorInfo}>

@@ -76,6 +76,13 @@ const SearchScreen: React.FC = () => {
     addSearch(searchText);
   };
 
+  const handleSearchSubmit = async () => {
+    if (searchQuery.trim()) {
+      await searchOnSuggestionSelect(searchQuery.trim());
+      addSearch(searchQuery.trim());
+    }
+  };
+
   const handleVendorPress = (vendor: Vendor) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (navigation as any).navigate('VendorProduct', { vendor });
@@ -112,6 +119,7 @@ const SearchScreen: React.FC = () => {
         onSearchChange={handleSearchChange}
         onSuggestionPress={handleSearchPress}
         onClearSearch={handleClearSearch}
+        onSubmitEditing={handleSearchSubmit}
       />
 
       <ScrollView

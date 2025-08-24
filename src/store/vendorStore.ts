@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { mockVendors } from '../assets/mock/vendor';
 import axiosInstance from '../config/api/axios.config';
 import { LocationFilter, Vendor, VendorFilters, VendorStore } from '../types/vendor';
-import { getStoreStatus } from '../utils/storeUtils';
+import { isStoreOpen } from '../utils/storeUtils';
 
 // Request debouncing mechanism
 let currentRequestId = 0;
@@ -26,12 +26,24 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 };
 
-// Helper function to sort vendors by active status
+// Helper function to sort vendors by store open status
 const sortVendorsByActiveStatus = (vendors: Vendor[]): Vendor[] => {
   return vendors.sort((a, b) => {
-    // Active vendors first, then inactive
-    if (a.storeActive && !b.storeActive) return -1;
-    if (!a.storeActive && b.storeActive) return 1;
+    // Check if stores are actually open using store hours
+    const storeAStatus = isStoreOpen({
+      openingTime: a.openingTime,
+      closingTime: a.closingTime,
+      storeActive: a.storeActive,
+    });
+    const storeBStatus = isStoreOpen({
+      openingTime: b.openingTime,
+      closingTime: b.closingTime,
+      storeActive: b.storeActive,
+    });
+
+    // Open stores first, then closed stores
+    if (storeAStatus.isOpen && !storeBStatus.isOpen) return -1;
+    if (!storeAStatus.isOpen && storeBStatus.isOpen) return 1;
     return 0;
   });
 };
@@ -51,7 +63,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
     if (pendingRequest) {
       pendingRequest.abort();
     }
-
+    console.log('fetchVendors', location);
     // Create new request ID and abort controller
     const requestId = ++currentRequestId;
     const abortController = new AbortController();
@@ -87,7 +99,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         },
         signal: abortController.signal,
       });
-
+      console.log('response vendors', response.data);
       // Only update state if this is still the current request
       if (requestId === currentRequestId) {
         const sortedVendors = sortVendorsByActiveStatus(response.data);
@@ -158,7 +170,11 @@ const useVendorStore = create<VendorStore>((set, get) => ({
   getActiveVendors: () => {
     const { vendors } = get();
     return vendors.filter(vendor => {
-      const storeStatus = getStoreStatus(vendor);
+      const storeStatus = isStoreOpen({
+        openingTime: vendor.openingTime,
+        closingTime: vendor.closingTime,
+        storeActive: vendor.storeActive,
+      });
       return storeStatus.isOpen && vendor.storeEnabled;
     });
   },

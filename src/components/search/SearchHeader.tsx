@@ -17,6 +17,7 @@ interface SearchHeaderProps {
   onSearchChange: (text: string) => void;
   onSuggestionPress?: (suggestion: string) => void;
   onClearSearch?: () => void;
+  onSubmitEditing?: () => void;
   placeholder?: string;
 }
 
@@ -25,6 +26,7 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
   onSearchChange,
   onSuggestionPress,
   onClearSearch,
+  onSubmitEditing,
   placeholder = 'Search for vendors and products...',
 }) => {
   const { getColor, getTypography } = useTheme();
@@ -162,6 +164,8 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
             onChangeText={handleChangeText}
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
+            onSubmitEditing={onSubmitEditing}
+            returnKeyType="search"
             ref={searchInputRef}
           />
           {searchQuery.length > 0 && (

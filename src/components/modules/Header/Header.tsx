@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   hiddenSections: {
-    paddingHorizontal: 16,
+    // paddingHorizontal: 16,
   },
   visibleSections: {
     width: '100%',
@@ -115,6 +115,7 @@ const styles = StyleSheet.create({
       ios: 2,
       android: 0,
     }),
+    paddingHorizontal: 16,
   },
   searchSection: {
     width: '100%',
@@ -126,7 +127,7 @@ const styles = StyleSheet.create({
       ios: 150,
       android: 130,
     }),
-    marginHorizontal: -16,
+    paddingHorizontal: -16,
     overflow: 'hidden',
   },
   logo: {

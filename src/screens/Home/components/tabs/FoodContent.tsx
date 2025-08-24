@@ -11,7 +11,6 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import CategoryLogo from '../../../../components/common/CategoryLogo';
 import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
 import VendorCard from '../../../../components/modules/Vendor/VendorCard';
 import VendorEmptyState from '../../../../components/modules/Vendor/VendorEmptyState';
@@ -62,11 +61,12 @@ const FoodContentComponent: React.FC<FoodContentProps> = ({
         container: {
           flex: 1,
           backgroundColor: theme.colors.background,
+          paddingVertical: 25,
         },
         header: {
           marginTop: 30,
           alignItems: 'center',
-          paddingVertical: 20,
+
           paddingHorizontal: 16,
         },
         title: {
@@ -197,7 +197,7 @@ const FoodContentComponent: React.FC<FoodContentProps> = ({
       }),
     [theme.colors.background, theme.colors.text, theme.colors.card, theme.colors.subText]
   );
-  console.log('foodVendors', foodVendors);
+
   return (
     <Animated.ScrollView
       style={styles.container}
@@ -209,11 +209,11 @@ const FoodContentComponent: React.FC<FoodContentProps> = ({
       {hasVendors ? (
         <>
           {/* Header */}
-          <View style={styles.header}>
+          {/* <View style={styles.header}>
             <View style={styles.logoContainer}>
               <CategoryLogo category="Food" style={styles.logo} resizeMode="cover" />
             </View>
-          </View>
+          </View> */}
 
           {/* Promotional Banner */}
           {hasPromotions && <AutoScrollBanner bannerData={bannerData} />}

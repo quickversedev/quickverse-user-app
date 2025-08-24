@@ -118,8 +118,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 12,
+    borderTopWidth: 0.2,
     borderWidth: 1,
-    borderBottomWidth: 2,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderLeftWidth: 1.5,
+
+    // borderStartWidth: 0.5,
     shadowOffset: {
       width: 0,
       height: 0,

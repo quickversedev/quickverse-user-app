@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import useCartStore from '../../../store/cart/cartStore';
+import useOrderStore from '../../../store/cart/orderStore';
 import { useTheme } from '../../../theme/ThemeContext';
+import OrderProgressBar from '../order/OrderProgressBar';
 import CartBar from './CartBar';
 
 const { width } = Dimensions.get('window');
@@ -14,6 +16,9 @@ const FloatingCartsStack: React.FC = () => {
   const activeCartId = useCartStore(state => state.activeCartId);
   const [expanded, setExpanded] = useState(false);
   const { getColor, theme } = useTheme();
+  const hasInProgressOrder = useOrderStore(state =>
+    state.orders.some(o => o.status !== 'delivered' && o.status !== 'cancelled')
+  );
 
   // Sort carts: most recently active at the top
   const sortedCarts = [...allCarts].sort((a, b) => {
@@ -93,7 +98,8 @@ const FloatingCartsStack: React.FC = () => {
     [theme, getColor]
   );
 
-  if (allCarts.length === 0) return null;
+  // Only hide if there are no carts AND no in-progress order to show
+  if (allCarts.length === 0 && !hasInProgressOrder) return null;
 
   // Show a hint of the next cart behind the first when collapsed
   const showSecondCartBehind = !expanded && sortedCarts.length > 1;
@@ -109,6 +115,10 @@ const FloatingCartsStack: React.FC = () => {
         />
       )}
       <View style={styles.container} pointerEvents="box-none">
+        {/* Always show the in-progress order bar above cart bars */}
+        <View style={[styles.cartBarWrapper, dynamicStyles.cartBarWrapperMain]}>
+          <OrderProgressBar />
+        </View>
         {showExpandCollapse && (
           <TouchableOpacity
             style={styles.toggleBarWrapper}
