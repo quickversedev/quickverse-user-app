@@ -1,9 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import OrderList from '../../../components/common/order/OrderList';
-import { useOrders } from '../../../hooks/useOrders';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AppNavigationProp } from '../../../types/navigation';
 import { Order } from '../../../types/order';
@@ -11,12 +10,8 @@ import { Order } from '../../../types/order';
 const OrdersScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const { getColor, getTypography } = useTheme();
-  const { loadOrders } = useOrders();
 
-  // Load orders when screen mounts
-  useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
+  // Initial load handled inside OrderList via its own hook
 
   const handleOrderPress = useCallback(
     (order: Order) => {
