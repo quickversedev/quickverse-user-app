@@ -1,5 +1,14 @@
+import Clipboard from '@react-native-clipboard/clipboard';
 import React from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Platform,
+  StyleSheet,
+  Text,
+  ToastAndroid,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
 
@@ -11,6 +20,19 @@ interface OrderHeaderProps {
 const OrderHeader: React.FC<OrderHeaderProps> = ({ orderId, onBackPress }) => {
   const { getColor, getTypography } = useTheme();
 
+  const handleCopyOrderId = () => {
+    try {
+      Clipboard.setString(orderId);
+      if (Platform.OS === 'android') {
+        ToastAndroid.show('Order ID copied', ToastAndroid.SHORT);
+      } else {
+        Alert.alert('Copied', 'Order ID copied to clipboard');
+      }
+    } catch (_) {
+      // no-op
+    }
+  };
+
   return (
     <View style={[styles.header, { backgroundColor: getColor('background') }]}>
       <TouchableOpacity
@@ -20,18 +42,29 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({ orderId, onBackPress }) => {
       >
         <Icon name="arrow-left" size={24} color={getColor('text')} />
       </TouchableOpacity>
-      <Text
-        style={[
-          styles.headerTitle,
-          {
-            color: getColor('text'),
-            fontSize: getTypography('subtitle'),
-            fontFamily: 'BricolageGrotesque-Regular',
-          },
-        ]}
-      >
-        Order: #{orderId}
-      </Text>
+      <View style={styles.titleRow}>
+        <Text
+          style={[
+            styles.headerTitle,
+            {
+              color: getColor('text'),
+              fontSize: getTypography('subtitle'),
+              fontFamily: 'BricolageGrotesque-Regular',
+            },
+          ]}
+        >
+          Order: #{orderId}
+        </Text>
+        <TouchableOpacity
+          style={styles.inlineCopyButton}
+          onPress={handleCopyOrderId}
+          activeOpacity={0.6}
+          accessibilityRole="button"
+          accessibilityLabel="Copy Order ID"
+        >
+          <Icon name="content-copy" size={16} color={getColor('text')} />
+        </TouchableOpacity>
+      </View>
       <View style={styles.placeholder} />
     </View>
   );
@@ -68,8 +101,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   placeholder: {
     width: 40,
+  },
+  inlineCopyButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
 });
 

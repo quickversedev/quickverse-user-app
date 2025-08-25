@@ -10,6 +10,8 @@ import {
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useAuth } from '../../contexts/login/AuthProvider';
+import supportService from '../../services/supportService';
 import { useTheme } from '../../theme/ThemeContext';
 
 interface RaiseQueryModalProps {
@@ -46,6 +48,7 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
   orderStatus,
 }) => {
   const { getColor, getTypography } = useTheme();
+  const { authData } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<IssueCategory | null>(null);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [description, setDescription] = useState('');
@@ -92,17 +95,22 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
       return;
     }
 
+    if (!authData?.jwt || !authData?.phone) {
+      Alert.alert('Error', 'You must be logged in to submit a query.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // TODO: Implement API call to submit the query
-      // console.log('Submitting query:', {
-      //   orderId,
-      //   category: selectedCategory,
-      //   description: description.trim(),
-      // });
+      // Build payload
+      const payload = {
+        orderId,
+        subject: `Order ${orderId} - ${selectedCategory.label}`,
+        body: description.trim(),
+      };
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call support service
+      await supportService.sendSupportEmail(authData.jwt, authData.phone, payload);
 
       Alert.alert(
         'Success',
@@ -123,8 +131,7 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
     setIsSubmitting(false);
     onClose();
   };
-  console.log('theme', theme);
-  console.log('getColor', getColor('background'));
+  // Removed undefined 'theme' reference and debug log
   const styles = StyleSheet.create({
     modalOverlay: {
       flex: 1,
@@ -316,13 +323,7 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
   });
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={handleClose}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           {/* Header with order info */}
