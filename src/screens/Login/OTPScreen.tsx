@@ -157,12 +157,12 @@ const OTPScreen: React.FC = () => {
     },
     subtitle: {
       textAlign: 'center',
-      marginTop: 5,
-      marginBottom: 16,
+      marginTop: 8,
+      marginBottom: 20,
     },
     codeFieldRoot: {
-      marginTop: '12%',
-      marginBottom: '5%',
+      marginTop: 24,
+      marginBottom: 16,
       justifyContent: 'space-between',
       flexDirection: 'row',
     },
@@ -196,7 +196,7 @@ const OTPScreen: React.FC = () => {
       backgroundColor: theme.colors.secondary,
       borderRadius: 8,
       paddingVertical: 14,
-      marginTop: 'auto',
+      marginTop: 24,
     },
     otpText: {
       textAlign: 'center',
@@ -206,7 +206,7 @@ const OTPScreen: React.FC = () => {
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      marginTop: 16,
+      marginTop: 12,
     },
     resendText: {
       marginRight: 4,

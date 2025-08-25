@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import CountryPicker, { Country, CountryCode } from 'react-native-country-picker-modal';
 import { Images } from '../../assets';
@@ -33,6 +33,11 @@ const LoginScreen: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [lastRequestedPhone, setLastRequestedPhone] = useState('');
+  const [lastRequestTime, setLastRequestTime] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [lastVerificationId, setLastVerificationId] = useState<string | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const { theme } = useTheme();
 
   const onSelect = (country: Country) => {
@@ -56,15 +61,102 @@ const LoginScreen: React.FC = () => {
     setError('');
   };
 
+  // Timer effect to countdown the cooldown period
+  useEffect(() => {
+    if (timeRemaining > 0) {
+      timerRef.current = setTimeout(() => {
+        setTimeRemaining(prev => prev - 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [timeRemaining]);
+
+  // Cleanup timer on component unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  // Handle screen focus to check if timer should still be active
+  useFocusEffect(
+    React.useCallback(() => {
+      // When screen comes into focus, check if we need to update the timer
+      if (lastRequestedPhone && lastRequestTime > 0) {
+        const now = Date.now();
+        const thirtySeconds = 30 * 1000;
+        const timeElapsed = now - lastRequestTime;
+
+        if (timeElapsed < thirtySeconds) {
+          // Timer should still be running
+          const remaining = Math.ceil((thirtySeconds - timeElapsed) / 1000);
+          setTimeRemaining(remaining);
+        } else {
+          // Timer has expired
+          setTimeRemaining(0);
+        }
+      }
+    }, [lastRequestedPhone, lastRequestTime])
+  );
+
+  // Check if we can request OTP for the current phone number
+  const canRequestOtp = () => {
+    const now = Date.now();
+    const thirtySeconds = 30 * 1000; // 30 seconds in milliseconds
+
+    // If it's a different phone number, allow request
+    if (phoneNumber !== lastRequestedPhone) {
+      return true;
+    }
+
+    // If it's the same phone number, check if 30 seconds have passed
+    return now - lastRequestTime >= thirtySeconds;
+  };
+
+  const getTimeRemainingText = () => {
+    if (timeRemaining <= 0) return '';
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    return `Resend OTP in ${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   const handleLogin = async () => {
     if (!validatePhoneNumber(phoneNumber)) {
       setError('Please enter a valid 10-digit phone number');
       return;
     }
 
+    // If the same number is within cooldown, navigate without requesting a new OTP
+    if (isCooldownActive && lastVerificationId) {
+      navigation.navigate({
+        name: 'OTPScreen',
+        params: { phoneNumber, verificationId: lastVerificationId },
+      });
+      return;
+    }
+
     setLoading(true);
+    setError('');
     try {
       const verificationId = await auth.sendOtp(phoneNumber);
+
+      // Update the last requested phone and time
+      setLastRequestedPhone(phoneNumber);
+      setLastRequestTime(Date.now());
+      setTimeRemaining(30); // Start 30 second countdown
+      setLastVerificationId(verificationId);
 
       navigation.navigate({
         name: 'OTPScreen',
@@ -175,6 +267,10 @@ const LoginScreen: React.FC = () => {
       marginTop: 4,
       marginBottom: 8,
     },
+    countdownText: {
+      marginTop: 4,
+      marginBottom: 8,
+    },
     otpButton: {
       backgroundColor: theme.colors.secondary,
       borderRadius: 8,
@@ -190,6 +286,7 @@ const LoginScreen: React.FC = () => {
     },
   });
 
+  const isCooldownActive = timeRemaining > 0 && phoneNumber === lastRequestedPhone;
   const isButtonDisabled = loading || !phoneNumber || phoneNumber.length !== 10;
 
   return (
@@ -248,6 +345,12 @@ const LoginScreen: React.FC = () => {
               {error}
             </ThemeText>
           ) : null}
+
+          {isCooldownActive && (
+            <ThemeText variant="caption" color={theme.colors.subText} style={styles.countdownText}>
+              {getTimeRemainingText()}
+            </ThemeText>
+          )}
 
           <TouchableOpacity
             style={[
