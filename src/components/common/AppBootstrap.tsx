@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { AppStack } from '../../routes/AppStack';
 
+import { useNotifications } from '../../hooks';
 import { PermissionAndLocation, useLocation } from '../../hooks/Permissions/useLocation';
 import { useDeviceInfo } from '../../hooks/useDeviceInfo';
 import Registration from '../../screens/login/Registration';
@@ -32,15 +33,30 @@ const AppBootstrap: React.FC = () => {
   const { setPermissionDataInAuth } = useAuth();
   const [bootError, setBootError] = useState<string | null>(null);
   const { updateDeviceInfo } = useDeviceInfo();
+  const { getFCMToken, setupNotifications } = useNotifications();
+  const [notificationCleanup, setNotificationCleanup] = useState<(() => void) | null>(null);
+
   const bootstrap = async () => {
+    const fcmTOken = await getFCMToken();
+    console.log('fcm token ', fcmTOken);
+
     setBootLoading(true);
     setBootError(null);
-    console.log('bootstrap', authData?.jwt);
     try {
       const result = await getPermissionAndLocation();
-
+      await getFCMToken();
       setLocalPermissionData(result as PermissionAndLocation);
       setPermissionDataInAuth(result as PermissionAndLocation);
+
+      // Setup notifications
+      try {
+        const cleanup = await setupNotifications();
+        if (cleanup) {
+          setNotificationCleanup(() => cleanup);
+        }
+      } catch (error) {
+        console.warn('Failed to setup notifications during bootstrap:', error);
+      }
 
       // Update device info non-blocking after bootstrap completes
       if (!isNewUser && authData?.jwt) {
@@ -61,6 +77,15 @@ const AppBootstrap: React.FC = () => {
   useEffect(() => {
     bootstrap();
   }, []);
+
+  // Cleanup notifications on unmount
+  useEffect(() => {
+    return () => {
+      if (notificationCleanup) {
+        notificationCleanup();
+      }
+    };
+  }, [notificationCleanup]);
   // CASE 1: New user - show registration
   if (isNewUser) {
     return (

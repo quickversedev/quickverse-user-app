@@ -268,13 +268,13 @@ const VendorProfileComponent: React.FC = () => {
         },
         statLabel: {
           color: getColor('subText'),
-          fontSize: getTypography('body'),
+          fontSize: getTypography('body') - 2,
           fontWeight: 'bold',
           marginTop: 2,
         },
         statValue: {
           color: getColor('text'),
-          fontSize: getTypography('caption'),
+          fontSize: getTypography('caption') - 2,
           marginTop: 2,
         },
         offersRow: {

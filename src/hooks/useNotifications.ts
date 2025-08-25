@@ -15,10 +15,50 @@ import {
 import { useCallback } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
 
+// Import the logo for notifications
+const notificationLogo = Platform.OS === 'ios' ? 'logo_qv' : 'logo_qv';
+
+// Helper function to get notification icon based on type
+const getNotificationIcon = (type?: string) => {
+  switch (type) {
+    case 'order':
+      return 'ic_launcher'; // Use default icon for order notifications
+    case 'promo':
+      return notificationLogo; // Use app logo for promotional notifications
+    case 'alert':
+      return 'ic_launcher'; // Use default icon for alerts
+    default:
+      return notificationLogo; // Use app logo as default
+  }
+};
+
+// Helper function to determine notification type from message data
+const getNotificationTypeFromData = (data?: { [key: string]: string | object }) => {
+  if (!data) return 'default';
+
+  // Check for order-related data
+  if (data.orderId || data.order_id || data.orderStatus || data.order_status) {
+    return 'order';
+  }
+
+  // Check for promotional data
+  if (data.promo || data.promotion || data.offer || data.discount) {
+    return 'promo';
+  }
+
+  // Check for alert data
+  if (data.alert || data.urgent || data.emergency) {
+    return 'alert';
+  }
+
+  return 'default';
+};
+
 interface NotificationPayload {
   title?: string;
   body?: string;
   data?: { [key: string]: string | object };
+  type?: 'default' | 'order' | 'promo' | 'alert';
 }
 
 // Custom error types for better error handling
@@ -68,6 +108,8 @@ export const useNotifications = () => {
         name: 'Default Channel',
         importance: AndroidImportance.HIGH,
         visibility: AndroidVisibility.PUBLIC,
+        sound: 'default',
+        vibration: true,
       });
     } catch (error) {
       throw new NotificationError(
@@ -77,6 +119,12 @@ export const useNotifications = () => {
     }
   };
 
+  /**
+   * Display a notification with app logo
+   * @param payload - Notification payload with title, body, data, and optional type
+   * @param payload.type - Optional notification type: 'default' | 'order' | 'promo' | 'alert'
+   *                       Different types use different icons (app logo vs default icon)
+   */
   const displayNotification = async (payload: NotificationPayload) => {
     try {
       // Validate payload
@@ -109,6 +157,16 @@ export const useNotifications = () => {
           pressAction: {
             id: 'default',
           },
+          largeIcon: getNotificationIcon(payload.type), // Use appropriate icon based on type
+          smallIcon: 'logo_qv', // Use the default launcher icon as small icon
+        },
+        ios: {
+          attachments: [
+            {
+              url: notificationLogo, // iOS will look for this in the app bundle
+              thumbnailHidden: false,
+            },
+          ],
         },
       });
     } catch (error) {
@@ -131,22 +189,28 @@ export const useNotifications = () => {
       }
 
       if (Platform.OS === 'android') {
-        const hasPermission = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
-        );
-
-        if (hasPermission === PermissionsAndroid.RESULTS.DENIED) {
-          throw new PermissionError('Notification permission denied', 'PERMISSION_DENIED');
-        }
-
-        if (hasPermission === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
-          throw new PermissionError(
-            'Notification permission permanently denied',
-            'PERMISSION_BLOCKED'
+        // On Android 13+ (API 33), POST_NOTIFICATIONS runtime permission is required
+        if (typeof Platform.Version === 'number' && Platform.Version >= 33) {
+          const hasPermission = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
           );
+
+          if (hasPermission === PermissionsAndroid.RESULTS.DENIED) {
+            throw new PermissionError('Notification permission denied', 'PERMISSION_DENIED');
+          }
+
+          if (hasPermission === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+            throw new PermissionError(
+              'Notification permission permanently denied',
+              'PERMISSION_BLOCKED'
+            );
+          }
+
+          return hasPermission === PermissionsAndroid.RESULTS.GRANTED;
         }
 
-        return hasPermission === PermissionsAndroid.RESULTS.GRANTED;
+        // On Android 12 and below, no runtime permission is required for notifications
+        return true;
       }
 
       throw new PermissionError('Unsupported platform for notifications', 'PLATFORM_UNSUPPORTED');
@@ -172,10 +236,12 @@ export const useNotifications = () => {
             throw new MessagingError('Received empty message in foreground', 'EMPTY_MESSAGE');
           }
 
+          const notificationType = getNotificationTypeFromData(remoteMessage.data);
           await displayNotification({
             title: remoteMessage.notification?.title,
             body: remoteMessage.notification?.body,
             data: remoteMessage.data || {},
+            type: notificationType, // Use appropriate type based on message data
           });
         } catch (error) {
           handleError(error, 'Foreground message handling failed');
@@ -197,6 +263,8 @@ export const useNotifications = () => {
         );
       }
 
+      // Use Notifee to display background notifications with custom logo
+      // Avoid duplicates by skipping when Android system already shows notification payload
       messaging.setBackgroundMessageHandler(
         async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
           try {
@@ -204,11 +272,24 @@ export const useNotifications = () => {
               throw new MessagingError('Received empty message in background', 'EMPTY_MESSAGE');
             }
 
-            if (Platform.OS === 'ios') {
+            // If Android notification payload exists, let the system render it (prevents duplicates)
+            if (Platform.OS === 'android' && remoteMessage.notification) {
+              return;
+            }
+
+            // For data-only messages: render with Notifee (ensures logo + theming)
+            const notificationType = getNotificationTypeFromData(remoteMessage.data);
+            const data = (remoteMessage.data || {}) as { [key: string]: string };
+            const title = (remoteMessage.notification?.title || data.title) as string | undefined;
+            const body = (remoteMessage.notification?.body || data.body) as string | undefined;
+
+            // Only display if we have any visible content
+            if (title || body) {
               await displayNotification({
-                title: remoteMessage.notification?.title,
-                body: remoteMessage.notification?.body,
-                data: remoteMessage.data || {},
+                title,
+                body,
+                data,
+                type: notificationType,
               });
             }
           } catch (error) {
@@ -239,6 +320,7 @@ export const useNotifications = () => {
               'EMPTY_MESSAGE'
             );
           }
+
           // Implement navigation logic here
         } catch (error) {
           handleError(error, 'Notification open handling failed');
@@ -278,6 +360,8 @@ export const useNotifications = () => {
           }
 
           if (type === EventType.PRESS && detail?.notification) {
+            // Handle notification press with logo support
+            // The notification already has the logo from when it was created
             // Implement navigation logic here
           }
         } catch (error) {

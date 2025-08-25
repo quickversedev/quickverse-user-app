@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -386,7 +387,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       visible={visible}
       transparent
       animationType="slide"
-      presentationStyle={isSmallScreen ? 'pageSheet' : 'formSheet'}
+      presentationStyle={
+        Platform.OS === 'ios' ? (isSmallScreen ? 'pageSheet' : 'formSheet') : undefined
+      }
       hardwareAccelerated={true}
       statusBarTranslucent={true}
       onRequestClose={onClose}

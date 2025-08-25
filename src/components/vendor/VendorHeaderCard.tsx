@@ -33,7 +33,7 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, st
     logo: {
       width: 48,
       height: 48,
-      borderRadius: theme.borderRadius.full,
+      borderRadius: theme.borderRadius.max,
       marginRight: 12,
       backgroundColor: getColor('border'),
     },
