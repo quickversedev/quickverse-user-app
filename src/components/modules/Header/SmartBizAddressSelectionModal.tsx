@@ -143,7 +143,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       paddingHorizontal: 20,
     },
     sectionDividerContainer: {
-      marginVertical: 16,
+      marginTop: 16,
     },
     addressesContainer: {
       flex: 1,
@@ -301,13 +301,15 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
         </View>
 
         <View style={themedStyles.addressDetails}>
-          <Text style={themedStyles.addressLine}>{address.address.addressLine1}</Text>
-          {address.address.addressLine2 && (
-            <Text style={themedStyles.addressLine}>{address.address.addressLine2}</Text>
-          )}
-          {address.address.addressLine3 && (
-            <Text style={themedStyles.addressLine}>{address.address.addressLine3}</Text>
-          )}
+          <Text style={themedStyles.addressLine} numberOfLines={3}>
+            {[
+              address.address.addressLine1,
+              address.address.addressLine2,
+              address.address.addressLine3,
+            ]
+              .filter(Boolean)
+              .join(', ')}
+          </Text>
           <Text style={themedStyles.addressLocation}>
             {address.address.city}, {address.address.state} - {address.address.pincode}
           </Text>
