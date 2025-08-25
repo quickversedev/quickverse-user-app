@@ -48,7 +48,7 @@ export const LocationSelector = () => {
 
   const getDisplayName = () => {
     const username = authData?.username;
-    console.log('username', username);
+
     if (username && username.trim().length > 0) {
       return `Hey, ${username.split(' ')[0]}`;
     }

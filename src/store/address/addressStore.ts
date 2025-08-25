@@ -31,14 +31,12 @@ const useAddressStore = create<AddressStore>((set, get) => ({
       if (!authSession?.jwt) {
         throw new Error('Authentication required. Please login again.');
       }
-      console.log('fetchAddresses', authSession);
       const response = await axiosInstance.get('/v2/addresses', {
         headers: {
           SessionKey: authSession.jwt,
           phone: authSession.phone,
         },
       });
-      console.log('fetchAddresses response', response);
       const addresses = response.data || [];
 
       // Add isSavedAddress: true to each address

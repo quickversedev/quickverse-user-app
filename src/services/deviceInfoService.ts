@@ -80,6 +80,7 @@ class DeviceInfoService {
   async updateDeviceInfo(
     sessionKey: string,
     fcmToken: string,
+    phone: string,
     longitude?: number,
     latitude?: number
   ): Promise<DeviceInfoResponse> {
@@ -105,6 +106,7 @@ class DeviceInfoService {
         axiosInstance.post<DeviceInfoResponse>('/v1/updateDevice', requestData, {
           headers: {
             SessionKey: sessionKey,
+            phone: phone,
           },
         })
       );

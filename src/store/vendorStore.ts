@@ -63,7 +63,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
     if (pendingRequest) {
       pendingRequest.abort();
     }
-    console.log('fetchVendors', location);
+
     // Create new request ID and abort controller
     const requestId = ++currentRequestId;
     const abortController = new AbortController();
@@ -99,7 +99,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         },
         signal: abortController.signal,
       });
-      console.log('response vendors', response.data);
+
       // Only update state if this is still the current request
       if (requestId === currentRequestId) {
         const sortedVendors = sortVendorsByActiveStatus(response.data);

@@ -75,7 +75,10 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
       padding: 24,
       marginTop: height * 0.24,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: theme.colors.shadow.offset,
+      shadowOffset: {
+        width: theme.colors.shadow.offset_width,
+        height: theme.colors.shadow.offset_height,
+      },
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
       elevation: 6,
@@ -158,7 +161,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
       backgroundColor: theme.colors.overlay,
       paddingHorizontal: 12,
       paddingVertical: 6,
-      borderRadius: theme.borderRadius.full,
+      borderRadius: theme.borderRadius.md,
       elevation: 2,
     },
     skipText: {

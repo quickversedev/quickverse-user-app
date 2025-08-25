@@ -67,7 +67,7 @@ const AppBootstrap: React.FC = () => {
       <Registration
         onRegistrationSuccess={async () => {
           if (permissionData?.location) {
-            await updateDeviceInfo(
+            updateDeviceInfo(
               permissionData.location.longitude,
               permissionData.location.latitude
             ).catch(error => {
@@ -80,7 +80,7 @@ const AppBootstrap: React.FC = () => {
   }
 
   // CASE 2: User exists but permissions not completed - show permissions screen
-  if (!permissionsCompleted) {
+  if (isNewUser && !permissionsCompleted) {
     return <PermissionsScreen onPermissionsComplete={() => setPermissionsCompleted(true)} />;
   }
 

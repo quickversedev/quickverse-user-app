@@ -27,11 +27,11 @@ export const useDeviceInfo = () => {
         const response = await deviceInfoService.updateDeviceInfo(
           authData.jwt,
           fcmToken,
+          authData.phone,
           longitude,
           latitude
         );
 
-        console.log('Device info updated successfully:', response);
         return response;
       } catch (error) {
         console.error('Failed to update device info:', error);

@@ -17,15 +17,12 @@ const AUTH_HEADERS = {
 export const fetchInitialConfig = async (
   params: InitialConfigParams
 ): Promise<InitialConfigResponse> => {
-  console.log('fetching initial config', params);
   const response = await apiCall(
     axiosInstance.get<InitialConfigResponse>(CONFIG_ENDPOINTS.initialConfig, {
       params,
       headers: AUTH_HEADERS,
     })
   );
-  console.log(' initial confiog response', response);
+
   return response;
 };
-
-
