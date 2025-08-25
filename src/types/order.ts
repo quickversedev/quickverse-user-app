@@ -10,6 +10,8 @@ export interface OrderItem {
 
 export interface OrderAddress {
   address: string;
+  addressLine2?: string;
+  addressLine3?: string;
   city: string;
   state: string;
   postalCode: string;
@@ -25,6 +27,9 @@ export interface Order {
   shopName: string;
   items: OrderItem[];
   totalAmount: number;
+  additionalPaymentCharges?: number;
+  deliveryFees?: number;
+  totalInvoiceAmount?: number;
   status:
     | 'payment_pending'
     | 'processing'

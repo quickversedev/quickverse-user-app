@@ -80,11 +80,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   // Exclude addressLoading if we have cached addresses (non-blocking API call)
   const isLoading =
     vendorLoading || (!hasCachedAddresses && addressLoading) || configLoading || pagesLoading;
-  // console.log('isLoading', isLoading, vendorLoading, addressLoading, configLoading, pagesLoading);
-  // console.log('isInitialized', isInitialized);
   const error = vendorError;
-  // console.log('error', error);
-
   const { longitude: currentLongitude, latitude: currentLatitude } = locationData?.location || {};
   const permissionStatus = locationData?.permission;
   const initializeSelectedAddress = useCallback(async (): Promise<void> => {
@@ -92,7 +88,6 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       if (selectedAddress) {
         return;
       }
-
       const addresses: Address[] = useAddressStore.getState().addresses as unknown as Address[];
       if (permissionStatus === 'granted' && currentLatitude && currentLongitude) {
         if (addresses && addresses.length > 0) {
@@ -257,7 +252,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       if (isLoggedIn) {
         loadAddressesFromStorage();
       }
-
+      console.log('locationData', locationData);
       // Step 2: Fetch config in parallel
       const configPromise = fetchInitialConfig({
         longitude: locationData?.location?.longitude?.toString(),
@@ -279,7 +274,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
         : Promise.resolve();
 
       await Promise.allSettled([configPromise, addressPromise]);
-
+      console.log('configPromise', configPromise);
       // Step 4: Fetch theme and pages
       await Promise.allSettled([fetchTheme(), fetchPages()]);
 

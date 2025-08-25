@@ -66,7 +66,7 @@ const OrderList: React.FC<OrderListProps> = ({
     },
     []
   );
-  console.log('filteredOrders', filteredOrders);
+
   const handleRefresh = useCallback(async () => {
     if (!refreshing && !loading) {
       setRefreshing(true);

@@ -61,7 +61,7 @@ const FoodContentComponent: React.FC<FoodContentProps> = ({
         container: {
           flex: 1,
           backgroundColor: theme.colors.background,
-          paddingVertical: 25,
+          paddingVertical: 65,
         },
         header: {
           marginTop: 30,

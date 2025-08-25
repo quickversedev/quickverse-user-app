@@ -68,6 +68,8 @@ const OrderDetailsScreen = () => {
     }
   }, [selectedOrder]);
 
+  console.log('order', selectedOrder);
+
   const handleCancelOrder = useCallback(async () => {
     if (!selectedOrder || !authData?.jwt || !authData?.phone) return;
     Alert.alert(
@@ -197,17 +199,21 @@ const OrderDetailsScreen = () => {
 
   // Payment summary derived from items + order delivery details
   const summary = useMemo(() => {
-    if (!selectedOrder) return { subTotal: 0, deliveryFee: 0, total: 0 };
+    if (!selectedOrder) return { subTotal: 0, deliveryFee: 0, additionalCharges: 0, total: 0 };
 
     const apiOrder = selectedOrder as unknown as ApiOrderShape;
-    const subTotal = derivedItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
-    const deliveryFee = Number(apiOrder?.deliveryDetails?.deliveryFees ?? 0);
-    const total = Number(selectedOrder.totalAmount ?? subTotal + deliveryFee);
-    return { subTotal, deliveryFee, total };
+    const subTotal = selectedOrder.totalInvoiceAmount ?? selectedOrder.totalAmount;
+    const deliveryFee = Number(
+      selectedOrder.deliveryFees ?? apiOrder?.deliveryDetails?.deliveryFees ?? 0
+    );
+    const additionalCharges = Number(selectedOrder.additionalPaymentCharges ?? 0);
+    const total = Number(subTotal + deliveryFee + additionalCharges);
+    return { subTotal, deliveryFee, additionalCharges, total };
   }, [derivedItems, selectedOrder]);
 
   const [showAllItems, setShowAllItems] = React.useState(false);
   const displayedItems = showAllItems ? derivedItems : derivedItems.slice(0, 2);
+  console.log('displayedItems', displayedItems);
   const hasMoreItems = derivedItems.length > 2;
 
   if (!selectedOrder) {
@@ -302,7 +308,7 @@ const OrderDetailsScreen = () => {
                       </Text>
                     </View>
                     <Text style={[styles.itemPrice, { color: getColor('text') }]}>
-                      ₹{(item.price * item.quantity).toFixed(2)}
+                      ₹{item.price.toFixed(2)}
                     </Text>
                   </View>
                 ))}
@@ -325,6 +331,8 @@ const OrderDetailsScreen = () => {
             totalAmount={summary.total}
             subtotal={summary.subTotal}
             deliveryFee={summary.deliveryFee}
+            additionalPaymentCharges={summary.additionalCharges}
+            paymentMethod={selectedOrder.paymentMethod}
             onPress={handleViewSummary}
           />
 

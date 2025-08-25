@@ -7,6 +7,8 @@ interface BillSummaryCardProps {
   totalAmount: number;
   subtotal: number;
   deliveryFee: number;
+  additionalPaymentCharges?: number;
+  paymentMethod?: string;
   onPress: () => void;
 }
 
@@ -14,6 +16,8 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
   totalAmount,
   subtotal,
   deliveryFee,
+  additionalPaymentCharges = 0,
+  paymentMethod,
   onPress,
 }) => {
   const { getColor } = useTheme();
@@ -62,6 +66,16 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
               ₹{deliveryFee.toFixed(2)}
             </Text>
           </View>
+          {additionalPaymentCharges > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>
+                {paymentMethod === 'cash' ? 'COD Charges' : 'Additional Charges'}
+              </Text>
+              <Text style={[styles.summaryValue, { color: getColor('text') }]}>
+                ₹{additionalPaymentCharges.toFixed(2)}
+              </Text>
+            </View>
+          )}
           <View style={[styles.summaryRow, styles.summaryTotalRow]}>
             <Text style={[styles.summaryTotalLabel, { color: getColor('text') }]}>Total</Text>
             <Text style={[styles.summaryTotalValue, { color: getColor('text') }]}>

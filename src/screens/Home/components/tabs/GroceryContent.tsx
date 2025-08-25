@@ -61,7 +61,7 @@ const GroceryContentComponent: React.FC<GroceryContentProps> = ({
         container: {
           flex: 1,
           backgroundColor: theme.colors.background,
-          paddingVertical: 25,
+          paddingVertical: 65,
           marginBottom: 100,
         },
         header: {

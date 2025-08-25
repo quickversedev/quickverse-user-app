@@ -22,9 +22,17 @@ const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, getStatusColor, ac
             <Icon name="home" size={20} color={getColor('primary')} />
           </View>
           <View style={styles.locationInfo}>
-            <Text style={[styles.locationTitle, { color: getColor('text') }]}>Home</Text>
+            <Text style={[styles.locationTitle, { color: getColor('text') }]}>
+              Delivery Address
+            </Text>
             <Text style={[styles.locationAddress, { color: getColor('subText') }]}>
-              {order.deliveryAddress.city}, {order.deliveryAddress.state}
+              {order.deliveryAddress.address}
+              {order.deliveryAddress.addressLine2 && `, ${order.deliveryAddress.addressLine2}`}
+              {order.deliveryAddress.addressLine3 && `, ${order.deliveryAddress.addressLine3}`}
+            </Text>
+            <Text style={[styles.locationCity, { color: getColor('subText') }]}>
+              {order.deliveryAddress.city}, {order.deliveryAddress.state} -{' '}
+              {order.deliveryAddress.postalCode}
             </Text>
           </View>
         </View>
@@ -57,6 +65,32 @@ const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, getStatusColor, ac
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}>
             <Text style={styles.statusText}>
               {order.status === 'delivered' ? 'DELIVERED' : order.status.toUpperCase()}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Customer Contact Information */}
+      <View style={styles.contactRow}>
+        <View style={styles.contactInfo}>
+          <View style={styles.contactIconContainer}>
+            <Icon name="account" size={16} color={getColor('primary')} />
+          </View>
+          <View style={styles.contactDetails}>
+            <Text style={[styles.contactLabel, { color: getColor('subText') }]}>Customer</Text>
+            <Text style={[styles.contactValue, { color: getColor('text') }]}>
+              {order.customerName}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.contactInfo}>
+          <View style={styles.contactIconContainer}>
+            <Icon name="phone" size={16} color={getColor('primary')} />
+          </View>
+          <View style={styles.contactDetails}>
+            <Text style={[styles.contactLabel, { color: getColor('subText') }]}>Phone</Text>
+            <Text style={[styles.contactValue, { color: getColor('text') }]}>
+              {order.customerPhone}
             </Text>
           </View>
         </View>
@@ -101,6 +135,13 @@ const styles = StyleSheet.create({
   },
   locationAddress: {
     fontSize: 14,
+    marginBottom: 2,
+  },
+  locationCity: {
+    fontSize: 12,
+  },
+  rightSection: {
+    alignItems: 'flex-end',
   },
   connectingLine: {
     alignItems: 'center',
@@ -141,6 +182,35 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  contactRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E0E0E0',
+  },
+  contactInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  contactIconContainer: {
+    width: 20,
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  contactDetails: {
+    flex: 1,
+  },
+  contactLabel: {
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  contactValue: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
 

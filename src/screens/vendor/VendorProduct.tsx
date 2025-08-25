@@ -588,7 +588,7 @@ const VendorProductComponent: React.FC = () => {
           alignItems: 'center',
           backgroundColor: getColor('card'),
           borderRadius: 12,
-          margin: 16,
+          marginHorizontal: 16,
           marginTop: 8,
           paddingHorizontal: 12,
           paddingVertical: 8,
@@ -1165,14 +1165,30 @@ const VendorProductComponent: React.FC = () => {
                   key={'row-based'}
                   showsVerticalScrollIndicator={false}
                   removeClippedSubviews={true}
-                  maxToRenderPerBatch={10}
+                  maxToRenderPerBatch={rowProductList.length}
                   updateCellsBatchingPeriod={50}
-                  initialNumToRender={8}
+                  initialNumToRender={10}
                   windowSize={10}
                   onScroll={handleScroll}
                   scrollEventThrottle={16}
                   onViewableItemsChanged={onViewableItemsChanged}
                   viewabilityConfig={viewabilityConfig}
+                  onScrollToIndexFailed={info => {
+                    console.warn('Scroll failed', info);
+
+                    // scroll to the nearest rendered index instead
+                    flatListRef.current?.scrollToOffset({
+                      offset: info.averageItemLength * info.index,
+                      animated: true,
+                    });
+
+                    // retry after a delay
+                    setTimeout(() => {
+                      if (rowProductList.length > 0) {
+                        flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+                      }
+                    }, 100);
+                  }}
                 />
               </Animated.View>
             </View>
@@ -1211,7 +1227,6 @@ const VendorProductComponent: React.FC = () => {
           onClose={handleCloseProductDetailModal}
           product={selectedProductForDetail}
           vendor={vendor}
-          isStoreClosed={!isStoreActive}
         />
       )}
     </>

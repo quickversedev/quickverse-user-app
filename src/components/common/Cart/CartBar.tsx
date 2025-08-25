@@ -296,10 +296,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cartIcon: {
-    marginRight: 10,
+    // marginRight: 4,
   },
   chevronIcon: {
-    marginLeft: 2,
+    // marginLeft: 2,
   },
   flexSpacer: {
     flex: 1,

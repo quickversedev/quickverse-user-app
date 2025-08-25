@@ -55,7 +55,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       return a.inStock ? -1 : 1;
     });
   }, [featuredProducts]);
-  // console.log('sortedFeaturedProducts', sortedFeaturedProducts);
+
   const cartId = `vendor_${vendor.shopId}`;
   const cart = useCartStore(state => state.carts[cartId]);
   const increment = useCartStore(state => state.increment);
@@ -118,10 +118,10 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       discount: item.discount,
       numberOfVariants: item.numberOfVariants || 1,
       currentStock: item.currentStock || 0,
-      inStock: item.inStock || true,
+      inStock: item.inStock,
       primarySKU: item.primarySKU,
       tags: item.tags || [],
-      veg: item.veg || true,
+      veg: item.veg,
     };
 
     return (

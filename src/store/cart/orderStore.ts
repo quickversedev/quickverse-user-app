@@ -65,7 +65,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
           },
         }
       );
-      console.log('response', response.data);
+      console.log('response of orders', response.data);
       const { ordersMetadata, cursor: nextCursor } = response.data;
 
       type SkuGroup = {
@@ -84,10 +84,22 @@ const useOrderStore = create<OrderStore>((set, get) => ({
       type OrderMeta = {
         orderId?: string | number;
         totalOrderAmount?: number;
+        additionalPaymentCharges?: number;
+        addressLine2?: string;
+        addressLine3?: string;
+        customerMobileNumber?: string | number;
+        deliveryDetails?: {
+          deliveryFees?: number;
+        };
+        totalInvoiceAmount?: number;
+        totalOrderAmountIncludingPaymentCharges?: number;
         state?: string;
         creationTime?: string | number;
         customerDeliveryAddress?: {
+          name?: string;
           addressLine1?: string;
+          addressLine2?: string;
+          addressLine3?: string;
           city?: string;
           state?: string;
           pincode?: string;
@@ -138,6 +150,9 @@ const useOrderStore = create<OrderStore>((set, get) => ({
           shopName: '',
           items,
           totalAmount: Number(m.totalOrderAmount ?? 0),
+          additionalPaymentCharges: Number(m.additionalPaymentCharges ?? 0),
+          deliveryFees: Number(m.deliveryDetails?.deliveryFees ?? 0),
+          totalInvoiceAmount: Number(m.totalInvoiceAmount ?? 0),
           status: normalizeStatus(m.state),
           orderDate:
             typeof m.creationTime === 'string' && /\D/.test(m.creationTime)
@@ -145,13 +160,15 @@ const useOrderStore = create<OrderStore>((set, get) => ({
               : new Date(Number(m.creationTime ?? Date.now())).toISOString(),
           deliveryAddress: {
             address: m.customerDeliveryAddress?.addressLine1 ?? '',
+            addressLine2: m.customerDeliveryAddress?.addressLine2 ?? '',
+            addressLine3: m.customerDeliveryAddress?.addressLine3 ?? '',
             city: m.customerDeliveryAddress?.city ?? '',
             state: m.customerDeliveryAddress?.state ?? '',
             postalCode: m.customerDeliveryAddress?.pincode ?? '',
           },
           paymentMethod: (m.paymentMethod?.toLowerCase() as Order['paymentMethod']) || 'cash',
           paymentStatus: 'paid',
-          customerName: m.notificationDetail?.customerName ?? '',
+          customerName: m.customerDeliveryAddress?.name ?? '',
           customerPhone: String(m.notificationDetail?.mobileNumber ?? ''),
         } as Order;
       });
