@@ -72,6 +72,9 @@ class OrderService {
     sessionKey: string,
     phone: string
   ): Promise<CreateOrderResponse> {
+    console.log('create order request data', requestData);
+    console.log('sessionKey', sessionKey);
+    console.log('phone', phone);
     try {
       const response = await apiCall(
         axiosInstance.post<CreateOrderResponse>('/v2/order/createOrder', requestData, {

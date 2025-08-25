@@ -250,7 +250,7 @@ class CartApiService {
         params: { shopId },
         ...withHeaders({ SessionKey: jwtToken, phone }),
       });
-      console.log('get cart response', response);
+
       return this.transformCartResponse(response.data);
     } catch (error) {
       console.error('Get cart error:', error);

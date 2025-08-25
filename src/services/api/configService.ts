@@ -27,3 +27,5 @@ export const fetchInitialConfig = async (
   console.log(' initial confiog response', response);
   return response;
 };
+
+

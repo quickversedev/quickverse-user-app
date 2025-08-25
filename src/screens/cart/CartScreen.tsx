@@ -12,8 +12,10 @@ import {
   PaymentSummary,
   VendorPill,
 } from '../../components/modules/Cart';
-import { SuggestedItem } from '../../components/modules/Cart/SuggestedItems';
-import { AddressSelectionModal } from '../../components/modules/Header/AddressSelectionModal';
+import {
+  AddressSelectionModal,
+  SmartBizAddressSelectionModal,
+} from '../../components/modules/Header';
 import SuggestedItems from '../../components/modules/Product/SuggestedItems';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
@@ -21,7 +23,7 @@ import { RootStackParamList } from '../../routes/AppStack';
 import orderService, { CreateOrderRequest } from '../../services/createOrderService';
 import createPaymentService, { CreatePaymentRequest } from '../../services/createPaymentService';
 import { getCODCharges } from '../../services/paymentService';
-import smartBizAddressService from '../../services/smartBizAddressService';
+import { SmartBizAddress, useSmartBizAddressStore } from '../../store/address/smartBizAddressStore';
 import useCartStore from '../../store/cart/cartStore';
 import useCouponStore from '../../store/cart/couponStore';
 import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
@@ -63,12 +65,16 @@ const CartScreen: React.FC = () => {
     vendorOffersError,
     customerOffersError,
   } = useCouponStore();
+  const { fetchAddresses } = useSmartBizAddressStore();
 
   // Auth hooks
   const { selectedAddress, setSelectedAddress, permissionDataInAuth, authData } = useAuth();
 
   // Local state
   const [showAddressModal, setShowAddressModal] = React.useState(false);
+  const [showSmartBizAddressModal, setShowSmartBizAddressModal] = React.useState(false);
+  const [selectedSmartBizAddress, setSelectedSmartBizAddress] =
+    React.useState<SmartBizAddress | null>(null);
   const [paymentExpanded, setPaymentExpanded] = React.useState(false);
   const [showPaymentModal, setShowPaymentModal] = React.useState(false);
   const [selectedPaymentOption, setSelectedPaymentOption] = React.useState<string | undefined>(
@@ -80,7 +86,7 @@ const CartScreen: React.FC = () => {
   const { getColor } = useTheme();
   const { getFeaturedProducts } = useFeaturedProductsStore();
   const [featuredProducts, setFeaturedProducts] = React.useState<Product[]>([]);
-  const [smartBizAddressId, setSmartBizAddressId] = React.useState<string | null>(null);
+  // const [smartBizAddressId, setSmartBizAddressId] = React.useState<string | null>(null);
 
   // Memoized derived state
   const cart = useMemo(() => {
@@ -147,15 +153,12 @@ const CartScreen: React.FC = () => {
     },
     [cart, authData?.jwt, authData?.phone, decrement]
   );
-  console.log('vendor', vendor);
   const convertToProduct = useCallback(
-    (item: Product | SuggestedItem, index: number): Product => {
-      const isSuggestedItem = (i: any): i is SuggestedItem => !('rating' in i);
-      if (!isSuggestedItem(item)) return item as Product;
+    (item: { id: string; name: string; price: number; image: number }, index: number): Product => {
       if (index === -1) throw new Error('Invalid suggested item');
       const shopId = cart?.cartId.replace('vendor_', '') || '';
       return {
-        sku: item.sku,
+        sku: item.id,
         shopId,
         name: item.name,
         mrp: item.price + 10,
@@ -171,8 +174,7 @@ const CartScreen: React.FC = () => {
         numberOfVariants: 1,
         currentStock: 10,
         inStock: true,
-        primarySKU: item.sku,
-        id: item.sku,
+        primarySKU: item.id,
         tags: [],
       };
     },
@@ -180,17 +182,14 @@ const CartScreen: React.FC = () => {
   );
 
   const handleAddSuggested = useCallback(
-    (item: Product | SuggestedItem) => {
-      const isSuggestedItem = (i: Product | SuggestedItem): i is SuggestedItem => !('sku' in i);
-      const index = isSuggestedItem(item)
-        ? featuredProducts.findIndex(p => p.sku === item.sku)
-        : -1;
+    (item: { id: string; name: string; price: number; image: number }) => {
+      const index = featuredProducts.findIndex(p => p.sku === item.id);
       const product = convertToProduct(item, index);
 
       if (!cart || !authData?.jwt || !authData?.phone) return;
 
       const cartProduct = {
-        sku: product.id,
+        sku: product.sku,
         shopId: product.shopId,
         name: product.name,
         price: product.sellingPrice,
@@ -205,11 +204,8 @@ const CartScreen: React.FC = () => {
   );
 
   const handleIncrementSuggested = useCallback(
-    (item: Product | SuggestedItem) => {
-      const isSuggestedItem = (i: Product | SuggestedItem): i is SuggestedItem => !('sku' in i);
-      const index = isSuggestedItem(item)
-        ? featuredProducts.findIndex(p => p.name === item.name)
-        : -1;
+    (item: { id: string; name: string; price: number; image: number }) => {
+      const index = featuredProducts.findIndex(p => p.name === item.name);
       const product = convertToProduct(item, index);
 
       if (!cart || !authData?.jwt || !authData?.phone) return;
@@ -219,11 +215,8 @@ const CartScreen: React.FC = () => {
   );
 
   const handleDecrementSuggested = useCallback(
-    (item: Product | SuggestedItem) => {
-      const isSuggestedItem = (i: Product | SuggestedItem): i is SuggestedItem => !('sku' in i);
-      const index = isSuggestedItem(item)
-        ? featuredProducts.findIndex(p => p.name === item.name)
-        : -1;
+    (item: { id: string; name: string; price: number; image: number }) => {
+      const index = featuredProducts.findIndex(p => p.name === item.name);
       const product = convertToProduct(item, index);
 
       if (!cart || !authData?.jwt || !authData?.phone) return;
@@ -233,12 +226,14 @@ const CartScreen: React.FC = () => {
   );
 
   const handleCheckout = useCallback(async () => {
-    const shouldShowCompulsoryModal =
-      !permissionDataInAuth?.permission ||
-      (selectedAddress && selectedAddress.isSavedAddress === false);
+    // const shouldShowCompulsoryModal =
+    //   !permissionDataInAuth?.permission ||
+    //   (selectedAddress && selectedAddress.isSavedAddress === false);
+    const shouldShowCompulsoryModal = !selectedSmartBizAddress;
 
     if (shouldShowCompulsoryModal) {
-      setShowAddressModal(true);
+      // setShowAddressModal(true);
+      setShowSmartBizAddressModal(true);
       return;
     }
 
@@ -263,7 +258,7 @@ const CartScreen: React.FC = () => {
         shopId: parseInt(vendor.shopId, 10),
         cartId: cart.smartBizCartId,
         orderSource: 'CONSTELLATION',
-        customerAddressId: smartBizAddressId || selectedAddress.addressID,
+        customerAddressId: selectedSmartBizAddress?.id || '',
         fulfillmentOption: 'DELIVERY',
         notificationMobileNumber: selectedAddress.phone,
         notificationEmail: null,
@@ -279,7 +274,7 @@ const CartScreen: React.FC = () => {
 
       // Step 2: Create Payment
       const paymentRequest: CreatePaymentRequest = {
-        customerId: orderResponse.customerId,
+        customerId: parseInt(orderResponse.customerId, 10),
         mobileNumber: authData.phone,
         name: selectedAddress.name,
         orderId: orderResponse.orderId,
@@ -316,8 +311,6 @@ const CartScreen: React.FC = () => {
         shopId: vendor.shopId,
       });
     } catch (error: unknown) {
-      console.log('error in cart screen', error);
-
       // Check for specific store not active error
       if (
         error &&
@@ -354,7 +347,7 @@ const CartScreen: React.FC = () => {
     vendor,
     authData?.jwt,
     authData?.phone,
-    smartBizAddressId,
+    selectedSmartBizAddress,
     navigation,
     clearCart,
   ]);
@@ -382,6 +375,11 @@ const CartScreen: React.FC = () => {
     [setSelectedAddress]
   );
 
+  const handleSmartBizAddressSelect = useCallback((address: SmartBizAddress) => {
+    setSelectedSmartBizAddress(address);
+    setShowSmartBizAddressModal(false);
+  }, []);
+
   const handleCouponNavigation = useCallback(() => {
     if (vendor?.shopId) {
       navigation.navigate('Coupons');
@@ -407,14 +405,14 @@ const CartScreen: React.FC = () => {
 
   // Memoized utility functions
   const getFormattedAddress = useCallback(() => {
-    if (!selectedAddress) {
+    if (!selectedSmartBizAddress) {
       return 'Select delivery address';
     }
 
-    const { addressLine1, city, state } = selectedAddress;
+    const { addressLine1, city, state } = selectedSmartBizAddress?.address;
     const parts = [addressLine1, city, state].filter(Boolean);
     return parts.join(', ');
-  }, [selectedAddress]);
+  }, [selectedSmartBizAddress]);
 
   const isCheckoutDisabled = useMemo(() => {
     return !selectedPaymentOption || Boolean(paymentMethodsError) || isOrderLoading;
@@ -426,6 +424,13 @@ const CartScreen: React.FC = () => {
       checkAndFetchOffers(vendor.shopId, authData);
     }
   }, [vendor?.shopId, checkAndFetchOffers, authData]);
+
+  // Fetch SmartBiz addresses when screen loads
+  React.useEffect(() => {
+    if (vendor?.shopId && authData?.jwt && authData?.phone) {
+      fetchAddresses(vendor.shopId, authData.jwt, authData.phone);
+    }
+  }, [vendor?.shopId, authData?.jwt, authData?.phone, fetchAddresses]);
 
   // Revalidate coupons when cart contents change
   React.useEffect(() => {
@@ -460,27 +465,27 @@ const CartScreen: React.FC = () => {
   }, [availableOptions, selectedPaymentOption]);
 
   // Resolve SmartBiz AddressId for selected address tag when landing on Cart
-  React.useEffect(() => {
-    const resolveSmartBizAddress = async () => {
-      try {
-        if (!vendor?.shopId || !authData?.jwt || !authData?.phone || !selectedAddress?.tag) {
-          setSmartBizAddressId(null);
-          return;
-        }
-        const map = await smartBizAddressService.fetchSmartBizAddressIds(
-          vendor.shopId,
-          authData.jwt,
-          authData.phone
-        );
-        const tag = selectedAddress.tag;
-        const matched = map[tag];
-        setSmartBizAddressId(matched || null);
-      } catch (_e) {
-        setSmartBizAddressId(null);
-      }
-    };
-    resolveSmartBizAddress();
-  }, [vendor?.shopId, authData?.jwt, authData?.phone, selectedAddress?.tag]);
+  // React.useEffect(() => {
+  //   const resolveSmartBizAddress = async () => {
+  //     try {
+  //       if (!vendor?.shopId || !authData?.jwt || !authData?.phone || !selectedAddress?.tag) {
+  //         setSmartBizAddressId(null);
+  //         return;
+  //       }
+  //       const map = await smartBizAddressService.fetchSmartBizAddressIds(
+  //         vendor.shopId,
+  //         authData.jwt,
+  //         authData.phone
+  //       );
+  //       const tag = selectedAddress.tag;
+  //       const matched = map[tag];
+  //       setSmartBizAddressId(matched || null);
+  //     } catch (_e) {
+  //       setSmartBizAddressId(null);
+  //     }
+  //   };
+  //   resolveSmartBizAddress();
+  // }, [vendor?.shopId, authData?.jwt, authData?.phone, selectedAddress?.tag]);
 
   // Fetch featured products for vendor as suggested items
   React.useEffect(() => {
@@ -553,11 +558,37 @@ const CartScreen: React.FC = () => {
 
       <CartFooter
         address={getFormattedAddress()}
-        onSelectAddress={() => setShowAddressModal(true)}
+        onSelectAddress={() => setShowSmartBizAddressModal(true)}
         onCheckout={handleCheckout}
         disabled={isCheckoutDisabled}
         loading={isOrderLoading}
       />
+
+      {/* SmartBiz Address Selection Button */}
+      {/* {vendor && (
+        <TouchableOpacity
+          style={{
+            position: 'absolute',
+            bottom: 140,
+            right: 20,
+            backgroundColor: getColor('primary'),
+            borderRadius: 28,
+            width: 56,
+            height: 56,
+            justifyContent: 'center',
+            alignItems: 'center',
+            elevation: 8,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 4,
+          }}
+          onPress={() => setShowSmartBizAddressModal(true)}
+          activeOpacity={0.8}
+        >
+          <MaterialCommunityIcons name="map-marker-multiple" size={24} color={getColor('white')} />
+        </TouchableOpacity>
+      )} */}
 
       <AddressSelectionModal
         visible={showAddressModal}
@@ -565,6 +596,13 @@ const CartScreen: React.FC = () => {
         onAddressSelect={handleAddressSelect}
         selectedAddress={selectedAddress}
         needCompulsoryAddress={true}
+      />
+      <SmartBizAddressSelectionModal
+        visible={showSmartBizAddressModal}
+        onClose={() => setShowSmartBizAddressModal(false)}
+        onAddressSelect={handleSmartBizAddressSelect}
+        selectedAddress={selectedSmartBizAddress}
+        vendorId={vendor?.shopId || ''}
       />
 
       <Modal

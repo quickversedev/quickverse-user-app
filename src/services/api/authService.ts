@@ -87,6 +87,7 @@ const sendOtp = async (phoneNumber: string): Promise<string> => {
 
     return data.response.verificationId;
   } catch (error) {
+    console.log('requestOTP error', error);
     const authError = error as AuthError;
 
     // Handle specific error cases
@@ -195,6 +196,7 @@ const verifyOtp = async (
       },
     };
   } catch (error) {
+    console.log('error', error);
     const authError = error as AuthError;
 
     // Handle specific error cases
