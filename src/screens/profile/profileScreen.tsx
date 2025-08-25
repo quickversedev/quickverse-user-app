@@ -49,7 +49,9 @@ const ProfileScreen = () => {
       id: 'about',
       title: 'About Us',
       icon: 'information-outline',
-      onPress: () => {},
+      onPress: () => {
+        navigation.navigate('AboutUs');
+      },
     },
   ];
 
