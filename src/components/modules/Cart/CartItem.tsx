@@ -14,7 +14,7 @@ interface CartItemProps extends CartProduct {
 
 const CartItem: React.FC<CartItemProps> = React.memo(
   ({ name, price, mrp, quantity, tag, onInc, onDec, image, veg }) => {
-    const { getColor, getTypography, theme } = useTheme();
+    const { getColor, getTypography, theme, getButtonColor } = useTheme();
 
     const styles = StyleSheet.create({
       cartItemRow: {
@@ -26,7 +26,7 @@ const CartItem: React.FC<CartItemProps> = React.memo(
         width: 64,
         height: 64,
         borderRadius: theme.borderRadius.md,
-        backgroundColor: getColor('button').default.background,
+        backgroundColor: getButtonColor('default', 'background'),
         marginRight: 14,
       },
       cartItemName: {
@@ -45,7 +45,7 @@ const CartItem: React.FC<CartItemProps> = React.memo(
         fontWeight: 'bold',
       },
       cartItemPrice: {
-        color: getColor('button').default.background,
+        color: getButtonColor('default', 'background'),
         fontWeight: 'bold',
         fontSize: getTypography('body'),
       },
@@ -58,7 +58,7 @@ const CartItem: React.FC<CartItemProps> = React.memo(
       },
       cartItemTag: {
         backgroundColor: getColor('card'),
-        borderColor: getColor('button').default.background,
+        borderColor: getButtonColor('default', 'background'),
         borderWidth: 1,
         borderRadius: theme.borderRadius.md,
         paddingHorizontal: 8,
@@ -67,7 +67,7 @@ const CartItem: React.FC<CartItemProps> = React.memo(
         alignSelf: 'flex-end',
       },
       cartItemTagText: {
-        color: getColor('button').default.background,
+        color: getButtonColor('default', 'background'),
         fontWeight: 'bold',
         fontSize: getTypography('caption'),
       },

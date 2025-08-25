@@ -19,7 +19,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   codCharges = 0,
   selectedPaymentOption,
 }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, getTypography, theme, getButtonColor } = useTheme();
 
   const { subtotal, deliveryFee, total, totalDiscountOnItems, couponDiscount, finalTotal } =
     useMemo(() => {
@@ -134,13 +134,13 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
       marginBottom: 4,
     },
     paymentSummaryTitle: {
-      color: getColor('button').default.background,
+      color: getButtonColor('default', 'background'),
       fontWeight: 'bold',
       fontSize: getTypography('caption'),
       marginLeft: 8,
     },
     paymentSummaryAmount: {
-      color: getColor('button').default.background,
+      color: getButtonColor('default', 'background'),
       fontWeight: 'bold',
       fontSize: getTypography('body'),
       marginHorizontal: 8,
@@ -154,7 +154,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
         <MaterialCommunityIcons
           name="file-document-outline"
           size={20}
-          color={getColor('button').default.background}
+          color={getButtonColor('default', 'background')}
         />
         <Text style={styles.paymentSummaryTitle}>Total Bill (Inc. Taxes and Charges)</Text>
         <View style={{ flex: 1 }} />
@@ -162,7 +162,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
         <MaterialCommunityIcons
           name={expanded ? 'chevron-up' : 'chevron-down'}
           size={22}
-          color={getColor('button').default.background}
+          color={getButtonColor('default', 'background')}
         />
       </TouchableOpacity>
       {expanded && (

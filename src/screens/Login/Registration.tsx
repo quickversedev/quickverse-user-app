@@ -289,7 +289,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
       fontFamily: theme.typography.fontFamily,
     },
     inputFocused: {
-      borderColor: theme.colors.primary,
+      borderColor: theme.colors.main,
       borderWidth: 2,
     },
     errorText: {
@@ -325,8 +325,8 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
       alignItems: 'center',
     },
     genderButtonSelected: {
-      backgroundColor: theme.colors.primary,
-      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.main,
+      borderColor: theme.colors.main,
     },
     registerButton: {
       backgroundColor: theme.colors.secondary,

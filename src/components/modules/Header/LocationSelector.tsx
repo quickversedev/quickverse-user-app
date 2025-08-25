@@ -66,7 +66,7 @@ export const LocationSelector = () => {
         accessibilityHint="Opens address selection modal"
         activeOpacity={0.7}
       >
-        <Icon name="map-marker" size={24} color={theme.colors.primary} style={styles.icon} />
+        <Icon name="map-marker" size={24} color={theme.colors.main} style={styles.icon} />
         <View style={styles.textContainer}>
           <ThemeText variant="body" style={styles.greeting}>
             {getDisplayName()}

@@ -143,7 +143,10 @@ const OTPScreen: React.FC = () => {
       padding: 24,
       marginTop: height * 0.24,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: theme.colors.shadow.offset,
+      shadowOffset: {
+        width: theme.colors.shadow.offset_width,
+        height: theme.colors.shadow.offset_height,
+      },
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
       elevation: 6,
@@ -179,7 +182,7 @@ const OTPScreen: React.FC = () => {
     },
     focusCell: {
       borderWidth: 2,
-      borderColor: theme.colors.primary,
+      borderColor: theme.colors.main,
     },
     unfocusedCell: {
       borderColor: theme.colors.border,
@@ -189,7 +192,7 @@ const OTPScreen: React.FC = () => {
       marginTop: 12,
     },
     link: {
-      color: theme.colors.primary,
+      color: theme.colors.main,
       textDecorationLine: 'underline',
     },
     otpButton: {
@@ -264,7 +267,7 @@ const OTPScreen: React.FC = () => {
             <TouchableOpacity onPress={handleResendOtp} disabled={!canResend || loading}>
               <ThemeText
                 variant="caption"
-                color={canResend ? theme.colors.primary : theme.colors.subText}
+                color={canResend ? theme.colors.main : theme.colors.subText}
                 style={styles.link}
               >
                 Resend
@@ -294,7 +297,7 @@ const OTPScreen: React.FC = () => {
           <TouchableOpacity onPress={handleChangeNumber}>
             <ThemeText
               variant="caption"
-              color={theme.colors.primary}
+              color={theme.colors.main}
               style={[styles.link, { textAlign: 'center' }]}
             >
               Change Number

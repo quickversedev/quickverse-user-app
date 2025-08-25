@@ -252,7 +252,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       if (isLoggedIn) {
         loadAddressesFromStorage();
       }
-      console.log('locationData', locationData);
+
       // Step 2: Fetch config in parallel
       const configPromise = fetchInitialConfig({
         longitude: locationData?.location?.longitude?.toString(),
@@ -274,7 +274,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
         : Promise.resolve();
 
       await Promise.allSettled([configPromise, addressPromise]);
-      console.log('configPromise', configPromise);
+
       // Step 4: Fetch theme and pages
       await Promise.allSettled([fetchTheme(), fetchPages()]);
 

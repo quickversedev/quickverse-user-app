@@ -121,7 +121,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
     },
     closeButton: {
       padding: 8,
-      borderRadius: theme.borderRadius.full,
+      borderRadius: theme.borderRadius.max,
       backgroundColor: getColor('card'),
       minHeight: 40,
       minWidth: 40,
@@ -130,7 +130,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
     },
     refreshButton: {
       padding: 8,
-      borderRadius: theme.borderRadius.full,
+      borderRadius: theme.borderRadius.max,
       backgroundColor: getColor('card'),
       minHeight: 40,
       minWidth: 40,
@@ -160,8 +160,8 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       borderColor: 'transparent',
     },
     selectedAddressCard: {
-      borderColor: getColor('primary'),
-      backgroundColor: getColor('primaryLight'),
+      borderColor: getColor('main'),
+      backgroundColor: getColor('overlay'),
     },
     addressHeader: {
       flexDirection: 'row',
@@ -177,9 +177,9 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
     },
     addressTag: {
       fontSize: getTypography('caption'),
-      color: getColor('primary'),
+      color: getColor('main'),
       fontWeight: '500',
-      backgroundColor: getColor('primaryLight'),
+      backgroundColor: getColor('overlay'),
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: theme.borderRadius.sm,
@@ -200,7 +200,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       marginTop: 4,
     },
     defaultBadge: {
-      backgroundColor: getColor('success'),
+      backgroundColor: getColor('secondary'),
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: theme.borderRadius.sm,
@@ -243,7 +243,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       includeFontPadding: false,
     },
     retryButton: {
-      backgroundColor: getColor('primary'),
+      backgroundColor: getColor('main'),
       paddingHorizontal: 20,
       paddingVertical: 12,
       borderRadius: theme.borderRadius.md,
@@ -260,14 +260,14 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       justifyContent: 'center',
       backgroundColor: 'transparent',
       borderWidth: 1,
-      borderColor: getColor('primary'),
+      borderColor: getColor('main'),
       paddingHorizontal: 20,
       paddingVertical: 6,
       borderRadius: theme.borderRadius.md,
       minHeight: 56,
     },
     addButtonText: {
-      color: getColor('primary'),
+      color: getColor('main'),
       fontSize: getTypography('body'),
       fontWeight: '600',
       marginLeft: 8,
@@ -336,7 +336,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
     if (loading) {
       return (
         <View style={themedStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={getColor('primary')} />
+          <ActivityIndicator size="large" color={getColor('main')} />
           <Text style={themedStyles.emptyText}>Loading addresses...</Text>
         </View>
       );
@@ -436,7 +436,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
               <MaterialCommunityIcons
                 name="refresh"
                 size={20}
-                color={loading ? getColor('subText') : getColor('primary')}
+                color={loading ? getColor('subText') : getColor('main')}
               />
             </TouchableOpacity>
           </View>
@@ -460,7 +460,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
               accessibilityHint="Opens the add address form"
               activeOpacity={0.8}
             >
-              <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
+              <MaterialCommunityIcons name="plus" size={20} color={getColor('main')} />
               <Text style={themedStyles.addButtonText}>Add Address Details</Text>
             </TouchableOpacity>
           </View>

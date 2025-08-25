@@ -123,7 +123,8 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
     setIsSubmitting(false);
     onClose();
   };
-
+  console.log('theme', theme);
+  console.log('getColor', getColor('background'));
   const styles = StyleSheet.create({
     modalOverlay: {
       flex: 1,

@@ -76,7 +76,7 @@ export const SmartBizAddressSelectionModalDemo: React.FC<
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: getColor('primary'),
+      backgroundColor: getColor('main'),
       borderRadius: theme.borderRadius.md,
       padding: 12,
       marginTop: 12,
@@ -89,7 +89,7 @@ export const SmartBizAddressSelectionModalDemo: React.FC<
       includeFontPadding: false,
     },
     selectedAddressContainer: {
-      backgroundColor: getColor('primaryLight'),
+      backgroundColor: getColor('overlay'),
       borderRadius: theme.borderRadius.sm,
       padding: 12,
       marginTop: 12,
@@ -97,7 +97,7 @@ export const SmartBizAddressSelectionModalDemo: React.FC<
     selectedAddressTitle: {
       fontSize: getTypography('caption'),
       fontWeight: '600',
-      color: getColor('primary'),
+      color: getColor('main'),
       marginBottom: 4,
       includeFontPadding: false,
     },

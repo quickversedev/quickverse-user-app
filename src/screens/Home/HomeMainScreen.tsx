@@ -9,6 +9,7 @@ import { Header } from '../../components/modules/Header/Header';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useTab } from '../../contexts/TabContext';
 import { useHeaderAnimation } from '../../hooks/useHeaderAnimation';
+import useThemeStore from '../../store/themeStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Address } from '../../types/address';
@@ -121,7 +122,8 @@ const HomeMainScreen = React.memo(() => {
     selectedTab,
     contentProps,
   ]);
-
+  const { theme: themeStore } = useThemeStore();
+  console.log('themeStore#######################################################', themeStore);
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>

@@ -34,7 +34,10 @@ const CartFooter: React.FC<CartFooterProps> = ({
       flexDirection: 'column',
       alignItems: 'stretch',
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: theme.colors.shadow.offset,
+      shadowOffset: {
+        width: theme.colors.shadow.offset_width,
+        height: theme.colors.shadow.offset_height,
+      },
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
       elevation: 12,
@@ -97,7 +100,7 @@ const CartFooter: React.FC<CartFooterProps> = ({
         <MaterialCommunityIcons
           name="chevron-right"
           size={22}
-          color={getColor('button').default.background}
+          color={getButtonColor('default', 'background')}
         />
       </TouchableOpacity>
       <TouchableOpacity

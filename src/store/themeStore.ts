@@ -29,7 +29,7 @@ const useThemeStore = create<ThemeStore>((set, get) => ({
    */
   fetchTheme: async (themeId?: string) => {
     set({ loading: true, error: null });
-    console.log('fetchTheme', themeId);
+
     try {
       // Check if default theme is enabled from config store
       const isDefaultThemeEnabled = useConfigStore.getState().defaultThemeEnabled();
@@ -58,7 +58,7 @@ const useThemeStore = create<ThemeStore>((set, get) => ({
       } else {
         // Use custom theme from API response, with fallback to default
         set({
-          theme: (config.theme as Theme) || DefaultTheme,
+          theme: (config as unknown as Theme) || DefaultTheme,
           loading: false,
           error: null,
         });

@@ -16,8 +16,8 @@ const SearchBarContent: React.FC = () => {
         styles.container,
         {
           backgroundColor: theme.colors.card,
-          borderColor: theme.colors.primary,
-          shadowColor: theme.colors.primary,
+          borderColor: theme.colors.main,
+          shadowColor: theme.colors.main,
         },
       ]}
     >

@@ -18,7 +18,7 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
   error = null,
   onRetry,
 }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, getTypography, theme, getButtonColor } = useTheme();
 
   const styles = StyleSheet.create({
     paymentOptionsBox: {
@@ -111,7 +111,7 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
               <MaterialCommunityIcons
                 name={error ? 'alert-circle-outline' : 'credit-card-outline'}
                 size={20}
-                color={error ? getColor('error') : getColor('button').default.background}
+                color={error ? getColor('error') : getButtonColor('default', 'background')}
               />
             </View>
             <View style={styles.paymentOptionsText}>

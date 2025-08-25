@@ -246,7 +246,7 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
       </Animated.View>
     );
   }
-
+  console.log('theme', theme.colors.background);
   return <>{children}</>;
 };
 

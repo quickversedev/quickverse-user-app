@@ -21,6 +21,9 @@ export async function fetchThemeConfig(themeId: string = 'theme1'): Promise<Them
     `${THEME_ENDPOINT}?themeId=${themeId}`,
     withHeaders(authHeaders)
   );
-  console.log('theme response', response.data);
+  console.log(
+    'theme response******************************************************************',
+    response.data
+  );
   return response.data;
 }
