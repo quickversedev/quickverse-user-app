@@ -155,7 +155,7 @@ const AddressScreen = () => {
       right: Math.max(32, width * 0.08),
       width: 56,
       height: 56,
-      borderRadius: theme.borderRadius.full,
+      borderRadius: theme.borderRadius.md,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: getColor('primary'),

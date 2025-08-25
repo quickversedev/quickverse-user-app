@@ -69,7 +69,7 @@ const AddressDetailsStep = ({
   onSuccess,
   apiError = null,
 }: AddressDetailsStepProps & { apiError?: string | null }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, getTypography, getButtonColor } = useTheme();
   const _navigation = useNavigation();
   const { addAddress, addingLoading } = useAddress(); // Use addingLoading from store
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -330,54 +330,13 @@ const AddressDetailsStep = ({
   const themedStyles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: getColor('background'),
+      backgroundColor: getColor('background') || '#111827', // Fallback to default background
     },
     contentContainer: {
       padding: Math.max(20, width * 0.05),
       paddingBottom: Math.max(40, height * 0.05),
     },
-    locationPreview: {
-      marginBottom: 24,
-      padding: Math.max(16, width * 0.04),
-      borderRadius: theme.borderRadius.md,
-      alignItems: 'center',
-      backgroundColor: getColor('card'),
-      minHeight: 70,
-      justifyContent: 'center',
-      // borderWidth: 1,
-      // borderColor: getColor('border'),
-      // shadowColor: theme.colors.shadow.color,
-      // shadowOffset: theme.colors.shadow.offset,
-      // shadowOpacity: theme.colors.shadow.opacity * 0.3,
-      // shadowRadius: theme.colors.shadow.radius,
-      // elevation: 2,
-    },
-    locationText: {
-      fontSize: getTypography('body'),
-      color: getColor('text'),
-      textAlign: 'center',
-      includeFontPadding: false,
-      lineHeight: getTypography('body') * 1.3,
-      marginBottom: 12,
-    },
-    changeLocationButton: {
-      alignSelf: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: theme.borderRadius.md,
-      // backgroundColor: getColor('primary'),
-      minHeight: 36,
-      borderWidth: 2,
-      borderColor: getColor('primary'),
-      justifyContent: 'center',
-    },
-    changeLocationButtonText: {
-      color: getColor('white'),
-      fontSize: getTypography('caption'),
-      fontWeight: '600',
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-    },
+
     inputContainer: {
       marginBottom: 20,
     },
@@ -395,16 +354,16 @@ const AddressDetailsStep = ({
     input: {
       height: Math.max(50, height * 0.065),
       paddingHorizontal: Math.max(18, width * 0.045),
-      borderRadius: theme.borderRadius.md,
+      borderRadius: 12, // Use fixed value instead of theme.borderRadius.md
       borderWidth: 1.5,
       backgroundColor: getColor('card'),
       color: getColor('text'),
       fontSize: getTypography('body'),
       includeFontPadding: false,
       textAlignVertical: 'center',
-      shadowColor: theme.colors.shadow.color,
+      shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: theme.colors.shadow.opacity * 0.2,
+      shadowOpacity: 0.2,
       shadowRadius: 2,
       elevation: 1,
     },
@@ -458,16 +417,16 @@ const AddressDetailsStep = ({
     tagButton: {
       paddingHorizontal: Math.max(20, width * 0.05),
       paddingVertical: 8,
-      borderRadius: theme.borderRadius.full,
+      borderRadius: 20, // Use fixed value instead of theme.borderRadius.full
       borderWidth: 1.5,
       marginRight: 12,
       marginBottom: 12,
       borderColor: getColor('border'),
       minHeight: 44,
       justifyContent: 'center',
-      shadowColor: theme.colors.shadow.color,
+      shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: theme.colors.shadow.opacity * 0.2,
+      shadowOpacity: 0.2,
       shadowRadius: 2,
       elevation: 1,
     },
@@ -479,25 +438,28 @@ const AddressDetailsStep = ({
     },
     saveButton: {
       padding: 16,
-      borderRadius: theme.borderRadius.sm,
+      borderRadius: 8, // Use fixed value instead of theme.borderRadius.sm
       alignItems: 'center',
       backgroundColor:
         isFormValid() && !addingLoading
           ? getColor('primary')
-          : getColor('button').disabled.background,
+          : getButtonColor('disabled', 'background'),
       minHeight: 26,
       justifyContent: 'center',
 
       opacity: addingLoading ? 0.7 : 1,
-      shadowColor: theme.colors.shadow.color,
+      shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: theme.colors.shadow.opacity * 0.3,
+      shadowOpacity: 0.3,
       shadowRadius: 4,
       elevation: 3,
     },
     saveButtonText: {
       fontWeight: 'bold',
-      color: isFormValid() && !addingLoading ? getColor('background') : getColor('text'),
+      color:
+        isFormValid() && !addingLoading
+          ? getColor('background') || '#111827'
+          : getColor('text') || '#F3F4F6',
       fontSize: getTypography('body'),
       includeFontPadding: false,
       textAlignVertical: 'center',
@@ -522,7 +484,7 @@ const AddressDetailsStep = ({
     apiErrorContainer: {
       backgroundColor: getColor('error'),
       padding: Math.max(16, width * 0.04),
-      borderRadius: theme.borderRadius.md,
+      borderRadius: 12, // Use fixed value instead of theme.borderRadius.md
       marginBottom: 20,
       flexDirection: 'row',
       alignItems: 'center',
@@ -802,7 +764,7 @@ const AddressDetailsStep = ({
           </View>
         )}
 
-        {renderInputRow('name', 'Name (Eg. John Wick)', 'phoneNumber', 'Phone Number', {
+        {renderInputRow('name', 'Name(Eg John Wick)', 'phoneNumber', 'Phone Number', {
           required1: true,
           required2: true,
           keyboardType2: 'numeric',

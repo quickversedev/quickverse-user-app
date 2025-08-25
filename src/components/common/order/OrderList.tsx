@@ -33,10 +33,9 @@ const OrderList: React.FC<OrderListProps> = ({
 
   // State hooks
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedTimeFilter, setSelectedTimeFilter] = useState('7 Days');
 
   // Memoized values
-  const timeFilterOptions = useMemo(() => ['7 Days', '2 Weeks', '1 Month', '2 Month'], []);
+
   const filteredOrders = useMemo(() => {
     // Always return fresh orders when loading or refreshing
     if (loading || refreshing) return [];
@@ -73,7 +72,6 @@ const OrderList: React.FC<OrderListProps> = ({
       try {
         await refreshOrders(10); // Pass pageSize to ensure we get fresh data
         // Clear any existing filters after refresh
-        setSelectedTimeFilter('7 Days');
       } catch (error) {
         console.error('Refresh failed:', error);
       } finally {
@@ -87,11 +85,6 @@ const OrderList: React.FC<OrderListProps> = ({
       loadMoreOrders();
     }
   }, [hasMoreOrders, isLoading, loadMoreOrders]);
-
-  const handleTimeFilter = useCallback((filter: string) => {
-    setSelectedTimeFilter(filter);
-    // TODO: Implement time-based filtering logic
-  }, []);
 
   const handleOrderSomething = useCallback(() => {
     // Navigate to main app (home screen)
@@ -275,40 +268,6 @@ const OrderList: React.FC<OrderListProps> = ({
     [getColor, getStatusColor, handleOrderPress]
   );
 
-  const renderTimeFilter = useCallback(
-    () => (
-      <View style={styles.filterContainer}>
-        <Text style={[styles.filterLabel, { color: getColor('text') }]}>From Last:</Text>
-        <View style={styles.filterButtons}>
-          {timeFilterOptions.map(filter => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterButton,
-                {
-                  backgroundColor: selectedTimeFilter === filter ? '#FFD700' : getColor('border'),
-                },
-              ]}
-              onPress={() => handleTimeFilter(filter)}
-            >
-              <Text
-                style={[
-                  styles.filterButtonText,
-                  {
-                    color: selectedTimeFilter === filter ? getColor('black') : getColor('text'),
-                  },
-                ]}
-              >
-                {filter}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    ),
-    [getColor, timeFilterOptions, selectedTimeFilter, handleTimeFilter]
-  );
-
   // Memoize the error component
   const errorComponent = useMemo(() => {
     if (!error) return null;
@@ -332,8 +291,6 @@ const OrderList: React.FC<OrderListProps> = ({
 
   return (
     <View style={[styles.container, { backgroundColor: getColor('background') }]}>
-      {showStatusFilter && renderTimeFilter()}
-
       <FlatList
         data={filteredOrders}
         renderItem={renderOrderItem}

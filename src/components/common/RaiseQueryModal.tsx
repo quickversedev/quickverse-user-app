@@ -53,6 +53,10 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Validation state
+  const isFormValid =
+    Boolean(selectedCategory) && description.trim().length > 0 && description.trim().length <= 300;
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const day = date.getDate().toString().padStart(2, '0');
@@ -80,21 +84,6 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!selectedCategory) {
-      Alert.alert('Error', 'Please select an issue category');
-      return;
-    }
-
-    if (!description.trim()) {
-      Alert.alert('Error', 'Please provide a description of the issue');
-      return;
-    }
-
-    if (description.trim().length > 300) {
-      Alert.alert('Error', 'Description cannot exceed 300 words');
-      return;
-    }
-
     if (!authData?.jwt || !authData?.phone) {
       Alert.alert('Error', 'You must be logged in to submit a query.');
       return;
@@ -105,7 +94,7 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
       // Build payload
       const payload = {
         orderId,
-        subject: `Order ${orderId} - ${selectedCategory.label}`,
+        subject: `Order ${orderId} - ${selectedCategory?.label || 'Unknown Category'}`,
         body: description.trim(),
       };
 
@@ -443,13 +432,19 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
 
             {/* Submit Button */}
             <TouchableOpacity
-              style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+              style={[
+                styles.submitButton,
+                (!isFormValid || isSubmitting) && styles.submitButtonDisabled,
+              ]}
               onPress={handleSubmit}
-              disabled={isSubmitting}
+              disabled={!isFormValid || isSubmitting}
               activeOpacity={0.7}
             >
               <Text
-                style={[styles.submitButtonText, isSubmitting && styles.submitButtonTextDisabled]}
+                style={[
+                  styles.submitButtonText,
+                  (!isFormValid || isSubmitting) && styles.submitButtonTextDisabled,
+                ]}
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Query'}
               </Text>
