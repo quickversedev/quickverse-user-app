@@ -1,9 +1,16 @@
 import Clipboard from '@react-native-clipboard/clipboard';
 import React from 'react';
-import { Alert, Platform, StyleSheet, ToastAndroid, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Platform,
+  StyleSheet,
+  Text,
+  ToastAndroid,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
-import { ThemeText } from '../../common/theme/ThemeText';
 
 interface OrderHeaderProps {
   orderId: string;
@@ -11,7 +18,7 @@ interface OrderHeaderProps {
 }
 
 const OrderHeader: React.FC<OrderHeaderProps> = ({ orderId, onBackPress }) => {
-  const { getColor } = useTheme();
+  const { getColor, getTypography } = useTheme();
 
   const handleCopyOrderId = () => {
     try {
@@ -36,9 +43,18 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({ orderId, onBackPress }) => {
         <Icon name="arrow-left" size={24} color={getColor('text')} />
       </TouchableOpacity>
       <View style={styles.titleRow}>
-        <ThemeText variant="subtitle" style={styles.headerTitle} color={getColor('text')}>
+        <Text
+          style={[
+            styles.headerTitle,
+            {
+              color: getColor('text'),
+              fontSize: getTypography('subtitle'),
+              fontFamily: 'BricolageGrotesque-Regular',
+            },
+          ]}
+        >
           Order: #{orderId}
-        </ThemeText>
+        </Text>
         <TouchableOpacity
           style={styles.inlineCopyButton}
           onPress={handleCopyOrderId}

@@ -1,8 +1,8 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Order } from '../../../types/order';
-import { ThemeText } from '../theme/ThemeText';
 
 interface OrderInfoCardProps {
   order: Order;
@@ -11,90 +11,89 @@ interface OrderInfoCardProps {
 }
 
 const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, getStatusColor, actionButton }) => {
-  const { getColor, theme } = useTheme();
-
-  const styles = StyleSheet.create({
-    container: {
-      backgroundColor: getColor('card'),
-      borderRadius: theme.borderRadius.md,
-      padding: 16,
-      marginHorizontal: 16,
-      marginBottom: 16,
-    },
-    title: {
-      color: getColor('text'),
-      marginBottom: 12,
-    },
-    infoRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 8,
-    },
-    label: {
-      color: getColor('subText'),
-    },
-    value: {
-      color: getColor('text'),
-    },
-    status: {
-      color: getColor('primary'),
-    },
-    totalAmount: {
-      color: getColor('text'),
-    },
-  });
+  const { getColor } = useTheme();
 
   return (
-    <View style={styles.container}>
-      <ThemeText variant="h2" color={getColor('text')} style={styles.title}>
-        Order Information
-      </ThemeText>
-
-      <View style={styles.infoRow}>
-        <ThemeText variant="body" color={getColor('subText')} style={styles.label}>
-          Order ID
-        </ThemeText>
-        <ThemeText variant="body" color={getColor('text')} style={styles.value}>
-          #{order.orderId}
-        </ThemeText>
+    <View style={[styles.orderCard, { backgroundColor: getColor('card') }]}>
+      {/* Top Row with Location and Action Button */}
+      <View style={styles.locationRow}>
+        <View style={styles.leftSection}>
+          <View style={styles.iconContainer}>
+            <Icon name="home" size={20} color={getColor('primary')} />
+          </View>
+          <View style={styles.locationInfo}>
+            <Text style={[styles.locationTitle, { color: getColor('text') }]}>
+              Delivery Address
+            </Text>
+            <Text style={[styles.locationAddress, { color: getColor('subText') }]}>
+              {order.deliveryAddress.address}
+              {order.deliveryAddress.addressLine2 && `, ${order.deliveryAddress.addressLine2}`}
+              {order.deliveryAddress.addressLine3 && `, ${order.deliveryAddress.addressLine3}`}
+            </Text>
+            <Text style={[styles.locationCity, { color: getColor('subText') }]}>
+              {order.deliveryAddress.city}, {order.deliveryAddress.state} -{' '}
+              {order.deliveryAddress.postalCode}
+            </Text>
+          </View>
+        </View>
+        {actionButton && <View style={styles.actionButtonContainer}>{actionButton}</View>}
       </View>
 
-      <View style={styles.infoRow}>
-        <ThemeText variant="body" color={getColor('subText')} style={styles.label}>
-          Order Date
-        </ThemeText>
-        <ThemeText variant="body" color={getColor('text')} style={styles.value}>
-          {new Date(order.orderDate).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          })}
-          ,{' '}
-          {new Date(order.orderDate).toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          })}
-        </ThemeText>
+      {/* Delivery Details and Status */}
+      <View style={styles.deliveryStatusRow}>
+        <View style={styles.deliveryDetails}>
+          <Text style={[styles.deliveryDate, { color: getColor('text') }]}>
+            {new Date(order.orderDate).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            })}
+            ,{' '}
+            {new Date(order.orderDate).toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+            })}
+          </Text>
+          {order.actualDeliveryTime && (
+            <Text style={[styles.deliveryAgent, { color: getColor('subText') }]}>
+              By {order.customerName}
+            </Text>
+          )}
+        </View>
+        <View style={styles.rightSection}>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}>
+            <Text style={styles.statusText}>
+              {order.status === 'delivered' ? 'DELIVERED' : order.status.toUpperCase()}
+            </Text>
+          </View>
+        </View>
       </View>
 
-      <View style={styles.infoRow}>
-        <ThemeText variant="body" color={getColor('subText')} style={styles.label}>
-          Status
-        </ThemeText>
-        <ThemeText variant="body" color={getStatusColor(order.status)} style={styles.status}>
-          {order.status === 'delivered' ? 'DELIVERED' : order.status.toUpperCase()}
-        </ThemeText>
-      </View>
-
-      <View style={styles.infoRow}>
-        <ThemeText variant="body" color={getColor('subText')} style={styles.label}>
-          Total Amount
-        </ThemeText>
-        <ThemeText variant="h2" color={getColor('text')} style={styles.totalAmount}>
-          ₹{order.totalAmount}
-        </ThemeText>
+      {/* Customer Contact Information */}
+      <View style={styles.contactRow}>
+        <View style={styles.contactInfo}>
+          <View style={styles.contactIconContainer}>
+            <Icon name="account" size={16} color={getColor('primary')} />
+          </View>
+          <View style={styles.contactDetails}>
+            <Text style={[styles.contactLabel, { color: getColor('subText') }]}>Customer</Text>
+            <Text style={[styles.contactValue, { color: getColor('text') }]}>
+              {order.customerName}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.contactInfo}>
+          <View style={styles.contactIconContainer}>
+            <Icon name="phone" size={16} color={getColor('primary')} />
+          </View>
+          <View style={styles.contactDetails}>
+            <Text style={[styles.contactLabel, { color: getColor('subText') }]}>Phone</Text>
+            <Text style={[styles.contactValue, { color: getColor('text') }]}>
+              {order.customerPhone}
+            </Text>
+          </View>
+        </View>
       </View>
     </View>
   );

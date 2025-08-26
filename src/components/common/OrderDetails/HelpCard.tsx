@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Order } from '../../../types/order';
 import RaiseQueryModal from '../RaiseQueryModal';
-import { ThemeText } from '../theme/ThemeText';
 
 interface HelpCardProps {
   onPress?: () => void;
@@ -12,7 +11,7 @@ interface HelpCardProps {
 }
 
 const HelpCard: React.FC<HelpCardProps> = ({ onPress, order }) => {
-  const { getColor, theme } = useTheme();
+  const { getColor } = useTheme();
   const [showQueryModal, setShowQueryModal] = useState(false);
 
   const handleGetHelp = () => {
@@ -27,64 +26,24 @@ const HelpCard: React.FC<HelpCardProps> = ({ onPress, order }) => {
     setShowQueryModal(false);
   };
 
-  const styles = StyleSheet.create({
-    container: {
-      backgroundColor: getColor('card'),
-      borderRadius: theme.borderRadius.md,
-      padding: 16,
-      marginHorizontal: 16,
-      marginBottom: 16,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    icon: {
-      marginRight: 12,
-    },
-    content: {
-      flex: 1,
-    },
-    title: {
-      color: getColor('text'),
-      marginBottom: 4,
-    },
-    message: {
-      color: getColor('subText'),
-    },
-    actionButton: {
-      backgroundColor: getColor('primary'),
-      borderRadius: theme.borderRadius.sm,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-    },
-    actionButtonText: {
-      color: getColor('white'),
-    },
-  });
-
   return (
     <>
-      <TouchableOpacity style={styles.container} onPress={handleGetHelp} activeOpacity={0.8}>
-        <MaterialCommunityIcons
-          name="help-circle-outline"
-          size={24}
-          color={getColor('primary')}
-          style={styles.icon}
-        />
-        <View style={styles.content}>
-          <ThemeText variant="subtitle" color={getColor('text')} style={styles.title}>
-            Need Help?
-          </ThemeText>
-          <ThemeText variant="caption" color={getColor('subText')} style={styles.message}>
-            We are here for you
-          </ThemeText>
+      <TouchableOpacity
+        style={[styles.helpCard, { backgroundColor: getColor('card') }]}
+        onPress={handleGetHelp}
+      >
+        <View style={styles.helpContent}>
+          <View style={styles.helpInfo}>
+            <Icon name="help-circle-outline" size={20} color={getColor('text')} />
+            <View style={styles.helpText}>
+              <Text style={[styles.helpLabel, { color: getColor('subText') }]}>Need Help?</Text>
+              <Text style={[styles.helpMessage, { color: getColor('text') }]}>
+                We are here for you
+              </Text>
+            </View>
+          </View>
+          <Text style={[styles.helpAction, { color: '#FFA500' }]}>Get Help {'>'}</Text>
         </View>
-        {onPress && (
-          <TouchableOpacity style={styles.actionButton}>
-            <ThemeText variant="caption" color={getColor('white')} style={styles.actionButtonText}>
-              Get Help {'>'}
-            </ThemeText>
-          </TouchableOpacity>
-        )}
       </TouchableOpacity>
 
       {/* Raise Query Modal */}
@@ -101,5 +60,38 @@ const HelpCard: React.FC<HelpCardProps> = ({ onPress, order }) => {
     </>
   );
 };
+
+const styles = StyleSheet.create({
+  helpCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  helpContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  helpInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  helpText: {
+    marginLeft: 12,
+  },
+  helpLabel: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  helpMessage: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  helpAction: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+});
 
 export default HelpCard;
