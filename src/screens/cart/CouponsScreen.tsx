@@ -6,13 +6,13 @@ import {
   Modal,
   Platform,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
@@ -26,7 +26,7 @@ const CouponCard: React.FC<{
   onApply: (code: string) => void;
   isApplied?: boolean;
 }> = ({ coupon, onApply, isApplied = false }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, theme } = useTheme();
 
   const styles = StyleSheet.create({
     card: {
@@ -37,7 +37,7 @@ const CouponCard: React.FC<{
       ...Platform.select({
         ios: {
           shadowColor: theme.colors.shadow.color,
-          shadowOffset: theme.colors.shadow.offset,
+          shadowOffset: { width: 0, height: 2 },
           shadowOpacity: theme.colors.shadow.opacity,
           shadowRadius: theme.colors.shadow.radius,
         },
@@ -58,12 +58,6 @@ const CouponCard: React.FC<{
       paddingVertical: 6,
       borderRadius: theme.borderRadius.sm,
     },
-    discountText: {
-      color: getColor('black'),
-      fontSize: getTypography('caption'),
-      fontWeight: 'bold',
-      fontFamily: theme.typography.fontFamily,
-    },
     applyButton: {
       borderWidth: 1,
       borderColor: getColor('primary'),
@@ -79,18 +73,6 @@ const CouponCard: React.FC<{
       borderRadius: theme.borderRadius.sm,
       opacity: 0.6,
     },
-    applyButtonText: {
-      color: getColor('primary'),
-      fontSize: getTypography('caption'),
-      fontWeight: 'bold',
-      fontFamily: theme.typography.fontFamily,
-    },
-    applyButtonTextDisabled: {
-      color: getColor('subText'),
-      fontSize: getTypography('caption'),
-      fontWeight: 'bold',
-      fontFamily: theme.typography.fontFamily,
-    },
     applyButtonApplied: {
       borderWidth: 1,
       borderColor: getColor('primary'),
@@ -99,37 +81,19 @@ const CouponCard: React.FC<{
       borderRadius: theme.borderRadius.sm,
       backgroundColor: getColor('primary'),
     },
-    applyButtonTextApplied: {
-      color: getColor('black'),
-      fontSize: getTypography('caption'),
-      fontWeight: 'bold',
-      fontFamily: theme.typography.fontFamily,
-    },
     code: {
       color: getColor('text'),
-      fontSize: getTypography('caption'),
-      fontWeight: 'normal',
       marginBottom: 8,
-      fontFamily: theme.typography.fontFamily,
     },
     codeLabel: {
       color: getColor('subText'),
-      fontSize: getTypography('caption'),
-      fontWeight: 'normal',
-      fontFamily: theme.typography.fontFamily,
     },
     codeValue: {
       color: getColor('primary'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-      fontFamily: theme.typography.fontFamily,
     },
     description: {
       color: getColor('text'),
-      fontSize: getTypography('subtitle'),
-      fontWeight: '500',
       marginBottom: 12,
-      fontFamily: theme.typography.fontFamily,
     },
     footer: {
       flexDirection: 'row',
@@ -137,13 +101,9 @@ const CouponCard: React.FC<{
     },
     minOrder: {
       color: getColor('subText'),
-      fontSize: getTypography('small'),
-      fontFamily: theme.typography.fontFamily,
     },
     expiryDate: {
       color: getColor('subText'),
-      fontSize: getTypography('small'),
-      fontFamily: theme.typography.fontFamily,
     },
     eligibilityInfo: {
       marginTop: 8,
@@ -153,21 +113,14 @@ const CouponCard: React.FC<{
     },
     eligibilityText: {
       color: getColor('primary'),
-      fontSize: getTypography('small'),
-      fontWeight: '600',
-      fontFamily: theme.typography.fontFamily,
       marginBottom: 4,
     },
     constraintText: {
       color: getColor('error'),
-      fontSize: getTypography('small'),
-      fontFamily: theme.typography.fontFamily,
       marginBottom: 2,
     },
     benefitText: {
       color: getColor('primary'),
-      fontSize: getTypography('small'),
-      fontFamily: theme.typography.fontFamily,
       marginBottom: 2,
     },
   });
@@ -213,7 +166,9 @@ const CouponCard: React.FC<{
     <View style={styles.card}>
       <View style={styles.header}>
         <View style={styles.discountBadge}>
-          <Text style={styles.discountText}>Get {coupon.discount}</Text>
+          <ThemeText variant="caption" color={getColor('black')}>
+            Get {coupon.discount}
+          </ThemeText>
         </View>
         <TouchableOpacity
           style={
@@ -226,40 +181,54 @@ const CouponCard: React.FC<{
           onPress={() => isEligible && !isApplied && onApply(coupon.code)}
           disabled={!isEligible || isApplied}
         >
-          <Text
-            style={
-              isApplied
-                ? styles.applyButtonTextApplied
-                : isEligible
-                ? styles.applyButtonText
-                : styles.applyButtonTextDisabled
+          <ThemeText
+            variant="caption"
+            color={
+              isApplied ? getColor('black') : isEligible ? getColor('primary') : getColor('subText')
             }
           >
             {isApplied ? 'APPLIED' : isEligible ? 'APPLY' : 'NOT ELIGIBLE'}
-          </Text>
+          </ThemeText>
         </TouchableOpacity>
       </View>
-      <Text style={styles.code}>
-        <Text style={styles.codeLabel}>apply coupon code: </Text>
-        <Text style={styles.codeValue}>{coupon.code}</Text>
-      </Text>
-      <Text style={styles.description}>{coupon.description}</Text>
+      <ThemeText variant="caption" color={getColor('text')} style={styles.code}>
+        <ThemeText variant="caption" color={getColor('subText')} style={styles.codeLabel}>
+          apply coupon code:{' '}
+        </ThemeText>
+        <ThemeText variant="body" color={getColor('primary')} style={styles.codeValue}>
+          {coupon.code}
+        </ThemeText>
+      </ThemeText>
+      <ThemeText variant="subtitle" color={getColor('text')} style={styles.description}>
+        {coupon.description}
+      </ThemeText>
 
       {/* Show eligibility information for non-eligible offers */}
       {!isEligible && eligibilityMessages && eligibilityMessages.length > 0 && (
         <View style={styles.eligibilityInfo}>
-          <Text style={styles.eligibilityText}>Why not eligible?</Text>
+          <ThemeText variant="small" color={getColor('primary')} style={styles.eligibilityText}>
+            Why not eligible?
+          </ThemeText>
           {eligibilityMessages.map((message, index) => (
-            <Text key={index} style={styles.constraintText}>
+            <ThemeText
+              key={index}
+              variant="small"
+              color={getColor('error')}
+              style={styles.constraintText}
+            >
               • {message}
-            </Text>
+            </ThemeText>
           ))}
         </View>
       )}
 
       <View style={styles.footer}>
-        <Text style={styles.minOrder}>Min. Order: ₹{coupon.minOrder}</Text>
-        <Text style={styles.expiryDate}>{coupon.expiryDate}</Text>
+        <ThemeText variant="small" color={getColor('subText')} style={styles.minOrder}>
+          Min. Order: ₹{coupon.minOrder}
+        </ThemeText>
+        <ThemeText variant="small" color={getColor('subText')} style={styles.expiryDate}>
+          {coupon.expiryDate}
+        </ThemeText>
       </View>
     </View>
   );
@@ -281,7 +250,7 @@ const CouponsScreen: React.FC = () => {
     applyCouponError,
   } = useCouponStore();
   const navigation = useNavigation<AppNavigationProp>();
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, getButtonColor, theme } = useTheme();
   const [couponCode, setCouponCode] = useState('');
   const { authData } = useAuth();
 
@@ -293,13 +262,6 @@ const CouponsScreen: React.FC = () => {
   // Get vendor-specific coupons
   const availableCoupons = getAvailableCoupons(vendorId);
   const appliedCoupon = cart ? getAppliedCoupon(cart.cartId) : null;
-  console.log('CouponsScreen - appliedCoupon check:', {
-    cartId: cart?.cartId,
-    appliedCoupon,
-    cartAppliedCoupon: cart?.appliedCoupon,
-    cartSmartBizOffer: cart?.smartBizOffer,
-    isCouponApplied: cart?.smartBizOffer !== null && cart?.smartBizOffer !== undefined,
-  });
 
   useEffect(() => {
     if (vendorId) {
@@ -392,12 +354,12 @@ const CouponsScreen: React.FC = () => {
       height: 40,
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: theme.borderRadius.full,
+      borderRadius: theme.borderRadius.md,
       backgroundColor: getColor('card'),
       ...Platform.select({
         ios: {
           shadowColor: theme.colors.shadow.color,
-          shadowOffset: theme.colors.shadow.offset,
+          shadowOffset: { width: 0, height: 2 },
           shadowOpacity: theme.colors.shadow.opacity,
           shadowRadius: theme.colors.shadow.radius,
         },
@@ -408,9 +370,6 @@ const CouponsScreen: React.FC = () => {
     },
     headerTitle: {
       color: getColor('text'),
-      fontSize: getTypography('subtitle'),
-      fontWeight: '600',
-      fontFamily: theme.typography.fontFamily,
     },
     placeholder: {
       width: 40,
@@ -434,8 +393,6 @@ const CouponsScreen: React.FC = () => {
       paddingHorizontal: 16,
       backgroundColor: getColor('background'),
       color: getColor('text'),
-      fontSize: getTypography('body'),
-      fontFamily: theme.typography.fontFamily,
     },
     applyButtonLarge: {
       height: 48,
@@ -447,17 +404,11 @@ const CouponsScreen: React.FC = () => {
     },
     applyButtonLargeText: {
       color: getColor('black'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-      fontFamily: theme.typography.fontFamily,
     },
     sectionTitle: {
-      fontSize: getTypography('subtitle'),
-      fontWeight: '600',
       color: getColor('text'),
       marginHorizontal: 16,
       marginBottom: 12,
-      fontFamily: theme.typography.fontFamily,
     },
     couponList: {
       padding: 16,
@@ -480,16 +431,12 @@ const CouponsScreen: React.FC = () => {
     },
     errorText: {
       color: getColor('error'),
-      fontSize: getTypography('body'),
       textAlign: 'center',
-      fontFamily: theme.typography.fontFamily,
       marginBottom: 8,
     },
     errorSubtext: {
       color: getColor('subText'),
-      fontSize: getTypography('caption'),
       textAlign: 'center',
-      fontFamily: theme.typography.fontFamily,
       marginBottom: 16,
     },
     retryButton: {
@@ -500,15 +447,10 @@ const CouponsScreen: React.FC = () => {
     },
     retryButtonText: {
       color: getColor('black'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-      fontFamily: theme.typography.fontFamily,
     },
     noDataText: {
       color: getColor('subText'),
-      fontSize: getTypography('body'),
       textAlign: 'center',
-      fontFamily: theme.typography.fontFamily,
     },
     vendorInfo: {
       backgroundColor: getColor('card'),
@@ -521,9 +463,6 @@ const CouponsScreen: React.FC = () => {
     },
     vendorName: {
       color: getColor('text'),
-      fontSize: getTypography('body'),
-      fontWeight: '600',
-      fontFamily: theme.typography.fontFamily,
       marginLeft: 12,
     },
     modalOverlay: {
@@ -541,7 +480,7 @@ const CouponsScreen: React.FC = () => {
       ...Platform.select({
         ios: {
           shadowColor: theme.colors.shadow.color,
-          shadowOffset: theme.colors.shadow.offset,
+          shadowOffset: { width: 0, height: 2 },
           shadowOpacity: theme.colors.shadow.opacity,
           shadowRadius: theme.colors.shadow.radius,
         },
@@ -555,16 +494,11 @@ const CouponsScreen: React.FC = () => {
     },
     errorModalTitle: {
       color: getColor('error'),
-      fontSize: getTypography('subtitle'),
-      fontWeight: '600',
-      fontFamily: theme.typography.fontFamily,
       marginBottom: 8,
     },
     errorModalMessage: {
       color: getColor('subText'),
-      fontSize: getTypography('body'),
       textAlign: 'center',
-      fontFamily: theme.typography.fontFamily,
       marginBottom: 24,
     },
     errorModalButton: {
@@ -575,9 +509,6 @@ const CouponsScreen: React.FC = () => {
     },
     errorModalButtonText: {
       color: getColor('black'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-      fontFamily: theme.typography.fontFamily,
     },
   });
 
@@ -589,7 +520,9 @@ const CouponsScreen: React.FC = () => {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Apply Coupon</Text>
+          <ThemeText variant="subtitle" color={getColor('text')} style={styles.headerTitle}>
+            Apply Coupon
+          </ThemeText>
           <View style={styles.placeholder} />
         </View>
 
@@ -610,21 +543,27 @@ const CouponsScreen: React.FC = () => {
                 {
                   backgroundColor: couponCode.trim()
                     ? getColor('primary')
-                    : getColor('button').disabled.background,
+                    : getButtonColor('disabled', 'background'),
                 },
               ]}
               onPress={handleManualApply}
               disabled={!couponCode.trim() || applyCouponLoading}
             >
-              <Text style={styles.applyButtonLargeText}>
+              <ThemeText
+                variant="body"
+                color={getColor('black')}
+                style={styles.applyButtonLargeText}
+              >
                 {applyCouponLoading ? 'APPLYING...' : 'APPLY'}
-              </Text>
+              </ThemeText>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Available Coupons */}
-        <Text style={styles.sectionTitle}>Available Coupons</Text>
+        <ThemeText variant="subtitle" color={getColor('text')} style={styles.sectionTitle}>
+          Available Coupons
+        </ThemeText>
         {vendorOffersLoading || customerOffersLoading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color={getColor('primary')} />
@@ -637,10 +576,16 @@ const CouponsScreen: React.FC = () => {
               color={getColor('error')}
               style={styles.errorIcon}
             />
-            <Text style={styles.errorText}>Failed to load coupons</Text>
-            <Text style={styles.errorSubtext}>{vendorOffersError || customerOffersError}</Text>
+            <ThemeText variant="body" color={getColor('error')} style={styles.errorText}>
+              Failed to load coupons
+            </ThemeText>
+            <ThemeText variant="caption" color={getColor('subText')} style={styles.errorSubtext}>
+              {vendorOffersError || customerOffersError}
+            </ThemeText>
             <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-              <Text style={styles.retryButtonText}>Try Again</Text>
+              <ThemeText variant="body" color={getColor('black')} style={styles.retryButtonText}>
+                Try Again
+              </ThemeText>
             </TouchableOpacity>
           </View>
         ) : availableCoupons.length === 0 ? (
@@ -651,7 +596,9 @@ const CouponsScreen: React.FC = () => {
               color={getColor('subText')}
               style={styles.errorIcon}
             />
-            <Text style={styles.noDataText}>No coupons available for this vendor</Text>
+            <ThemeText variant="body" color={getColor('subText')} style={styles.noDataText}>
+              No coupons available for this vendor
+            </ThemeText>
           </View>
         ) : (
           <FlatList
@@ -689,12 +636,20 @@ const CouponsScreen: React.FC = () => {
               color={getColor('error')}
               style={styles.errorModalIcon}
             />
-            <Text style={styles.errorModalTitle}>Unable to Apply Coupon</Text>
-            <Text style={styles.errorModalMessage}>
+            <ThemeText variant="subtitle" color={getColor('error')} style={styles.errorModalTitle}>
+              Unable to Apply Coupon
+            </ThemeText>
+            <ThemeText variant="body" color={getColor('subText')} style={styles.errorModalMessage}>
               {applyCouponError || 'Something went wrong. Please try again.'}
-            </Text>
+            </ThemeText>
             <TouchableOpacity style={styles.errorModalButton} onPress={handleCloseErrorModal}>
-              <Text style={styles.errorModalButtonText}>OK</Text>
+              <ThemeText
+                variant="body"
+                color={getColor('black')}
+                style={styles.errorModalButtonText}
+              >
+                OK
+              </ThemeText>
             </TouchableOpacity>
           </View>
         </View>

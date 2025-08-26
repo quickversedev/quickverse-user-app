@@ -4,7 +4,6 @@ import {
   Image,
   ImageSourcePropType,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -13,6 +12,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
 import { getCleanImageUri } from '../../../utils/imageUtils';
 import { RatingBadge } from '../../common';
+import { ThemeText } from '../../common/theme/ThemeText';
 
 const { width } = Dimensions.get('window');
 
@@ -37,7 +37,7 @@ const VendorCard: React.FC<VendorCardProps> = ({
   size = 'medium',
   disabled = false,
 }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, theme } = useTheme();
 
   // Calculate card width based on size
   const getCardWidth = (): number => {
@@ -82,12 +82,6 @@ const VendorCard: React.FC<VendorCardProps> = ({
     vendorInfo: {
       padding: size === 'small' ? 8 : 12,
     },
-    vendorName: {
-      color: getColor('text'),
-      fontSize: size === 'small' ? getTypography('caption') : getTypography('body'),
-      fontWeight: 'bold',
-      marginBottom: 4,
-    },
     vendorRating: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -95,7 +89,6 @@ const VendorCard: React.FC<VendorCardProps> = ({
     },
     ratingText: {
       color: getColor('text'),
-      fontSize: size === 'small' ? getTypography('small') : getTypography('caption'),
       marginLeft: 4,
     },
     vendorMeta: {
@@ -104,7 +97,6 @@ const VendorCard: React.FC<VendorCardProps> = ({
     },
     metaText: {
       color: getColor('subText'),
-      fontSize: size === 'small' ? getTypography('small') : getTypography('caption'),
       marginLeft: 4,
     },
     favoriteButton: {
@@ -129,7 +121,6 @@ const VendorCard: React.FC<VendorCardProps> = ({
     },
     closedText: {
       color: getColor('white'),
-      fontSize: getTypography('body'),
       fontWeight: 'bold',
       textTransform: 'uppercase',
       fontFamily: 'BricolageGrotesque-Regular',
@@ -152,7 +143,13 @@ const VendorCard: React.FC<VendorCardProps> = ({
       <View style={{ position: 'relative' }}>
         {disabled && (
           <View style={styles.disabledOverlay}>
-            <Text style={styles.closedText}>Store Closed</Text>
+            <ThemeText
+              variant="body"
+              color={getColor('white')}
+              style={{ textTransform: 'uppercase' }}
+            >
+              Store Closed
+            </ThemeText>
           </View>
         )}
         {imageSource && <Image source={imageSource} style={styles.vendorImage} />}
@@ -165,17 +162,27 @@ const VendorCard: React.FC<VendorCardProps> = ({
         </TouchableOpacity>
       </View>
       <View style={styles.vendorInfo}>
-        <Text style={styles.vendorName} numberOfLines={size === 'small' ? 1 : 2}>
+        <ThemeText
+          variant={size === 'small' ? 'caption' : 'body'}
+          color={getColor('text')}
+          style={{ marginBottom: 4 }}
+          numberOfLines={size === 'small' ? 1 : 2}
+        >
           {vendor.name}
-        </Text>
+        </ThemeText>
         <View style={styles.vendorRating}>
           <RatingBadge rating={vendor.rating || 0} size="small" />
         </View>
         <View style={styles.vendorMeta}>
           <MaterialCommunityIcons name="flash" size={18} color={getColor('primary')} />
-          <Text style={styles.metaText} numberOfLines={1}>
+          <ThemeText
+            variant={size === 'small' ? 'small' : 'caption'}
+            color={getColor('subText')}
+            style={{ marginLeft: 4 }}
+            numberOfLines={1}
+          >
             {vendor.preparationTime || '30 mins'}
-          </Text>
+          </ThemeText>
         </View>
       </View>
     </TouchableOpacity>

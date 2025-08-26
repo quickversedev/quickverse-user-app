@@ -1,77 +1,89 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
-import { Images } from '../../../assets';
+import { Image, StyleSheet, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
+import { ThemeText } from '../../common/theme/ThemeText';
 
 interface VendorEmptyStateProps {
-  category: string;
+  message?: {
+    title: string;
+    subtitle: string;
+  };
+  category?: string;
 }
 
-const VendorEmptyState: React.FC<VendorEmptyStateProps> = ({ category }) => {
-  const { getColor } = useTheme();
+const VendorEmptyState: React.FC<VendorEmptyStateProps> = ({ message, category }) => {
+  const { getColor, theme } = useTheme();
 
-  const getCategoryMessage = (category: string) => {
-    switch (category.toLowerCase()) {
-      case 'food':
-        return {
-          title: 'No food vendors available',
-          subtitle: "We're working on bringing delicious food to your area",
-        };
-      case 'grocery':
-        return {
-          title: 'No grocery stores nearby',
-          subtitle: "We'll notify you when grocery delivery becomes available",
-        };
-      case 'pharmacy':
-        return {
-          title: 'No pharmacies in your area',
-          subtitle: "We're expanding our pharmacy network to serve you better",
-        };
-      default:
-        return {
-          title: 'No vendors available',
-          subtitle: "We're working on bringing services to your area",
-        };
+  // Generate message based on category if message prop is not provided
+  const getMessage = () => {
+    if (message) {
+      return message;
     }
+
+    const categoryMessages = {
+      Food: {
+        title: 'No Food Vendors Available',
+        subtitle:
+          "We don't have any food delivery vendors in your area at the moment. Please try changing your delivery address or check back later.",
+      },
+      Grocery: {
+        title: 'No Grocery Vendors Available',
+        subtitle:
+          "We don't have any grocery delivery vendors in your area at the moment. Please try changing your delivery address or check back later.",
+      },
+      Pharmacy: {
+        title: 'No Pharmacy Vendors Available',
+        subtitle:
+          "We don't have any pharmacy delivery vendors in your area at the moment. Please try changing your delivery address or check back later.",
+      },
+    };
+
+    return (
+      categoryMessages[category as keyof typeof categoryMessages] || {
+        title: 'No Vendors Available',
+        subtitle:
+          "We don't have any vendors in your area at the moment. Please try changing your delivery address or check back later.",
+      }
+    );
   };
 
-  const message = getCategoryMessage(category);
+  const displayMessage = getMessage();
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 32,
+    },
+    image: {
+      width: 120,
+      height: 120,
+      marginBottom: 24,
+      opacity: 0.6,
+    },
+    emptyTitle: {
+      color: getColor('text'),
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    emptySubtitle: {
+      color: getColor('subText'),
+      textAlign: 'center',
+    },
+  });
 
   return (
-    <View style={[styles.container, { backgroundColor: getColor('background') }]}>
-      <Image source={Images.emptyVendors} style={styles.emptyImage} resizeMode="contain" />
-      <Text style={[styles.emptyTitle, { color: getColor('text') }]}>{message.title}</Text>
-      <Text style={[styles.emptySubtitle, { color: getColor('subText') }]}>{message.subtitle}</Text>
+    <View style={styles.container}>
+      <Image source={require('../../../assets/images/empty_vendors.png')} style={styles.image} />
+      <ThemeText variant="h2" color={getColor('text')} style={styles.emptyTitle}>
+        {displayMessage.title}
+      </ThemeText>
+      <ThemeText variant="body" color={getColor('subText')} style={styles.emptySubtitle}>
+        {displayMessage.subtitle}
+      </ThemeText>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-  emptyImage: {
-    width: 120,
-    height: 120,
-    marginBottom: 24,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 12,
-    fontFamily: 'BricolageGrotesque-Regular',
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-    fontFamily: 'BricolageGrotesque-Regular',
-  },
-});
 
 export default VendorEmptyState;

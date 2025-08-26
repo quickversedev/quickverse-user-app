@@ -29,7 +29,7 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
   onSubmitEditing,
   placeholder = 'Search for vendors and products...',
 }) => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor } = useTheme();
   const navigation = useNavigation();
   const searchInputRef = useRef<TextInput>(null);
   // Removed focus tracking; we control visibility with showSuggestions
@@ -134,7 +134,6 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
     searchInput: {
       flex: 1,
       color: getColor('text'),
-      fontSize: getTypography('body'),
       paddingVertical: 4,
     },
     clearButton: {

@@ -6,6 +6,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import { Images } from '../../assets';
 import { useAuth } from '../../contexts/login/AuthProvider';
+import { useAppStateRefresh } from '../../hooks/useAppStateRefresh';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
@@ -58,32 +59,9 @@ const ExploreScreen = () => {
     return null;
   }, []);
 
-  // Helper function to get vendor pin based on category
-  const getVendorPin = useCallback((vendor: Vendor) => {
-    const category = vendor.category?.toLowerCase();
-
-    if (
-      category?.includes('food') ||
-      category?.includes('restaurant') ||
-      category?.includes('cafe')
-    ) {
-      return Images.foodPin;
-    } else if (
-      category?.includes('grocery') ||
-      category?.includes('supermarket') ||
-      category?.includes('mart')
-    ) {
-      return Images.groceryPin;
-    } else if (
-      category?.includes('pharmacy') ||
-      category?.includes('medical') ||
-      category?.includes('health')
-    ) {
-      return Images.pharmacyPin;
-    }
-
-    // Default to food pin if category doesn't match
-    return Images.foodPin;
+  // Helper function to get vendor pin - use flag asset for all vendors
+  const getVendorPin = useCallback(() => {
+    return Images.foodPin; // flag.png
   }, []);
 
   // Memoized vendors based on selected address
@@ -123,6 +101,18 @@ const ExploreScreen = () => {
     }, [selectedAddress])
   );
 
+  // Auto-refresh vendors when app comes back from background
+  useAppStateRefresh({
+    onForeground: async () => {
+      try {
+        handleRefreshVendors();
+      } catch (error) {
+        console.warn('Error refreshing vendors:', error);
+      }
+    },
+    refreshThreshold: 100000, // Refresh after 100 seconds in background
+  });
+
   const handleRefreshVendors = () => {
     // Force complete re-render of the Explore screen
     setIsRefreshing(true);
@@ -145,7 +135,7 @@ const ExploreScreen = () => {
       }
     }, 100);
   };
-  console.log('vendors', vendors);
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -169,7 +159,7 @@ const ExploreScreen = () => {
       zIndex: 10,
       elevation: 6,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: theme.colors.shadow.offset,
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
     },
@@ -193,7 +183,7 @@ const ExploreScreen = () => {
       padding: 12,
       elevation: 6,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: theme.colors.shadow.offset,
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
     },
@@ -328,7 +318,7 @@ const ExploreScreen = () => {
                   title={vendor.name}
                   description={`${vendor.category} • ${vendor.rating || 0}★`}
                   anchor={{ x: 0.5, y: 1.0 }}
-                  image={getVendorPin(vendor)}
+                  image={getVendorPin()}
                 />
               );
             })}

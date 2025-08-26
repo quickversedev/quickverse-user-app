@@ -8,6 +8,7 @@ import { AddressSelectionModal } from '../../components/modules/Header/AddressSe
 import { Header } from '../../components/modules/Header/Header';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useTab } from '../../contexts/TabContext';
+import { useAppStateRefresh } from '../../hooks/useAppStateRefresh';
 import { useHeaderAnimation } from '../../hooks/useHeaderAnimation';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
@@ -24,8 +25,28 @@ const HomeMainScreen = React.memo(() => {
   const { selectedTab } = useTab();
   const { theme } = useTheme();
   const { translateY, opacity, handleScroll } = useHeaderAnimation();
-  const { vendors, loading: vendorLoading } = useVendorStore();
+  const { vendors, loading: vendorLoading, getVendorsNearLocation } = useVendorStore();
   const { selectedAddress } = useAuth();
+
+  // Auto-refresh vendors when app comes back from background
+  useAppStateRefresh({
+    onForeground: async () => {
+      try {
+        console.log('selectedAddress', selectedAddress);
+        if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
+          // Refresh vendors for current location
+          getVendorsNearLocation({
+            latitude: selectedAddress.coordinates.latitude,
+            longitude: selectedAddress.coordinates.longitude,
+            radius: 5,
+          });
+        }
+      } catch (error) {
+        console.warn('Error refreshing vendors on home screen:', error);
+      }
+    },
+    refreshThreshold: 100000, // Refresh after 100 seconds in background
+  });
 
   const { setSelectedAddress, permissionDataInAuth } = useAuth();
   const { authData } = useAuth();

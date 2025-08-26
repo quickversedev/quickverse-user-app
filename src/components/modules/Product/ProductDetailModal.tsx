@@ -6,7 +6,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -19,6 +18,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
 import { getStoreStatus } from '../../../utils/storeUtils';
+import { ThemeText } from '../../common/theme/ThemeText';
 import AddButton from './AddButton';
 import ProductImageCarousel from './ProductImageCarousel';
 import ProductInfo from './ProductInfo';
@@ -67,7 +67,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     closingTime: vendor.closingTime,
   });
   const isStoreClosed = !storeStatus.isOpen;
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, theme } = useTheme();
   const { authData } = useAuth();
   const insets = useSafeAreaInsets();
   const [selectedVariant, setSelectedVariant] = useState<Product | null>(null);
@@ -192,7 +192,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: getColor('shadow').color,
-      shadowOffset: getColor('shadow').offset,
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: getColor('shadow').opacity,
       shadowRadius: getColor('shadow').radius,
       elevation: 3,
@@ -226,14 +226,11 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       marginRight: getResponsiveValue(8, 12, 16),
     },
     mrpText: {
-      fontSize: getTypography('caption'),
       color: getColor('subText'),
       textDecorationLine: 'line-through',
       marginBottom: getResponsiveValue(1, 2, 3),
     },
     sellingPriceText: {
-      fontSize: getTypography('h2'),
-      fontWeight: 'bold',
       color: getColor('text'),
     },
     buttonContainer: {
@@ -255,7 +252,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     },
     errorText: {
       color: getColor('error'),
-      fontSize: getTypography('body'),
       textAlign: 'center',
       marginBottom: 16,
     },
@@ -267,8 +263,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     },
     retryButtonText: {
       color: getColor('white'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
     },
     bottomBarDisabled: {
       backgroundColor: getColor('background'),
@@ -276,9 +270,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     },
     storeClosedText: {
       color: getColor('error'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-      fontFamily: 'BricolageGrotesque-Regular',
     },
   });
 
@@ -352,7 +343,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </TouchableOpacity>
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={getColor('primary')} />
-              <Text style={{ color: getColor('subText'), marginTop: 16 }}>Loading variants...</Text>
+              <ThemeText variant="body" color={getColor('subText')} style={{ marginTop: 16 }}>
+                Loading variants...
+              </ThemeText>
             </View>
           </View>
         </View>
@@ -371,9 +364,13 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </TouchableOpacity>
             <View style={styles.errorContainer}>
               <MaterialCommunityIcons name="alert-circle" size={48} color={getColor('error')} />
-              <Text style={styles.errorText}>{variantsError}</Text>
+              <ThemeText variant="body" color={getColor('error')} style={styles.errorText}>
+                {variantsError}
+              </ThemeText>
               <TouchableOpacity style={styles.retryButton} onPress={fetchVariants}>
-                <Text style={styles.retryButtonText}>Retry</Text>
+                <ThemeText variant="body" color={getColor('white')} style={styles.retryButtonText}>
+                  Retry
+                </ThemeText>
               </TouchableOpacity>
             </View>
           </View>
@@ -437,10 +434,20 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           {/* Fixed Bottom Bar */}
           <View style={[styles.bottomBar, isStoreClosed && styles.bottomBarDisabled]}>
             <View style={styles.priceContainer}>
-              {isStoreClosed && <Text style={styles.storeClosedText}>{storeStatus.reason}</Text>}
+              {isStoreClosed && (
+                <ThemeText variant="body" color={getColor('error')} style={styles.storeClosedText}>
+                  {storeStatus.reason}
+                </ThemeText>
+              )}
 
-              {displayMrp !== displayPrice && <Text style={styles.mrpText}>MRP ₹{displayMrp}</Text>}
-              <Text style={styles.sellingPriceText}>₹{displayPrice}</Text>
+              {displayMrp !== displayPrice && (
+                <ThemeText variant="caption" color={getColor('subText')} style={styles.mrpText}>
+                  MRP ₹{displayMrp}
+                </ThemeText>
+              )}
+              <ThemeText variant="h2" color={getColor('text')} style={styles.sellingPriceText}>
+                ₹{displayPrice}
+              </ThemeText>
             </View>
 
             <View style={[styles.buttonContainer, isStoreClosed && { opacity: 0.5 }]}>

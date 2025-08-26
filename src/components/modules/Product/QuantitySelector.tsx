@@ -1,6 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
+import { ThemeText } from '../../common/theme/ThemeText';
 
 interface QuantitySelectorProps {
   quantity: number;
@@ -17,7 +18,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   size = 'regular',
   disabled = false,
 }) => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor } = useTheme();
 
   const styles = StyleSheet.create({
     quantitySelector: {
@@ -26,12 +27,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       bottom: 2,
       borderWidth: 1,
       borderColor: getColor('primary'),
-      borderRadius:
-        size === 'xs'
-          ? getTypography('small') - 2
-          : size === 'small'
-          ? getTypography('small')
-          : getTypography('caption'),
+      borderRadius: size === 'xs' ? 10 : size === 'small' ? 12 : 14,
       minWidth: size === 'xs' ? 60 : size === 'small' ? 70 : 80,
       height: size === 'xs' ? 28 : size === 'small' ? 32 : 36,
       paddingHorizontal: 0,
@@ -53,40 +49,50 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
     },
     qtyText: {
       color: getColor('primary'),
-      fontSize:
-        size === 'xs'
-          ? getTypography('small')
-          : size === 'small'
-          ? getTypography('small')
-          : getTypography('caption'),
       fontWeight: 'bold',
       minWidth: size === 'xs' ? 10 : size === 'small' ? 12 : 15,
       textAlign: 'center',
-      fontFamily: 'BricolageGrotesque-Regular',
     },
     qtyNum: {
       color: getColor('text'),
-      fontSize:
-        size === 'xs'
-          ? getTypography('small') - 2
-          : size === 'small'
-          ? getTypography('small')
-          : getTypography('caption'),
       marginHorizontal: size === 'xs' ? 1 : size === 'small' ? 2 : 4,
       minWidth: size === 'xs' ? 12 : size === 'small' ? 14 : 18,
       textAlign: 'center',
-      fontFamily: 'BricolageGrotesque-Regular',
     },
   });
+
+  const getVariant = () => {
+    if (size === 'xs') return 'small';
+    if (size === 'small') return 'small';
+    return 'caption';
+  };
 
   return (
     <View style={styles.quantitySelector}>
       <TouchableOpacity style={styles.qtyBtn} onPress={onDecrement} disabled={disabled}>
-        <Text style={[styles.qtyText, disabled && { opacity: 0.5 }]}>-</Text>
+        <ThemeText
+          variant={getVariant()}
+          style={[styles.qtyText, disabled && { opacity: 0.5 }]}
+          color={getColor('primary')}
+        >
+          -
+        </ThemeText>
       </TouchableOpacity>
-      <Text style={[styles.qtyNum, disabled && { opacity: 0.5 }]}>{quantity}</Text>
+      <ThemeText
+        variant={getVariant()}
+        style={[styles.qtyNum, disabled && { opacity: 0.5 }]}
+        color={getColor('text')}
+      >
+        {quantity}
+      </ThemeText>
       <TouchableOpacity style={styles.qtyBtn} onPress={onIncrement} disabled={disabled}>
-        <Text style={[styles.qtyText, disabled && { opacity: 0.5 }]}>+</Text>
+        <ThemeText
+          variant={getVariant()}
+          style={[styles.qtyText, disabled && { opacity: 0.5 }]}
+          color={getColor('primary')}
+        >
+          +
+        </ThemeText>
       </TouchableOpacity>
     </View>
   );

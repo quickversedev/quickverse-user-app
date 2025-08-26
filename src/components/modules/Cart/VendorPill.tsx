@@ -1,15 +1,16 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
+import { ThemeText } from '../../common/theme/ThemeText';
 
 interface VendorPillProps {
   vendor: Vendor;
 }
 
 const VendorPill: React.FC<VendorPillProps> = ({ vendor }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, theme } = useTheme();
 
   const styles = StyleSheet.create({
     vendorPillContainer: {
@@ -31,11 +32,6 @@ const VendorPill: React.FC<VendorPillProps> = ({ vendor }) => {
       minWidth: 0,
       alignItems: 'flex-start',
     },
-    vendorPillTabText: {
-      color: getColor('text'),
-      fontWeight: 'bold',
-      fontSize: getTypography('caption'),
-    },
     deliveryBadgeBox: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -49,11 +45,6 @@ const VendorPill: React.FC<VendorPillProps> = ({ vendor }) => {
       right: 32,
       top: 2,
       zIndex: 2,
-    },
-    deliveryBadgeBoxText: {
-      color: getColor('primary'),
-      fontWeight: 'bold',
-      fontSize: getTypography('caption'),
     },
     deliveryBadgeBoxIcon: {
       width: 16,
@@ -73,7 +64,9 @@ const VendorPill: React.FC<VendorPillProps> = ({ vendor }) => {
   return (
     <View style={styles.vendorPillContainer}>
       <View style={styles.vendorPillTab}>
-        <Text style={styles.vendorPillTabText}>{vendor.name}</Text>
+        <ThemeText variant="caption" color={getColor('text')} style={{ fontWeight: 'bold' }}>
+          {vendor.name}
+        </ThemeText>
       </View>
       <View style={styles.deliveryBadgeBox}>
         <MaterialCommunityIcons
@@ -82,7 +75,9 @@ const VendorPill: React.FC<VendorPillProps> = ({ vendor }) => {
           color={getColor('primary')}
           style={styles.statIcon}
         />
-        <Text style={styles.deliveryBadgeBoxText}>{preparationTime}</Text>
+        <ThemeText variant="caption" color={getColor('primary')} style={{ fontWeight: 'bold' }}>
+          {preparationTime}
+        </ThemeText>
       </View>
     </View>
   );

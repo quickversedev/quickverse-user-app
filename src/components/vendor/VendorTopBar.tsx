@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../theme/ThemeContext';
+import { ThemeText } from '../common/theme/ThemeText';
 
 interface VendorTopBarProps {
   title: string;
@@ -16,7 +17,7 @@ const VendorTopBar: React.FC<VendorTopBarProps> = ({
   onFavoritePress,
   onSearchPress,
 }) => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor } = useTheme();
 
   const styles = StyleSheet.create({
     container: {
@@ -24,12 +25,6 @@ const VendorTopBar: React.FC<VendorTopBarProps> = ({
       alignItems: 'center',
       padding: 16,
       paddingBottom: 0,
-    },
-    title: {
-      color: getColor('text'),
-      fontSize: getTypography('h2'),
-      fontWeight: 'bold',
-      flex: 1,
     },
     backButton: {
       marginRight: 12,
@@ -48,7 +43,9 @@ const VendorTopBar: React.FC<VendorTopBarProps> = ({
       <TouchableOpacity style={styles.backButton} onPress={onBack}>
         <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
       </TouchableOpacity>
-      <Text style={styles.title}>{title}</Text>
+      <ThemeText variant="h2" color={getColor('text')} style={{ flex: 1 }}>
+        {title}
+      </ThemeText>
       <View style={styles.actionButtons}>
         <TouchableOpacity style={styles.actionButton} onPress={onSearchPress}>
           <MaterialCommunityIcons name="magnify" size={24} color={getColor('text')} />

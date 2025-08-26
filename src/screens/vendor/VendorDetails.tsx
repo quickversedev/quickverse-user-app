@@ -1,7 +1,8 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React, { useCallback, useMemo } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
 import { formatTimeToAMPM } from '../../utils/storeUtils';
@@ -17,17 +18,25 @@ type VendorProductRouteProp = RouteProp<
 >;
 
 const VendorDetailsComponent: React.FC = () => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor } = useTheme();
   const navigation = useNavigation();
   const route = useRoute<VendorProductRouteProp>();
   const { vendor } = route.params;
 
   const renderRating = useCallback(() => {
     if (!vendor.rating || vendor.rating === 0) {
-      return <Text style={styles.ratingText}>Not Rated</Text>;
+      return (
+        <ThemeText variant="body" color={getColor('text')}>
+          Not Rated
+        </ThemeText>
+      );
     }
-    return <Text style={styles.ratingText}>{vendor.rating}</Text>;
-  }, [vendor.rating]);
+    return (
+      <ThemeText variant="body" color={getColor('text')}>
+        {vendor.rating}
+      </ThemeText>
+    );
+  }, [vendor.rating, getColor]);
 
   const formatAddress = useCallback(() => {
     if (vendor.shopAddress) {
@@ -58,44 +67,10 @@ const VendorDetailsComponent: React.FC = () => {
         content: {
           padding: 20,
         },
-        name: {
-          color: getColor('text'),
-          fontSize: getTypography('h1'),
-          fontWeight: 'bold',
-          marginBottom: 8,
-        },
-        description: {
-          color: getColor('subText'),
-          fontSize: getTypography('body'),
-          marginBottom: 12,
-        },
-        info: {
-          color: getColor('text'),
-          fontSize: getTypography('body'),
-          marginBottom: 6,
-        },
-        hours: {
-          color: getColor('text'),
-          fontSize: getTypography('body'),
-          marginBottom: 6,
-          fontWeight: 'bold',
-        },
         ratingContainer: {
           flexDirection: 'row',
           alignItems: 'center',
           marginBottom: 12,
-        },
-        ratingText: {
-          color: getColor('text'),
-          fontSize: getTypography('body'),
-          fontWeight: 'bold',
-          marginLeft: 8,
-        },
-        address: {
-          color: getColor('text'),
-          fontSize: getTypography('body'),
-          marginBottom: 6,
-          fontStyle: 'italic',
         },
         backButton: {
           position: 'absolute',
@@ -106,12 +81,8 @@ const VendorDetailsComponent: React.FC = () => {
           padding: 6,
           zIndex: 2,
         },
-        backText: {
-          color: '#fff',
-          fontSize: 18,
-        },
       }),
-    [getColor, getTypography]
+    [getColor]
   );
 
   return (
@@ -123,12 +94,18 @@ const VendorDetailsComponent: React.FC = () => {
           resizeMode="cover"
         />
         <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-          <Text style={styles.backText}>{'<'} Back</Text>
+          <ThemeText variant="body" color="#fff" style={{ fontSize: 18 }}>
+            {'<'} Back
+          </ThemeText>
         </TouchableOpacity>
       </View>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.name}>{vendor.name}</Text>
-        <Text style={styles.description}>{vendor.description}</Text>
+        <ThemeText variant="h1" color={getColor('text')} style={{ marginBottom: 8 }}>
+          {vendor.name}
+        </ThemeText>
+        <ThemeText variant="body" color={getColor('subText')} style={{ marginBottom: 12 }}>
+          {vendor.description}
+        </ThemeText>
 
         {/* Rating */}
         <View style={styles.ratingContainer}>
@@ -136,14 +113,26 @@ const VendorDetailsComponent: React.FC = () => {
           {renderRating()}
         </View>
 
-        <Text style={styles.info}>Owner: {vendor.owner}</Text>
-        <Text style={styles.info}>Phone: {vendor.phone}</Text>
-        <Text style={styles.hours}>{`Hours: ${formatTimeToAMPM(
-          vendor.openingTime
-        )} - ${formatTimeToAMPM(vendor.closingTime)}`}</Text>
-        <Text style={styles.info}>Preparation Time: {vendor.preparationTime}</Text>
-        <Text style={styles.info}>Category: {vendor.category}</Text>
-        <Text style={styles.address}>{formatAddress()}</Text>
+        <ThemeText variant="body" color={getColor('text')} style={{ marginBottom: 6 }}>
+          Owner: {vendor.owner}
+        </ThemeText>
+        <ThemeText variant="body" color={getColor('text')} style={{ marginBottom: 6 }}>
+          Phone: {vendor.phone}
+        </ThemeText>
+        <ThemeText variant="body" color={getColor('text')} style={{ marginBottom: 6 }}>
+          {`Hours: ${formatTimeToAMPM(vendor.openingTime)} - ${formatTimeToAMPM(
+            vendor.closingTime
+          )}`}
+        </ThemeText>
+        <ThemeText variant="body" color={getColor('text')} style={{ marginBottom: 6 }}>
+          Preparation Time: {vendor.preparationTime}
+        </ThemeText>
+        <ThemeText variant="body" color={getColor('text')} style={{ marginBottom: 6 }}>
+          Category: {vendor.category}
+        </ThemeText>
+        <ThemeText variant="body" color={getColor('text')} style={{ fontStyle: 'italic' }}>
+          {formatAddress()}
+        </ThemeText>
       </ScrollView>
     </View>
   );

@@ -5,11 +5,11 @@ import {
   ImageSourcePropType,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
+import { ThemeText } from '../common/theme/ThemeText';
 
 export interface CategoryItem {
   id: string;
@@ -36,7 +36,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({
   iconSize,
   disabled = false,
 }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, theme } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -79,16 +79,8 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({
       width: 32,
       height: 32,
       marginBottom: 4,
-      borderRadius: theme.borderRadius.full,
+      borderRadius: theme.borderRadius.sm,
       overflow: 'hidden',
-    },
-    name: {
-      color: getColor('subText'),
-      fontSize: getTypography('caption'),
-    },
-    nameActive: {
-      color: getColor('primary'),
-      fontWeight: 'bold',
     },
   });
 
@@ -122,9 +114,13 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({
                   iconSize ? { height: iconSize, width: iconSize } : null,
                 ]}
               />
-              <Text style={[styles.name, selectedCategoryId === cat.id && styles.nameActive]}>
+              <ThemeText
+                variant="caption"
+                color={selectedCategoryId === cat.id ? getColor('primary') : getColor('subText')}
+                style={selectedCategoryId === cat.id ? { fontWeight: 'bold' } : {}}
+              >
                 {cat.name}
-              </Text>
+              </ThemeText>
             </TouchableOpacity>
           </View>
         ))}

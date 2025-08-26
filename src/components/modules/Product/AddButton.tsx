@@ -5,6 +5,7 @@ import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useTheme } from '../../../theme/ThemeContext';
 import { triggerAddToCartHaptic, triggerErrorHaptic } from '../../../utils/haptics';
 import LoginPromptModal from '../../common/LoginPromptModal';
+import { ThemeText } from '../../common/theme/ThemeText';
 
 interface AddButtonProps {
   onPress: () => void;
@@ -54,16 +55,15 @@ const AddButton: React.FC<AddButtonProps> = ({
       borderRadius: theme.borderRadius.sm,
       minWidth: size === 'xs' ? 45 : size === 'small' ? 40 : 60,
       height: size === 'xs' ? 28 : size === 'small' ? 32 : 36,
-
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: getColor('card'),
       zIndex: 3,
-      shadowColor: getColor('shadow').color,
-      shadowOffset: getColor('shadow').offset,
-      shadowOpacity: getColor('shadow').opacity,
-      shadowRadius: getColor('shadow').radius,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
       elevation: 2,
     },
     addButtonWithVariants: {
@@ -71,25 +71,11 @@ const AddButton: React.FC<AddButtonProps> = ({
     },
     addButtonText: {
       color: getColor('primary'),
-      fontWeight: 'bold',
-      fontSize:
-        size === 'xs'
-          ? getTypography('small') - 2
-          : size === 'small'
-          ? getTypography('small')
-          : getTypography('caption'),
       marginLeft: 4,
-      fontFamily: 'BricolageGrotesque-Regular',
     },
     addButtonTextWithVariants: {
       marginLeft: 0,
       // marginBottom: 2,
-      fontSize:
-        size === 'xs'
-          ? getTypography('small') - 5
-          : size === 'small'
-          ? getTypography('small') - 3
-          : getTypography('small'),
     },
     variantsText: {
       color: getColor('subText'),
@@ -125,9 +111,6 @@ const AddButton: React.FC<AddButtonProps> = ({
     },
     badgeText: {
       color: getColor('white'),
-      fontSize: getTypography('small') - 4,
-      fontWeight: 'bold',
-      fontFamily: 'BricolageGrotesque-Regular',
     },
   });
 
@@ -148,7 +131,9 @@ const AddButton: React.FC<AddButtonProps> = ({
           <TouchableOpacity style={styles.addButton} onPress={handleSafePress}>
             <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{numberOfVariants}</Text>
+              <ThemeText variant="small" color={getColor('white')} style={styles.badgeText}>
+                {numberOfVariants}
+              </ThemeText>
             </View>
           </TouchableOpacity>
         </View>
@@ -165,7 +150,13 @@ const AddButton: React.FC<AddButtonProps> = ({
           style={[styles.addButton, styles.addButtonWithVariants]}
           onPress={handleSafePress}
         >
-          <Text style={[styles.addButtonText, styles.addButtonTextWithVariants]}>ADD</Text>
+          <ThemeText
+            variant="caption"
+            color={getColor('primary')}
+            style={[styles.addButtonText, styles.addButtonTextWithVariants]}
+          >
+            ADD
+          </ThemeText>
           <View style={styles.divider} />
           <Text style={styles.variantsText}>{numberOfVariants} OPTIONS</Text>
         </TouchableOpacity>
@@ -181,7 +172,9 @@ const AddButton: React.FC<AddButtonProps> = ({
         {size === 'xs' || size === 'small' ? (
           <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
         ) : (
-          <Text style={styles.addButtonText}>ADD +</Text>
+          <ThemeText variant="caption" color={getColor('primary')} style={styles.addButtonText}>
+            ADD +
+          </ThemeText>
         )}
       </TouchableOpacity>
 

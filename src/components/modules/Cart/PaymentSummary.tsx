@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Cart } from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
+import { ThemeText } from '../../common/theme/ThemeText';
 
 interface PaymentSummaryProps {
   expanded: boolean;
@@ -19,7 +20,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   codCharges = 0,
   selectedPaymentOption,
 }) => {
-  const { getColor, getTypography, theme, getButtonColor } = useTheme();
+  const { getColor, theme, getButtonColor } = useTheme();
 
   const { subtotal, deliveryFee, total, totalDiscountOnItems, couponDiscount, finalTotal } =
     useMemo(() => {
@@ -90,8 +91,6 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     },
     titleText: {
       color: getColor('text'),
-      fontWeight: 'bold',
-      fontSize: getTypography('subtitle'),
       marginHorizontal: 12,
       textTransform: 'uppercase',
     },
@@ -114,13 +113,9 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     },
     billLabel: {
       color: getColor('text'),
-      fontSize: getTypography('body'),
-      fontWeight: '500',
     },
     billAmount: {
       color: getColor('text'),
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
     },
     dottedLine: {
       borderStyle: 'dashed',
@@ -135,14 +130,10 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     },
     paymentSummaryTitle: {
       color: getButtonColor('default', 'background'),
-      fontWeight: 'bold',
-      fontSize: getTypography('caption'),
       marginLeft: 8,
     },
     paymentSummaryAmount: {
       color: getButtonColor('default', 'background'),
-      fontWeight: 'bold',
-      fontSize: getTypography('body'),
       marginHorizontal: 8,
     },
     paymentSummaryDetails: { marginTop: 8 },
@@ -156,9 +147,21 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
           size={20}
           color={getButtonColor('default', 'background')}
         />
-        <Text style={styles.paymentSummaryTitle}>Total Bill (Inc. Taxes and Charges)</Text>
+        <ThemeText
+          variant="caption"
+          color={getButtonColor('default', 'background')}
+          style={styles.paymentSummaryTitle}
+        >
+          Total Bill (Inc. Taxes and Charges)
+        </ThemeText>
         <View style={{ flex: 1 }} />
-        <Text style={styles.paymentSummaryAmount}>₹{finalTotal}</Text>
+        <ThemeText
+          variant="body"
+          color={getButtonColor('default', 'background')}
+          style={styles.paymentSummaryAmount}
+        >
+          ₹{finalTotal}
+        </ThemeText>
         <MaterialCommunityIcons
           name={expanded ? 'chevron-up' : 'chevron-down'}
           size={22}
@@ -169,22 +172,30 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
         <View style={styles.paymentSummaryDetails}>
           <View style={styles.billDetailsTitle}>
             <View style={styles.titleLine} />
-            <Text style={styles.titleText}>Bill Details</Text>
+            <ThemeText variant="subtitle" color={getColor('text')} style={styles.titleText}>
+              Bill Details
+            </ThemeText>
             <View style={styles.titleLine} />
           </View>
           <View style={styles.billBreakdown}>
             <View style={styles.billRow}>
-              <Text style={styles.billLabel}>Sub Total</Text>
-              <Text style={styles.billAmount}>₹{subtotal}</Text>
+              <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+                Sub Total
+              </ThemeText>
+              <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
+                ₹{subtotal}
+              </ThemeText>
             </View>
             {totalDiscountOnItems > 0 && (
               <>
                 <View style={styles.dottedLine} />
                 <View style={styles.billRow}>
-                  <Text style={styles.billLabel}>Item Discount</Text>
-                  <Text style={[styles.billAmount, { color: getColor('primary') }]}>
+                  <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+                    Item Discount
+                  </ThemeText>
+                  <ThemeText variant="body" color={getColor('primary')} style={styles.billAmount}>
                     -₹{totalDiscountOnItems}
-                  </Text>
+                  </ThemeText>
                 </View>
               </>
             )}
@@ -192,31 +203,45 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
               <>
                 <View style={styles.dottedLine} />
                 <View style={styles.billRow}>
-                  <Text style={styles.billLabel}>Coupon Discount</Text>
-                  <Text style={[styles.billAmount, { color: getColor('primary') }]}>
+                  <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+                    Coupon Discount
+                  </ThemeText>
+                  <ThemeText variant="body" color={getColor('primary')} style={styles.billAmount}>
                     -₹{couponDiscount}
-                  </Text>
+                  </ThemeText>
                 </View>
               </>
             )}
             <View style={styles.dottedLine} />
             <View style={styles.billRow}>
-              <Text style={styles.billLabel}>Delivery Fee</Text>
-              <Text style={styles.billAmount}>₹{deliveryFee}</Text>
+              <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+                Delivery Fee
+              </ThemeText>
+              <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
+                ₹{deliveryFee}
+              </ThemeText>
             </View>
             {selectedPaymentOption === 'cod' && codCharges > 0 && (
               <>
                 <View style={styles.dottedLine} />
                 <View style={styles.billRow}>
-                  <Text style={styles.billLabel}>COD Charges</Text>
-                  <Text style={styles.billAmount}>₹{codCharges}</Text>
+                  <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+                    COD Charges
+                  </ThemeText>
+                  <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
+                    ₹{codCharges}
+                  </ThemeText>
                 </View>
               </>
             )}
             <View style={styles.dottedLine} />
             <View style={styles.billRowLast}>
-              <Text style={styles.billLabel}>Total Pay</Text>
-              <Text style={styles.billAmount}>₹{finalTotal}</Text>
+              <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+                Total Pay
+              </ThemeText>
+              <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
+                ₹{finalTotal}
+              </ThemeText>
             </View>
           </View>
         </View>

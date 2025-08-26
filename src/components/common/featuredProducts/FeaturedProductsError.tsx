@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
+import { ThemeText } from '../theme/ThemeText';
 
 interface FeaturedProductsErrorProps {
   error: string;
@@ -9,45 +10,39 @@ interface FeaturedProductsErrorProps {
   loading?: boolean;
 }
 
-const FeaturedProductsError: React.FC<FeaturedProductsErrorProps> = ({
-  error,
-  onRetry,
-  loading = false,
-}) => {
-  const { getColor, getTypography } = useTheme();
+const FeaturedProductsError: React.FC<FeaturedProductsErrorProps> = ({ error, onRetry }) => {
+  const { getColor, theme } = useTheme();
 
   const styles = StyleSheet.create({
     container: {
-      paddingVertical: 20,
-      paddingHorizontal: 16,
+      backgroundColor: getColor('card'),
+      borderRadius: theme.borderRadius.md,
+      padding: 16,
+      marginHorizontal: 16,
+      marginVertical: 8,
       alignItems: 'center',
-      justifyContent: 'center',
     },
-    errorIcon: {
+    icon: {
       marginBottom: 12,
     },
-    errorText: {
+    title: {
+      color: getColor('text'),
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    message: {
       color: getColor('subText'),
-      fontSize: getTypography('caption'),
       textAlign: 'center',
       marginBottom: 16,
-      fontFamily: 'BricolageGrotesque-Regular',
     },
     retryButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
       backgroundColor: getColor('primary'),
+      borderRadius: theme.borderRadius.sm,
       paddingHorizontal: 16,
       paddingVertical: 8,
-      borderRadius: 8,
-      opacity: loading ? 0.6 : 1,
     },
     retryButtonText: {
       color: getColor('white'),
-      fontSize: getTypography('caption'),
-      fontWeight: 'bold',
-      marginRight: 6,
-      fontFamily: 'BricolageGrotesque-Regular',
     },
   });
 
@@ -57,17 +52,18 @@ const FeaturedProductsError: React.FC<FeaturedProductsErrorProps> = ({
         name="alert-circle-outline"
         size={32}
         color={getColor('error')}
-        style={styles.errorIcon}
+        style={styles.icon}
       />
-      <Text style={styles.errorText}>{error || 'Failed to load featured products'}</Text>
-      <TouchableOpacity
-        style={styles.retryButton}
-        onPress={onRetry}
-        disabled={loading}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.retryButtonText}>Retry</Text>
-        <MaterialCommunityIcons name="refresh" size={16} color={getColor('white')} />
+      <ThemeText variant="subtitle" color={getColor('text')} style={styles.title}>
+        Failed to load featured products
+      </ThemeText>
+      <ThemeText variant="body" color={getColor('subText')} style={styles.message}>
+        {error}
+      </ThemeText>
+      <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+        <ThemeText variant="body" color={getColor('white')} style={styles.retryButtonText}>
+          Try Again
+        </ThemeText>
       </TouchableOpacity>
     </View>
   );

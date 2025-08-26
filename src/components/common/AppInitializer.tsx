@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/login/AuthProvider';
-import { useAddress, useConfig, usePages } from '../../hooks';
+import { useAddress, useAppStateRefresh, useConfig, usePages } from '../../hooks';
 import { PermissionAndLocation } from '../../hooks/Permissions/useLocation';
 import { findClosestAddressWithinRadius } from '../../screens/profile/Address/utils/addressUtils';
 import { getAddressFromCoordinates } from '../../services/api/olaLocationService';
@@ -72,6 +72,43 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   const { setSelectedAddress, selectedAddress, authData } = useAuth();
   const isLoggedIn = Boolean(authData?.jwt);
 
+  // Auto-refresh when app comes back from background
+  const refreshAppData = useCallback(async () => {
+    if (!isLoggedIn) return;
+    console.log('isLoggedIn app initializer appRefreshed', isLoggedIn);
+    try {
+      console.log('app initializer appRefreshed');
+      // Refresh critical data when app comes back from background
+      await Promise.allSettled([
+        fetchVendors(),
+        fetchAddresses(),
+        fetchInitialConfig({
+          longitude: locationData?.location?.longitude?.toString(),
+          latitude: locationData?.location?.latitude?.toString(),
+        }),
+        fetchTheme(),
+        fetchPages(),
+      ]);
+    } catch (error) {
+      console.warn('Error refreshing app data:', error);
+    }
+  }, [
+    isLoggedIn,
+    fetchVendors,
+    fetchAddresses,
+    fetchInitialConfig,
+    fetchTheme,
+    fetchPages,
+    locationData?.location?.longitude,
+    locationData?.location?.latitude,
+  ]);
+
+  useAppStateRefresh({
+    onForeground: refreshAppData,
+    refreshThreshold: 100000, // Refresh after 1 minute in background
+    enabled: isLoggedIn && isInitialized,
+  });
+
   // Get cached addresses once
   const cachedAddresses = isLoggedIn ? getUserAddresses() : undefined;
   const hasCachedAddresses = cachedAddresses && cachedAddresses.length > 0;
@@ -88,6 +125,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       if (selectedAddress) {
         return;
       }
+
       const addresses: Address[] = useAddressStore.getState().addresses as unknown as Address[];
       if (permissionStatus === 'granted' && currentLatitude && currentLongitude) {
         if (addresses && addresses.length > 0) {
@@ -260,6 +298,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       });
 
       // Step 3: Handle address fetching based on MMKV storage state
+
       const addressPromise = isLoggedIn
         ? (async () => {
             if (!cachedAddresses || cachedAddresses.length === 0) {
@@ -279,11 +318,13 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       await Promise.allSettled([fetchTheme(), fetchPages()]);
 
       // Step 5: Initialize selected address
+
       await (async () => {
         await initializeSelectedAddress();
       })();
     } catch (e) {
       // Silent catch; UI handles error states from stores
+      console.error('app initializer initializeApp error', e);
     }
   }, [
     fetchInitialConfig,
@@ -299,6 +340,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
 
   const handleRetry = useCallback(() => {
     initializationRef.current = false;
+
     initializeApp();
   }, []);
 

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
+import { ThemeText } from '../../common/theme/ThemeText';
 
 interface ProductItemOnSearchProps {
   product: Product;
@@ -9,7 +10,7 @@ interface ProductItemOnSearchProps {
 }
 
 const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPress }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor } = useTheme();
 
   const styles = StyleSheet.create({
     container: {
@@ -42,9 +43,7 @@ const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPr
     },
     productName: {
       color: getColor('text'),
-      fontSize: getTypography('caption'),
-      fontWeight: '500',
-      lineHeight: getTypography('caption') * 1.2,
+      lineHeight: 16 * 1.2,
     },
   });
 
@@ -54,9 +53,14 @@ const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPr
         <Image source={{ uri: product.imageUrl || '' }} style={styles.image} />
       </View>
       <View style={styles.textContainer}>
-        <Text style={styles.productName} numberOfLines={2}>
+        <ThemeText
+          variant="caption"
+          color={getColor('text')}
+          style={styles.productName}
+          numberOfLines={2}
+        >
           {product.name}
-        </Text>
+        </ThemeText>
       </View>
     </TouchableOpacity>
   );

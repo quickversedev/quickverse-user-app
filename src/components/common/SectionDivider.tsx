@@ -1,6 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { StyleSheet, TextStyle, View, ViewStyle } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { ThemeText } from './theme/ThemeText';
 
 interface SectionDividerProps {
   text: string;
@@ -21,7 +22,18 @@ const SectionDivider: React.FC<SectionDividerProps> = ({ text, style, textStyle,
         start={{ x: 1, y: 0.5 }}
         end={{ x: 0, y: 0.5 }}
       />
-      <Text style={[styles.text, textStyle, fontSize ? { fontSize } : {}]}>{text}</Text>
+      <ThemeText
+        variant="h2"
+        color="#AEB2BC"
+        style={[
+          styles.text,
+          textStyle,
+          fontSize ? { fontSize } : {},
+          { letterSpacing: 1, textAlign: 'center' },
+        ]}
+      >
+        {text}
+      </ThemeText>
       {/* Right line: thick near text, fade outward */}
       <LinearGradient
         colors={[LINE_COLOR, 'transparent']}
@@ -39,7 +51,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-
     backgroundColor: 'transparent',
   },
   line: {
@@ -49,11 +60,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   text: {
-    color: '#AEB2BC',
-    fontWeight: 'bold',
     fontSize: 22,
-    letterSpacing: 1,
-    textAlign: 'center',
   },
 });
 

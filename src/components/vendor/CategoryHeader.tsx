@@ -8,7 +8,7 @@ interface CategoryHeaderProps {
 }
 
 const CategoryHeader: React.FC<CategoryHeaderProps> = ({ title }) => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor } = useTheme();
 
   const styles = StyleSheet.create({
     container: {
@@ -21,17 +21,18 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({ title }) => {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    text: {
-      color: getColor('primary'),
-      fontWeight: 'bold',
-      fontSize: getTypography('h2'),
-      letterSpacing: 1,
-    },
   });
 
   return (
     <View style={styles.container}>
-      <SectionDivider text={title} textStyle={styles.text} />
+      <SectionDivider
+        text={title}
+        textStyle={{
+          color: getColor('primary'),
+          fontWeight: 'bold',
+          letterSpacing: 1,
+        }}
+      />
     </View>
   );
 };

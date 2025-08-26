@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ThemeText } from '../../components/common/theme/ThemeText';
 import { getAvailablePaymentOptions } from '../../services/paymentService';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -62,7 +63,9 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
         <TouchableOpacity onPress={onClose} style={styles.backButton}>
           <MaterialCommunityIcons name="close" size={24} color={getColor('text')} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: getColor('text') }]}>Payment Options</Text>
+        <ThemeText variant="h2" color={getColor('text')} style={styles.headerTitle}>
+          Payment Options
+        </ThemeText>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -75,7 +78,9 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
                 size={24}
                 color={getColor('error')}
               />
-              <Text style={[styles.errorText, { color: getColor('error') }]}>{error}</Text>
+              <ThemeText variant="body" color={getColor('error')} style={styles.errorText}>
+                {error}
+              </ThemeText>
             </View>
             {onRetry && (
               <TouchableOpacity
@@ -84,9 +89,13 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
                 activeOpacity={0.8}
                 disabled={loading}
               >
-                <Text style={[styles.retryButtonText, { color: getColor('white') }]}>
+                <ThemeText
+                  variant="caption"
+                  color={getColor('white')}
+                  style={styles.retryButtonText}
+                >
                   {loading ? 'Retrying...' : 'Retry'}
-                </Text>
+                </ThemeText>
               </TouchableOpacity>
             )}
           </View>
@@ -94,16 +103,16 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
         {loading && (
           <View style={[styles.loadingCard, { backgroundColor: getColor('card') }]}>
-            <Text style={[styles.loadingText, { color: getColor('subText') }]}>
+            <ThemeText variant="body" color={getColor('subText')} style={styles.loadingText}>
               Loading payment methods...
-            </Text>
+            </ThemeText>
           </View>
         )}
 
         {/* Section 1: UPI applications */}
-        <Text style={[styles.sectionTitle, { color: getColor('subText') }]}>
+        <ThemeText variant="caption" color={getColor('subText')} style={styles.sectionTitle}>
           UPI applications (Unavailable for now)
-        </Text>
+        </ThemeText>
         <View
           style={[
             styles.card,
@@ -152,13 +161,17 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
                         />
                       </View>
                       <View style={styles.texts}>
-                        <Text style={[styles.title, { color: getColor('text') }]}>
+                        <ThemeText variant="body" color={getColor('text')} style={styles.title}>
                           {item.title}
-                        </Text>
+                        </ThemeText>
                         {item.subtitle ? (
-                          <Text style={[styles.subtitle, { color: getColor('subText') }]}>
+                          <ThemeText
+                            variant="caption"
+                            color={getColor('subText')}
+                            style={styles.subtitle}
+                          >
                             {item.subtitle}
-                          </Text>
+                          </ThemeText>
                         ) : null}
                       </View>
                     </View>
@@ -170,7 +183,9 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           {/* UPI ID sub-section */}
           <View style={[styles.itemDivider, { backgroundColor: getColor('border') }]} />
           <View style={styles.upiIdSection}>
-            <Text style={[styles.upiIdLabel, { color: getColor('subText') }]}>Enter UPI ID</Text>
+            <ThemeText variant="small" color={getColor('subText')} style={styles.upiIdLabel}>
+              Enter UPI ID
+            </ThemeText>
             <TextInput
               value={upiId}
               onChangeText={setUpiId}
@@ -195,7 +210,9 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
         </View>
 
         {/* Section 2: Cash on Delivery */}
-        <Text style={[styles.sectionTitle, { color: getColor('subText') }]}>Cash on Delivery</Text>
+        <ThemeText variant="caption" color={getColor('subText')} style={styles.sectionTitle}>
+          Cash on Delivery
+        </ThemeText>
         {options
           .filter(o => o.key === 'cod')
           .map(item => {
@@ -230,11 +247,17 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
                     />
                   </View>
                   <View style={styles.texts}>
-                    <Text style={[styles.title, { color: getColor('text') }]}>{item.title}</Text>
+                    <ThemeText variant="body" color={getColor('text')} style={styles.title}>
+                      {item.title}
+                    </ThemeText>
                     {item.subtitle ? (
-                      <Text style={[styles.subtitle, { color: getColor('subText') }]}>
+                      <ThemeText
+                        variant="caption"
+                        color={getColor('subText')}
+                        style={styles.subtitle}
+                      >
                         {item.subtitle}
-                      </Text>
+                      </ThemeText>
                     ) : null}
                   </View>
                 </View>
@@ -249,9 +272,13 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           activeOpacity={0.9}
           style={[styles.cta, { backgroundColor: getButtonColor('default', 'background') }]}
         >
-          <Text style={[styles.ctaText, { color: getButtonColor('default', 'text') }]}>
+          <ThemeText
+            variant="body"
+            color={getButtonColor('default', 'text')}
+            style={styles.ctaText}
+          >
             Confirm and continue
-          </Text>
+          </ThemeText>
         </TouchableOpacity>
       </View>
     </View>
@@ -275,8 +302,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
     flex: 1,
     textAlign: 'center',
   },
@@ -288,8 +313,6 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
     marginBottom: 8,
     marginTop: 12,
     textTransform: 'uppercase',
@@ -312,11 +335,9 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   upiIdLabel: {
-    fontSize: 12,
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
-    fontWeight: '600',
   },
   upiInput: {
     borderWidth: 1,
@@ -335,8 +356,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    fontSize: 14,
-    fontWeight: '500',
     marginLeft: 8,
   },
   loadingCard: {
@@ -347,8 +366,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 14,
-    fontWeight: '500',
+    // No additional styles needed
   },
   retryButton: {
     borderRadius: 8,
@@ -358,8 +376,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   retryButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
+    // No additional styles needed
   },
   option: {
     borderWidth: 1,
@@ -397,11 +414,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
+    // No additional styles needed
   },
   subtitle: {
-    fontSize: 13,
     marginTop: 2,
   },
   footer: {
@@ -413,8 +428,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ctaText: {
-    fontSize: 16,
-    fontWeight: '700',
+    // No additional styles needed
   },
 });
 

@@ -5,11 +5,11 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
 
@@ -216,59 +216,79 @@ const AboutUsScreen: React.FC = () => {
           >
             <Icon name="arrow-left" size={24} color={getColor('text')} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>About Us</Text>
+          <ThemeText variant="h2" color={getColor('text')} style={styles.headerTitle}>
+            About Us
+          </ThemeText>
         </View>
 
         {/* Content */}
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Manifesto Section */}
           <View style={styles.manifestoSection}>
-            <Text style={styles.manifestoTitle}>QuickVerse Manifesto</Text>
-            <Text style={styles.manifestoSubtitle}>Redefining how things move</Text>
+            <ThemeText variant="h1" color={getColor('text')} style={styles.manifestoTitle}>
+              QuickVerse Manifesto
+            </ThemeText>
+            <ThemeText
+              variant="subtitle"
+              color={getColor('subText')}
+              style={styles.manifestoSubtitle}
+            >
+              Redefining how things move
+            </ThemeText>
 
-            <Text style={styles.paragraph}>
+            <ThemeText variant="body" color={getColor('text')} style={styles.paragraph}>
               We are not just delivering faster.{'\n'}
               We are redefining how things move.
-            </Text>
+            </ThemeText>
 
-            <Text style={styles.paragraph}>
+            <ThemeText variant="body" color={getColor('text')} style={styles.paragraph}>
               From our very first test flight to serving 20+ campuses, QuickVerse has always stood
               for one thing: making tomorrow's tech a part of today's student life.
-            </Text>
+            </ThemeText>
 
-            <Text style={styles.paragraph}>
+            <ThemeText variant="body" color={getColor('text')} style={styles.paragraph}>
               For months, we've been the lifeline of hostels, libraries, and late-night canteens. A
               campus-first movement—where drones and partners deliver food, essentials, and joy in
               minutes.
-            </Text>
+            </ThemeText>
 
-            <Text style={styles.highlightText}>But this is just the beginning.</Text>
+            <ThemeText variant="body" color={getColor('main')} style={styles.highlightText}>
+              But this is just the beginning.
+            </ThemeText>
 
-            <Text style={styles.paragraph}>
+            <ThemeText variant="body" color={getColor('text')} style={styles.paragraph}>
               Now, we're taking flight beyond the gates. From college campuses to open streets,
               neighborhoods, and entire cities—QuickVerse is scaling to become India's fastest, most
               futuristic urban delivery network.
-            </Text>
+            </ThemeText>
           </View>
 
           {/* Vision Section */}
           <View style={styles.visionSection}>
-            <Text style={styles.visionTitle}>Our Vision is Clear</Text>
+            <ThemeText variant="h2" color={getColor('text')} style={styles.visionTitle}>
+              Our Vision is Clear
+            </ThemeText>
 
             <View style={styles.visionCards}>
               <View style={styles.visionCard}>
                 <Icon name="drone" size={32} style={styles.visionIcon} />
-                <Text style={styles.visionCardText}>Access to Anything, Anytime</Text>
+                <ThemeText variant="caption" color={getColor('text')} style={styles.visionCardText}>
+                  Access to Anything, Anytime
+                </ThemeText>
               </View>
 
               <View style={styles.visionCard}>
                 <Icon name="bike" size={32} style={styles.visionIcon} />
-                <Text style={styles.visionCardText}>Drones as Normal as Bikes</Text>
+                <ThemeText variant="caption" color={getColor('text')} style={styles.visionCardText}>
+                  Drones as Normal as Bikes
+                </ThemeText>
               </View>
 
               <View style={styles.visionCard}>
                 <Icon name="star" size={32} style={styles.visionIcon} />
-                <Text style={styles.visionCardText}>Building a Magical World</Text>
+                <ThemeText variant="caption" color={getColor('text')} style={styles.visionCardText}>
+                  Building a Magical World
+                </ThemeText>
               </View>
             </View>
           </View>
@@ -279,9 +299,13 @@ const AboutUsScreen: React.FC = () => {
           <View style={styles.logoSection}>
             <View style={styles.logoContainer}>
               <Icon name="rocket-launch" size={48} style={styles.logoIcon} />
-              <Text style={styles.logoText}>QuickVerse</Text>
+              <ThemeText variant="h2" color={getColor('text')} style={styles.logoText}>
+                QuickVerse
+              </ThemeText>
             </View>
-            <Text style={styles.tagline}>Tomorrow's tech, today's reality</Text>
+            <ThemeText variant="caption" color={getColor('subText')} style={styles.tagline}>
+              Tomorrow's tech, today's reality
+            </ThemeText>
           </View>
         </ScrollView>
       </View>

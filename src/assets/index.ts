@@ -9,7 +9,7 @@ export const Images = {
   mapLocation: require('./images/map-location.png'),
   orderZero: require('./images/order_zero.png'),
   emptyVendors: require('./images/empty_vendors.png'),
-  foodPin: require('./images/foodPin.png'),
+  foodPin: require('./images/flag.png'),
   groceryPin: require('./images/groceryPin.png'),
   pharmacyPin: require('./images/pharmacyPin.png'),
 

@@ -1,9 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useRef } from 'react';
-import { Animated, Image, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Animated, Image, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Images } from '../../assets';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
+import { ThemeText } from '../common/theme/ThemeText';
 
 interface VendorHeaderCardProps {
   vendor: Vendor;
@@ -12,9 +14,10 @@ interface VendorHeaderCardProps {
 }
 
 const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, style }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, theme } = useTheme();
   const navigation = useNavigation();
   const scale = useRef(new Animated.Value(1)).current;
+  const [logoError, setLogoError] = useState(false);
 
   const styles = StyleSheet.create({
     container: {
@@ -38,13 +41,8 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, st
       backgroundColor: getColor('border'),
     },
     info: { flex: 1 },
-    name: {
-      color: getColor('text'),
-      fontSize: getTypography('h2'),
-      fontWeight: 'bold',
-    },
     meta: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-    metaText: { color: getColor('subText'), fontSize: getTypography('caption'), marginRight: 8 },
+    metaText: { color: getColor('subText'), marginRight: 8 },
     ratingBox: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -54,18 +52,20 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, st
       paddingVertical: 2,
       marginLeft: 8,
     },
-    ratingText: {
-      color: '#fff',
-      fontSize: getTypography('caption'),
-      fontWeight: 'bold',
-      marginLeft: 2,
-    },
   });
 
   const renderRating = () => {
     if (!vendor.rating || vendor.rating === 0)
-      return <Text style={styles.ratingText}>Not Rated</Text>;
-    return <Text style={styles.ratingText}>{vendor.rating}</Text>;
+      return (
+        <ThemeText variant="caption" color="#fff" style={{ marginLeft: 2 }}>
+          Not Rated
+        </ThemeText>
+      );
+    return (
+      <ThemeText variant="caption" color="#fff" style={{ marginLeft: 2 }}>
+        {vendor.rating}
+      </ThemeText>
+    );
   };
 
   const formatAddress = () => {
@@ -98,12 +98,22 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, st
         onPressOut={handlePressOut}
         activeOpacity={0.9}
       >
-        <Image source={{ uri: vendor.logo }} style={styles.logo} />
+        <Image
+          source={logoError || !vendor.logo ? Images.bg1 : { uri: vendor.logo }}
+          style={styles.logo}
+          onError={() => setLogoError(true)}
+        />
         <View style={styles.info}>
-          <Text style={styles.name}>{vendor.name}</Text>
+          <ThemeText variant="h2" color={getColor('text')}>
+            {vendor.name}
+          </ThemeText>
           <View style={styles.meta}>
-            <Text style={styles.metaText}>⏱ {vendor.preparationTime}</Text>
-            <Text style={styles.metaText}>| {formatAddress()}</Text>
+            <ThemeText variant="caption" color={getColor('subText')} style={{ marginRight: 8 }}>
+              ⏱ {vendor.preparationTime}
+            </ThemeText>
+            <ThemeText variant="caption" color={getColor('subText')} style={{ marginRight: 8 }}>
+              | {formatAddress()}
+            </ThemeText>
             <View style={styles.ratingBox}>
               <MaterialCommunityIcons name="star" size={14} color="#fff" />
               {renderRating()}

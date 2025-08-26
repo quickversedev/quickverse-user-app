@@ -6,7 +6,6 @@ import {
   Dimensions,
   PanResponder,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
   ViewStyle,
@@ -17,6 +16,7 @@ import { RootStackParamList } from '../../../routes/AppStack';
 import useCartStore from '../../../store/cart/cartStore';
 import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
+import { ThemeText } from '../../common/theme/ThemeText';
 
 const { width } = Dimensions.get('window');
 
@@ -41,7 +41,7 @@ const CartBar: React.FC<CartBarProps> = ({
   onExpand,
   isExpanded = true,
 }) => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor } = useTheme();
   const translateX = useRef(new Animated.Value(0)).current;
   const [isRevealed, setIsRevealed] = React.useState(false);
   const getVendorNameById = useVendorStore(state => state.getVendorNameById);
@@ -91,6 +91,22 @@ const CartBar: React.FC<CartBarProps> = ({
         },
         cartContainer: {
           zIndex: 2,
+        },
+        // UPDATED: Better spacing for vendor name and item count
+        contentContainer: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          minWidth: 0, // Important for text truncation
+        },
+        vendorNameContainer: {
+          flex: 1,
+          minWidth: 0, // Important for text truncation
+          marginRight: 12, // CHANGED: Add consistent spacing
+        },
+        itemCountContainer: {
+          flexShrink: 0, // Prevent shrinking
+          marginRight: 8, // CHANGED: Add spacing before chevron
         },
       }),
     [getColor]
@@ -222,36 +238,43 @@ const CartBar: React.FC<CartBarProps> = ({
             >
               <MaterialCommunityIcons name="close-circle" size={18} color={getColor('error')} />
             </TouchableOpacity>
-            {/* Cart icon */}
+
+            {/* UPDATED: Cart icon color changed to green */}
             <MaterialCommunityIcons
               name="cart-outline"
               size={26}
-              color={getColor('background')}
+              color="#22C55E" // CHANGED: Green color instead of getColor('background')
               style={styles.cartIcon}
             />
+
             <View style={dynamicStyles.divider} />
-            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-              <Text
-                style={[
-                  styles.cartText,
-                  { fontSize: getTypography('subtitle'), color: getColor('background') },
-                ]}
-                numberOfLines={1}
-                // ellipsizeMode="tail"
-              >
-                {vendorName}
-              </Text>
-              <View style={styles.flexSpacer} />
-              <Text
-                style={[
-                  styles.itemCount,
-                  { color: getColor('background'), fontSize: getTypography('body') },
-                ]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {itemCount} Item{itemCount > 1 ? 's' : ''}
-              </Text>
+
+            {/* UPDATED: Better responsive layout for vendor name and item count */}
+            <View style={dynamicStyles.contentContainer}>
+              <View style={dynamicStyles.vendorNameContainer}>
+                <ThemeText
+                  variant="subtitle"
+                  style={[styles.cartText]}
+                  color={getColor('background')}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {vendorName}
+                </ThemeText>
+              </View>
+
+              <View style={dynamicStyles.itemCountContainer}>
+                <ThemeText
+                  variant="body"
+                  style={[styles.itemCount]}
+                  color={getColor('background')}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {itemCount} Item{itemCount > 1 ? 's' : ''}
+                </ThemeText>
+              </View>
+
               <MaterialCommunityIcons
                 name="chevron-right"
                 size={22}
@@ -274,14 +297,11 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   cartText: {
-    fontWeight: 'bold',
+    // fontWeight: 'bold',
     letterSpacing: 0.1,
-    // flex: 1,
-    // marginRight: 8,
   },
   itemCount: {
-    fontWeight: 'bold',
-    marginRight: 2,
+    // fontWeight: 'bold',
     flexShrink: 0,
   },
   removeButtonContent: {

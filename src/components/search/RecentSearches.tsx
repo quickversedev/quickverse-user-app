@@ -1,16 +1,17 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useRecentSearches } from '../../hooks/useRecentSearches';
 import { useTheme } from '../../theme/ThemeContext';
 import SectionDivider from '../common/SectionDivider';
+import { ThemeText } from '../common/theme/ThemeText';
 
 interface RecentSearchesProps {
   onSearchPress: (searchText: string) => void;
 }
 
 const RecentSearches: React.FC<RecentSearchesProps> = ({ onSearchPress }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, theme } = useTheme();
   const { recentSearches, clearRecentSearches } = useRecentSearches();
 
   const styles = StyleSheet.create({
@@ -50,13 +51,10 @@ const RecentSearches: React.FC<RecentSearchesProps> = ({ onSearchPress }) => {
     },
     searchTagText: {
       color: getColor('text'),
-      fontSize: getTypography('caption'),
       marginLeft: 6,
     },
     clearButtonText: {
       color: getColor('primary'),
-      fontSize: getTypography('caption'),
-      fontWeight: '500',
     },
   });
 
@@ -72,7 +70,9 @@ const RecentSearches: React.FC<RecentSearchesProps> = ({ onSearchPress }) => {
           <SectionDivider text="Recent Searches" fontSize={14} />
         </View>
         <TouchableOpacity style={styles.clearButton} onPress={clearRecentSearches}>
-          <Text style={styles.clearButtonText}>Clear</Text>
+          <ThemeText variant="caption" color={getColor('primary')} style={styles.clearButtonText}>
+            Clear
+          </ThemeText>
         </TouchableOpacity>
       </View>
       <View style={styles.container}>
@@ -84,7 +84,9 @@ const RecentSearches: React.FC<RecentSearchesProps> = ({ onSearchPress }) => {
           >
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <MaterialCommunityIcons name={item.icon as any} size={16} color={getColor('subText')} />
-            <Text style={styles.searchTagText}>{item.text}</Text>
+            <ThemeText variant="caption" color={getColor('text')} style={styles.searchTagText}>
+              {item.text}
+            </ThemeText>
           </TouchableOpacity>
         ))}
       </View>

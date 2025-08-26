@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import useFeaturedProductsStoreHook from '../../../hooks/useFeaturedProductsStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
+import { ThemeText } from '../theme/ThemeText';
 
 interface FeaturedProductsDemoProps {
   shopIds: string[];
 }
 
 const FeaturedProductsDemo: React.FC<FeaturedProductsDemoProps> = ({ shopIds }) => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor, getTypography, theme } = useTheme();
   const [results, setResults] = useState<Record<string, Product[]>>({});
 
   const {
@@ -48,7 +49,7 @@ const FeaturedProductsDemo: React.FC<FeaturedProductsDemoProps> = ({ shopIds }) 
       fontWeight: 'bold',
       color: getColor('text'),
       marginBottom: 16,
-      fontFamily: 'BricolageGrotesque-Regular',
+      fontFamily: theme.typography.fontFamily,
     },
     button: {
       backgroundColor: getColor('primary'),
@@ -61,19 +62,19 @@ const FeaturedProductsDemo: React.FC<FeaturedProductsDemoProps> = ({ shopIds }) 
       color: getColor('white'),
       fontSize: getTypography('body'),
       fontWeight: 'bold',
-      fontFamily: 'BricolageGrotesque-Regular',
+      fontFamily: theme.typography.fontFamily,
     },
     statusText: {
       fontSize: getTypography('caption'),
       color: getColor('subText'),
       marginVertical: 4,
-      fontFamily: 'BricolageGrotesque-Regular',
+      fontFamily: theme.typography.fontFamily,
     },
     errorText: {
       fontSize: getTypography('caption'),
       color: getColor('error'),
       marginVertical: 4,
-      fontFamily: 'BricolageGrotesque-Regular',
+      fontFamily: theme.typography.fontFamily,
     },
     shopContainer: {
       marginVertical: 8,
@@ -86,7 +87,7 @@ const FeaturedProductsDemo: React.FC<FeaturedProductsDemoProps> = ({ shopIds }) 
       fontWeight: 'bold',
       color: getColor('text'),
       marginBottom: 8,
-      fontFamily: 'BricolageGrotesque-Regular',
+      fontFamily: theme.typography.fontFamily,
     },
     productItem: {
       padding: 8,
@@ -96,64 +97,95 @@ const FeaturedProductsDemo: React.FC<FeaturedProductsDemoProps> = ({ shopIds }) 
     productName: {
       fontSize: getTypography('body'),
       color: getColor('text'),
-      fontFamily: 'BricolageGrotesque-Regular',
+      fontFamily: theme.typography.fontFamily,
     },
     productPrice: {
       fontSize: getTypography('caption'),
       color: getColor('subText'),
-      fontFamily: 'BricolageGrotesque-Regular',
+      fontFamily: theme.typography.fontFamily,
     },
   });
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Featured Products Store Demo</Text>
+      <ThemeText variant="h1" color={getColor('text')} style={styles.title}>
+        Featured Products Store Demo
+      </ThemeText>
 
       {/* Controls */}
       <TouchableOpacity style={styles.button} onPress={handleBatchFetch}>
-        <Text style={styles.buttonText}>
+        <ThemeText variant="body" color={getColor('white')} style={styles.buttonText}>
           {batchLoading ? 'Fetching...' : 'Fetch All Featured Products'}
-        </Text>
+        </ThemeText>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.button} onPress={handleClearCache}>
-        <Text style={styles.buttonText}>Clear All Cache</Text>
+        <ThemeText variant="body" color={getColor('white')} style={styles.buttonText}>
+          Clear All Cache
+        </ThemeText>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.button} onPress={clearExpiredCache}>
-        <Text style={styles.buttonText}>Clear Expired Cache</Text>
+        <ThemeText variant="body" color={getColor('white')} style={styles.buttonText}>
+          Clear Expired Cache
+        </ThemeText>
       </TouchableOpacity>
 
       {/* Status */}
-      {batchLoading && <Text style={styles.statusText}>Batch loading in progress...</Text>}
-      {batchError && <Text style={styles.errorText}>Batch error: {batchError}</Text>}
+      {batchLoading && (
+        <ThemeText variant="caption" color={getColor('subText')} style={styles.statusText}>
+          Batch loading in progress...
+        </ThemeText>
+      )}
+      {batchError && (
+        <ThemeText variant="caption" color={getColor('error')} style={styles.errorText}>
+          Batch error: {batchError}
+        </ThemeText>
+      )}
 
       {/* Cache Status */}
       <View style={{ marginVertical: 16 }}>
-        <Text style={styles.statusText}>Cache Status:</Text>
+        <ThemeText variant="body" color={getColor('text')} style={styles.statusText}>
+          Cache Status:
+        </ThemeText>
         {shopIds.map(shopId => (
-          <Text key={shopId} style={styles.statusText}>
+          <ThemeText
+            key={shopId}
+            variant="caption"
+            color={getColor('subText')}
+            style={styles.statusText}
+          >
             Shop {shopId}: {isCached(shopId) ? 'Cached' : 'Not cached'}
             {isCached(shopId) && isExpired(shopId) ? ' (Expired)' : ''}
             {isLoading(shopId) ? ' (Loading...)' : ''}
             {getError(shopId) ? ` (Error: ${getError(shopId)})` : ''}
-          </Text>
+          </ThemeText>
         ))}
       </View>
 
       {/* Results */}
       {Object.keys(results).length > 0 && (
         <View>
-          <Text style={styles.title}>Results:</Text>
+          <ThemeText variant="h2" color={getColor('text')} style={styles.title}>
+            Results:
+          </ThemeText>
           {Object.entries(results).map(([shopId, products]) => (
             <View key={shopId} style={styles.shopContainer}>
-              <Text style={styles.shopTitle}>
+              <ThemeText variant="subtitle" color={getColor('text')} style={styles.shopTitle}>
                 Shop {shopId} ({products.length} products)
-              </Text>
+              </ThemeText>
               {products.map((product, index) => (
                 <View key={index} style={styles.productItem}>
-                  <Text style={styles.productName}>{product.name}</Text>
-                  <Text style={styles.productPrice}>₹{product.price}</Text>
+                  <ThemeText variant="body" color={getColor('text')} style={styles.productName}>
+                    {product.name}
+                  </ThemeText>
+                  <ThemeText
+                    variant="caption"
+                    color={getColor('subText')}
+                    style={styles.productPrice}
+                  >
+                    ₹{product.price}
+                  </ThemeText>
                 </View>
               ))}
             </View>

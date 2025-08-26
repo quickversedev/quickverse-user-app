@@ -6,13 +6,13 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import RaiseQueryModal from '../../components/common/RaiseQueryModal';
 import SectionDivider from '../../components/common/SectionDivider';
+import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useFAQs } from '../../hooks/useFAQs';
 import useOrderStore from '../../store/cart/orderStore';
@@ -281,7 +281,9 @@ const HelpDeskScreen: React.FC = () => {
           >
             <Icon name="arrow-left" size={24} color={getColor('text')} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Help Desk</Text>
+          <ThemeText variant="h2" color={getColor('text')} style={styles.headerTitle}>
+            Help Desk
+          </ThemeText>
         </View>
 
         {/* Content */}
@@ -291,15 +293,15 @@ const HelpDeskScreen: React.FC = () => {
 
           {loading && orders.length === 0 ? (
             <View style={[styles.orderCard, { backgroundColor: getColor('card') }]}>
-              <Text style={[styles.orderItemName, { color: getColor('subText') }]}>
+              <ThemeText variant="body" color={getColor('subText')} style={styles.orderItemName}>
                 Loading orders...
-              </Text>
+              </ThemeText>
             </View>
           ) : displayedOrders.length === 0 ? (
             <View style={[styles.orderCard, { backgroundColor: getColor('card') }]}>
-              <Text style={[styles.orderItemName, { color: getColor('subText') }]}>
+              <ThemeText variant="body" color={getColor('subText')} style={styles.orderItemName}>
                 No orders found
-              </Text>
+              </ThemeText>
             </View>
           ) : (
             <>
@@ -311,24 +313,26 @@ const HelpDeskScreen: React.FC = () => {
                   activeOpacity={0.7}
                 >
                   <View style={styles.orderHeader}>
-                    <Text style={[styles.orderId, { color: getColor('text') }]}>
+                    <ThemeText variant="subtitle" color={getColor('text')} style={styles.orderId}>
                       Order: #{order.orderId}
-                    </Text>
+                    </ThemeText>
                     <View
                       style={[
                         styles.statusBadge,
                         { backgroundColor: getStatusColor(order.status) },
                       ]}
                     >
-                      <Text style={styles.statusText}>{getStatusText(order.status)}</Text>
+                      <ThemeText variant="small" color="white" style={styles.statusText}>
+                        {getStatusText(order.status)}
+                      </ThemeText>
                     </View>
                   </View>
-                  <Text style={[styles.orderItemName, { color: getColor('text') }]}>
+                  <ThemeText variant="body" color={getColor('text')} style={styles.orderItemName}>
                     {order.items[0]?.name || 'Order Items'}
-                  </Text>
-                  <Text style={[styles.orderDate, { color: getColor('subText') }]}>
+                  </ThemeText>
+                  <ThemeText variant="caption" color={getColor('subText')} style={styles.orderDate}>
                     {formatOrderDate(order.orderDate)}
-                  </Text>
+                  </ThemeText>
                 </TouchableOpacity>
               ))}
 
@@ -342,9 +346,9 @@ const HelpDeskScreen: React.FC = () => {
                   {loadingMore ? (
                     <ActivityIndicator size="small" color={getColor('main')} />
                   ) : (
-                    <Text style={[styles.showMoreText, { color: getColor('main') }]}>
+                    <ThemeText variant="body" color={getColor('main')} style={styles.showMoreText}>
                       SHOW MORE
-                    </Text>
+                    </ThemeText>
                   )}
                 </TouchableOpacity>
               )}
@@ -359,40 +363,44 @@ const HelpDeskScreen: React.FC = () => {
 
           {faqsLoading ? (
             <View style={[styles.orderCard, { backgroundColor: getColor('card') }]}>
-              <Text style={[styles.orderItemName, { color: getColor('subText') }]}>
+              <ThemeText variant="body" color={getColor('subText')} style={styles.orderItemName}>
                 Loading FAQs...
-              </Text>
+              </ThemeText>
             </View>
           ) : faqsError ? (
             <View style={[styles.orderCard, { backgroundColor: getColor('card') }]}>
-              <Text style={[styles.orderItemName, { color: getColor('subText') }]}>
+              <ThemeText variant="body" color={getColor('subText')} style={styles.orderItemName}>
                 Failed to load FAQs. Please try again.
-              </Text>
+              </ThemeText>
               <TouchableOpacity
                 style={[styles.showMoreButton, { borderColor: getColor('main') }]}
                 onPress={refetchFAQs}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.showMoreText, { color: getColor('main') }]}>RETRY</Text>
+                <ThemeText variant="body" color={getColor('main')} style={styles.showMoreText}>
+                  RETRY
+                </ThemeText>
               </TouchableOpacity>
             </View>
           ) : faqs.length === 0 ? (
             <View style={[styles.orderCard, { backgroundColor: getColor('card') }]}>
-              <Text style={[styles.orderItemName, { color: getColor('subText') }]}>
+              <ThemeText variant="body" color={getColor('subText')} style={styles.orderItemName}>
                 No FAQs available
-              </Text>
+              </ThemeText>
             </View>
           ) : (
             Object.entries(groupedFAQs).map(([title, faqList]) => (
               <View key={title}>
-                <Text
+                <ThemeText
+                  variant="subtitle"
+                  color={getColor('text')}
                   style={[
                     styles.sectionTitle,
                     { fontSize: getTypography('subtitle'), marginTop: 16, marginBottom: 8 },
                   ]}
                 >
                   {title}
-                </Text>
+                </ThemeText>
                 {faqList.map(faq => {
                   const isExpanded = expandedFAQ === faq.id;
 
@@ -406,9 +414,13 @@ const HelpDeskScreen: React.FC = () => {
                         onPress={() => toggleFAQ(faq.id)}
                         activeOpacity={0.7}
                       >
-                        <Text style={[styles.faqQuestion, { color: getColor('text') }]}>
+                        <ThemeText
+                          variant="body"
+                          color={getColor('text')}
+                          style={styles.faqQuestion}
+                        >
                           {faq.question}
-                        </Text>
+                        </ThemeText>
                         <Icon
                           name={isExpanded ? 'minus' : 'chevron-down'}
                           size={20}
@@ -417,9 +429,13 @@ const HelpDeskScreen: React.FC = () => {
                       </TouchableOpacity>
                       {isExpanded && (
                         <View style={styles.faqAnswer}>
-                          <Text style={[styles.faqAnswerText, { color: getColor('subText') }]}>
+                          <ThemeText
+                            variant="caption"
+                            color={getColor('subText')}
+                            style={styles.faqAnswerText}
+                          >
                             {faq.answer}
-                          </Text>
+                          </ThemeText>
                         </View>
                       )}
                     </View>

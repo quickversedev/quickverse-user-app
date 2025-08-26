@@ -1,11 +1,12 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Product } from '../../types/product';
 import { Vendor } from '../../types/vendor';
 import ProductItemOnSearch from '../common/search/ProductItemOnSearch';
 import SectionDivider from '../common/SectionDivider';
+import { ThemeText } from '../common/theme/ThemeText';
 import VendorCard from '../modules/Vendor/VendorCard';
 
 interface SearchResultsProps {
@@ -25,7 +26,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   onProductPress,
   onFavoritePress,
 }) => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor } = useTheme();
   const { vendors: storeVendors } = useVendorStore();
 
   // State for pagination
@@ -111,8 +112,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     },
     showMoreText: {
       color: getColor('primary'),
-      fontSize: getTypography('body'),
-      fontWeight: '600',
     },
     productsContainer: {
       flexDirection: 'row',
@@ -132,7 +131,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     },
     noResultsText: {
       color: getColor('subText'),
-      fontSize: getTypography('body'),
       textAlign: 'center',
     },
   });
@@ -143,7 +141,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     return (
       <View style={styles.section}>
         <View style={styles.noResultsContainer}>
-          <Text style={styles.noResultsText}>No results found</Text>
+          <ThemeText variant="body" color={getColor('subText')} style={styles.noResultsText}>
+            No results found
+          </ThemeText>
         </View>
       </View>
     );
@@ -168,9 +168,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             </View>
             {showMoreVisible && visibleProducts < products.length && (
               <View style={styles.showMoreButton}>
-                <Text style={styles.showMoreText} onPress={handleShowMore}>
+                <ThemeText
+                  variant="body"
+                  color={getColor('primary')}
+                  style={styles.showMoreText}
+                  onPress={handleShowMore}
+                >
                   Show More
-                </Text>
+                </ThemeText>
               </View>
             )}
           </ScrollView>

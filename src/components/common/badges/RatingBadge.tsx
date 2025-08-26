@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
+import { ThemeText } from '../theme/ThemeText';
 
 interface RatingBadgeProps {
   rating: number;
@@ -16,52 +17,35 @@ const RatingBadge: React.FC<RatingBadgeProps> = ({
   showDecimal = true,
   style,
 }) => {
-  const { getTypography } = useTheme();
+  const { getColor, theme } = useTheme();
 
-  // Get background color based on rating
-  const getBackgroundColor = (rating: number): string => {
-    if (rating >= 4.5) return '#1ec28b'; // Excellent - Teal green
-    if (rating >= 4.0) return '#4CAF50'; // Good - Green
-    if (rating >= 3.5) return '#FF9800'; // Average - Orange
-    if (rating >= 3.0) return '#FFC107'; // Below Average - Yellow
-    return '#F44336'; // Poor - Red
+  const getSizeStyles = () => {
+    switch (size) {
+      case 'small':
+        return { container: 16, icon: 12, text: 10 };
+      case 'large':
+        return { container: 24, icon: 18, text: 14 };
+      default:
+        return { container: 20, icon: 14, text: 12 };
+    }
   };
 
-  // Get star color based on rating
-  const getStarColor = (rating: number): string => {
-    if (rating >= 4.0) return '#FFFFFF'; // White for good ratings
-    return '#FFFFFF'; // White for all ratings
-  };
-
-  // Get text color based on rating
-  const getTextColor = (rating: number): string => {
-    if (rating >= 4.0) return '#FFFFFF'; // White for good ratings
-    return '#FFFFFF'; // White for all ratings
-  };
+  const sizeStyles = getSizeStyles();
 
   const styles = StyleSheet.create({
     container: {
-      backgroundColor: getBackgroundColor(rating),
-      borderRadius: size === 'small' ? 6 : size === 'large' ? 10 : 8,
-      paddingHorizontal: size === 'small' ? 6 : size === 'large' ? 10 : 8,
-      paddingVertical: size === 'small' ? 1 : size === 'large' ? 3 : 2,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      minWidth: size === 'small' ? 40 : size === 'large' ? 60 : 50,
+      backgroundColor: getColor('primary'),
+      borderRadius: sizeStyles.container / 2,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
     },
-    starIcon: {
-      marginRight: size === 'small' ? 1 : size === 'large' ? 3 : 2,
+    icon: {
+      marginRight: 2,
     },
-    ratingText: {
-      color: getTextColor(rating),
-      fontWeight: 'bold',
-      fontSize:
-        size === 'small'
-          ? getTypography('caption') - 2
-          : size === 'large'
-          ? getTypography('body')
-          : getTypography('caption'),
+    text: {
+      color: getColor('white'),
     },
   });
 
@@ -81,11 +65,13 @@ const RatingBadge: React.FC<RatingBadgeProps> = ({
     <View style={[styles.container, style]}>
       <MaterialCommunityIcons
         name="star"
-        size={size === 'small' ? 10 : size === 'large' ? 16 : 14}
-        color={getStarColor(rating)}
-        style={styles.starIcon}
+        size={sizeStyles.icon}
+        color={getColor('white')}
+        style={styles.icon}
       />
-      <Text style={styles.ratingText}>{formatRating(rating)}</Text>
+      <ThemeText variant="small" color={getColor('white')} style={styles.text}>
+        {formatRating(rating)}
+      </ThemeText>
     </View>
   );
 };

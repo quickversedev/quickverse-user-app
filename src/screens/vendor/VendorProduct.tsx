@@ -81,8 +81,22 @@ const getRowBasedProductList = (
   categories.forEach((cat: Category) => {
     rows.push({ type: 'header', category: cat });
 
-    // Get products for this category using Map lookup
-    const catProducts = productsByDivision.get(cat.id || '') || [];
+    let catProducts: Product[] = [];
+
+    // Handle "Other" category specially
+    if (cat.id === 'other') {
+      // Get all uncategorized products (products without division or with division not matching any category)
+      catProducts = products.filter(product => {
+        const hasValidDivision = product.division && product.division.trim() !== '';
+        const divisionMatchesCategory = categories.some(
+          c => c.id !== 'other' && c.id === product.division
+        );
+        return !hasValidDivision || !divisionMatchesCategory;
+      });
+    } else {
+      // Get products for this category using Map lookup
+      catProducts = productsByDivision.get(cat.id || '') || [];
+    }
 
     // Sort products within each category: in-stock first, then out-of-stock
     const sortedCatProducts = catProducts.sort((a, b) => {
@@ -149,6 +163,8 @@ const VendorProductComponent: React.FC = () => {
   const categoryMap = useMemo(() => {
     const map = new Map<string, string>();
     categories?.forEach(cat => map.set(cat.id, cat.name.toLowerCase()));
+    // Add "Other" category for search
+    map.set('other', 'other');
     return map;
   }, [categories]);
 
@@ -159,8 +175,16 @@ const VendorProductComponent: React.FC = () => {
     const searchLower = searchQuery.toLowerCase();
     return products.filter(product => {
       const productNameMatch = product.name.toLowerCase().includes(searchLower);
-      const categoryName = categoryMap.get(product.division);
-      const categoryNameMatch = categoryName?.includes(searchLower) || false;
+
+      // Handle category matching for both categorized and uncategorized products
+      let categoryNameMatch = false;
+      if (product.division && product.division.trim() !== '') {
+        const categoryName = categoryMap.get(product.division);
+        categoryNameMatch = categoryName?.includes(searchLower) || false;
+      } else {
+        // For uncategorized products, check if search includes "other"
+        categoryNameMatch = searchLower.includes('other');
+      }
 
       return productNameMatch || categoryNameMatch;
     });
@@ -185,11 +209,32 @@ const VendorProductComponent: React.FC = () => {
 
   // Only include categories that have at least one product (match product.division)
   // When searching, show all categories that have matching products
-  const filteredCategories: Category[] = useMemo(
-    () =>
-      categoriesForTabs.filter(cat => productsToShow.some(product => product.division === cat.id)),
-    [categoriesForTabs, productsToShow]
-  );
+  // Also include an "Other" category for uncategorized products
+  const filteredCategories: Category[] = useMemo(() => {
+    // Get categories that have products
+    const categoriesWithProducts = categoriesForTabs.filter(cat =>
+      productsToShow.some(product => product.division === cat.id)
+    );
+
+    // Find uncategorized products (products without division or with division not matching any category)
+    const uncategorizedProducts = productsToShow.filter(product => {
+      const hasValidDivision = product.division && product.division.trim() !== '';
+      const divisionMatchesCategory = categoriesForTabs.some(cat => cat.id === product.division);
+      return !hasValidDivision || !divisionMatchesCategory;
+    });
+
+    // If there are uncategorized products, add an "Other" category
+    if (uncategorizedProducts.length > 0) {
+      const otherCategory: Category = {
+        id: 'other',
+        name: 'Other',
+        icon: Images.bg1,
+      };
+      return [...categoriesWithProducts, otherCategory];
+    }
+
+    return categoriesWithProducts;
+  }, [categoriesForTabs, productsToShow]);
 
   // Cart store integration
   const { addToCart, increment, decrement, setActiveCart, carts } = useCartStore();
@@ -630,7 +675,7 @@ const VendorProductComponent: React.FC = () => {
         vendorName: {
           color: getColor('text'),
           fontSize: getTypography('h2'),
-          fontWeight: 'bold',
+          // fontWeight: 'bold',
         },
         vendorMeta: {
           flexDirection: 'row',
@@ -654,7 +699,7 @@ const VendorProductComponent: React.FC = () => {
         ratingText: {
           color: '#fff',
           fontSize: getTypography('caption'),
-          fontWeight: 'bold',
+          // fontWeight: 'bold',
           marginLeft: 2,
         },
         categoryContainer: {
@@ -717,7 +762,7 @@ const VendorProductComponent: React.FC = () => {
         productName: {
           color: getColor('text'),
           fontSize: getTypography('body'),
-          fontWeight: 'bold',
+          // fontWeight: 'bold',
         },
         productMeta: {
           flexDirection: 'row',
@@ -726,7 +771,7 @@ const VendorProductComponent: React.FC = () => {
         },
         productRating: {
           color: '#1ec28b',
-          fontWeight: 'bold',
+          // fontWeight: 'bold',
           marginRight: 8,
         },
         productPriceRow: {
@@ -743,7 +788,7 @@ const VendorProductComponent: React.FC = () => {
         productPrice: {
           color: getColor('text'),
           fontSize: getTypography('body'),
-          fontWeight: 'bold',
+          // fontWeight: 'bold',
         },
         addButton: {
           borderWidth: 1,
@@ -757,7 +802,7 @@ const VendorProductComponent: React.FC = () => {
         },
         addButtonText: {
           color: getColor('primary'),
-          fontWeight: 'bold',
+          // fontWeight: 'bold',
           fontSize: getTypography('body'),
           marginLeft: 4,
         },
@@ -767,7 +812,7 @@ const VendorProductComponent: React.FC = () => {
         headerTitle: {
           color: getColor('text'),
           fontSize: getTypography('h2'),
-          fontWeight: 'bold',
+          // fontWeight: 'bold',
         },
         vendorTime: {
           color: getColor('subText'),
@@ -794,7 +839,7 @@ const VendorProductComponent: React.FC = () => {
         },
         categoryHeaderText: {
           color: getColor('primary'),
-          fontWeight: 'bold',
+          // fontWeight: 'bold',
           fontSize: getTypography('h2'),
           letterSpacing: 1,
         },
@@ -850,7 +895,7 @@ const VendorProductComponent: React.FC = () => {
         emptyStateTitle: {
           color: getColor('text'),
           fontSize: getTypography('h2'),
-          fontWeight: 'bold',
+          // fontWeight: 'bold',
           textAlign: 'center',
           marginBottom: 8,
         },
@@ -870,7 +915,7 @@ const VendorProductComponent: React.FC = () => {
         clearSearchButtonText: {
           color: getColor('white'),
           fontSize: getTypography('body'),
-          fontWeight: 'bold',
+          // fontWeight: 'bold',
         },
         emptyStateMessageContainer: {
           backgroundColor: getColor('card'),
@@ -908,7 +953,7 @@ const VendorProductComponent: React.FC = () => {
         zeroStateTitle: {
           color: getColor('text'),
           fontSize: getTypography('h2'),
-          fontWeight: 'bold',
+          // fontWeight: 'bold',
           textAlign: 'center',
           marginBottom: 12,
         },
@@ -932,7 +977,7 @@ const VendorProductComponent: React.FC = () => {
         businessHoursTitle: {
           color: getColor('text'),
           fontSize: getTypography('body'),
-          fontWeight: 'bold',
+          // fontWeight: 'bold',
           marginBottom: 4,
         },
         businessHoursText: {

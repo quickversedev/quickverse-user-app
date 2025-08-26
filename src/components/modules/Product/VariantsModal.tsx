@@ -5,7 +5,6 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -18,6 +17,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
 import SectionDivider from '../../common/SectionDivider';
+import { ThemeText } from '../../common/theme/ThemeText';
 import VariantsModalSkeleton from '../Vendor/VariantsModalSkeleton';
 import AddButton from './AddButton';
 import QuantitySelector from './QuantitySelector';
@@ -39,7 +39,7 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
   vendor,
   onVariantSelect,
 }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, theme } = useTheme();
   const { authData } = useAuth();
   const { variants, loading, error, hasData, fetchVariants, clearError, reset } = useVariants();
   const { addToCart, increment, decrement, carts } = useCartStore();
@@ -138,7 +138,7 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: getColor('shadow').color,
-      shadowOffset: getColor('shadow').offset,
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: getColor('shadow').opacity,
       shadowRadius: getColor('shadow').radius,
       elevation: 3,
@@ -147,8 +147,6 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       paddingHorizontal: 20,
     },
     productName: {
-      fontSize: getTypography('h2'),
-      fontWeight: 'bold',
       color: getColor('text'),
       textAlign: 'left',
       marginTop: 20,
@@ -169,7 +167,7 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       padding: 8,
       marginBottom: 12,
       shadowColor: getColor('shadow').color,
-      shadowOffset: getColor('shadow').offset,
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: getColor('shadow').opacity,
       shadowRadius: getColor('shadow').radius,
       elevation: 2,
@@ -185,13 +183,10 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       flex: 1,
     },
     variantName: {
-      fontSize: getTypography('body'),
-      fontWeight: '500',
       color: getColor('text'),
       marginBottom: 4,
     },
     variantPrice: {
-      fontSize: getTypography('caption'),
       color: getColor('subText'),
     },
     variantRightContainer: {
@@ -206,13 +201,10 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       marginBottom: 8,
     },
     currentPrice: {
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
       color: getColor('text'),
       marginRight: 8,
     },
     originalPrice: {
-      fontSize: getTypography('caption'),
       color: getColor('subText'),
       textDecorationLine: 'line-through',
     },
@@ -222,7 +214,6 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
     },
     errorText: {
       color: getColor('error'),
-      fontSize: getTypography('body'),
       textAlign: 'center',
       marginBottom: 16,
     },
@@ -234,8 +225,6 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
     },
     retryButtonText: {
       color: getColor('white'),
-      fontSize: getTypography('body'),
-      fontWeight: '600',
     },
     emptyContainer: {
       padding: 40,
@@ -243,7 +232,6 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
     },
     emptyText: {
       color: getColor('subText'),
-      fontSize: getTypography('body'),
       textAlign: 'center',
     },
     bottomIndicator: {
@@ -264,9 +252,13 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
     if (error) {
       return (
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
+          <ThemeText variant="body" color={getColor('error')} style={styles.errorText}>
+            {error}
+          </ThemeText>
           <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <ThemeText variant="body" color={getColor('white')} style={styles.retryButtonText}>
+              Retry
+            </ThemeText>
           </TouchableOpacity>
         </View>
       );
@@ -275,7 +267,9 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
     if (!hasData) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No variants available</Text>
+          <ThemeText variant="body" color={getColor('subText')} style={styles.emptyText}>
+            No variants available
+          </ThemeText>
         </View>
       );
     }
@@ -287,11 +281,21 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
         <View key={variant.sku || `variant-${index}`} style={styles.variantItem}>
           <View style={styles.variantImage} />
           <View style={styles.variantInfo}>
-            <Text style={styles.variantName}>{variant.name}</Text>
+            <ThemeText variant="body" color={getColor('text')} style={styles.variantName}>
+              {variant.name}
+            </ThemeText>
             <View style={styles.variantPriceContainer}>
-              <Text style={styles.currentPrice}>₹{variant.sellingPrice}</Text>
+              <ThemeText variant="body" color={getColor('text')} style={styles.currentPrice}>
+                ₹{variant.sellingPrice}
+              </ThemeText>
               {variant.sellingPrice !== variant.mrp && (
-                <Text style={styles.originalPrice}>₹{variant.mrp}</Text>
+                <ThemeText
+                  variant="caption"
+                  color={getColor('subText')}
+                  style={styles.originalPrice}
+                >
+                  ₹{variant.mrp}
+                </ThemeText>
               )}
             </View>
           </View>
@@ -329,7 +333,9 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
           </TouchableOpacity>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            <Text style={styles.productName}>{product.name}</Text>
+            <ThemeText variant="h2" color={getColor('text')} style={styles.productName}>
+              {product.name}
+            </ThemeText>
 
             <View style={styles.sectionDivider}>
               <SectionDivider text="SELECT UNIT" fontSize={16} />

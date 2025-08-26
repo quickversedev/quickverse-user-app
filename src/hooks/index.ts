@@ -1,4 +1,5 @@
 export { useAddress } from './useAddress';
+export { useAppStateRefresh } from './useAppStateRefresh';
 export { useConfig } from './useConfig';
 export { useDeviceInfo } from './useDeviceInfo';
 export { default as useFeaturedProducts } from './useFeaturedProducts';

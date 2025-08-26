@@ -1,8 +1,8 @@
 import React, { useCallback } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { CartProduct } from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
-import { VegIcon } from '../../common';
+import { ThemeText } from '../../common/theme/ThemeText';
 import AddButton from '../Product/AddButton';
 import QuantitySelector from '../Product/QuantitySelector';
 
@@ -13,8 +13,8 @@ interface CartItemProps extends CartProduct {
 }
 
 const CartItem: React.FC<CartItemProps> = React.memo(
-  ({ name, price, mrp, quantity, tag, onInc, onDec, image, veg }) => {
-    const { getColor, getTypography, theme, getButtonColor } = useTheme();
+  ({ name, price, mrp, quantity, tag, onInc, onDec, image, veg: _veg }) => {
+    const { getColor, theme, getButtonColor } = useTheme();
 
     const styles = StyleSheet.create({
       cartItemRow: {
@@ -31,23 +31,16 @@ const CartItem: React.FC<CartItemProps> = React.memo(
       },
       cartItemName: {
         color: getColor('text'),
-        fontWeight: 'bold',
-        fontSize: getTypography('body'),
         width: '75%',
-
         // marginRight: 8,
       },
       cartItemMRP: {
         color: getColor('subText'),
-        fontSize: getTypography('caption'),
         textDecorationLine: 'line-through',
         marginRight: 6,
-        fontWeight: 'bold',
       },
       cartItemPrice: {
         color: getButtonColor('default', 'background'),
-        fontWeight: 'bold',
-        fontSize: getTypography('body'),
       },
       qtyCol: {
         flexDirection: 'row',
@@ -68,8 +61,6 @@ const CartItem: React.FC<CartItemProps> = React.memo(
       },
       cartItemTagText: {
         color: getButtonColor('default', 'background'),
-        fontWeight: 'bold',
-        fontSize: getTypography('caption'),
       },
     });
 
@@ -97,13 +88,28 @@ const CartItem: React.FC<CartItemProps> = React.memo(
         <Image source={imageSource} style={styles.cartItemImg} />
         <View style={{ flex: 1, minWidth: 120 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-            <Text style={styles.cartItemName} numberOfLines={2}>
-              {name} <VegIcon veg={veg} size="small" />
-            </Text>
+            <ThemeText
+              variant="body"
+              color={getColor('text')}
+              style={styles.cartItemName}
+              numberOfLines={2}
+            >
+              {name}
+            </ThemeText>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            {showMRP && <Text style={styles.cartItemMRP}>₹{mrp}</Text>}
-            <Text style={styles.cartItemPrice}>₹{price}</Text>
+            {showMRP && (
+              <ThemeText variant="caption" color={getColor('subText')} style={styles.cartItemMRP}>
+                ₹{mrp}
+              </ThemeText>
+            )}
+            <ThemeText
+              variant="body"
+              color={getButtonColor('default', 'background')}
+              style={styles.cartItemPrice}
+            >
+              ₹{price}
+            </ThemeText>
           </View>
         </View>
         <View style={styles.qtyCol}>
@@ -120,7 +126,13 @@ const CartItem: React.FC<CartItemProps> = React.memo(
 
           {tag && (
             <View style={styles.cartItemTag}>
-              <Text style={styles.cartItemTagText}>{tag}</Text>
+              <ThemeText
+                variant="caption"
+                color={getButtonColor('default', 'background')}
+                style={styles.cartItemTagText}
+              >
+                {tag}
+              </ThemeText>
             </View>
           )}
         </View>

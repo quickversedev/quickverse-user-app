@@ -1,76 +1,88 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { StyleSheet, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
-import { Order } from '../../../types/order';
+import { ThemeText } from '../theme/ThemeText';
 
-interface OrderItemsSectionProps {
-  order: Order;
+interface OrderItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  total: number;
 }
 
-const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ order }) => {
-  const { getColor } = useTheme();
+interface OrderItemsSectionProps {
+  items: OrderItem[];
+  title?: string;
+}
+
+const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ items, title = 'Order Items' }) => {
+  const { getColor, theme } = useTheme();
+
+  const styles = StyleSheet.create({
+    container: {
+      backgroundColor: getColor('card'),
+      borderRadius: theme.borderRadius.md,
+      padding: 16,
+      marginHorizontal: 16,
+      marginBottom: 16,
+    },
+    title: {
+      color: getColor('text'),
+      marginBottom: 12,
+    },
+    itemContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: getColor('border'),
+    },
+    lastItem: {
+      borderBottomWidth: 0,
+    },
+    itemInfo: {
+      flex: 1,
+    },
+    itemName: {
+      color: getColor('text'),
+      marginBottom: 4,
+    },
+    itemQuantity: {
+      color: getColor('subText'),
+    },
+    itemPrice: {
+      color: getColor('text'),
+    },
+  });
 
   return (
-    <View style={[styles.itemsSection, { backgroundColor: getColor('card') }]}>
-      {order.items.map((item, index) => (
-        <View key={index} style={styles.itemContainer}>
-          <View style={styles.itemContent}>
-            <View style={styles.itemLeft}>
-              <View style={styles.nonVegIcon}>
-                <Icon name="triangle" size={8} color="#FF4444" />
-              </View>
-              <Text style={[styles.itemName, { color: getColor('text') }]}>
-                {item.name} x{item.quantity}
-              </Text>
-            </View>
-            <Text style={[styles.itemPrice, { color: getColor('text') }]}>
-              ₹{item.totalPrice.toFixed(0)}
-            </Text>
+    <View style={styles.container}>
+      <ThemeText variant="h2" color={getColor('text')} style={styles.title}>
+        {title}
+      </ThemeText>
+
+      {items.map((item, index) => (
+        <View
+          key={item.id}
+          style={[styles.itemContainer, index === items.length - 1 && styles.lastItem]}
+        >
+          <View style={styles.itemInfo}>
+            <ThemeText variant="body" color={getColor('text')} style={styles.itemName}>
+              {item.name}
+            </ThemeText>
+            <ThemeText variant="caption" color={getColor('subText')} style={styles.itemQuantity}>
+              Qty: {item.quantity} × ₹{item.price}
+            </ThemeText>
           </View>
+          <ThemeText variant="body" color={getColor('text')} style={styles.itemPrice}>
+            ₹{item.total}
+          </ThemeText>
         </View>
       ))}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  itemsSection: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-  },
-  itemContainer: {
-    marginBottom: 16,
-  },
-  itemContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  itemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  nonVegIcon: {
-    width: 16,
-    height: 16,
-    backgroundColor: '#FF4444',
-    borderRadius: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  itemName: {
-    fontSize: 16,
-    fontWeight: '500',
-    flex: 1,
-  },
-  itemPrice: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
 
 export default OrderItemsSection;

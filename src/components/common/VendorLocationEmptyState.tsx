@@ -1,7 +1,8 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { Images } from '../../assets';
 import { useTheme } from '../../theme/ThemeContext';
+import { ThemeText } from './theme/ThemeText';
 
 interface VendorLocationEmptyStateProps {
   onChangeAddress?: () => void;
@@ -12,7 +13,7 @@ const VendorLocationEmptyState: React.FC<VendorLocationEmptyStateProps> = ({
   onChangeAddress,
   selectedAddress,
 }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, theme } = useTheme();
 
   const styles = StyleSheet.create({
     container: {
@@ -28,30 +29,6 @@ const VendorLocationEmptyState: React.FC<VendorLocationEmptyStateProps> = ({
       height: 120,
       marginBottom: 24,
     },
-    emptyTitle: {
-      fontSize: getTypography('h3'),
-      fontWeight: '700',
-      textAlign: 'center',
-      marginBottom: 12,
-      color: getColor('text'),
-      fontFamily: 'BricolageGrotesque-Regular',
-    },
-    emptySubtitle: {
-      fontSize: getTypography('body'),
-      textAlign: 'center',
-      lineHeight: 20,
-      color: getColor('subText'),
-      fontFamily: 'BricolageGrotesque-Regular',
-      marginBottom: 8,
-    },
-    addressText: {
-      fontSize: getTypography('caption'),
-      textAlign: 'center',
-      color: getColor('subText'),
-      fontFamily: 'BricolageGrotesque-Regular',
-      marginBottom: 32,
-      fontStyle: 'italic',
-    },
     changeAddressButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -65,13 +42,6 @@ const VendorLocationEmptyState: React.FC<VendorLocationEmptyStateProps> = ({
       shadowOpacity: getColor('shadow').opacity,
       shadowRadius: getColor('shadow').radius,
     },
-    changeAddressText: {
-      color: getColor('white'),
-      fontSize: getTypography('body'),
-      fontWeight: '600',
-      marginLeft: 8,
-      fontFamily: 'BricolageGrotesque-Regular',
-    },
     iconContainer: {
       backgroundColor: 'rgba(255, 255, 255, 0.2)',
       borderRadius: theme.borderRadius.full,
@@ -83,15 +53,31 @@ const VendorLocationEmptyState: React.FC<VendorLocationEmptyStateProps> = ({
     <View style={styles.container}>
       <Image source={Images.emptyVendors} style={styles.emptyImage} resizeMode="contain" />
 
-      <Text style={styles.emptyTitle}>This location is not serviceable</Text>
+      <ThemeText
+        variant="subtitle"
+        color={getColor('text')}
+        style={{ fontWeight: '700', textAlign: 'center', marginBottom: 12 }}
+      >
+        This location is not serviceable
+      </ThemeText>
 
-      <Text style={styles.emptySubtitle}>
-        We don't have any vendors available at your current location. Please try changing your
+      <ThemeText
+        variant="body"
+        color={getColor('subText')}
+        style={{ textAlign: 'center', lineHeight: 20, marginBottom: 8 }}
+      >
+        We don&apos;t have any vendors available at your current location. Please try changing your
         delivery address.
-      </Text>
+      </ThemeText>
 
       {selectedAddress && (
-        <Text style={styles.addressText}>Current address: {selectedAddress}</Text>
+        <ThemeText
+          variant="caption"
+          color={getColor('subText')}
+          style={{ textAlign: 'center', marginBottom: 32, fontStyle: 'italic' }}
+        >
+          Current address: {selectedAddress}
+        </ThemeText>
       )}
     </View>
   );

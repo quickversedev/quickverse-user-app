@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
+import { ThemeText } from '../../common/theme/ThemeText';
 import ProductCard from '../Product/ProductCard';
 
 export interface SuggestedItem {
@@ -18,7 +19,7 @@ interface SuggestedItemsProps {
 }
 
 const SuggestedItems: React.FC<SuggestedItemsProps> = ({ items }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, theme } = useTheme();
 
   const styles = StyleSheet.create({
     suggestedBox: {
@@ -29,8 +30,6 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({ items }) => {
     },
     suggestedTitle: {
       color: getColor('text'),
-      fontWeight: 'bold',
-      fontSize: getTypography('body'),
       marginBottom: 8,
     },
   });
@@ -112,7 +111,9 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({ items }) => {
 
   return (
     <View style={styles.suggestedBox}>
-      <Text style={styles.suggestedTitle}>Add a little somethin&apos;</Text>
+      <ThemeText variant="body" color={getColor('text')} style={styles.suggestedTitle}>
+        Add a little somethin&apos;
+      </ThemeText>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {suggestedProducts.map(renderSuggestedItem)}
       </ScrollView>

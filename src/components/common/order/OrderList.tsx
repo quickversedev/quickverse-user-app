@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Images } from '../../../assets';
+import { useAppStateRefresh } from '../../../hooks/useAppStateRefresh';
 import { useOrders } from '../../../hooks/useOrders';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AppNavigationProp } from '../../../types/navigation';
@@ -33,6 +34,18 @@ const OrderList: React.FC<OrderListProps> = ({
 
   // State hooks
   const [refreshing, setRefreshing] = useState(false);
+
+  // Auto-refresh orders when app comes back from background
+  useAppStateRefresh({
+    onForeground: async () => {
+      try {
+        await refreshOrders(10);
+      } catch (error) {
+        console.warn('Error refreshing orders:', error);
+      }
+    },
+    refreshThreshold: 30000, // Refresh after 30 seconds in background
+  });
 
   // Memoized values
 

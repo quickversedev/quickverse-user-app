@@ -1,161 +1,138 @@
-import React, { useCallback, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import React from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
+import { ThemeText } from '../theme/ThemeText';
 
 interface BillSummaryCardProps {
-  totalAmount: number;
   subtotal: number;
   deliveryFee: number;
-  additionalPaymentCharges?: number;
-  paymentMethod?: string;
-  onPress: () => void;
+  discount: number;
+  total: number;
+  onViewDetails?: () => void;
 }
 
 const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
-  totalAmount,
   subtotal,
   deliveryFee,
-  additionalPaymentCharges = 0,
-  paymentMethod,
-  onPress,
+  discount,
+  total,
+  onViewDetails,
 }) => {
-  const { getColor } = useTheme();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { getColor, theme } = useTheme();
 
-  const handlePress = useCallback(() => {
-    setIsExpanded(!isExpanded);
-  }, [isExpanded]);
+  const styles = StyleSheet.create({
+    container: {
+      backgroundColor: getColor('card'),
+      borderRadius: theme.borderRadius.md,
+      padding: 16,
+      marginHorizontal: 16,
+      marginBottom: 16,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 16,
+    },
+    title: {
+      color: getColor('text'),
+    },
+    viewDetailsButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    viewDetailsText: {
+      color: getColor('primary'),
+      marginRight: 4,
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    label: {
+      color: getColor('subText'),
+    },
+    value: {
+      color: getColor('text'),
+    },
+    discountValue: {
+      color: getColor('success'),
+    },
+    totalRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: getColor('border'),
+    },
+    totalLabel: {
+      color: getColor('text'),
+    },
+    totalValue: {
+      color: getColor('text'),
+    },
+  });
 
   return (
-    <TouchableOpacity
-      style={[styles.billCard, { backgroundColor: getColor('card') }]}
-      onPress={handlePress}
-    >
-      <View style={styles.billContent}>
-        <View style={styles.billInfo}>
-          <Icon name="file-document-outline" size={20} color={getColor('text')} />
-          <View style={styles.billText}>
-            <Text style={[styles.billLabel, { color: getColor('subText') }]}>
-              Total Bill (Inc. Taxes and Charges)
-            </Text>
-            <Text style={[styles.billAmount, { color: getColor('text') }]}>
-              ₹{totalAmount.toFixed(2)}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.billAction}>
-          <Text style={[styles.billActionText, { color: '#FFA500' }]}>
-            {isExpanded ? 'Hide details' : 'View details'}
-          </Text>
-          <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={20} color="#FFA500" />
-        </View>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <ThemeText variant="h2" color={getColor('text')} style={styles.title}>
+          Bill Summary
+        </ThemeText>
+        {onViewDetails && (
+          <TouchableOpacity style={styles.viewDetailsButton} onPress={onViewDetails}>
+            <ThemeText variant="body" color={getColor('primary')} style={styles.viewDetailsText}>
+              View Details
+            </ThemeText>
+            <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('primary')} />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {isExpanded && (
-        <View style={styles.expandedContent}>
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>Subtotal</Text>
-            <Text style={[styles.summaryValue, { color: getColor('text') }]}>
-              ₹{subtotal.toFixed(2)}
-            </Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>Delivery Fee</Text>
-            <Text style={[styles.summaryValue, { color: getColor('text') }]}>
-              ₹{deliveryFee.toFixed(2)}
-            </Text>
-          </View>
-          {additionalPaymentCharges > 0 && (
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>
-                {paymentMethod === 'cash' ? 'COD Charges' : 'Additional Charges'}
-              </Text>
-              <Text style={[styles.summaryValue, { color: getColor('text') }]}>
-                ₹{additionalPaymentCharges.toFixed(2)}
-              </Text>
-            </View>
-          )}
-          <View style={[styles.summaryRow, styles.summaryTotalRow]}>
-            <Text style={[styles.summaryTotalLabel, { color: getColor('text') }]}>Total</Text>
-            <Text style={[styles.summaryTotalValue, { color: getColor('text') }]}>
-              ₹{totalAmount.toFixed(2)}
-            </Text>
-          </View>
+      <View style={styles.summaryRow}>
+        <ThemeText variant="body" color={getColor('subText')} style={styles.label}>
+          Subtotal
+        </ThemeText>
+        <ThemeText variant="body" color={getColor('text')} style={styles.value}>
+          ₹{subtotal}
+        </ThemeText>
+      </View>
+
+      <View style={styles.summaryRow}>
+        <ThemeText variant="body" color={getColor('subText')} style={styles.label}>
+          Delivery Fee
+        </ThemeText>
+        <ThemeText variant="body" color={getColor('text')} style={styles.value}>
+          ₹{deliveryFee}
+        </ThemeText>
+      </View>
+
+      {discount > 0 && (
+        <View style={styles.summaryRow}>
+          <ThemeText variant="body" color={getColor('subText')} style={styles.label}>
+            Discount
+          </ThemeText>
+          <ThemeText variant="body" color={getColor('success')} style={styles.discountValue}>
+            -₹{discount}
+          </ThemeText>
         </View>
       )}
-    </TouchableOpacity>
+
+      <View style={styles.totalRow}>
+        <ThemeText variant="h2" color={getColor('text')} style={styles.totalLabel}>
+          Total
+        </ThemeText>
+        <ThemeText variant="h2" color={getColor('text')} style={styles.totalValue}>
+          ₹{total}
+        </ThemeText>
+      </View>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  billCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  billContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  billInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  billText: {
-    marginLeft: 12,
-  },
-  billLabel: {
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  billAmount: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  billAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  billActionText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  expandedContent: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E0E0E0',
-    gap: 8,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  summaryLabel: {
-    fontSize: 14,
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  summaryTotalRow: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E0E0E0',
-    paddingTop: 8,
-  },
-  summaryTotalLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  summaryTotalValue: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-});
 
 export default BillSummaryCard;

@@ -29,7 +29,7 @@ const AppBootstrap: React.FC = () => {
   const [permissionsCompleted, setPermissionsCompleted] = useState(false);
   const { getPermissionAndLocation } = useLocation();
   const [permissionData, setLocalPermissionData] = useState<PermissionAndLocation | null>(null);
-  const [bootLoading, setBootLoading] = useState(false);
+  const [bootstrapped, setBootstrapped] = useState(false);
   const { setPermissionDataInAuth } = useAuth();
   const [bootError, setBootError] = useState<string | null>(null);
   const { updateDeviceInfo } = useDeviceInfo();
@@ -38,10 +38,9 @@ const AppBootstrap: React.FC = () => {
 
   const bootstrap = async () => {
     const fcmTOken = await getFCMToken();
-    console.log('fcm token ', fcmTOken);
 
-    setBootLoading(true);
     setBootError(null);
+    console.log('auth jwt ', authData?.jwt);
     try {
       const result = await getPermissionAndLocation();
       await getFCMToken();
@@ -70,7 +69,7 @@ const AppBootstrap: React.FC = () => {
         error instanceof Error ? error.message : 'Failed to initialize location permissions'
       );
     } finally {
-      setBootLoading(false);
+      setBootstrapped(true);
     }
   };
 
@@ -110,7 +109,7 @@ const AppBootstrap: React.FC = () => {
   }
 
   // CASE 2.5: While bootstrapping location/permission data, avoid mounting children
-  if (bootLoading) {
+  if (!bootstrapped) {
     return <HomeScreenSkeleton />;
   }
 

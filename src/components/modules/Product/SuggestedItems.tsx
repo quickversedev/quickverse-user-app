@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import useCartStore from '../../../store/cart/cartStore';
 import { useProductsStore } from '../../../store/products/productsStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
+import { ThemeText } from '../../common/theme/ThemeText';
 import ProductCard from './ProductCard';
 
 interface SuggestedItem {
@@ -35,7 +36,7 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
   onDecrement,
   isStoreClosed,
 }) => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor } = useTheme();
   const { getProductsByCategories } = useProductsStore();
   const { carts, activeCartId } = useCartStore();
   const [suggestedProducts, setSuggestedProducts] = useState<SuggestedItem[]>([]);
@@ -94,8 +95,6 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
       marginBottom: 16,
     },
     title: {
-      fontSize: getTypography('h2'),
-      fontWeight: 'bold',
       color: getColor('text'),
     },
     viewAllButton: {
@@ -103,9 +102,7 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
       alignItems: 'center',
     },
     viewAllText: {
-      fontSize: getTypography('small'),
       color: getColor('primary'),
-      fontWeight: '500',
       marginRight: 4,
     },
     itemsList: {
@@ -169,7 +166,9 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Add a little somethin&apos;</Text>
+        <ThemeText variant="h2" color={getColor('text')} style={styles.title}>
+          Add a little somethin&apos;
+        </ThemeText>
       </View>
 
       <FlatList
