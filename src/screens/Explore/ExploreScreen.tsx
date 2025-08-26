@@ -320,7 +320,7 @@ const ExploreScreen = () => {
                     longitude: selectedAddress.coordinates.longitude,
                   }}
                   title={selectedAddress.name || 'Selected Address'}
-                  description={selectedAddress.addressLine1}
+                  description={selectedAddress.addressLine1 || ''}
                   anchor={{ x: 0.5, y: 0.5 }}
                 >
                   <View style={[styles.currentLocationDot, { backgroundColor: '#FF9800' }]} />
@@ -377,7 +377,7 @@ const ExploreScreen = () => {
                           color={getColor('text')}
                           style={styles.calloutTitle}
                         >
-                          {vendor.name}
+                          {vendor.name || 'Vendor'}
                         </ThemeText>
                         <ThemeText
                           variant="caption"
@@ -385,8 +385,8 @@ const ExploreScreen = () => {
                           style={styles.calloutSubtitle}
                         >
                           {typeof vendor.rating === 'number' && vendor.rating > 0
-                            ? `${vendor.category} • ${vendor.rating}★`
-                            : vendor.category}
+                            ? `${vendor.category || 'Vendor'} • ${vendor.rating}★`
+                            : vendor.category || 'Vendor'}
                         </ThemeText>
                         <ThemeText
                           variant="caption"
@@ -394,7 +394,7 @@ const ExploreScreen = () => {
                           style={styles.calloutDescription}
                           numberOfLines={2}
                         >
-                          {vendor.description}
+                          {vendor.description || ''}
                         </ThemeText>
                         <View style={styles.calloutActions}>
                           {Platform.OS === 'ios' ? (
