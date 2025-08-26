@@ -269,7 +269,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     },
     closeButton: {
       padding: 8,
-      borderRadius: theme.borderRadius.full,
+      borderRadius: theme.borderRadius.max,
       backgroundColor: getColor('card'),
       minHeight: 40,
       minWidth: 40,

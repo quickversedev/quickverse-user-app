@@ -40,6 +40,8 @@ const HelpDeskScreen: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const { faqs, loading: faqsLoading, error: faqsError, refetch: refetchFAQs } = useFAQs();
 
+  const isLoggedIn = Boolean(authData?.jwt && authData?.phone);
+
   // Get recent 3 orders initially, or more if showMoreOrders is true
   const displayedOrders = showMoreOrders ? orders : orders.slice(0, 3);
 
@@ -288,75 +290,103 @@ const HelpDeskScreen: React.FC = () => {
 
         {/* Content */}
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Previous Orders Section */}
-          <SectionDivider text="PREVIOUS ORDERS" style={styles.sectionDivider} fontSize={16} />
-
-          {loading && orders.length === 0 ? (
-            <View style={[styles.orderCard, { backgroundColor: getColor('card') }]}>
-              <ThemeText variant="body" color={getColor('subText')} style={styles.orderItemName}>
-                Loading orders...
-              </ThemeText>
-            </View>
-          ) : displayedOrders.length === 0 ? (
-            <View style={[styles.orderCard, { backgroundColor: getColor('card') }]}>
-              <ThemeText variant="body" color={getColor('subText')} style={styles.orderItemName}>
-                No orders found
-              </ThemeText>
-            </View>
-          ) : (
+          {/* Previous Orders Section (only when logged in) */}
+          {isLoggedIn && (
             <>
-              {displayedOrders.map(order => (
-                <TouchableOpacity
-                  key={order.orderId}
-                  style={[styles.orderCard, { backgroundColor: getColor('card') }]}
-                  onPress={() => handleOrderPress(order)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.orderHeader}>
-                    <ThemeText variant="subtitle" color={getColor('text')} style={styles.orderId}>
-                      Order: #{order.orderId}
-                    </ThemeText>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        { backgroundColor: getStatusColor(order.status) },
-                      ]}
-                    >
-                      <ThemeText variant="small" color="white" style={styles.statusText}>
-                        {getStatusText(order.status)}
-                      </ThemeText>
-                    </View>
-                  </View>
-                  <ThemeText variant="body" color={getColor('text')} style={styles.orderItemName}>
-                    {order.items[0]?.name || 'Order Items'}
-                  </ThemeText>
-                  <ThemeText variant="caption" color={getColor('subText')} style={styles.orderDate}>
-                    {formatOrderDate(order.orderDate)}
-                  </ThemeText>
-                </TouchableOpacity>
-              ))}
+              <SectionDivider text="PREVIOUS ORDERS" style={styles.sectionDivider} fontSize={16} />
 
-              {!showMoreOrders && orders.length > 3 && pagination.hasMore && (
-                <TouchableOpacity
-                  style={[styles.showMoreButton, { borderColor: getColor('main') }]}
-                  onPress={handleShowMore}
-                  activeOpacity={0.7}
-                  disabled={loadingMore}
-                >
-                  {loadingMore ? (
-                    <ActivityIndicator size="small" color={getColor('main')} />
-                  ) : (
-                    <ThemeText variant="body" color={getColor('main')} style={styles.showMoreText}>
-                      SHOW MORE
-                    </ThemeText>
+              {loading && orders.length === 0 ? (
+                <View style={[styles.orderCard, { backgroundColor: getColor('card') }]}>
+                  <ThemeText
+                    variant="body"
+                    color={getColor('subText')}
+                    style={styles.orderItemName}
+                  >
+                    Loading orders...
+                  </ThemeText>
+                </View>
+              ) : displayedOrders.length === 0 ? (
+                <View style={[styles.orderCard, { backgroundColor: getColor('card') }]}>
+                  <ThemeText
+                    variant="body"
+                    color={getColor('subText')}
+                    style={styles.orderItemName}
+                  >
+                    No orders found
+                  </ThemeText>
+                </View>
+              ) : (
+                <>
+                  {displayedOrders.map(order => (
+                    <TouchableOpacity
+                      key={order.orderId}
+                      style={[styles.orderCard, { backgroundColor: getColor('card') }]}
+                      onPress={() => handleOrderPress(order)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.orderHeader}>
+                        <ThemeText
+                          variant="subtitle"
+                          color={getColor('text')}
+                          style={styles.orderId}
+                        >
+                          Order: #{order.orderId}
+                        </ThemeText>
+                        <View
+                          style={[
+                            styles.statusBadge,
+                            { backgroundColor: getStatusColor(order.status) },
+                          ]}
+                        >
+                          <ThemeText variant="small" color="white" style={styles.statusText}>
+                            {getStatusText(order.status)}
+                          </ThemeText>
+                        </View>
+                      </View>
+                      <ThemeText
+                        variant="body"
+                        color={getColor('text')}
+                        style={styles.orderItemName}
+                      >
+                        {order.items[0]?.name || 'Order Items'}
+                      </ThemeText>
+                      <ThemeText
+                        variant="caption"
+                        color={getColor('subText')}
+                        style={styles.orderDate}
+                      >
+                        {formatOrderDate(order.orderDate)}
+                      </ThemeText>
+                    </TouchableOpacity>
+                  ))}
+
+                  {!showMoreOrders && orders.length > 3 && pagination.hasMore && (
+                    <TouchableOpacity
+                      style={[styles.showMoreButton, { borderColor: getColor('main') }]}
+                      onPress={handleShowMore}
+                      activeOpacity={0.7}
+                      disabled={loadingMore}
+                    >
+                      {loadingMore ? (
+                        <ActivityIndicator size="small" color={getColor('main')} />
+                      ) : (
+                        <ThemeText
+                          variant="body"
+                          color={getColor('main')}
+                          style={styles.showMoreText}
+                        >
+                          SHOW MORE
+                        </ThemeText>
+                      )}
+                    </TouchableOpacity>
                   )}
-                </TouchableOpacity>
+                </>
               )}
+
+              {/* Divider */}
+              <View style={[styles.divider, { backgroundColor: getColor('border') }]} />
             </>
           )}
-
-          {/* Divider */}
-          <View style={[styles.divider, { backgroundColor: getColor('border') }]} />
 
           {/* FAQs Section */}
           <SectionDivider text="FAQs" style={styles.sectionDivider} fontSize={16} />
