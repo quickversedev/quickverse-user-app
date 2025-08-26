@@ -1,19 +1,22 @@
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { Circle, Marker } from 'react-native-maps';
+import { ActivityIndicator, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import MapView, { Callout, CalloutSubview, Circle, Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { Images } from '../../assets';
+import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAppStateRefresh } from '../../hooks/useAppStateRefresh';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
+import { AppNavigationProp } from '../../types/navigation';
 import { Vendor } from '../../types/vendor';
 
 const ExploreScreen = () => {
   const { getColor, theme } = useTheme();
   const { selectedAddress } = useAuth();
+  const navigation = useNavigation<AppNavigationProp>();
 
   // Get region from selected address or fallback to Pune
   const getRegion = useCallback(() => {
@@ -242,7 +245,50 @@ const ExploreScreen = () => {
       // borderWidth: 2,
       // borderColor: '#FF6B6B',
     },
+
+    calloutContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    calloutCard: {
+      width: 240,
+      borderRadius: theme.borderRadius.md,
+      padding: 12,
+      borderWidth: 1,
+    },
+    calloutTitle: {
+      fontWeight: '700',
+      marginBottom: 4,
+    },
+    calloutSubtitle: {
+      marginBottom: 10,
+    },
+    calloutDescription: {
+      marginBottom: 10,
+    },
+    calloutActions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+    },
+    calloutButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: theme.borderRadius.sm,
+    },
+    calloutButtonText: {
+      fontWeight: '600',
+    },
   });
+
+  const radiusText =
+    isRefreshing || isAutoRefreshing
+      ? 'Refreshing vendors...'
+      : selectedAddress?.coordinates
+      ? `5km radius from ${selectedAddress.name || 'your saved address'} (${
+          vendors.length
+        } vendors)`
+      : '5km radius from your location';
 
   return (
     <View style={styles.container}>
@@ -315,36 +361,116 @@ const ExploreScreen = () => {
                 <Marker
                   key={vendor.shopId}
                   coordinate={coordinates}
-                  title={vendor.name}
-                  description={`${vendor.category} • ${vendor.rating || 0}★`}
                   anchor={{ x: 0.5, y: 1.0 }}
                   image={getVendorPin()}
-                />
+                >
+                  <Callout tooltip onPress={() => navigation.navigate('VendorProduct', { vendor })}>
+                    <View style={styles.calloutContainer}>
+                      <View
+                        style={[
+                          styles.calloutCard,
+                          { backgroundColor: getColor('card'), borderColor: getColor('border') },
+                        ]}
+                      >
+                        <ThemeText
+                          variant="subtitle"
+                          color={getColor('text')}
+                          style={styles.calloutTitle}
+                        >
+                          {vendor.name}
+                        </ThemeText>
+                        <ThemeText
+                          variant="caption"
+                          color={getColor('subText')}
+                          style={styles.calloutSubtitle}
+                        >
+                          {typeof vendor.rating === 'number' && vendor.rating > 0
+                            ? `${vendor.category} • ${vendor.rating}★`
+                            : vendor.category}
+                        </ThemeText>
+                        <ThemeText
+                          variant="caption"
+                          color={getColor('text')}
+                          style={styles.calloutDescription}
+                          numberOfLines={2}
+                        >
+                          {vendor.description}
+                        </ThemeText>
+                        <View style={styles.calloutActions}>
+                          {Platform.OS === 'ios' ? (
+                            <CalloutSubview
+                              onPress={() => navigation.navigate('VendorProduct', { vendor })}
+                            >
+                              <View
+                                style={[
+                                  styles.calloutButton,
+                                  { backgroundColor: getColor('primary') },
+                                ]}
+                              >
+                                <ThemeText
+                                  variant="small"
+                                  color={getColor('white')}
+                                  style={styles.calloutButtonText}
+                                >
+                                  View
+                                </ThemeText>
+                              </View>
+                            </CalloutSubview>
+                          ) : (
+                            <TouchableOpacity
+                              onPress={() => navigation.navigate('VendorProduct', { vendor })}
+                              activeOpacity={0.8}
+                            >
+                              <View
+                                style={[
+                                  styles.calloutButton,
+                                  { backgroundColor: getColor('primary') },
+                                ]}
+                              >
+                                <ThemeText
+                                  variant="small"
+                                  color={getColor('white')}
+                                  style={styles.calloutButtonText}
+                                >
+                                  View
+                                </ThemeText>
+                              </View>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  </Callout>
+                </Marker>
               );
             })}
           </MapView>
         ) : (
           <View style={styles.mapLoadingContainer}>
             <ActivityIndicator size="large" color={getColor('primary')} />
-            <Text style={[styles.loadingText, { marginTop: 16 }]}>Loading map...</Text>
+            <ThemeText
+              variant="body"
+              color={getColor('text')}
+              style={[styles.loadingText, { marginTop: 16 }]}
+            >
+              Loading map...
+            </ThemeText>
           </View>
         )}
 
         {/* Header Overlay */}
         <View style={styles.header}>
-          <Text style={styles.title}>Explore</Text>
-          <Text style={styles.subtitle}>Discover vendors and products near you</Text>
+          <ThemeText variant="h2" color={getColor('text')} style={styles.title}>
+            Explore
+          </ThemeText>
+          <ThemeText variant="body" color={getColor('subText')} style={styles.subtitle}>
+            Discover vendors and products near you
+          </ThemeText>
           <View style={styles.radiusIndicator}>
             <View style={styles.radiusDot} />
-            <Text style={styles.radiusText}>
-              {isRefreshing || isAutoRefreshing
-                ? 'Refreshing vendors...'
-                : selectedAddress?.coordinates
-                ? `5km radius from ${selectedAddress.name || 'your saved address'} (${
-                    vendors.length
-                  } vendors)`
-                : '5km radius from your location'}
-            </Text>
+            <ThemeText variant="caption" color={getColor('subText')} style={styles.radiusText}>
+              {radiusText}
+            </ThemeText>
           </View>
         </View>
 
