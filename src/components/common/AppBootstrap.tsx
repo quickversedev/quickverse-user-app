@@ -37,10 +37,7 @@ const AppBootstrap: React.FC = () => {
   const [notificationCleanup, setNotificationCleanup] = useState<(() => void) | null>(null);
 
   const bootstrap = async () => {
-    const fcmTOken = await getFCMToken();
-
     setBootError(null);
-    console.log('auth jwt ', authData?.jwt);
     try {
       const result = await getPermissionAndLocation();
       await getFCMToken();

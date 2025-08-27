@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Images } from '../../../assets';
 import { useAppStateRefresh } from '../../../hooks/useAppStateRefresh';
 import { useOrders } from '../../../hooks/useOrders';
@@ -271,9 +272,9 @@ const OrderList: React.FC<OrderListProps> = ({
           {/* Right Side */}
           <View style={styles.orderAmount}>
             <Text style={[styles.amountText, { color: getColor('text') }]}>
-              INR. {item.totalAmount.toFixed(0)}
+              ₹ {item.totalAmount.toFixed(0)}
             </Text>
-            <Text style={[styles.chevron, { color: getColor('subText') }]}>{'>'}</Text>
+            <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('primary')} />
           </View>
         </TouchableOpacity>
       );

@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useOrders } from '../../../hooks/useOrders';
 import orderService from '../../../services/createOrderService';
+import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AppNavigationProp } from '../../../types/navigation';
 
@@ -33,6 +34,13 @@ const OrderDetailsScreen = () => {
   const { selectedOrder, loadOrderById, refreshOrders } = useOrders();
   const { authData } = useAuth();
   const { orderId } = route.params as { orderId: string };
+  const { getVendorById } = useVendorStore();
+
+  // Get vendor details if we have a shopId
+  const vendorDetails = useMemo(() => {
+    if (!selectedOrder?.shopId) return null;
+    return getVendorById(selectedOrder.shopId);
+  }, [selectedOrder?.shopId, getVendorById]);
 
   React.useEffect(() => {
     if (orderId) {
@@ -67,8 +75,6 @@ const OrderDetailsScreen = () => {
       setRetryingPayment(false);
     }
   }, [selectedOrder]);
-
-  console.log('order', selectedOrder);
 
   const handleCancelOrder = useCallback(async () => {
     if (!selectedOrder || !authData?.jwt || !authData?.phone) return;
@@ -209,11 +215,10 @@ const OrderDetailsScreen = () => {
     const additionalCharges = Number(selectedOrder.additionalPaymentCharges ?? 0);
     const total = Number(subTotal + deliveryFee + additionalCharges);
     return { subTotal, deliveryFee, additionalCharges, total };
-  }, [derivedItems, selectedOrder]);
+  }, [selectedOrder]);
 
   const [showAllItems, setShowAllItems] = React.useState(false);
   const displayedItems = showAllItems ? derivedItems : derivedItems.slice(0, 2);
-  console.log('displayedItems', displayedItems);
   const hasMoreItems = derivedItems.length > 2;
 
   if (!selectedOrder) {
@@ -246,29 +251,45 @@ const OrderDetailsScreen = () => {
             getStatusColor={getStatusColor}
             actionButton={
               selectedOrder.status === 'payment_pending' ? (
-                <TouchableOpacity
-                  style={[styles.actionButton, { borderWidth: 1, borderColor: '#2196F3' }]}
-                  onPress={handleRetryPayment}
-                  disabled={retryingPayment}
-                >
-                  {retryingPayment ? (
-                    <ActivityIndicator size="small" color="#2196F3" />
-                  ) : (
-                    <Text style={[styles.actionButtonText, { color: '#2196F3' }]}>
-                      Retry Payment
-                    </Text>
-                  )}
-                </TouchableOpacity>
+                <View style={styles.actionButtonContainer}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.retryButton]}
+                    onPress={handleRetryPayment}
+                    disabled={retryingPayment}
+                  >
+                    {retryingPayment ? (
+                      <ActivityIndicator size="small" color="#2196F3" />
+                    ) : (
+                      <Text style={[styles.actionButtonText, styles.retryButtonText]}>
+                        Retry Payment
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.cancelButton]}
+                    onPress={handleCancelOrder}
+                    disabled={cancellingOrder}
+                  >
+                    {cancellingOrder ? (
+                      <ActivityIndicator size="small" color="#F44336" />
+                    ) : (
+                      <Text style={[styles.actionButtonText, styles.cancelButtonText]}>
+                        Cancel Order
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               ) : selectedOrder.status === 'processing' ? (
                 <TouchableOpacity
-                  style={[styles.actionButton, { borderWidth: 1, borderColor: '#F44336' }]}
+                  style={[styles.actionButton, styles.cancelButton]}
                   onPress={handleCancelOrder}
                   disabled={cancellingOrder}
                 >
                   {cancellingOrder ? (
                     <ActivityIndicator size="small" color="#F44336" />
                   ) : (
-                    <Text style={[styles.actionButtonText, { color: '#F44336' }]}>
+                    <Text style={[styles.actionButtonText, styles.cancelButtonText]}>
                       Cancel Order
                     </Text>
                   )}
@@ -280,6 +301,35 @@ const OrderDetailsScreen = () => {
           {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (
             <OrderProgress status={selectedOrder.status} />
           )}
+
+          {/* Shop Details Section */}
+          <SectionDivider text="Shop Details" />
+          <View style={[styles.itemsCard, { backgroundColor: getColor('card') }]}>
+            {vendorDetails ? (
+              <View style={styles.shopDetailsContainer}>
+                <Text style={[styles.shopName, { color: getColor('text') }]}>
+                  {vendorDetails.name}
+                </Text>
+                <Text style={[styles.shopInfo, { color: getColor('subText') }]}>
+                  {vendorDetails.description}
+                </Text>
+                {vendorDetails.phone && (
+                  <Text style={[styles.shopContact, { color: getColor('text') }]}>
+                    Contact: {vendorDetails.phone}
+                  </Text>
+                )}
+                {vendorDetails.shopAddress && (
+                  <Text style={[styles.shopAddress, { color: getColor('subText') }]}>
+                    {vendorDetails.shopAddress.address}, {vendorDetails.shopAddress.city}
+                  </Text>
+                )}
+              </View>
+            ) : (
+              <Text style={[styles.emptyText, { color: getColor('subText') }]}>
+                Shop details not available
+              </Text>
+            )}
+          </View>
 
           <SectionDivider text="Order Items" />
           <View style={[styles.itemsCard, { backgroundColor: getColor('card') }]}>
@@ -318,7 +368,7 @@ const OrderDetailsScreen = () => {
                     onPress={() => setShowAllItems(!showAllItems)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.showMoreText, { color: '#FFA500' }]}>
+                    <Text style={[styles.showMoreText, styles.showMoreTextColor]}>
                       {showAllItems ? 'Show Less' : `Show ${derivedItems.length - 2} More Items`}
                     </Text>
                   </TouchableOpacity>
@@ -347,9 +397,14 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  actionButtonContainer: {
+    flexDirection: 'column',
+  },
   actionButton: {
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
+    minHeight: 30,
+    minWidth: 100,
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
@@ -363,22 +418,36 @@ const styles = StyleSheet.create({
     shadowRadius: 1.41,
     marginBottom: 8,
   },
+  retryButton: {
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#2196F3',
+  },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: '#F44336',
+  },
   actionButtonText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
     fontFamily: 'BricolageGrotesque-Regular',
   },
+  retryButtonText: {
+    color: '#2196F3',
+  },
+  cancelButtonText: {
+    color: '#F44336',
+  },
   container: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 0 : 25, // Android status bar height for proper top margin
+    paddingTop: Platform.OS === 'ios' ? 0 : 25,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
     padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20, // iOS home indicator + extra padding
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
   },
   loadingContainer: {
     flex: 1,
@@ -490,6 +559,30 @@ const styles = StyleSheet.create({
   showMoreText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  showMoreTextColor: {
+    color: '#FFA500',
+  },
+  // Shop details styles
+  shopDetailsContainer: {
+    padding: 8,
+  },
+  shopName: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  shopInfo: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  shopContact: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  shopAddress: {
+    fontSize: 14,
   },
 });
 

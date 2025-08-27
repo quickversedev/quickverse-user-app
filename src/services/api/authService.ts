@@ -281,12 +281,12 @@ const signUp = async (
           gender: gender.toUpperCase(),
           email: email,
           fullName: fullName,
+          phone: phoneNumber,
         },
         {
           headers: {
             Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
             SessionKey: jwt,
-            phone: phoneNumber,
           },
         }
       )

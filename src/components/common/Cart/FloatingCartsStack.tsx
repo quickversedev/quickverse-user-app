@@ -116,7 +116,7 @@ const FloatingCartsStack: React.FC = () => {
       )}
       <View style={styles.container} pointerEvents="box-none">
         {/* Always show the in-progress order bar above cart bars */}
-        <View style={[styles.cartBarWrapper, dynamicStyles.cartBarWrapperMain]}>
+        <View>
           <OrderProgressBar />
         </View>
         {showExpandCollapse && (
@@ -137,7 +137,7 @@ const FloatingCartsStack: React.FC = () => {
                 name="chevron-up"
                 size={28}
                 color={getColor('primary')}
-                style={styles.chevronIcon}
+                // style={styles.chevronIcon}regist
               />
             )}
           </TouchableOpacity>
@@ -227,12 +227,10 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   cartBarWrapper: {
-    width: width - 30,
-    maxWidth: width - 30,
+    width: '100%',
+    maxWidth: width - 32,
     marginBottom: 10,
     alignItems: 'center',
-    // overflow: 'visible',
-    // backgroundColor: 'rgba(255,0,0,0.2)', // debug
   },
   cartBar: {
     width: '100%',

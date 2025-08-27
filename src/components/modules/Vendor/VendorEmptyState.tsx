@@ -22,27 +22,27 @@ const VendorEmptyState: React.FC<VendorEmptyStateProps> = ({ message, category }
 
     const categoryMessages = {
       Food: {
-        title: 'No Food Vendors Available',
+        title: 'No Food Shops Available',
         subtitle:
-          "We don't have any food delivery vendors in your area at the moment. Please try changing your delivery address or check back later.",
+          "We don't have any food delivery shops in your area at the moment. Please try changing your delivery address or check back later.",
       },
       Grocery: {
-        title: 'No Grocery Vendors Available',
+        title: 'No Grocery Shops Available',
         subtitle:
-          "We don't have any grocery delivery vendors in your area at the moment. Please try changing your delivery address or check back later.",
+          "We don't have any grocery delivery shops in your area at the moment. Please try changing your delivery address or check back later.",
       },
       Pharmacy: {
-        title: 'No Pharmacy Vendors Available',
+        title: 'No Pharmacy Shops Available',
         subtitle:
-          "We don't have any pharmacy delivery vendors in your area at the moment. Please try changing your delivery address or check back later.",
+          "We don't have any pharmacy delivery shops in your area at the moment. Please try changing your delivery address or check back later.",
       },
     };
 
     return (
       categoryMessages[category as keyof typeof categoryMessages] || {
-        title: 'No Vendors Available',
+        title: 'No Shops Available',
         subtitle:
-          "We don't have any vendors in your area at the moment. Please try changing your delivery address or check back later.",
+          "We don't have any shops in your area at the moment. Please try changing your delivery address or check back later.",
       }
     );
   };

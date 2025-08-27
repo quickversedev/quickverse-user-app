@@ -180,8 +180,7 @@ const HelpDeskScreen: React.FC = () => {
       marginBottom: 16,
     },
     sectionDivider: {
-      marginTop: 16,
-      marginBottom: 16,
+      marginVertical: 10,
     },
     orderCard: {
       borderRadius: 12,
@@ -219,6 +218,12 @@ const HelpDeskScreen: React.FC = () => {
     },
     orderDate: {
       fontSize: getTypography('caption'),
+    },
+    orderDateContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 6,
     },
     showMoreButton: {
       borderWidth: 1,
@@ -332,6 +337,22 @@ const HelpDeskScreen: React.FC = () => {
                         >
                           Order: #{order.orderId}
                         </ThemeText>
+                      </View>
+                      <ThemeText
+                        variant="body"
+                        color={getColor('text')}
+                        style={styles.orderItemName}
+                      >
+                        {order.items[0]?.name || 'Order Items'}
+                      </ThemeText>
+                      <View style={styles.orderDateContainer}>
+                        <ThemeText
+                          variant="caption"
+                          color={getColor('subText')}
+                          style={styles.orderDate}
+                        >
+                          {formatOrderDate(order.orderDate)}
+                        </ThemeText>
                         <View
                           style={[
                             styles.statusBadge,
@@ -343,20 +364,6 @@ const HelpDeskScreen: React.FC = () => {
                           </ThemeText>
                         </View>
                       </View>
-                      <ThemeText
-                        variant="body"
-                        color={getColor('text')}
-                        style={styles.orderItemName}
-                      >
-                        {order.items[0]?.name || 'Order Items'}
-                      </ThemeText>
-                      <ThemeText
-                        variant="caption"
-                        color={getColor('subText')}
-                        style={styles.orderDate}
-                      >
-                        {formatOrderDate(order.orderDate)}
-                      </ThemeText>
                     </TouchableOpacity>
                   ))}
 
@@ -382,9 +389,6 @@ const HelpDeskScreen: React.FC = () => {
                   )}
                 </>
               )}
-
-              {/* Divider */}
-              <View style={[styles.divider, { backgroundColor: getColor('border') }]} />
             </>
           )}
 

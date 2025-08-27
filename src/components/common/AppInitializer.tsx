@@ -6,6 +6,7 @@ import { findClosestAddressWithinRadius } from '../../screens/profile/Address/ut
 import { getAddressFromCoordinates } from '../../services/api/olaLocationService';
 import { getUserAddresses } from '../../services/localStorage/storage.service';
 import useAddressStore from '../../store/address/addressStore';
+import useOrderStore from '../../store/cart/orderStore';
 import useThemeStore from '../../store/themeStore';
 import useVendorStore from '../../store/vendorStore';
 import { Address } from '../../types/address';
@@ -67,6 +68,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   } = useConfig();
   const { fetchTheme } = useThemeStore();
   const { fetchPages, loading: pagesLoading } = usePages();
+  const { fetchOrders } = useOrderStore();
 
   // Authentication and address selection
   const { setSelectedAddress, selectedAddress, authData } = useAuth();
@@ -75,9 +77,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   // Auto-refresh when app comes back from background
   const refreshAppData = useCallback(async () => {
     if (!isLoggedIn) return;
-    console.log('isLoggedIn app initializer appRefreshed', isLoggedIn);
     try {
-      console.log('app initializer appRefreshed');
       // Refresh critical data when app comes back from background
       await Promise.allSettled([
         fetchVendors(),
@@ -88,9 +88,12 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
         }),
         fetchTheme(),
         fetchPages(),
+        authData?.jwt && authData?.phone
+          ? fetchOrders(authData.jwt, authData.phone, null, 5)
+          : Promise.resolve(),
       ]);
-    } catch (error) {
-      console.warn('Error refreshing app data:', error);
+    } catch (refreshError) {
+      console.warn('Error refreshing app data:', refreshError);
     }
   }, [
     isLoggedIn,
@@ -99,8 +102,11 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     fetchInitialConfig,
     fetchTheme,
     fetchPages,
+    fetchOrders,
     locationData?.location?.longitude,
     locationData?.location?.latitude,
+    authData?.jwt,
+    authData?.phone,
   ]);
 
   useAppStateRefresh({
@@ -298,7 +304,6 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       });
 
       // Step 3: Handle address fetching based on MMKV storage state
-
       const addressPromise = isLoggedIn
         ? (async () => {
             if (!cachedAddresses || cachedAddresses.length === 0) {
@@ -318,10 +323,14 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       await Promise.allSettled([fetchTheme(), fetchPages()]);
 
       // Step 5: Initialize selected address
-
       await (async () => {
         await initializeSelectedAddress();
       })();
+
+      // Step 6: Fetch orders if user is logged in
+      if (isLoggedIn && authData?.jwt && authData?.phone) {
+        await fetchOrders(authData.jwt, authData.phone, null, 5);
+      }
     } catch (e) {
       // Silent catch; UI handles error states from stores
       console.error('app initializer initializeApp error', e);
@@ -331,22 +340,26 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     fetchAddresses,
     fetchTheme,
     fetchPages,
+    fetchOrders,
     initializeSelectedAddress,
     isLoggedIn,
     locationData?.location?.latitude,
     locationData?.location?.longitude,
     cachedAddresses,
+    authData?.jwt,
+    authData?.phone,
+    loadAddressesFromStorage,
   ]);
 
   const handleRetry = useCallback(() => {
     initializationRef.current = false;
-
     initializeApp();
-  }, []);
+  }, [initializeApp]);
 
   useEffect(() => {
     initializeApp();
-  }, []);
+  }, [initializeApp]);
+
   useEffect(() => {
     if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
       fetchVendors(selectedAddress.coordinates).then(() => {

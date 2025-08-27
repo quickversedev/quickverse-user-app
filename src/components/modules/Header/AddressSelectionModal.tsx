@@ -128,6 +128,8 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     const city = result.structured_formatting.main_text;
     const state = secondaryParts[1]?.trim() || '';
     const postalCode = secondaryParts[2]?.trim() || '';
+    const latitude = result.geometry.location.lat;
+    const longitude = result.geometry.location.lng;
 
     // Convert search result to Address object
     const newAddress: Address = {
@@ -142,8 +144,8 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       addressLine3: '',
       postalCode: postalCode,
       coordinates: {
-        longitude: 0,
-        latitude: 0,
+        longitude: longitude,
+        latitude: latitude,
       },
     };
 

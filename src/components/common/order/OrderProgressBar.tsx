@@ -1,6 +1,14 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useMemo } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+  useWindowDimensions,
+} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import useOrderStore from '../../../store/cart/orderStore';
@@ -15,7 +23,7 @@ interface OrderProgressBarProps {
 // Keeping the set here for future granularity if needed.
 
 const statusLabel: Record<string, string> = {
-  payment_pending: 'Payment pending',
+  payment_pending: 'Retry',
   processing: 'Processing',
   confirmed: 'Confirmed',
   ready: 'Ready for dispatch',
@@ -29,6 +37,11 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
   const orders = useOrderStore(state => state.orders);
   const fetchOrders = useOrderStore(state => state.fetchOrders);
   const loading = useOrderStore(state => state.loading);
+  const { width: screenWidth } = useWindowDimensions();
+
+  // Calculate responsive widths
+  const containerWidth = Math.min(screenWidth - 32, 600); // max width of 600, 16px padding on each side
+  const barWidth = Math.min(containerWidth - 32, 540); // additional 16px padding inside container
 
   useEffect(() => {
     const jwt = authData?.jwt || '';
@@ -40,32 +53,49 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
       });
     }
   }, [authData?.jwt, authData?.phone, orders.length, loading, fetchOrders]);
-  const inProgressOrder = useMemo(() => {
-    return orders.find(o => o.status !== 'delivered' && o.status !== 'cancelled');
+
+  const inProgressOrders = useMemo(() => {
+    return orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
   }, [orders]);
-  if (!inProgressOrder) return null;
 
-  const items = inProgressOrder.items || [];
-  const itemsCount = items.reduce((acc, it) => acc + (it.quantity || 0), 0) || 0;
-  const firstItemName = items[0]?.name || 'Order';
-  const remainingItems = Math.max(itemsCount - 1, 0);
-  const label = statusLabel[inProgressOrder.status] || 'In progress';
+  const scrollRef = useRef<ScrollView | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  return (
-    <View style={[styles.stickyContainer, style]} pointerEvents="box-none">
+  // Auto-advance carousel when multiple orders
+  useEffect(() => {
+    if (inProgressOrders.length <= 1) return;
+    const interval = setInterval(() => {
+      const nextIndex = (currentIndex + 1) % inProgressOrders.length;
+      setCurrentIndex(nextIndex);
+      scrollRef.current?.scrollTo({ x: nextIndex * screenWidth, animated: true });
+    }, 3500);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, inProgressOrders.length, screenWidth]);
+
+  if (inProgressOrders.length === 0) return null;
+
+  const renderBar = (order: any) => {
+    const items = order.items || [];
+    const itemsCount = items.reduce((acc: number, it: any) => acc + (it.quantity || 0), 0) || 0;
+    const firstItemName = items[0]?.name || 'Order';
+    const remainingItems = Math.max(itemsCount - 1, 0);
+    const label = statusLabel[order.status] || 'In progress';
+
+    return (
       <TouchableOpacity
+        key={order.orderId}
         style={[
           styles.bar,
           {
             backgroundColor: getColor('card'),
             borderColor: getColor('primary'),
-            borderWidth: 1.5,
           },
         ]}
         activeOpacity={0.92}
         onPress={() => {
-          if (inProgressOrder?.orderId) {
-            navigation.navigate('OrderDetails', { orderId: inProgressOrder.orderId });
+          if (order?.orderId) {
+            navigation.navigate('OrderDetails', { orderId: order.orderId });
           }
         }}
       >
@@ -93,22 +123,57 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
             numberOfLines={1}
           >
             {itemsCount} item{itemsCount === 1 ? '' : 's'} • ₹
-            {inProgressOrder.totalAmount.toFixed(0)}
+            {order.totalAmount?.toFixed ? order.totalAmount.toFixed(0) : order.totalAmount}
           </Text>
         </View>
-        <Text
-          style={[styles.status, { color: getColor('primary'), fontSize: getTypography('body') }]}
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
-        <MaterialCommunityIcons
-          name="chevron-right"
-          size={22}
-          color={getColor('background')}
-          style={styles.trailingIcon}
-        />
+        <View style={styles.rightSection}>
+          <Text
+            style={[styles.status, { color: getColor('primary'), fontSize: getTypography('body') }]}
+            numberOfLines={1}
+          >
+            {label}
+          </Text>
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={22}
+            color={getColor('primary')}
+            style={styles.trailingIcon}
+          />
+        </View>
       </TouchableOpacity>
+    );
+  };
+
+  // Single order: keep existing layout
+  if (inProgressOrders.length === 1) {
+    const order = inProgressOrders[0];
+    return (
+      <View style={[styles.stickyContainer, style]} pointerEvents="box-none">
+        <View style={[styles.page, { maxWidth: containerWidth }]}>{renderBar(order)}</View>
+      </View>
+    );
+  }
+
+  // Multiple orders: horizontal, paging carousel with auto-advance
+  return (
+    <View style={[styles.stickyContainer, style]} pointerEvents="box-none">
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={e => {
+          const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+          setCurrentIndex(idx);
+        }}
+        scrollEventThrottle={16}
+      >
+        {inProgressOrders.map(order => (
+          <View key={order.orderId} style={[styles.page, { maxWidth: containerWidth }]}>
+            {renderBar(order)}
+          </View>
+        ))}
+      </ScrollView>
     </View>
   );
 };
@@ -116,8 +181,14 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
 const styles = StyleSheet.create({
   stickyContainer: {
     zIndex: 100,
+    width: '100%',
+    paddingVertical: 8,
     alignItems: 'center',
-    justifyContent: 'center',
+  },
+  page: {
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 16,
   },
   bar: {
     flexDirection: 'row',
@@ -126,7 +197,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 14,
     minHeight: 52,
-    width: '92%',
+    width: '100%',
+    borderWidth: 1.5,
+    // Cross-platform shadow
+    // iOS shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    // Android elevation
+    elevation: 4,
   },
   leadingIcon: {
     marginRight: 10,
@@ -150,6 +230,11 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  rightSection: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });
 
