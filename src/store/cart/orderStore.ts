@@ -7,6 +7,30 @@ const ORDER_API_URL = '/v2/order/getSMZBIZOrders';
 
 const USE_ORDER_MOCKS = false; // Set to false for real API
 
+// Normalize backend order state to app's Order['status']
+const normalizeStatus = (state?: string): Order['status'] => {
+  const s = String(state || '').toLowerCase();
+  switch (s) {
+    case 'open':
+      return 'payment_pending';
+    case 'pending':
+      return 'processing';
+    case 'accepted':
+      return 'confirmed';
+    case 'shipped':
+      return 'shipped';
+    case 'packed':
+      return 'ready';
+    case 'completed':
+      return 'delivered';
+    case 'cancelled':
+    case 'rejected':
+      return 'cancelled';
+    default:
+      return 'processing';
+  }
+};
+
 const useOrderStore = create<OrderStore>((set, get) => ({
   // Initial state
   orders: [],
@@ -52,7 +76,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
       const requestData = {
         cursor: currentCursor,
       };
-      console.log('requestData', requestData, `${ORDER_API_URL}?pageSize=${pageSize}`);
+
       const response = await axiosInstance.post<OrderResponse>(
         `${ORDER_API_URL}?pageSize=${pageSize}`,
         requestData,
@@ -65,7 +89,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
           },
         }
       );
-      console.log('response of orders', response.data);
+
       const { ordersMetadata, cursor: nextCursor } = response.data;
 
       type SkuGroup = {
@@ -83,6 +107,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
       };
       type OrderMeta = {
         orderId?: string | number;
+        customerId?: string | number;
         totalOrderAmount?: number;
         additionalPaymentCharges?: number;
         addressLine2?: string;
@@ -133,7 +158,8 @@ const useOrderStore = create<OrderStore>((set, get) => ({
       };
 
       const mappedOrders: Order[] = (ordersMetadata || []).map((m: OrderMeta) => {
-        const firstGroup = m.skuDetailsGrouped && m.skuDetailsGrouped[0];
+        const firstGroup: { shopId?: string } | undefined =
+          m.skuDetailsGrouped && m.skuDetailsGrouped[0];
         const items = (m.skuDetailsGrouped || []).map((g: SkuGroup) => ({
           id: String(g.id || g.sku || g.productDetails?.sku || ''),
           name: String(g.productDetails?.productName || 'Item'),
@@ -146,7 +172,8 @@ const useOrderStore = create<OrderStore>((set, get) => ({
 
         return {
           orderId: String(m.orderId ?? ''),
-          shopId: String((firstGroup as any)?.shopId ?? ''),
+          customerId: String(m.customerId ?? ''),
+          shopId: String(firstGroup?.shopId ?? ''),
           shopName: '',
           items,
           totalAmount: Number(m.totalOrderAmount ?? 0),
@@ -197,12 +224,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
     set({ loading: true, error: null });
 
     try {
-      // First check if order exists in current state
-      const existingOrder = get().orders.find(order => order.orderId === orderId);
-      if (existingOrder) {
-        set({ selectedOrder: existingOrder, loading: false });
-        return;
-      }
+      // Always fetch latest details from API to ensure UI reflects the latest state
 
       if (USE_ORDER_MOCKS) {
         // Find order in mock data
@@ -238,6 +260,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
       // Map the API response to our Order type
       const mappedOrder: Order = {
         orderId: String(apiOrder.orderId || orderId),
+        customerId: String(apiOrder.customerId || ''),
         shopId: String(apiOrder.shopId || ''),
         shopName: String(apiOrder.shopName || ''),
         items: (apiOrder.skuDetailsGrouped || []).map((item: any) => ({

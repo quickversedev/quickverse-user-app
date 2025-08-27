@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useOrders } from '../../../hooks/useOrders';
 import orderService from '../../../services/createOrderService';
+import createPaymentService, { PaymentTender } from '../../../services/createPaymentService';
 import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AppNavigationProp } from '../../../types/navigation';
@@ -60,21 +61,64 @@ const OrderDetailsScreen = () => {
   const [cancellingOrder, setCancellingOrder] = useState(false);
   const [retryingPayment, setRetryingPayment] = useState(false);
 
-  const handleRetryPayment = useCallback(async () => {
+  const wait = useCallback((ms: number) => new Promise(resolve => setTimeout(resolve, ms)), []);
+
+  const handleRetryPayment = useCallback(() => {
     if (!selectedOrder) return;
-    setRetryingPayment(true);
-    try {
-      // TODO: Implement retry payment logic
-      Alert.alert('Retry Payment', 'Redirecting to payment gateway...');
-      // After implementing:
-      // await retryPayment(selectedOrder.orderId);
-      // await loadOrderById(selectedOrder.orderId);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to retry payment. Please try again.');
-    } finally {
-      setRetryingPayment(false);
+    if (!authData?.jwt || !authData?.phone) {
+      Alert.alert('Login required', 'Please login to proceed with payment.');
+      return;
     }
-  }, [selectedOrder]);
+
+    const onConfirmRetry = async () => {
+      setRetryingPayment(true);
+      try {
+        // Build minimal payment request using order total as a single tender
+        const tender: PaymentTender = {
+          amount: Number(selectedOrder.totalAmount || 0),
+          status: 'CREATED',
+          type: 'COMPLETION',
+          paymentMethod: 'COD',
+          additionalTenderCharges: Number(selectedOrder.additionalPaymentCharges || 0),
+        };
+        await createPaymentService.createPayment(
+          {
+            customerId: Number(selectedOrder.customerId),
+            mobileNumber: authData.phone,
+            name: authData.username,
+            orderId: selectedOrder.orderId,
+            tenders: [tender],
+          },
+          authData.jwt,
+          authData.phone
+        );
+        Alert.alert('Ready', 'Payment created.');
+
+        // Refetch the order a few times to overcome eventual consistency on the backend
+        await loadOrderById(selectedOrder.orderId, selectedOrder.shopId);
+        for (let i = 0; i < 2; i += 1) {
+          await wait(600);
+          await loadOrderById(selectedOrder.orderId, selectedOrder.shopId);
+        }
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : 'Failed to start payment. Please try again.';
+        Alert.alert('Error', message);
+      } finally {
+        setRetryingPayment(false);
+      }
+    };
+
+    Alert.alert(
+      'Retry Payment',
+      'Press Retry to proceed with payment.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Retry', onPress: onConfirmRetry },
+      ],
+      { cancelable: true }
+    );
+  }, [selectedOrder, authData?.jwt, authData?.phone, refreshOrders, loadOrderById]);
 
   const handleCancelOrder = useCallback(async () => {
     if (!selectedOrder || !authData?.jwt || !authData?.phone) return;

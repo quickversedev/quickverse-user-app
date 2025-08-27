@@ -30,8 +30,7 @@ const OrderList: React.FC<OrderListProps> = ({
 }) => {
   // Theme and data hooks
   const { getColor } = useTheme();
-  const { orders, loading, error, loadMoreOrders, refreshOrders, hasMoreOrders, isLoading } =
-    useOrders();
+  const { orders, loading, error, loadMoreOrders, refreshOrders, hasMoreOrders } = useOrders();
 
   // State hooks
   const [refreshing, setRefreshing] = useState(false);
@@ -95,10 +94,10 @@ const OrderList: React.FC<OrderListProps> = ({
   }, [refreshOrders, refreshing, loading]);
 
   const handleLoadMore = useCallback(() => {
-    if (hasMoreOrders && !isLoading) {
+    if (hasMoreOrders && !loading) {
       loadMoreOrders();
     }
-  }, [hasMoreOrders, isLoading, loadMoreOrders]);
+  }, [hasMoreOrders, loading, loadMoreOrders]);
 
   const handleOrderSomething = useCallback(() => {
     // Navigate to main app (home screen)
@@ -139,34 +138,38 @@ const OrderList: React.FC<OrderListProps> = ({
               const remainingCount = items.length - maxItems;
 
               // Determine grid layout based on item count
-              let gridLayout;
+              let gridLayout: {
+                rows: number;
+                cols: number;
+                itemStyle: { flex: number; height: string };
+              };
               if (displayItems.length === 1) {
                 // 1 item: takes full 2x2 space
                 gridLayout = {
                   rows: 1,
                   cols: 1,
-                  itemStyle: { flex: 1, height: '100%' as any },
+                  itemStyle: { flex: 1, height: '100%' },
                 };
               } else if (displayItems.length === 2) {
                 // 2 items: each takes 1x2 space (side by side)
                 gridLayout = {
                   rows: 1,
                   cols: 2,
-                  itemStyle: { flex: 1, height: '100%' as any },
+                  itemStyle: { flex: 1, height: '100%' },
                 };
               } else if (displayItems.length === 3) {
                 // 3 items: first takes 1x2, other two take 1x1 each
                 gridLayout = {
                   rows: 2,
                   cols: 2,
-                  itemStyle: { flex: 1, height: '50%' as any },
+                  itemStyle: { flex: 1, height: '50%' },
                 };
               } else {
                 // 4+ items: standard 2x2 grid
                 gridLayout = {
                   rows: 2,
                   cols: 2,
-                  itemStyle: { flex: 1, height: '50%' as any },
+                  itemStyle: { flex: 1, height: '50%' },
                 };
               }
 
@@ -312,7 +315,7 @@ const OrderList: React.FC<OrderListProps> = ({
         contentContainerStyle={styles.listContainer}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing || loading}
+            refreshing={refreshing}
             onRefresh={handleRefresh}
             tintColor={getColor('text')}
             colors={[getColor('primary')]}
@@ -327,12 +330,12 @@ const OrderList: React.FC<OrderListProps> = ({
         windowSize={10}
         initialNumToRender={5}
         ListFooterComponent={
-          isLoading && hasMoreOrders ? (
+          filteredOrders.length > 0 && loading && hasMoreOrders ? (
             <ActivityIndicator size="large" color={getColor('primary')} style={styles.loader} />
           ) : null
         }
         ListEmptyComponent={
-          loading || refreshing ? (
+          loading && !refreshing ? (
             <ActivityIndicator size="large" color={getColor('primary')} style={styles.loader} />
           ) : (
             <View style={styles.emptyContainer}>

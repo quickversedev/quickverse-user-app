@@ -23,6 +23,7 @@ export interface OrderAddress {
 
 export interface Order {
   orderId: string;
+  customerId: string;
   shopId: string;
   shopName: string;
   items: OrderItem[];

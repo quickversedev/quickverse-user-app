@@ -33,14 +33,14 @@ const AppBootstrap: React.FC = () => {
   const { setPermissionDataInAuth } = useAuth();
   const [bootError, setBootError] = useState<string | null>(null);
   const { updateDeviceInfo } = useDeviceInfo();
-  const { getFCMToken, setupNotifications } = useNotifications();
+  const { setupNotifications } = useNotifications();
   const [notificationCleanup, setNotificationCleanup] = useState<(() => void) | null>(null);
 
   const bootstrap = async () => {
     setBootError(null);
     try {
       const result = await getPermissionAndLocation();
-      await getFCMToken();
+      console.log('jwt', authData?.jwt);
       setLocalPermissionData(result as PermissionAndLocation);
       setPermissionDataInAuth(result as PermissionAndLocation);
 

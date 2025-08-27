@@ -39,6 +39,7 @@ class CreatePaymentService {
     phone: string
   ): Promise<CreatePaymentResponse> {
     try {
+      console.log('create payment request', requestData);
       const response = await axiosInstance.post<CreatePaymentResponse>(
         '/v3/payment/create',
         requestData,
