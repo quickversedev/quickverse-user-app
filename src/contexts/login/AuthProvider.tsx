@@ -1,4 +1,8 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import {
+  clearSessionExpiredCallback,
+  setSessionExpiredCallback,
+} from '../../config/api/axios.config';
 import { PermissionAndLocation } from '../../hooks/Permissions/useLocation';
 import authService from '../../services/api/authService';
 import {
@@ -82,6 +86,19 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     loadStorageData();
+  }, []);
+
+  // Set up session expired callback for axios interceptor
+  useEffect(() => {
+    setSessionExpiredCallback(() => {
+      console.log('session expired');
+      resetAuthState();
+    });
+
+    // Cleanup callback on unmount
+    return () => {
+      clearSessionExpiredCallback();
+    };
   }, []);
 
   const setSkipLogin = (skipLogin: boolean): void => {

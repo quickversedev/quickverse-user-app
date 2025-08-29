@@ -196,7 +196,7 @@ class CartApiService {
           },
           {
             headers: {
-              SessionKey: jwtToken,
+              SessionKey: 'jwtToken',
               phone,
             },
           }
@@ -221,19 +221,21 @@ class CartApiService {
   ): Promise<TransformedCartData> {
     try {
       // Method 2: Direct axiosInstance usage
-      const response = await axiosInstance.delete<CartApiResponse>('/v2/deleteCart', {
-        params: {
-          shopId,
-          productSku,
-          removeCompletely,
-        },
-        headers: {
-          SessionKey: jwtToken,
-          phone,
-        },
-      });
+      const response = await apiCall(
+        axiosInstance.delete<CartApiResponse>('/v2/deleteCart', {
+          params: {
+            shopId,
+            productSku,
+            removeCompletely,
+          },
+          headers: {
+            SessionKey: 'jwtToken',
+            phone,
+          },
+        })
+      );
 
-      return this.transformCartResponse(response.data);
+      return this.transformCartResponse(response);
     } catch (error) {
       console.error('Delete from cart error:', error);
       throw error;
@@ -246,12 +248,14 @@ class CartApiService {
   async getCart(shopId: string, jwtToken: string, phone: string): Promise<TransformedCartData> {
     try {
       // Method 4: Using withHeaders helper
-      const response = await axiosInstance.get<CartApiResponse>('/v2/getCart', {
-        params: { shopId },
-        ...withHeaders({ SessionKey: jwtToken, phone }),
-      });
+      const response = await apiCall(
+        axiosInstance.get<CartApiResponse>('/v2/getCart', {
+          params: { shopId },
+          ...withHeaders({ SessionKey: jwtToken, phone }),
+        })
+      );
 
-      return this.transformCartResponse(response.data);
+      return this.transformCartResponse(response);
     } catch (error) {
       console.error('Get cart error:', error);
       throw error;
@@ -264,12 +268,14 @@ class CartApiService {
   async clearCart(shopId: string, jwtToken: string, phone: string): Promise<TransformedCartData> {
     try {
       // Method 3: Using withHeaders helper
-      const response = await axiosInstance.delete<CartApiResponse>('/v2/clearCart', {
-        params: { shopId },
-        ...withHeaders({ SessionKey: jwtToken, phone }),
-      });
+      const response = await apiCall(
+        axiosInstance.delete<CartApiResponse>('/v2/clearCart', {
+          params: { shopId },
+          ...withHeaders({ SessionKey: jwtToken, phone }),
+        })
+      );
 
-      return this.transformCartResponse(response.data);
+      return this.transformCartResponse(response);
     } catch (error) {
       console.error('Clear cart error:', error);
       throw error;

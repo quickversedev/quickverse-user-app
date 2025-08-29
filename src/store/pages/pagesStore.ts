@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import axiosInstance from '../../config/api/axios.config';
+import axiosInstance, { apiCall } from '../../config/api/axios.config';
 import { AuthSession } from '../../services/localStorage/storage.service';
 import { Page, PagesStore } from '../../types/pages';
 
@@ -22,13 +22,15 @@ const usePagesStore = create<PagesStore>((set, get) => ({
         throw new Error('Authentication required. Please login again.');
       }
 
-      const response = await axiosInstance.get(`/v3/pages?regionId=${regionId}`, {
-        headers: {
-          Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
-        },
-      });
+      const data = await apiCall(
+        axiosInstance.get(`/v3/pages?regionId=${regionId}`, {
+          headers: {
+            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+          },
+        })
+      );
       set({
-        pages: response.data || [],
+        pages: data || [],
         loading: false,
         error: null,
       });

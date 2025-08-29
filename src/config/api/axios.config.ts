@@ -1,5 +1,40 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
+import { Alert, Platform, ToastAndroid } from 'react-native';
 import { ApiError } from './axios.types';
+/**
+ * Callback function type for handling session expiration
+ */
+type SessionExpiredCallback = () => void;
+
+/**
+ * Global callback for session expiration
+ */
+let sessionExpiredCallback: SessionExpiredCallback | null = null;
+
+/**
+ * Set the session expired callback
+ */
+export const setSessionExpiredCallback = (callback: SessionExpiredCallback) => {
+  sessionExpiredCallback = callback;
+};
+
+/**
+ * Clear the session expired callback
+ */
+export const clearSessionExpiredCallback = () => {
+  sessionExpiredCallback = null;
+};
+
+/**
+ * Show toast message based on platform
+ */
+const showToast = (message: string) => {
+  if (Platform.OS === 'android') {
+    ToastAndroid.show(message, ToastAndroid.TOP);
+  } else {
+    Alert.alert('Session Expired', message);
+  }
+};
 
 /**
  * API Configuration Object
@@ -42,7 +77,7 @@ const axiosInstance = axios.create({
  *
  * Converts axios errors to a consistent format
  */
-const handleAxiosError = (error: unknown): ApiError => {
+const handleAxiosError = (error: AxiosError | unknown): ApiError => {
   // Type guard to check if it's an AxiosError
   if (!axios.isAxiosError(error)) {
     return {
@@ -54,16 +89,16 @@ const handleAxiosError = (error: unknown): ApiError => {
     };
   }
 
-  const axiosError = error as AxiosError;
+  const axiosError = error as AxiosError<unknown>;
 
   // Handle network errors
   if (axiosError.code === 'ERR_NETWORK') {
     return {
-      status: axiosError.response?.status || 0,
+      status: (axiosError as AxiosError).response?.status || 0,
       message: 'Network error. Please check your internet connection.',
       code: 'NETWORK_ERROR',
       isCancelled: false,
-      apiEndpoint: axiosError.config?.url || 'Unknown',
+      apiEndpoint: (axiosError as AxiosError).config?.url || 'Unknown',
     };
   }
 
@@ -74,7 +109,7 @@ const handleAxiosError = (error: unknown): ApiError => {
       message: 'Request timed out. Please check your internet connection and try again.',
       code: 'TIMEOUT',
       isCancelled: false,
-      apiEndpoint: axiosError.config?.url || 'Unknown',
+      apiEndpoint: (axiosError as AxiosError).config?.url || 'Unknown',
     };
   }
 
@@ -85,41 +120,45 @@ const handleAxiosError = (error: unknown): ApiError => {
       message: 'Request was cancelled',
       code: 'CANCELLED',
       isCancelled: true,
-      apiEndpoint: axiosError.config?.url || 'Unknown',
+      apiEndpoint: (axiosError as AxiosError).config?.url || 'Unknown',
     };
   }
 
   // Handle HTTP errors
-  if (axiosError.response) {
-    const responseData = axiosError.response.data as {
-      error: {
-        code: string;
-        message: string;
-      };
+  if ((axiosError as AxiosError).response) {
+    const responseData = (axiosError as AxiosError)?.response?.data as {
+      code: string;
+      message: string;
     };
 
     // Backend always returns errors in this format:
     // { "error": { "code": "1052", "message": "Tag already exists" } }
-    const errorMessage = responseData?.error?.message || 'An error occurred';
-    const errorCode = responseData?.error?.code || '';
+    const errorMessage = responseData?.message || 'An error occurred';
+    const errorCode = responseData?.code || '';
+
+    // Check for session expired error (code 1047)
+    if (errorCode === '1047' && errorMessage.includes('Invalid session key')) {
+      showToast('invalid session');
+      sessionExpiredCallback?.();
+    }
 
     return {
-      status: axiosError.response.status,
+      status: (axiosError as AxiosError)?.response?.status || 500,
       message: errorMessage,
       code: errorCode,
       isCancelled: false,
-      apiEndpoint: axiosError.config?.url || 'Unknown',
-      error: responseData?.error || { code: errorCode, message: errorMessage },
+      apiEndpoint: (axiosError as AxiosError).config?.url || 'Unknown',
+      error: responseData || { code: errorCode, message: errorMessage },
     };
   }
 
   // Handle any other errors
   return {
     status: 500,
-    message: axiosError.message || 'An unexpected error occurred',
+    message: (axiosError as AxiosError).message || 'An unexpected error occurred',
     code: 'UNKNOWN_ERROR',
     isCancelled: false,
-    apiEndpoint: axiosError.config?.url || 'Unknown',
+    apiEndpoint: (axiosError as AxiosError).config?.url || 'Unknown',
   };
 };
 
@@ -133,7 +172,7 @@ export const apiCall = async <T>(promise: Promise<AxiosResponse<T>>): Promise<T>
     const response = await promise;
     return response.data;
   } catch (error) {
-    console.error('error', error);
+    console.error('error caught in Axios Config', error);
     throw handleAxiosError(error as AxiosError);
   }
 };

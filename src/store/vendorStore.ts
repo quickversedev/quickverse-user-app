@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { mockVendors } from '../assets/mock/vendor';
-import axiosInstance from '../config/api/axios.config';
+import axiosInstance, { apiCall } from '../config/api/axios.config';
 import { LocationFilter, Vendor, VendorFilters, VendorStore } from '../types/vendor';
 import { isStoreOpen } from '../utils/storeUtils';
 
@@ -92,17 +92,19 @@ const useVendorStore = create<VendorStore>((set, get) => ({
           }
         : {};
 
-      const response = await axiosInstance.get(VENDOR_API_URL, {
-        params,
-        headers: {
-          Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
-        },
-        signal: abortController.signal,
-      });
+      const data = await apiCall(
+        axiosInstance.get(VENDOR_API_URL, {
+          params,
+          headers: {
+            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+          },
+          signal: abortController.signal,
+        })
+      );
 
       // Only update state if this is still the current request
       if (requestId === currentRequestId) {
-        const sortedVendors = sortVendorsByActiveStatus(response.data);
+        const sortedVendors = sortVendorsByActiveStatus(data);
         set({
           vendors: sortedVendors,
           loading: false,
@@ -144,8 +146,8 @@ const useVendorStore = create<VendorStore>((set, get) => ({
     }
 
     try {
-      const response = await axiosInstance.get(`${VENDOR_API_URL}/${shopId}`);
-      set({ selectedVendor: response.data, loading: false });
+      const data = await apiCall(axiosInstance.get(`${VENDOR_API_URL}/${shopId}`));
+      set({ selectedVendor: data, loading: false });
     } catch (err) {
       set({ error: 'Failed to fetch vendor details', loading: false });
     }

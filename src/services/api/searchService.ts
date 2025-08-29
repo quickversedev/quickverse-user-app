@@ -1,4 +1,4 @@
-import axiosInstance from '../../config/api/axios.config';
+import axiosInstance, { apiCall } from '../../config/api/axios.config';
 
 export interface SearchProduct {
   productSKU: string;
@@ -55,17 +55,19 @@ class SearchService {
       const { query } = params;
 
       // Use the correct search endpoint with keyword parameter
-      const response = await axiosInstance.get('v3/search', {
-        params: {
-          keyword: query,
-        },
-        headers: {
-          Authorization: this.authHeader,
-        },
-      });
-      console.log(response.data);
+      const response = await apiCall(
+        axiosInstance.get('v3/search', {
+          params: {
+            keyword: query,
+          },
+          headers: {
+            Authorization: this.authHeader,
+          },
+        })
+      );
+
       // Transform the response to match our expected format
-      const products = Array.isArray(response.data) ? response.data : [response.data];
+      const products = Array.isArray(response) ? response : [response];
 
       return {
         products: products.map((item: ApiSearchItem) => ({

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { mockOrders } from '../../assets/mock/orders';
-import axiosInstance from '../../config/api/axios.config';
+import axiosInstance, { apiCall } from '../../config/api/axios.config';
 import { Order, OrderCursor, OrderFilters, OrderResponse, OrderStore } from '../../types/order';
 
 const ORDER_API_URL = '/v2/order/getSMZBIZOrders';
@@ -77,20 +77,18 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         cursor: currentCursor,
       };
 
-      const response = await axiosInstance.post<OrderResponse>(
-        `${ORDER_API_URL}?pageSize=${pageSize}`,
-        requestData,
-        {
+      const data = await apiCall(
+        axiosInstance.post<OrderResponse>(`${ORDER_API_URL}?pageSize=${pageSize}`, requestData, {
           headers: {
             SessionKey: jwt,
             Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
-            'Request-Origin': 'CUSTOMER',
+
             phone: phone,
           },
-        }
+        })
       );
 
-      const { ordersMetadata, cursor: nextCursor } = response.data;
+      const { ordersMetadata, cursor: nextCursor } = data;
 
       type SkuGroup = {
         id?: string;
@@ -240,22 +238,21 @@ const useOrderStore = create<OrderStore>((set, get) => ({
       }
 
       // Fetch single order from API
-      const response = await axiosInstance.get(
-        `/v2/order/fetchOrder?groupify=true&viewMode=CONSTELLATION_VIEW&shopId=${
-          shopId || ''
-        }&orderId=${orderId}`,
-        {
-          headers: {
-            SessionKey: jwt,
-            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+      const apiOrder = await apiCall(
+        axiosInstance.get(
+          `/v2/order/fetchOrder?groupify=true&viewMode=CONSTELLATION_VIEW&shopId=${
+            shopId || ''
+          }&orderId=${orderId}`,
+          {
+            headers: {
+              SessionKey: jwt,
+              Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
 
-            phone: phone,
-          },
-        }
+              phone: phone,
+            },
+          }
+        )
       );
-
-      // Transform the API response to match our Order type
-      const apiOrder = response.data;
 
       // Map the API response to our Order type
       const mappedOrder: Order = {

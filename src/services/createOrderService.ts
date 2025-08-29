@@ -72,9 +72,6 @@ class OrderService {
     sessionKey: string,
     phone: string
   ): Promise<CreateOrderResponse> {
-    console.log('create order request data', requestData);
-    console.log('sessionKey', sessionKey);
-    console.log('phone', phone);
     try {
       const response = await apiCall(
         axiosInstance.post<CreateOrderResponse>('/v2/order/createOrder', requestData, {
@@ -108,18 +105,19 @@ class OrderService {
     phone: string
   ): Promise<void> {
     try {
-      await axiosInstance.put(
-        `/v2/order/cancelOrder?orderId=${orderId}&shopId=${shopId}`,
-        { cancelReason },
-        {
-          headers: {
-            SessionKey: sessionKey,
-            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
-            'Request-Origin': 'CUSTOMER',
-            phone,
-            'Content-Type': 'application/json',
-          },
-        }
+      await apiCall(
+        axiosInstance.put(
+          `/v2/order/cancelOrder?orderId=${orderId}&shopId=${shopId}`,
+          { cancelReason },
+          {
+            headers: {
+              SessionKey: sessionKey,
+              Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+
+              phone,
+            },
+          }
+        )
       );
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'response' in error) {

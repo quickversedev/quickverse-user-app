@@ -1,4 +1,4 @@
-import axiosInstance from '../config/api/axios.config';
+import axiosInstance, { apiCall } from '../config/api/axios.config';
 import { AuthSession } from '../services/localStorage/storage.service';
 import { Coupon } from '../store/cart/couponStore';
 import { CartApiResponse, TransformedCartData, TransformedCartProduct } from './cartApiService';
@@ -183,13 +183,13 @@ class CouponService {
     }
 
     try {
-      const response = await axiosInstance.get(`/v3/${vendorId}/Offers`, {
-        headers: {
-          Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
-        },
-      });
-
-      const data: VendorOffersResponse = response.data;
+      const data: VendorOffersResponse = await apiCall(
+        axiosInstance.get(`/v3/${vendorId}/Offers`, {
+          headers: {
+            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+          },
+        })
+      );
 
       // Check if any offers are present
       if (data.publicOffersPresent || data.privateOffersPresent) {
@@ -204,42 +204,29 @@ class CouponService {
     }
   }
 
-  async getVendorOffersPresence(vendorId: string): Promise<VendorOffersResponse> {
-    try {
-      const response = await axiosInstance.get(`/v3/${vendorId}/Offers`, {
-        headers: {
-          Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
-        },
-      });
-      return response.data as VendorOffersResponse;
-    } catch (error) {
-      console.error('Error fetching vendor offers presence:', error);
-      throw error;
-    }
-  }
-
   async getCustomerOffers(shopId: string = '', authData?: AuthSession): Promise<Coupon[]> {
     if (this.useMockData) {
       return this.mockCoupons;
     }
 
     try {
-      const response = await axiosInstance.get('/v3/Offers/Customer', {
-        params: {
-          shopId: shopId || 'null',
-          sortBy: 'MAX_DISCOUNT',
-          state: 'ACTIVE',
-          limit: '500',
-          isBuyNow: 'false',
-        },
-        headers: {
-          Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
-          SessionKey: authData?.jwt || '',
-          phone: authData?.phone || '',
-        },
-      });
-      // console.log('customer offer response', response);
-      const data: CustomerOffersResponse = response.data;
+      const data: CustomerOffersResponse = await apiCall(
+        axiosInstance.get('/v3/Offers/Customer', {
+          params: {
+            shopId: shopId || 'null',
+            sortBy: 'MAX_DISCOUNT',
+            state: 'ACTIVE',
+            limit: '500',
+            isBuyNow: 'false',
+          },
+          headers: {
+            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            SessionKey: authData?.jwt || '',
+            phone: authData?.phone || '',
+          },
+        })
+      );
+      // console.log('customer offer response', data);
 
       // Transform both eligible and non-eligible offers to Coupon format
       const eligibleCoupons = data.listOfEligibleOffers.map(offer =>
@@ -269,17 +256,18 @@ class CouponService {
     authData?: AuthSession
   ): Promise<TransformedCartData> {
     try {
-      console.log('apply offer params', { shopId, offerIdOrCode, isBuyNow });
-      const response = await axiosInstance.post<CartApiResponse>('/v3/Offers/Apply', null, {
-        params: { shopId, offerId: offerIdOrCode, isBuyNow },
-        headers: {
-          Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
-          SessionKey: authData?.jwt || '',
-          phone: authData?.phone || '',
-        },
-      });
-      console.log('apply offer response', response);
-      return this.transformCartResponse(response.data);
+      const data = await apiCall(
+        axiosInstance.post<CartApiResponse>('/v3/Offers/Apply', null, {
+          params: { shopId, offerId: offerIdOrCode, isBuyNow },
+          headers: {
+            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            SessionKey: authData?.jwt || '',
+            phone: authData?.phone || '',
+          },
+        })
+      );
+
+      return this.transformCartResponse(data);
     } catch (error) {
       console.error('Apply offer error:', error);
       throw error;
