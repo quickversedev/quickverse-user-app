@@ -15,14 +15,14 @@ import { HomeScreenSkeleton } from './skeleton';
  * AppBootstrap Component
  *
  * This component handles the conditional rendering of different app states:
- * 1. Registration - for new users
- * 2. PermissionsScreen - for users who need to grant permissions
+ * 1. PermissionsScreen - for users who need to grant permissions (shown first)
+ * 2. Registration - for new users (shown after permissions)
  * 3. AppInitializer + AppStack - for authenticated users with permissions
  *
  * Flow:
- * - New users → Registration
- * - After registration → PermissionsScreen
- * - After permissions → AppInitializer + AppStack
+ * - All users → PermissionsScreen (first)
+ * - New users → Registration (after permissions)
+ * - After registration → AppInitializer + AppStack
  */
 const AppBootstrap: React.FC = () => {
   const { isNewUser, authData } = useAuth();
@@ -40,7 +40,6 @@ const AppBootstrap: React.FC = () => {
     setBootError(null);
     try {
       const result = await getPermissionAndLocation();
-      console.log('jwt', authData?.jwt);
       setLocalPermissionData(result as PermissionAndLocation);
       setPermissionDataInAuth(result as PermissionAndLocation);
 
@@ -82,7 +81,12 @@ const AppBootstrap: React.FC = () => {
       }
     };
   }, [notificationCleanup]);
-  // CASE 1: New user - show registration
+  // CASE 1: Permissions not completed - show permissions screen first (for all users)
+  if (!permissionsCompleted) {
+    return <PermissionsScreen onPermissionsComplete={() => setPermissionsCompleted(true)} />;
+  }
+
+  // CASE 2: New user - show registration (after permissions are completed)
   if (isNewUser) {
     return (
       <Registration
@@ -98,11 +102,6 @@ const AppBootstrap: React.FC = () => {
         }}
       />
     );
-  }
-
-  // CASE 2: User exists but permissions not completed - show permissions screen
-  if (isNewUser && !permissionsCompleted) {
-    return <PermissionsScreen onPermissionsComplete={() => setPermissionsCompleted(true)} />;
   }
 
   // CASE 2.5: While bootstrapping location/permission data, avoid mounting children

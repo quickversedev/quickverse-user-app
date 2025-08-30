@@ -137,7 +137,7 @@ const handleAxiosError = (error: AxiosError | unknown): ApiError => {
     const errorCode = responseData?.code || '';
 
     // Check for session expired error (code 1047)
-    if (errorCode === '1047' && errorMessage.includes('Invalid session key')) {
+    if (errorCode === '1047' || errorCode === '1042') {
       showToast('invalid session');
       sessionExpiredCallback?.();
     }

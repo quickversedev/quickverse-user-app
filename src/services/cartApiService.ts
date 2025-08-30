@@ -196,7 +196,7 @@ class CartApiService {
           },
           {
             headers: {
-              SessionKey: 'jwtToken',
+              SessionKey: jwtToken,
               phone,
             },
           }
@@ -229,7 +229,7 @@ class CartApiService {
             removeCompletely,
           },
           headers: {
-            SessionKey: 'jwtToken',
+            SessionKey: jwtToken,
             phone,
           },
         })
