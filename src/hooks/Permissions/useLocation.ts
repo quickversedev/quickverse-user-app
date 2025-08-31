@@ -203,10 +203,9 @@ export const useLocation = () => {
         // Get location with optimized settings
         const locationResult = await new Promise<{ latitude: number; longitude: number }>(
           (resolve, reject) => {
-            if (hasSkippedLocation) {
-              reject(new Error('Location permission skipped by user'));
-              return;
-            }
+            // Note: Once permission is granted above, we should not block
+            // location retrieval based on any previously skipped state.
+            // Proceed to fetch current position.
 
             Geolocation.getCurrentPosition(
               (position: GeolocationPosition) => {

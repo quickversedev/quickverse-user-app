@@ -24,7 +24,7 @@
                                 </constraints>
                             </imageView>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" image="logo_qv" translatesAutoresizingMaskIntoConstraints="NO" id="logo-image">
-                                <rect key="frame" x="72" y="283" width="200" height="100"/>
+                                <rect key="frame" x="68" y="297" width="200" height="100"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="100" id="logo-height"/>
                                     <constraint firstAttribute="width" constant="200" id="logo-width"/>
