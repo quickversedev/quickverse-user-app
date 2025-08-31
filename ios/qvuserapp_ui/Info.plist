@@ -46,6 +46,9 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>BricolageGrotesque.ttf</string>
+		<string>BricolageGrotesque-Regular.ttf</string>
+		<string>BricolageGrotesque-Bold.ttf</string>
+		<string>BricolageGrotesque-Medium.ttf</string>
 		<string>MaterialCommunityIcons.ttf</string>
 		<string>AntDesign.ttf</string>
 		<string>Entypo.ttf</string>

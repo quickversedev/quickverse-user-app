@@ -21,12 +21,12 @@ export const useDeviceInfo = () => {
         const fcmToken = await getFCMToken();
         if (!fcmToken) {
           console.warn('No FCM token available for device info update');
-          return null;
+          // return null;
         }
 
         const response = await deviceInfoService.updateDeviceInfo(
           authData.jwt,
-          fcmToken,
+          fcmToken || '',
           authData.phone,
           longitude,
           latitude
