@@ -318,7 +318,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
         : Promise.resolve();
 
       await Promise.allSettled([configPromise, addressPromise]);
-
+      console.log('fetching theme and pages',configPromise);
       // Step 4: Fetch theme and pages
       await Promise.allSettled([fetchTheme(), fetchPages()]);
 

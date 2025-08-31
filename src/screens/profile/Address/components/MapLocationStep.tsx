@@ -37,7 +37,7 @@ interface MapLocationStepProps {
 }
 
 const PIN_SIZE = Math.max(48, width * 0.12);
-const MAP_HEIGHT = height * 0.65;
+const MAP_HEIGHT = height * 0.60;
 
 const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const { getColor, getTypography, theme } = useTheme();
@@ -240,8 +240,6 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       backgroundColor: getColor('background'),
     },
     mapContainer: {
-      // borderTopLeftRadius: theme.borderRadius.md,
-      // borderTopRightRadius: theme.borderRadius.md,
       overflow: 'hidden',
       height: MAP_HEIGHT,
       width: '100%',
@@ -286,7 +284,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       paddingVertical: 8,
       elevation: 6,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: theme.colors.shadow.offset,
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
     },
@@ -305,7 +303,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       alignSelf: 'center',
       elevation: 4,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: theme.colors.shadow.offset,
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
     },
@@ -331,7 +329,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       borderRadius: theme.borderRadius.md,
       elevation: 6,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: theme.colors.shadow.offset,
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
     },
@@ -345,7 +343,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       borderTopLeftRadius: theme.borderRadius.md,
       borderTopRightRadius: theme.borderRadius.md,
       paddingTop: 10,
-      // paddingBottom: 32,
+      paddingBottom: 50,
       paddingHorizontal: 24,
       alignItems: 'center',
       shadowColor: theme.colors.shadow.color,
@@ -353,7 +351,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
       elevation: 12,
-      marginTop: -24,
+      marginTop: -14,
     },
     bottomSheetTitle: {
       color: getColor('subText'),
@@ -400,9 +398,10 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       borderWidth: 2,
       borderColor: getColor('primary'),
       borderRadius: theme.borderRadius.md,
-      paddingVertical: 10,
+      paddingVertical: 12,
       paddingHorizontal: 32,
       marginTop: 8,
+      marginBottom: 8,
       backgroundColor: 'transparent',
     },
     outlinedButtonText: {
@@ -605,7 +604,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
         </View>
         {/* Bottom Sheet Section */}
         <View style={themedStyles.bottomSheet}>
-          <SectionDivider text="DELIVERY ADDRESS" style={{ marginBottom: 16 }} fontSize={14} />
+          <SectionDivider text="DELIVERY ADDRESS" style={{ marginBottom: 8 }} fontSize={14} />
 
           {selectedLocation && (
             <View style={themedStyles.selectedLocationContainer}>

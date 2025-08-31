@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
-import MapView, { Callout, CalloutSubview, Circle, Marker } from 'react-native-maps';
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
+import MapView, { Callout, Circle, Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { Images } from '../../assets';
@@ -255,24 +255,27 @@ const ExploreScreen = () => {
       borderRadius: theme.borderRadius.md,
       padding: 12,
       borderWidth: 1,
+      backgroundColor: getColor('card'),
     },
     calloutTitle: {
       fontWeight: '700',
       marginBottom: 4,
     },
     calloutSubtitle: {
-      marginBottom: 10,
+      marginBottom: 4,
     },
     calloutDescription: {
-      marginBottom: 10,
+      marginBottom: 12,
     },
     calloutActions: {
       flexDirection: 'row',
-      justifyContent: 'flex-end',
       alignItems: 'center',
+      justifyContent: 'flex-end',
+      backgroundColor: 'transparent',
+      marginTop: 8,
     },
     calloutButton: {
-      paddingHorizontal: 12,
+      paddingHorizontal: 16,
       paddingVertical: 8,
       borderRadius: theme.borderRadius.sm,
     },
@@ -364,8 +367,15 @@ const ExploreScreen = () => {
                   anchor={{ x: 0.5, y: 1.0 }}
                   image={getVendorPin()}
                 >
-                  <Callout tooltip onPress={() => navigation.navigate('VendorProduct', { vendor })}>
-                    <View style={styles.calloutContainer}>
+                  <Callout
+                    tooltip
+                    onPress={() => navigation.navigate('VendorProduct', { vendor })}
+                  >
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('VendorProduct', { vendor })}
+                      activeOpacity={0.8}
+                      style={styles.calloutContainer}
+                    >
                       <View
                         style={[
                           styles.calloutCard,
@@ -397,49 +407,23 @@ const ExploreScreen = () => {
                           {vendor.description || ''}
                         </ThemeText>
                         <View style={styles.calloutActions}>
-                          {Platform.OS === 'ios' ? (
-                            <CalloutSubview
-                              onPress={() => navigation.navigate('VendorProduct', { vendor })}
+                          <View
+                            style={[
+                              styles.calloutButton,
+                              { backgroundColor: getColor('primary') },
+                            ]}
+                          >
+                            <ThemeText
+                              variant="small"
+                              color={getColor('white')}
+                              style={styles.calloutButtonText}
                             >
-                              <View
-                                style={[
-                                  styles.calloutButton,
-                                  { backgroundColor: getColor('primary') },
-                                ]}
-                              >
-                                <ThemeText
-                                  variant="small"
-                                  color={getColor('white')}
-                                  style={styles.calloutButtonText}
-                                >
-                                  View
-                                </ThemeText>
-                              </View>
-                            </CalloutSubview>
-                          ) : (
-                            <TouchableOpacity
-                              onPress={() => navigation.navigate('VendorProduct', { vendor })}
-                              activeOpacity={0.8}
-                            >
-                              <View
-                                style={[
-                                  styles.calloutButton,
-                                  { backgroundColor: getColor('primary') },
-                                ]}
-                              >
-                                <ThemeText
-                                  variant="small"
-                                  color={getColor('white')}
-                                  style={styles.calloutButtonText}
-                                >
-                                  View
-                                </ThemeText>
-                              </View>
-                            </TouchableOpacity>
-                          )}
+                              View
+                            </ThemeText>
+                          </View>
                         </View>
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   </Callout>
                 </Marker>
               );

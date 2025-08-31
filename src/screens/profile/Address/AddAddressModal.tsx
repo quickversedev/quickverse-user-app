@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import {
-  Dimensions,
-  Image,
-  Modal,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    Image,
+    Modal,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icons } from '../../../assets';
 import { AddressComponents } from '../../../services/api/olaLocationService';
@@ -132,7 +133,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       justifyContent: 'space-between',
       alignItems: 'center',
       padding: Math.max(16, width * 0.04),
-      paddingTop: Platform.OS === 'ios' ? Math.max(16, width * 0.04) : Math.max(12, width * 0.03),
+      paddingTop: Math.max(12, width * 0.03),
       borderBottomWidth: 1,
       borderBottomColor: getColor('border'),
       backgroundColor: getColor('card'),
@@ -143,7 +144,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
         },
         ios: {
           shadowColor: theme.colors.shadow.color,
-          shadowOffset: theme.colors.shadow.offset,
+          shadowOffset: { width: 0, height: 2 },
           shadowOpacity: theme.colors.shadow.opacity,
           shadowRadius: theme.colors.shadow.radius,
         },
@@ -180,7 +181,11 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       onRequestClose={handleBack}
       presentationStyle="fullScreen"
     >
-      <View style={themedStyles.container} accessible={true} accessibilityLabel="Add address modal">
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: getColor('background') }}
+        accessible={true}
+        accessibilityLabel="Add address modal"
+      >
         <View style={themedStyles.header}>
           <TouchableOpacity
             onPress={handleBack}
@@ -220,7 +225,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
             apiError={apiError}
           />
         )}
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };

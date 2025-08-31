@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, TextProps } from 'react-native';
+import { Platform, StyleSheet, Text, TextProps } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 
 interface ThemeTextProps extends TextProps {
@@ -22,6 +22,7 @@ export const ThemeText: React.FC<ThemeTextProps> = ({
       fontSize: theme.typography[variant],
       lineHeight: theme.typography[variant] * theme.typography.lineHeightMultiplier,
       color: color || theme.colors.text,
+      ...(Platform.OS === 'ios' ? { fontWeight: '400' as const } : null),
     },
   });
 
