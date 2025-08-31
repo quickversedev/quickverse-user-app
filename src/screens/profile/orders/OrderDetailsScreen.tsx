@@ -60,7 +60,7 @@ const OrderDetailsScreen = () => {
 
   const [cancellingOrder, setCancellingOrder] = useState(false);
   const [retryingPayment, setRetryingPayment] = useState(false);
-
+  console.log('order details screen', selectedOrder);
   const wait = useCallback((ms: number) => new Promise(resolve => setTimeout(resolve, ms)), []);
 
   const handleRetryPayment = useCallback(() => {
