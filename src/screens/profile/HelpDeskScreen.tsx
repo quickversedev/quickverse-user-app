@@ -110,7 +110,7 @@ const HelpDeskScreen: React.FC = () => {
         return '#4CAF50';
       case 'cancelled':
         return '#F44336';
-      case 'pending':
+      case 'processing':
         return '#FF9800';
       default:
         return '#2196F3';
@@ -123,12 +123,11 @@ const HelpDeskScreen: React.FC = () => {
         return 'SUCCESSFUL';
       case 'cancelled':
         return 'CANCELLED';
-      case 'pending':
+      case 'processing':
         return 'PENDING';
       case 'confirmed':
         return 'CONFIRMED';
-      case 'preparing':
-        return 'PREPARING';
+
       case 'ready':
         return 'READY';
       default:
@@ -186,10 +185,15 @@ const HelpDeskScreen: React.FC = () => {
       borderRadius: 12,
       padding: 16,
       marginBottom: 12,
-      shadowColor: getColor('shadow').color,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: getColor('shadow').opacity,
-      shadowRadius: getColor('shadow').radius,
+      backgroundColor: getColor('card'),
+      borderWidth: Platform.OS === 'ios' ? 1 : 0,
+      borderColor: getColor('border'),
+      // iOS shadow
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 3,
+      // Android elevation
       elevation: 3,
     },
     orderHeader: {
@@ -249,10 +253,15 @@ const HelpDeskScreen: React.FC = () => {
       borderRadius: 12,
       marginBottom: 8,
       overflow: 'hidden',
-      shadowColor: getColor('shadow').color,
+      backgroundColor: getColor('card'),
+      borderWidth: Platform.OS === 'ios' ? 1 : 0,
+      borderColor: getColor('border'),
+      // iOS shadow
+      shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: getColor('shadow').opacity,
-      shadowRadius: getColor('shadow').radius,
+      shadowOpacity: 0.15,
+      shadowRadius: 2,
+      // Android elevation
       elevation: 2,
     },
     faqHeader: {
