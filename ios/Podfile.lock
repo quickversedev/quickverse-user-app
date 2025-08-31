@@ -2279,6 +2279,7 @@ DEPENDENCIES:
   - Firebase
   - FirebaseCore
   - FirebaseCoreInternal
+  - FirebaseMessaging
   - fmt (from `../node_modules/react-native/third-party-podspecs/fmt.podspec`)
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - GoogleUtilities
@@ -2655,13 +2656,13 @@ SPEC CHECKSUMS:
   RNFBMessaging: d01e0013a9dc69e2deb747b991818f7d6dd296ca
   RNGestureHandler: f8d0f8c032ba1209eb370bcc29e1138788208673
   RNNotifee: 4a6ee5c7deaf00e005050052d73ee6315dff7ec9
-  RNPermissions: 1a9dc97a6a3a73642f1041d779db64849124517b
+  RNPermissions: d02fe326cc338d0803b25d96f2e3f4e0666e836c
   RNReanimated: ca944d18c4f86b74555029716cd75b142740d6b6
   RNScreens: 5fc633a16a513f598d9aaf515c380a82812a8bfc
   RNVectorIcons: 0d358eb5b59aa90c8c148e745edd3161d49eb6c5
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 9f110fc4b7aa538663cba3c14cbb1c335f43c13f
 
-PODFILE CHECKSUM: 855e02e076ee93d1f261f3539efe7601a45b05cc
+PODFILE CHECKSUM: 019f4929068592bb46aec240f458b3b3587adf2a
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.15.2

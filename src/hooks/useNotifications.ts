@@ -11,6 +11,7 @@ import {
   getToken,
   onMessage,
   onNotificationOpenedApp,
+  registerDeviceForRemoteMessages,
 } from '@react-native-firebase/messaging';
 import { useCallback } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
@@ -161,12 +162,15 @@ export const useNotifications = () => {
           smallIcon: 'logo_qv', // Use the default launcher icon as small icon
         },
         ios: {
-          attachments: [
-            {
-              url: notificationLogo, // iOS will look for this in the app bundle
-              thumbnailHidden: false,
-            },
-          ],
+          // iOS automatically uses the app icon for notifications
+          // For rich notifications, you can add attachments here
+          // Example:
+          // attachments: [
+          //   {
+          //     url: 'path/to/image.png',
+          //     thumbnailHidden: false,
+          //   },
+          // ],
         },
       });
     } catch (error) {
@@ -178,13 +182,16 @@ export const useNotifications = () => {
   const requestPermissions = async () => {
     try {
       if (Platform.OS === 'ios') {
+        console.log('[iOS] Requesting notification permissions...');
         const settings = await notifee.requestPermission();
+        console.log('[iOS] Notification settings:', settings);
         if (!settings) {
           throw new PermissionError(
             'Failed to get iOS notification settings',
             'IOS_SETTINGS_FAILED'
           );
         }
+        console.log('[iOS] Authorization status:', settings.authorizationStatus);
         return settings.authorizationStatus;
       }
 
@@ -236,12 +243,16 @@ export const useNotifications = () => {
             throw new MessagingError('Received empty message in foreground', 'EMPTY_MESSAGE');
           }
 
+          console.log('[Foreground] Received message:', remoteMessage);
+
+          // For foreground, always show notification to ensure user sees it
+          // The system won't show foreground notifications automatically
           const notificationType = getNotificationTypeFromData(remoteMessage.data);
           await displayNotification({
-            title: remoteMessage.notification?.title,
-            body: remoteMessage.notification?.body,
+            title: remoteMessage.notification?.title || remoteMessage.data?.title as string,
+            body: remoteMessage.notification?.body || remoteMessage.data?.body as string,
             data: remoteMessage.data || {},
-            type: notificationType, // Use appropriate type based on message data
+            type: notificationType,
           });
         } catch (error) {
           handleError(error, 'Foreground message handling failed');
@@ -263,8 +274,7 @@ export const useNotifications = () => {
         );
       }
 
-      // Use Notifee to display background notifications with custom logo
-      // Avoid duplicates by skipping when Android system already shows notification payload
+      // Only handle data-only messages to prevent duplicates
       messaging.setBackgroundMessageHandler(
         async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
           try {
@@ -272,25 +282,28 @@ export const useNotifications = () => {
               throw new MessagingError('Received empty message in background', 'EMPTY_MESSAGE');
             }
 
-            // If Android notification payload exists, let the system render it (prevents duplicates)
-            if (Platform.OS === 'android' && remoteMessage.notification) {
-              return;
-            }
+            console.log('[Firebase Background] Received message:', remoteMessage);
 
-            // For data-only messages: render with Notifee (ensures logo + theming)
-            const notificationType = getNotificationTypeFromData(remoteMessage.data);
-            const data = (remoteMessage.data || {}) as { [key: string]: string };
-            const title = (remoteMessage.notification?.title || data.title) as string | undefined;
-            const body = (remoteMessage.notification?.body || data.body) as string | undefined;
+            // For background, only handle data-only messages to prevent duplicates
+            // System will automatically show notifications with notification payload
+            if (!remoteMessage.notification) {
+              const notificationType = getNotificationTypeFromData(remoteMessage.data);
+              const data = (remoteMessage.data || {}) as { [key: string]: string };
+              const title = data.title as string | undefined;
+              const body = data.body as string | undefined;
 
-            // Only display if we have any visible content
-            if (title || body) {
-              await displayNotification({
-                title,
-                body,
-                data,
-                type: notificationType,
-              });
+              // Only display if we have any visible content
+              if (title || body) {
+                console.log('[Firebase Background] Displaying notification for data-only message');
+                await displayNotification({
+                  title,
+                  body,
+                  data,
+                  type: notificationType,
+                });
+              }
+            } else {
+              console.log('[Firebase Background] Skipping notification payload message - system will handle it');
             }
           } catch (error) {
             handleError(error, 'Background message handling failed');
@@ -359,10 +372,13 @@ export const useNotifications = () => {
             throw new NotificationError('Invalid background event type', 'INVALID_EVENT_TYPE');
           }
 
+          console.log('[Notifee Background] Event type:', type, 'Detail:', detail);
+
           if (type === EventType.PRESS && detail?.notification) {
             // Handle notification press with logo support
             // The notification already has the logo from when it was created
             // Implement navigation logic here
+            console.log('[Notifee Background] Notification pressed:', detail.notification);
           }
         } catch (error) {
           handleError(error, 'Notifee background event handling failed');
@@ -377,6 +393,7 @@ export const useNotifications = () => {
 
   const getFCMToken = async () => {
     try {
+      console.log('[FCM] Getting messaging instance...');
       const messaging = getMessaging();
       if (!messaging) {
         throw new MessagingError(
@@ -385,13 +402,23 @@ export const useNotifications = () => {
         );
       }
 
+      // Register device for remote messages on iOS
+      if (Platform.OS === 'ios') {
+        console.log('[FCM] Registering device for remote messages...');
+        await registerDeviceForRemoteMessages(messaging);
+        console.log('[FCM] Device registered successfully');
+      }
+
+      console.log('[FCM] Getting token...');
       const token = await getToken(messaging);
+      console.log('[FCM] Token received:', token );
       if (!token) {
         throw new MessagingError('Failed to get FCM token', 'TOKEN_RETRIEVAL_FAILED');
       }
 
       return token;
     } catch (error) {
+      console.error('[FCM] Error getting token:', error);
       handleError(error, 'Get FCM token failed');
       return null;
     }
@@ -403,7 +430,9 @@ export const useNotifications = () => {
     let unsubscribeOpened: (() => void) | undefined;
 
     try {
+      console.log('[Notifications] Starting setup...');
       const permissionStatus = await requestPermissions();
+      console.log('[Notifications] Permission status:', permissionStatus);
 
       if (!permissionStatus) {
         throw new PermissionError('Notification permissions not granted', 'PERMISSION_NOT_GRANTED');
@@ -415,10 +444,11 @@ export const useNotifications = () => {
         throw new MessagingError('No FCM token available', 'TOKEN_UNAVAILABLE');
       }
 
-      // Setup handlers
+      // Setup handlers - prevent duplicates by being selective
       unsubscribeForeground = setupForegroundHandler();
       unsubscribeBackground = setupNotifeeBackgroundHandler();
       unsubscribeOpened = setupNotificationOpenedHandler();
+      // Only setup Firebase background handler for data-only messages
       setupBackgroundHandler();
       await setupInitialNotification();
 

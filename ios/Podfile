@@ -14,10 +14,17 @@ node_require('react-native-permissions/scripts/setup.rb')
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
+# Use modular headers only for specific pods that need it
+pod 'Firebase', :modular_headers => true
+pod 'FirebaseCoreInternal', :modular_headers => true
+pod 'GoogleUtilities', :modular_headers => true
+pod 'FirebaseCore', :modular_headers => true
+pod 'FirebaseMessaging', :modular_headers => true
+
 # Enable only the permissions you actually use
 setup_permissions([
   'LocationWhenInUse',
-  # 'Notifications',
+  'Notifications',
   # Add others if needed
 ])
 
@@ -26,19 +33,24 @@ if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
   use_frameworks! :linkage => linkage.to_sym
 end
- pod 'Firebase', :modular_headers => true
-  pod 'FirebaseCoreInternal', :modular_headers => true
-  pod 'GoogleUtilities', :modular_headers => true
-  pod 'FirebaseCore', :modular_headers => true
+  # Firebase configuration - disable modular headers to fix build issues
+  pod 'Firebase'
+  pod 'FirebaseCoreInternal'
+  pod 'GoogleUtilities'
+  pod 'FirebaseCore'
+  pod 'FirebaseMessaging'
 
 target 'qvuserapp_ui' do
   config = use_native_modules!
 
   use_react_native!(
     :path => config[:reactNativePath],
+    :hermes_enabled => true,
+  :fabric_enabled => false,
     # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
+
 
   # react-native-permissions handled by setup_permissions above
 
