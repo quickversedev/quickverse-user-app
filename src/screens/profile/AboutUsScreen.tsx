@@ -1,6 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import {
+  Image,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -203,6 +204,11 @@ const AboutUsScreen: React.FC = () => {
       color: getColor('subText'),
       textAlign: 'center',
     },
+    smartbizLogo: {
+      width: 48,
+      height: 48,
+      marginRight: 12,
+    },
   });
 
   return (
@@ -292,11 +298,33 @@ const AboutUsScreen: React.FC = () => {
               </View>
             </View>
           </View>
+          {/* SmartBiz Section */}
+          <View style={styles.conclusionSection}>
+            <ThemeText variant="h2" color={getColor('text')} style={styles.visionTitle}>
+              Powered by SmartBiz
+            </ThemeText>
+
+            <ThemeText variant="body" color={getColor('text')} style={styles.paragraph}>
+              SmartBiz by Amazon is an end-to-end eCommerce website builder designed to help
+              businesses launch, manage, and scale their online presence with ease.
+            </ThemeText>
+
+            <ThemeText variant="body" color={getColor('text')} style={styles.paragraph}>
+              From seamless storefront creation to secure payments and reliable logistics, SmartBiz
+              empowers entrepreneurs and startups to focus on growth while technology handles the
+              heavy lifting.
+            </ThemeText>
+
+            <ThemeText variant="body" color={getColor('main')} style={styles.highlightText}>
+              Together with SmartBiz, QuickVerse is building the future of smart commerce and faster
+              deliveries.
+            </ThemeText>
+          </View>
 
           {/* Conclusion Section */}
 
           {/* Logo Section */}
-          <View style={styles.logoSection}>
+          {/* <View style={styles.logoSection}>
             <View style={styles.logoContainer}>
               <Icon name="rocket-launch" size={48} style={styles.logoIcon} />
               <ThemeText variant="h2" color={getColor('text')} style={styles.logoText}>
@@ -305,6 +333,57 @@ const AboutUsScreen: React.FC = () => {
             </View>
             <ThemeText variant="caption" color={getColor('subText')} style={styles.tagline}>
               Tomorrow's tech, today's reality
+            </ThemeText>
+            <ThemeText
+              variant="small"
+              color={getColor('subText')}
+              style={[styles.tagline, { marginTop: 8, fontStyle: 'italic' }]}
+            >
+              in collaboration with SmartBiz
+            </ThemeText>
+          </View> */}
+          {/* Logo Section */}
+          <View style={styles.logoSection}>
+            {/* QuickVerse Logo Row */}
+            <View style={styles.logoContainer}>
+              <Icon name="rocket-launch" size={48} style={styles.logoIcon} />
+              <ThemeText variant="h2" color={getColor('text')} style={styles.logoText}>
+                QuickVerse
+              </ThemeText>
+            </View>
+            <ThemeText variant="caption" color={getColor('subText')} style={styles.tagline}>
+              Tomorrow's tech, today's reality
+            </ThemeText>
+
+            {/* Divider */}
+            <View
+              style={{
+                height: 1,
+                backgroundColor: getColor('border'),
+                marginVertical: 20,
+                alignSelf: 'stretch',
+              }}
+            />
+
+            {/* SmartBiz Logo Row */}
+            <View style={styles.logoContainer}>
+              <Image
+                source={{
+                  uri: 'https://m.media-amazon.com/images/G/31/smartcommerce/SmartBIZ_Logo_2-03.png',
+                }}
+                style={styles.smartbizLogo}
+                resizeMode="contain"
+              />
+              <ThemeText variant="h2" color={getColor('text')} style={styles.logoText}>
+                SmartBiz
+              </ThemeText>
+            </View>
+            <ThemeText
+              variant="small"
+              color={getColor('subText')}
+              style={[styles.tagline, { marginTop: 8, fontStyle: 'italic' }]}
+            >
+              Empowering businesses with smart eCommerce solutions
             </ThemeText>
           </View>
         </ScrollView>

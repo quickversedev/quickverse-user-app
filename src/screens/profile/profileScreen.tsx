@@ -1,6 +1,14 @@
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Linking,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LoginButton from '../../components/common/LoginButton';
 import { useAuth } from '../../contexts/login/AuthProvider';
@@ -33,6 +41,14 @@ const ProfileScreen = () => {
             icon: 'package-variant',
             onPress: () => {
               navigation.navigate('Orders');
+            },
+          },
+          {
+            id: 'deleteAccount',
+            title: 'Delete Account',
+            icon: 'delete-forever',
+            onPress: () => {
+              Linking.openURL('https://forms.gle/8bwkFAvcCTgH8yeP8');
             },
           },
         ]
