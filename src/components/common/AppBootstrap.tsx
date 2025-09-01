@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/login/AuthProvider';
 import { PermissionAndLocation, useLocation } from '../../hooks/Permissions/useLocation';
 import { useDeviceInfo } from '../../hooks/useDeviceInfo';
 import { AppStack } from '../../routes/AppStack';
-import Registration from '../../screens/Login/Registration';
+import Registration from '../../screens/login/Registration';
 import PermissionsScreen from '../../screens/permission/PermissionsScreen';
 import AppInitializer from './AppInitializer';
 import ErrorState from './ErrorState';
@@ -25,7 +25,8 @@ import { HomeScreenSkeleton } from './skeleton';
 const AppBootstrap: React.FC = () => {
   const { isNewUser, authData } = useAuth();
   const [permissionsCompleted, setPermissionsCompleted] = useState(false);
-  const { getPermissionAndLocation, isDenied, isBlocked, handleDeniedPermissionModal } = useLocation();
+  const { getPermissionAndLocation, isDenied, isBlocked, handleDeniedPermissionModal } =
+    useLocation();
   const [permissionData, setLocalPermissionData] = useState<PermissionAndLocation | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
   const { setPermissionDataInAuth } = useAuth();
@@ -59,7 +60,6 @@ const AppBootstrap: React.FC = () => {
   useEffect(() => {
     bootstrap();
   }, []);
-
 
   // CASE 1: Permissions not completed - show permissions screen first (for all users)
   if (!permissionsCompleted) {

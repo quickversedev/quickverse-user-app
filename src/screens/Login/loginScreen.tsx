@@ -5,12 +5,14 @@ import {
   Dimensions,
   Image,
   ImageBackground,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 
@@ -169,6 +171,10 @@ const LoginScreen: React.FC = () => {
     }
   };
 
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
   const styles = StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -294,90 +300,96 @@ const LoginScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-      >
-        <ImageBackground source={Images.bg1} style={styles.topBackground} resizeMode="cover" />
-        <View style={styles.logoContainer}>
-          <Image style={styles.topLogo} source={Images.logoQv} />
-        </View>
-
-        <View style={styles.card}>
-          <ThemeText variant="h2" style={styles.title}>
-            Login
-          </ThemeText>
-          <ThemeText variant="subtitle" color={theme.colors.subText} style={styles.subtitle}>
-            Log In to your Quickverse account
-          </ThemeText>
-
-          <TouchableOpacity style={styles.skipContainer} onPress={handleSkipLogin}>
-            <ThemeText variant="caption" color={theme.colors.text}>
-              Skip
-            </ThemeText>
-          </TouchableOpacity>
-
-          <ThemeText variant="caption" color={theme.colors.subText} style={styles.phoneLabel}>
-            Phone number
-          </ThemeText>
-          <View style={[styles.phoneInputWrapper, error && styles.phoneInputError]}>
-            <CountryPicker
-              countryCode={countryCode}
-              withFilter
-              withFlag
-              withCallingCode
-              withEmoji
-              onSelect={onSelect}
-              containerButtonStyle={styles.countryPicker}
-            />
-            <ThemeText variant="body" color={theme.colors.text} style={styles.callingCode}>
-              +{callingCode}
-            </ThemeText>
-            <TextInput
-              value={phoneNumber}
-              onChangeText={handlePhoneNumberChange}
-              placeholder="Enter phone number"
-              placeholderTextColor={theme.colors.placeholder}
-              keyboardType="phone-pad"
-              style={styles.input}
-              maxLength={10}
-            />
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.container}
+        >
+          <ImageBackground source={Images.bg1} style={styles.topBackground} resizeMode="cover" />
+          <View style={styles.logoContainer}>
+            <Image style={styles.topLogo} source={Images.logoQv} />
           </View>
-          {error ? (
-            <ThemeText variant="caption" color={theme.colors.error} style={styles.errorText}>
-              {error}
-            </ThemeText>
-          ) : null}
 
-          {isCooldownActive && (
-            <ThemeText variant="caption" color={theme.colors.subText} style={styles.countdownText}>
-              {getTimeRemainingText()}
+          <View style={styles.card}>
+            <ThemeText variant="h2" style={styles.title}>
+              Login
             </ThemeText>
-          )}
+            <ThemeText variant="subtitle" color={theme.colors.subText} style={styles.subtitle}>
+              Log In to your Quickverse account
+            </ThemeText>
 
-          <TouchableOpacity
-            style={[
-              styles.otpButton,
-              isButtonDisabled && styles.otpButtonDisabled,
-              loading && { opacity: 0.7 },
-            ]}
-            onPress={handleLogin}
-            disabled={isButtonDisabled}
-          >
-            {loading ? (
-              <ActivityIndicator color={theme.colors.background} />
-            ) : (
+            <TouchableOpacity style={styles.skipContainer} onPress={handleSkipLogin}>
+              <ThemeText variant="caption" color={theme.colors.text}>
+                Skip
+              </ThemeText>
+            </TouchableOpacity>
+
+            <ThemeText variant="caption" color={theme.colors.subText} style={styles.phoneLabel}>
+              Phone number
+            </ThemeText>
+            <View style={[styles.phoneInputWrapper, error && styles.phoneInputError]}>
+              <CountryPicker
+                countryCode={countryCode}
+                withFilter
+                withFlag
+                withCallingCode
+                withEmoji
+                onSelect={onSelect}
+                containerButtonStyle={styles.countryPicker}
+              />
+              <ThemeText variant="body" color={theme.colors.text} style={styles.callingCode}>
+                +{callingCode}
+              </ThemeText>
+              <TextInput
+                value={phoneNumber}
+                onChangeText={handlePhoneNumberChange}
+                placeholder="Enter phone number"
+                placeholderTextColor={theme.colors.placeholder}
+                keyboardType="phone-pad"
+                style={styles.input}
+                maxLength={10}
+              />
+            </View>
+            {error ? (
+              <ThemeText variant="caption" color={theme.colors.error} style={styles.errorText}>
+                {error}
+              </ThemeText>
+            ) : null}
+
+            {isCooldownActive && (
               <ThemeText
-                variant="body"
-                color={isButtonDisabled ? theme.colors.text : theme.colors.background}
-                style={styles.otpText}
+                variant="caption"
+                color={theme.colors.subText}
+                style={styles.countdownText}
               >
-                Get OTP
+                {getTimeRemainingText()}
               </ThemeText>
             )}
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+
+            <TouchableOpacity
+              style={[
+                styles.otpButton,
+                isButtonDisabled && styles.otpButtonDisabled,
+                loading && { opacity: 0.7 },
+              ]}
+              onPress={handleLogin}
+              disabled={isButtonDisabled}
+            >
+              {loading ? (
+                <ActivityIndicator color={theme.colors.background} />
+              ) : (
+                <ThemeText
+                  variant="body"
+                  color={isButtonDisabled ? theme.colors.text : theme.colors.background}
+                  style={styles.otpText}
+                >
+                  Get OTP
+                </ThemeText>
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 };

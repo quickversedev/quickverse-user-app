@@ -345,11 +345,11 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-      >
-        <TouchableWithoutFeedback onPress={dismissKeyboard}>
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoidingView}
+        >
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             <View style={styles.container}>
               <ImageBackground
@@ -558,8 +558,8 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
               </View>
             </View>
           </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 };
