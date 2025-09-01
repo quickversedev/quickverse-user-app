@@ -41,10 +41,9 @@ const useConfigStore = create<ConfigStore>((set, get) => ({
    */
   fetchInitialConfig: async (params: InitialConfigParams) => {
     set({ loading: true, error: null });
-    console.log('fetching initial config', params);
+
     try {
       const config = await fetchInitialConfig(params);
-      console.log('initial config', config);
       // Store RegionId in MMKV storage when config is fetched
       if (config?.regionId) {
         setRegionId(config.regionId);

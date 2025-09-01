@@ -21,8 +21,7 @@ const usePagesStore = create<PagesStore>((set, get) => ({
       if (!authSession?.jwt) {
         throw new Error('Authentication required. Please login again.');
       }
-      console.log('authSession  and ragionID', authSession);
-      console.log('fetching pages', regionId);
+
       const data = await apiCall(
         axiosInstance.get(`/v3/pages?regionId=${regionId}`, {
           headers: {
@@ -30,7 +29,7 @@ const usePagesStore = create<PagesStore>((set, get) => ({
           },
         })
       );
-      console.log('pages data', data);
+
       set({
         pages: data || [],
         loading: false,

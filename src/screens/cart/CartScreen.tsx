@@ -106,7 +106,9 @@ const CartScreen: React.FC = () => {
   }, [cart, getAppliedCoupon]);
 
   const availableCoupons = useMemo(() => {
-    return getAvailableCoupons(vendor?.shopId || '');
+    const coupons = getAvailableCoupons(vendor?.shopId || '');
+    console.log('Available coupons for vendor:', vendor?.shopId, 'Count:', coupons.length);
+    return coupons;
   }, [getAvailableCoupons, vendor?.shopId]);
 
   // Payment methods hook
@@ -421,27 +423,32 @@ const CartScreen: React.FC = () => {
   // Effects
   React.useEffect(() => {
     const initializeCart = async () => {
-      if (vendor?.shopId && authData) {
-        // Fetch coupons first
-        await checkAndFetchOffers(vendor.shopId, authData);
+      if (vendor?.shopId && authData?.jwt && authData?.phone) {
+        // Fetch addresses first
+        await fetchAddresses(vendor.shopId, authData.jwt, authData.phone);
 
-        // Then fetch addresses if needed
-        if (authData.jwt && authData.phone) {
-          await fetchAddresses(vendor.shopId, authData.jwt, authData.phone);
-        }
+        // Then fetch coupons after addresses are loaded
+        await checkAndFetchOffers(vendor.shopId, authData);
       }
     };
 
     initializeCart();
-  }, [vendor?.shopId, authData, checkAndFetchOffers, fetchAddresses]);
+  }, [vendor?.shopId, authData?.jwt, authData?.phone, checkAndFetchOffers, fetchAddresses]);
 
   // Revalidate coupons when cart contents change
   React.useEffect(() => {
-    if (vendor?.shopId && cart) {
+    if (vendor?.shopId && cart && authData?.jwt && authData?.phone) {
       // Revalidate coupons when cart items or total amount changes
       checkAndFetchOffers(vendor.shopId, authData);
     }
-  }, [cartItems.length, cart?.totalCartAmount, vendor?.shopId, checkAndFetchOffers, authData]);
+  }, [
+    cartItems.length,
+    cart?.totalCartAmount,
+    vendor?.shopId,
+    checkAndFetchOffers,
+    authData?.jwt,
+    authData?.phone,
+  ]);
 
   // Refresh cart data when screen loads
   React.useEffect(() => {
@@ -458,7 +465,15 @@ const CartScreen: React.FC = () => {
     };
 
     refreshCartData();
-  }, [cart?.cartId, authData?.jwt, authData?.phone, refreshCart, vendor?.shopId, checkAndFetchOffers, authData]);
+  }, [
+    cart?.cartId,
+    authData?.jwt,
+    authData?.phone,
+    refreshCart,
+    vendor?.shopId,
+    checkAndFetchOffers,
+    authData,
+  ]);
 
   React.useEffect(() => {
     if (cartItems.length === 0) {

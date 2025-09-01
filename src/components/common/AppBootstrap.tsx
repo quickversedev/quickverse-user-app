@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/login/AuthProvider';
+import { useNotifications } from '../../hooks';
 import { PermissionAndLocation, useLocation } from '../../hooks/Permissions/useLocation';
 import { useDeviceInfo } from '../../hooks/useDeviceInfo';
 import { AppStack } from '../../routes/AppStack';
@@ -25,14 +26,13 @@ import { HomeScreenSkeleton } from './skeleton';
 const AppBootstrap: React.FC = () => {
   const { isNewUser, authData } = useAuth();
   const [permissionsCompleted, setPermissionsCompleted] = useState(false);
-  const { getPermissionAndLocation, isDenied, isBlocked, handleDeniedPermissionModal } =
-    useLocation();
+  const { getPermissionAndLocation } = useLocation();
   const [permissionData, setLocalPermissionData] = useState<PermissionAndLocation | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
   const { setPermissionDataInAuth } = useAuth();
   const [bootError, setBootError] = useState<string | null>(null);
   const { updateDeviceInfo } = useDeviceInfo();
-  const modalShownRef = useRef(false);
+  const { setupNotifications } = useNotifications();
 
   const bootstrap = async () => {
     setBootError(null);
@@ -60,6 +60,13 @@ const AppBootstrap: React.FC = () => {
   useEffect(() => {
     bootstrap();
   }, []);
+
+  // Initialize notifications once after permissions are completed
+  useEffect(() => {
+    if (permissionsCompleted) {
+      setupNotifications();
+    }
+  }, [permissionsCompleted, setupNotifications]);
 
   // CASE 1: Permissions not completed - show permissions screen first (for all users)
   if (!permissionsCompleted) {

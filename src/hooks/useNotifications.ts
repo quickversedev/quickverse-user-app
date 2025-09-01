@@ -84,6 +84,9 @@ class MessagingError extends Error {
   }
 }
 
+let notificationsSetup = false;
+const processedForegroundIds = new Set<string>();
+
 export const useNotifications = () => {
   const handleError = (error: unknown, context: string) => {
     // Convert unknown error to proper error type
@@ -111,12 +114,27 @@ export const useNotifications = () => {
         visibility: AndroidVisibility.PUBLIC,
         sound: 'default',
         vibration: true,
+        // Android-specific settings for better foreground notification handling
+        lights: true,
+        lightColor: '#FF0000', // Red light for notifications
+        vibrationPattern: [0, 250, 500, 250], // Custom vibration pattern: delay, duration, delay, duration
       });
     } catch (error) {
-      throw new NotificationError(
-        'Failed to create notification channel',
-        'CHANNEL_CREATION_FAILED'
-      );
+      // Log the actual error for debugging
+      console.warn('Channel creation error details:', error);
+
+      // Try to create a minimal channel as fallback
+      try {
+        await notifee.createChannel({
+          id: 'default',
+          name: 'Default Channel',
+          importance: AndroidImportance.HIGH,
+        });
+      } catch (fallbackError) {
+        console.warn('Fallback channel creation also failed:', fallbackError);
+        // Don't throw error, just log it and continue
+        // The notification might still work without custom channel settings
+      }
     }
   };
 
@@ -142,10 +160,13 @@ export const useNotifications = () => {
 
       // Create a channel if it doesn't exist (Android requirement)
       if (Platform.OS === 'android') {
-        await createDefaultChannel().catch(error => {
+        try {
+          await createDefaultChannel();
+        } catch (error) {
           // Log channel creation error but continue with notification
           handleError(error, 'Channel creation failed');
-        });
+          // Continue without custom channel - system will use default
+        }
       }
 
       // Display the notification
@@ -182,16 +203,15 @@ export const useNotifications = () => {
   const requestPermissions = async () => {
     try {
       if (Platform.OS === 'ios') {
-        console.log('[iOS] Requesting notification permissions...');
         const settings = await notifee.requestPermission();
-        console.log('[iOS] Notification settings:', settings);
+
         if (!settings) {
           throw new PermissionError(
             'Failed to get iOS notification settings',
             'IOS_SETTINGS_FAILED'
           );
         }
-        console.log('[iOS] Authorization status:', settings.authorizationStatus);
+
         return settings.authorizationStatus;
       }
 
@@ -223,7 +243,7 @@ export const useNotifications = () => {
       throw new PermissionError('Unsupported platform for notifications', 'PLATFORM_UNSUPPORTED');
     } catch (error) {
       handleError(error, 'Request permissions failed');
-      return false;
+      throw error;
     }
   };
 
@@ -243,21 +263,38 @@ export const useNotifications = () => {
             throw new MessagingError('Received empty message in foreground', 'EMPTY_MESSAGE');
           }
 
-          console.log('[Foreground] Received message:', remoteMessage);
+          // De-duplicate by messageId if available
+          const messageId = (remoteMessage as any).messageId as string | undefined;
+          if (messageId) {
+            if (processedForegroundIds.has(messageId)) {
+              return; // already processed
+            }
+            processedForegroundIds.add(messageId);
+            // keep set from growing unbounded
+            if (processedForegroundIds.size > 2000) {
+              processedForegroundIds.clear();
+            }
+          }
 
-          // For foreground, always show notification to ensure user sees it
+          // Always show notifications in foreground to ensure user sees them
           // The system won't show foreground notifications automatically
           const notificationType = getNotificationTypeFromData(remoteMessage.data);
-          await displayNotification({
-            title: remoteMessage.notification?.title || remoteMessage.data?.title as string,
-            body: remoteMessage.notification?.body || remoteMessage.data?.body as string,
-            data: remoteMessage.data || {},
-            type: notificationType,
-          });
 
-          // Trigger a short vibration to draw attention (cross-platform)
-          // Keep it brief to avoid being intrusive
-          Vibration.vibrate(20);
+          // Use notification payload if available, otherwise fall back to data
+          const title = remoteMessage.notification?.title || (remoteMessage.data?.title as string);
+          const body = remoteMessage.notification?.body || (remoteMessage.data?.body as string);
+
+          if (title || body) {
+            await displayNotification({
+              title,
+              body,
+              data: remoteMessage.data || {},
+              type: notificationType,
+            });
+
+            // Trigger a short vibration to draw attention
+            Vibration.vibrate(20);
+          }
         } catch (error) {
           handleError(error, 'Foreground message handling failed');
         }
@@ -286,8 +323,6 @@ export const useNotifications = () => {
               throw new MessagingError('Received empty message in background', 'EMPTY_MESSAGE');
             }
 
-            console.log('[Firebase Background] Received message:', remoteMessage);
-
             // For background, only handle data-only messages to prevent duplicates
             // System will automatically show notifications with notification payload
             if (!remoteMessage.notification) {
@@ -298,7 +333,6 @@ export const useNotifications = () => {
 
               // Only display if we have any visible content
               if (title || body) {
-                console.log('[Firebase Background] Displaying notification for data-only message');
                 await displayNotification({
                   title,
                   body,
@@ -307,7 +341,6 @@ export const useNotifications = () => {
                 });
               }
             } else {
-              console.log('[Firebase Background] Skipping notification payload message - system will handle it');
             }
           } catch (error) {
             handleError(error, 'Background message handling failed');
@@ -376,13 +409,10 @@ export const useNotifications = () => {
             throw new NotificationError('Invalid background event type', 'INVALID_EVENT_TYPE');
           }
 
-          console.log('[Notifee Background] Event type:', type, 'Detail:', detail);
-
           if (type === EventType.PRESS && detail?.notification) {
             // Handle notification press with logo support
             // The notification already has the logo from when it was created
             // Implement navigation logic here
-            console.log('[Notifee Background] Notification pressed:', detail.notification);
           }
         } catch (error) {
           handleError(error, 'Notifee background event handling failed');
@@ -397,7 +427,6 @@ export const useNotifications = () => {
 
   const getFCMToken = async () => {
     try {
-      console.log('[FCM] Getting messaging instance...');
       const messaging = getMessaging();
       if (!messaging) {
         throw new MessagingError(
@@ -408,35 +437,32 @@ export const useNotifications = () => {
 
       // Register device for remote messages on iOS
       if (Platform.OS === 'ios') {
-        console.log('[FCM] Registering device for remote messages...');
         await registerDeviceForRemoteMessages(messaging);
-        console.log('[FCM] Device registered successfully');
       }
 
-      console.log('[FCM] Getting token...');
       const token = await getToken(messaging);
-      console.log('[FCM] Token received:', token );
+      console.log('[FCM] Token received:', token);
       if (!token) {
         throw new MessagingError('Failed to get FCM token', 'TOKEN_RETRIEVAL_FAILED');
       }
-
       return token;
     } catch (error) {
-      console.error('[FCM] Error getting token:', error);
       handleError(error, 'Get FCM token failed');
       return null;
     }
   };
 
   const setupNotifications = async () => {
+    // Prevent duplicate setup across the app's lifetime
+    if (notificationsSetup) {
+      return () => {};
+    }
+
     let unsubscribeForeground: (() => void) | undefined;
     let unsubscribeBackground: (() => void) | undefined;
     let unsubscribeOpened: (() => void) | undefined;
-
     try {
-      console.log('[Notifications] Starting setup...');
       const permissionStatus = await requestPermissions();
-      console.log('[Notifications] Permission status:', permissionStatus);
 
       if (!permissionStatus) {
         throw new PermissionError('Notification permissions not granted', 'PERMISSION_NOT_GRANTED');
@@ -456,12 +482,14 @@ export const useNotifications = () => {
       setupBackgroundHandler();
       await setupInitialNotification();
 
-      // Return cleanup function
+      // Mark as set up and return cleanup function
+      notificationsSetup = true;
       return () => {
         try {
           unsubscribeForeground?.();
           unsubscribeBackground?.();
           unsubscribeOpened?.();
+          notificationsSetup = false; // Reset flag on cleanup
         } catch (error) {
           handleError(error, 'Notification cleanup failed');
         }

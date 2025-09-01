@@ -154,8 +154,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
             return 'processing';
         }
       };
-      console.log('ordersMetadata', ordersMetadata);
-      console.log('selectedOrder', get().selectedOrder);
+
       const mappedOrders: Order[] = (ordersMetadata || []).map((m: OrderMeta) => {
         const firstGroup: { shopId?: string } | undefined =
           m.skuDetailsGrouped && m.skuDetailsGrouped[0];
@@ -284,8 +283,11 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         },
         paymentMethod: (apiOrder.paymentMethod?.toLowerCase() as Order['paymentMethod']) || 'cash',
         paymentStatus: 'paid',
-        customerName: apiOrder.customerDeliveryAddress?.name || apiOrder.notificationDetail?.customerName || '',
-        customerPhone: String(apiOrder.customerMobileNumber || apiOrder.notificationDetail?.mobileNumber || ''),
+        customerName:
+          apiOrder.customerDeliveryAddress?.name || apiOrder.notificationDetail?.customerName || '',
+        customerPhone: String(
+          apiOrder.customerMobileNumber || apiOrder.notificationDetail?.mobileNumber || ''
+        ),
       };
 
       set({ selectedOrder: mappedOrder, loading: false });

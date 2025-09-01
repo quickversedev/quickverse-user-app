@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import {
-  Linking,
+  Alert,
   Platform,
   SafeAreaView,
   StyleSheet,
@@ -12,6 +12,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LoginButton from '../../components/common/LoginButton';
 import { useAuth } from '../../contexts/login/AuthProvider';
+import deleteUserService from '../../services/deleteUserService';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
 import FeatureButton, { FeatureItem } from './components/FeatureButton';
@@ -21,8 +22,64 @@ const ProfileScreen = () => {
   const { signOut, authData } = useAuth();
   const { getColor } = useTheme();
   const navigation = useNavigation<AppNavigationProp>();
+  const [isDangerZoneExpanded, setIsDangerZoneExpanded] = React.useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = React.useState(false);
 
   const isLoggedIn = Boolean(authData?.jwt);
+
+  const handleDeleteAccount = async () => {
+    if (!authData?.jwt) {
+      Alert.alert('Error', 'You must be logged in to delete your account.');
+      return;
+    }
+
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeletingAccount(true);
+            try {
+              await deleteUserService.deleteUser(authData.jwt);
+
+              // Show success message
+              Alert.alert(
+                'Account Deleted',
+                'Your account has been successfully deleted. You will be logged out.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // Sign out the user
+                      signOut();
+                    },
+                  },
+                ]
+              );
+            } catch (error) {
+              Alert.alert(
+                'Error',
+                error instanceof Error
+                  ? error.message
+                  : 'Failed to delete account. Please try again.',
+                [{ text: 'OK' }]
+              );
+            } finally {
+              setIsDeletingAccount(false);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   const features: FeatureItem[] = [
     ...(isLoggedIn
@@ -41,14 +98,6 @@ const ProfileScreen = () => {
             icon: 'package-variant',
             onPress: () => {
               navigation.navigate('Orders');
-            },
-          },
-          {
-            id: 'deleteAccount',
-            title: 'Delete Account',
-            icon: 'delete-forever',
-            onPress: () => {
-              Linking.openURL('https://forms.gle/8bwkFAvcCTgH8yeP8');
             },
           },
         ]
@@ -96,6 +145,46 @@ const ProfileScreen = () => {
             <FeatureButton key={item.id} item={item} />
           ))}
         </View>
+
+        {/* Delete Account Section */}
+        {isLoggedIn && (
+          <View style={[styles.deleteAccountContainer, { backgroundColor: getColor('card') }]}>
+            <TouchableOpacity
+              style={styles.deleteAccountHeader}
+              onPress={() => setIsDangerZoneExpanded(!isDangerZoneExpanded)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.deleteAccountHeaderContent}>
+                <Icon name="alert-circle-outline" size={20} color="#FF4444" />
+                <Text style={[styles.deleteAccountTitle, { color: getColor('text') }]}>
+                  Danger Zone
+                </Text>
+              </View>
+              <Icon
+                name={isDangerZoneExpanded ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color="#FF4444"
+              />
+            </TouchableOpacity>
+
+            {isDangerZoneExpanded && (
+              <TouchableOpacity
+                style={[styles.deleteAccountButton, { borderColor: getColor('border') }]}
+                onPress={handleDeleteAccount}
+                disabled={isDeletingAccount}
+                activeOpacity={0.7}
+              >
+                <View style={styles.featureContent}>
+                  <Icon name="delete-forever" size={24} color="#FF4444" />
+                  <Text style={styles.deleteAccountText}>
+                    {isDeletingAccount ? 'Deleting...' : 'Delete Account'}
+                  </Text>
+                </View>
+                <Icon name="chevron-right" size={24} color="#FF4444" />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Logout Button */}
         {isLoggedIn && (
@@ -204,6 +293,46 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   logoutText: {
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#FF4444',
+  },
+  deleteAccountContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 68, 68, 0.2)',
+  },
+  deleteAccountHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 68, 68, 0.1)',
+  },
+  deleteAccountHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deleteAccountTitle: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  deleteAccountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderTopWidth: 1,
+  },
+  deleteAccountText: {
     marginLeft: 12,
     fontSize: 16,
     fontWeight: '500',

@@ -217,19 +217,28 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
     try {
       // Request both location and notification permissions
       await requestLocationPermission();
-      await requestPermissions();
+      const notificationResult = await requestPermissions();
+      console.log('notificationResult', notificationResult);
 
-      // Setup notifications after user explicitly grants permissions
-      const cleanup = await setupNotifications();
-      if (cleanup) {
-        cleanupRef.current = cleanup;
+      // Setup notifications if notification permission was granted
+      if (notificationResult) {
+        console.log('notificationResult', notificationResult);
+        try {
+          const cleanup = await setupNotifications();
+          if (cleanup) {
+            cleanupRef.current = cleanup;
+          }
+        } catch (notificationError) {
+          console.warn('Notification setup failed:', notificationError);
+          // Continue without notifications but inform user
+        }
       }
 
       // Complete permissions
       onPermissionsComplete();
     } catch (error) {
       console.warn('Permission request failed:', error);
-      // Still complete permissions even if notification setup fails
+      // Still complete permissions even if some fail
       onPermissionsComplete();
     }
   };
@@ -240,17 +249,23 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
       // This will show the system permission dialogs, but we'll handle the user's choice
       const locationResult = await requestLocationPermission();
       const notificationResult = await requestPermissions();
-      console.log('locationResult', locationResult);
-      console.log('notificationResult', notificationResult);
-      // If user grants permissions, we should respect that choice
-      if (locationResult === RESULTS.GRANTED && notificationResult) {
-        // User actually granted permissions, so set them up
-        const cleanup = await setupNotifications();
-        if (cleanup) {
-          cleanupRef.current = cleanup;
+
+      // Setup notifications if notification permission was granted (regardless of location)
+      if (notificationResult) {
+        try {
+          const cleanup = await setupNotifications();
+          if (cleanup) {
+            cleanupRef.current = cleanup;
+          }
+        } catch (notificationError) {
+          console.warn('Notification setup failed:', notificationError);
+          // Continue without notifications
         }
-      } else {
-        // User denied permissions, mark as skipped
+      }
+
+      // Handle location permission result
+      if (locationResult !== RESULTS.GRANTED) {
+        // User denied location permission, mark as skipped
         skipLocationPermission();
       }
 
@@ -275,10 +290,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
           <Image style={styles.topLogo} source={Images.logoQv} />
         </View>
         <View style={styles.card}>
-          <TouchableOpacity
-            style={styles.skipContainer}
-            onPress={handleSkip}
-          >
+          <TouchableOpacity style={styles.skipContainer} onPress={handleSkip}>
             <Text style={styles.skipText}>Skip</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Allow Permissions</Text>

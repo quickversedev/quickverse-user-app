@@ -4,6 +4,8 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
+  PermissionsAndroid,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -12,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SectionDivider } from '../../../components/common';
 import {
   BillSummaryCard,
@@ -21,6 +24,7 @@ import {
   OrderProgress,
 } from '../../../components/common/OrderDetails';
 import { useAuth } from '../../../contexts/login/AuthProvider';
+import { useNotifications } from '../../../hooks/useNotifications';
 import { useOrders } from '../../../hooks/useOrders';
 import orderService from '../../../services/createOrderService';
 import createPaymentService, { PaymentTender } from '../../../services/createPaymentService';
@@ -36,6 +40,10 @@ const OrderDetailsScreen = () => {
   const { authData } = useAuth();
   const { orderId } = route.params as { orderId: string };
   const { getVendorById } = useVendorStore();
+  const { requestPermissions } = useNotifications();
+
+  // Notification permission state
+  const [showPermissionBar, setShowPermissionBar] = useState(false);
 
   // Get vendor details if we have a shopId
   const vendorDetails = useMemo(() => {
@@ -49,6 +57,74 @@ const OrderDetailsScreen = () => {
     }
   }, [orderId, loadOrderById]);
 
+  // Check notification permission on component mount
+  React.useEffect(() => {
+    checkNotificationPermission();
+  }, []);
+
+  const checkNotificationPermission = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        // For Android, check notification permission
+        const granted = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+        );
+        if (granted) {
+          setShowPermissionBar(false);
+        } else {
+          setShowPermissionBar(true);
+        }
+      } else if (Platform.OS === 'ios') {
+        // For iOS, we'll show the permission bar since we can't easily check permission status
+        // In a production app, you might want to use a library like react-native-permissions
+        setShowPermissionBar(true);
+      }
+    } catch (error) {
+      // If permission check fails, assume permission is needed
+      setShowPermissionBar(true);
+    }
+  };
+
+  const handleEnableNotifications = async () => {
+    try {
+      const result = await requestPermissions();
+
+      if (result) {
+        // Permission granted, hide the bar
+        setShowPermissionBar(false);
+      }
+    } catch (error: unknown) {
+      // Handle specific permission errors
+
+      // Permission permanently denied, show settings instructions
+      if (Platform.OS === 'ios') {
+        Alert.alert(
+          'Permission Blocked',
+          'Notification permissions have been permanently denied. To enable notifications:\n\n1. Go to Settings > Notifications > QuickVerse\n2. Turn on "Allow Notifications"\n3. Enable "Sounds", "Badges", and "Banners"\n\nWould you like to open Settings now?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Open Settings',
+              onPress: () => Linking.openSettings(),
+            },
+          ]
+        );
+      } else if (Platform.OS === 'android') {
+        Alert.alert(
+          'Permission Blocked',
+          'Notification permissions have been permanently denied. To enable notifications:\n\n1. Go to App Settings > Notifications\n2. Turn on "Show notifications"\n3. Enable "Sound", "Vibration", and "Heads-up"\n\nWould you like to open App Settings now?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Open Settings',
+              onPress: () => Linking.openSettings(),
+            },
+          ]
+        );
+      }
+    }
+  };
+
   const handleBackPress = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
@@ -60,7 +136,6 @@ const OrderDetailsScreen = () => {
 
   const [cancellingOrder, setCancellingOrder] = useState(false);
   const [retryingPayment, setRetryingPayment] = useState(false);
-  console.log('order details screen', selectedOrder);
   const wait = useCallback((ms: number) => new Promise(resolve => setTimeout(resolve, ms)), []);
 
   const handleRetryPayment = useCallback(() => {
@@ -285,6 +360,31 @@ const OrderDetailsScreen = () => {
       <View style={[styles.container, { backgroundColor: getColor('background') }]}>
         <OrderHeader orderId={selectedOrder.orderId} onBackPress={handleBackPress} />
 
+        {/* Notification Permission Bar */}
+        {showPermissionBar && (
+          <View style={[styles.notificationBar, { backgroundColor: getColor('main') }]}>
+            <View style={styles.notificationContent}>
+              <Icon name="bell-outline" size={20} color={getColor('background')} />
+              <Text style={[styles.notificationText, { color: getColor('background') }]}>
+                Enable notifications to get order updates
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.enableButton,
+                {
+                  backgroundColor: getColor('error'),
+                  borderColor: getColor('border'),
+                },
+              ]}
+              onPress={handleEnableNotifications}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.enableButtonText, { color: getColor('white') }]}>Enable</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <ScrollView
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
@@ -452,18 +552,18 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
+    // elevation: 2,
+    // shadowColor: '#000',
+    // shadowOffset: {
+    //   width: 0,
+    //   height: 1,
+    // },
+    // shadowOpacity: 0.2,
+    // shadowRadius: 1.41,
     marginBottom: 8,
   },
   retryButton: {
-    marginRight: 8,
+    // marginRight: 8,
     borderWidth: 1,
     borderColor: '#2196F3',
   },
@@ -627,6 +727,47 @@ const styles = StyleSheet.create({
   },
   shopAddress: {
     fontSize: 14,
+  },
+  // Notification permission bar styles
+  notificationBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+  },
+  notificationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  notificationText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 8,
+    flex: 1,
+  },
+  enableButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  enableButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 
