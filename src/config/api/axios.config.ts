@@ -133,8 +133,9 @@ const handleAxiosError = (error: AxiosError | unknown): ApiError => {
 
     // Backend always returns errors in this format:
     // { "error": { "code": "1052", "message": "Tag already exists" } }
-    const errorMessage = responseData?.message || 'An error occurred';
-    const errorCode = responseData?.code || '';
+    const errorMessage =
+      responseData?.message || responseData?.error?.message || 'An error occurred';
+    const errorCode = responseData?.code || responseData?.error?.code || '';
 
     // Check for session expired error (code 1047)
     if (errorCode === '1047' || errorCode === '1042') {

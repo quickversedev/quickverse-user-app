@@ -33,7 +33,8 @@ const AppBootstrap: React.FC = () => {
   const [bootError, setBootError] = useState<string | null>(null);
   const { updateDeviceInfo } = useDeviceInfo();
   const { setupNotifications } = useNotifications();
-
+  // eslint-disable-next-line no-console
+  console.log('auth jwt :', authData?.jwt);
   const bootstrap = async () => {
     setBootError(null);
     try {
