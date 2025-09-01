@@ -2,17 +2,15 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
-  Clipboard,
   Dimensions,
   Image,
   Linking,
-  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -161,21 +159,7 @@ const VendorProfileComponent: React.FC = () => {
       // Use the standard tel: scheme which is more reliable
       const phoneUrl = `tel:${formattedPhone}`;
 
-      // Check if we're in simulator first
-      if (__DEV__ && Platform.OS === 'ios') {
-        // In development/simulator, show an alert with the phone number
-        Alert.alert(
-          'Phone Call (Simulator)',
-          `This would call: ${formattedPhone}\n\nNote: Phone calls are not available in the iOS Simulator. Test on a real device.`,
-          [
-            { text: 'OK', style: 'default' },
-            { text: 'Copy Number', onPress: () => {
-              Clipboard.setString(formattedPhone);
-            }}
-          ]
-        );
-        return;
-      }
+
 
       // Try to open the phone app directly
       await Linking.openURL(phoneUrl);

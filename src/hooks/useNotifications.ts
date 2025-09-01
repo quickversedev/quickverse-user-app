@@ -14,7 +14,7 @@ import {
   registerDeviceForRemoteMessages,
 } from '@react-native-firebase/messaging';
 import { useCallback } from 'react';
-import { PermissionsAndroid, Platform } from 'react-native';
+import { PermissionsAndroid, Platform, Vibration } from 'react-native';
 
 // Import the logo for notifications
 const notificationLogo = Platform.OS === 'ios' ? 'logo_qv' : 'logo_qv';
@@ -162,15 +162,15 @@ export const useNotifications = () => {
           smallIcon: 'logo_qv', // Use the default launcher icon as small icon
         },
         ios: {
-          // iOS automatically uses the app icon for notifications
-          // For rich notifications, you can add attachments here
-          // Example:
-          // attachments: [
-          //   {
-          //     url: 'path/to/image.png',
-          //     thumbnailHidden: false,
-          //   },
-          // ],
+          // Play the system default sound on iOS
+          sound: 'default',
+          interruptionLevel: 'active',
+          // Ensure notifications present with sound while app is in the foreground
+          foregroundPresentationOptions: {
+            alert: true,
+            badge: true,
+            sound: true,
+          },
         },
       });
     } catch (error) {
@@ -254,6 +254,10 @@ export const useNotifications = () => {
             data: remoteMessage.data || {},
             type: notificationType,
           });
+
+          // Trigger a short vibration to draw attention (cross-platform)
+          // Keep it brief to avoid being intrusive
+          Vibration.vibrate(20);
         } catch (error) {
           handleError(error, 'Foreground message handling failed');
         }
