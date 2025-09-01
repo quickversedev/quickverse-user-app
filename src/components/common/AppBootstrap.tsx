@@ -1,10 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/login/AuthProvider';
-import { AppStack } from '../../routes/AppStack';
-
-import { useNotifications } from '../../hooks';
 import { PermissionAndLocation, useLocation } from '../../hooks/Permissions/useLocation';
 import { useDeviceInfo } from '../../hooks/useDeviceInfo';
+import { AppStack } from '../../routes/AppStack';
 import Registration from '../../screens/login/Registration';
 import PermissionsScreen from '../../screens/permission/PermissionsScreen';
 import AppInitializer from './AppInitializer';
@@ -27,14 +25,14 @@ import { HomeScreenSkeleton } from './skeleton';
 const AppBootstrap: React.FC = () => {
   const { isNewUser, authData } = useAuth();
   const [permissionsCompleted, setPermissionsCompleted] = useState(false);
-  const { getPermissionAndLocation } = useLocation();
+  const { getPermissionAndLocation, isDenied, isBlocked, handleDeniedPermissionModal } =
+    useLocation();
   const [permissionData, setLocalPermissionData] = useState<PermissionAndLocation | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
   const { setPermissionDataInAuth } = useAuth();
   const [bootError, setBootError] = useState<string | null>(null);
   const { updateDeviceInfo } = useDeviceInfo();
-  const { setupNotifications } = useNotifications();
-  const [notificationCleanup, setNotificationCleanup] = useState<(() => void) | null>(null);
+  const modalShownRef = useRef(false);
 
   const bootstrap = async () => {
     setBootError(null);
@@ -42,16 +40,6 @@ const AppBootstrap: React.FC = () => {
       const result = await getPermissionAndLocation();
       setLocalPermissionData(result as PermissionAndLocation);
       setPermissionDataInAuth(result as PermissionAndLocation);
-
-      // Setup notifications
-      try {
-        const cleanup = await setupNotifications();
-        if (cleanup) {
-          setNotificationCleanup(() => cleanup);
-        }
-      } catch (error) {
-        console.warn('Failed to setup notifications during bootstrap:', error);
-      }
 
       // Update device info non-blocking after bootstrap completes
       if (!isNewUser && authData?.jwt) {
@@ -73,14 +61,6 @@ const AppBootstrap: React.FC = () => {
     bootstrap();
   }, []);
 
-  // Cleanup notifications on unmount
-  useEffect(() => {
-    return () => {
-      if (notificationCleanup) {
-        notificationCleanup();
-      }
-    };
-  }, [notificationCleanup]);
   // CASE 1: Permissions not completed - show permissions screen first (for all users)
   if (!permissionsCompleted) {
     return <PermissionsScreen onPermissionsComplete={() => setPermissionsCompleted(true)} />;

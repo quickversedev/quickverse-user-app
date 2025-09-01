@@ -1,4 +1,5 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { DefaultTheme } from '../../assets/theme/defaultTheme';
 import {
   clearSessionExpiredCallback,
   setSessionExpiredCallback,
@@ -20,7 +21,16 @@ import {
   setSkipLoginFlow,
   StorageService,
 } from '../../services/localStorage/storage.service';
+import useAddressStore from '../../store/address/addressStore';
 import useCartStore from '../../store/cart/cartStore';
+import useCouponStore from '../../store/cart/couponStore';
+import useOrderStore from '../../store/cart/orderStore';
+import useConfigStore from '../../store/configStore';
+import usePagesStore from '../../store/pages/pagesStore';
+import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
+import { useProductsStore } from '../../store/products/productsStore';
+import useThemeStore from '../../store/themeStore';
+import useVendorStore from '../../store/vendorStore';
 import { Address } from '../../types/address';
 
 type AuthContextData = {
@@ -126,27 +136,122 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const resetAuthState = (): void => {
+    // Reset auth context state
     setAuthData(undefined);
     setSkipUserLogin(undefined);
     setSelectedAddress(null);
+
+    // Clear all localStorage items
     removeUserAddresses();
     removeAuthSession();
     removeRecentSearches();
     removeRegionId();
     removeNewUser();
-    // Clear persisted cart storage and in-memory cart state on logout
+    StorageService.removeItem('cart-storage');
+    StorageService.clearAll(); // Clear any remaining items
+
+    // Reset all Zustand stores
     try {
-      StorageService.removeItem('cart-storage');
-    } catch {
-      // noop
+      // Reset cart store
+      useCartStore.setState({
+        carts: {},
+        activeCartId: null,
+        error: null,
+        loading: false,
+      });
+
+      // Reset coupon store
+      useCouponStore.setState({
+        appliedCoupons: {},
+        availableCoupons: {},
+        vendorOffersLoading: false,
+        vendorOffersError: null,
+        customerOffersLoading: false,
+        customerOffersError: null,
+        applyCouponLoading: false,
+        applyCouponError: null,
+      });
+
+      // Reset config store
+      useConfigStore.setState({
+        config: null,
+        loading: false,
+        error: null,
+      });
+
+      // Reset pages store
+      usePagesStore.setState({
+        pages: [],
+        loading: false,
+        error: null,
+      });
+
+      // Reset theme store
+      useThemeStore.setState({
+        theme: DefaultTheme,
+        loading: false,
+        error: null,
+      });
+
+      // Reset address store
+      useAddressStore.setState({
+        addresses: [],
+        loading: false,
+        addingLoading: false,
+        fetchError: null,
+        addError: null,
+      });
+
+      // Reset featured products store
+      useFeaturedProductsStore.setState({
+        cache: {},
+        batchLoading: false,
+        batchError: null,
+        cacheExpiryMs: 5 * 60 * 1000,
+      });
+
+      // Reset order store
+      useOrderStore.setState({
+        orders: [],
+        selectedOrder: null,
+        loading: false,
+        error: null,
+        filters: {},
+        pagination: {
+          cursor: null,
+          pageSize: 10,
+          hasMore: true,
+        },
+      });
+
+      // Reset products store
+      useProductsStore.setState({
+        products: [],
+        loading: false,
+        fullyLoaded: false,
+        error: null,
+        offset: 0,
+        limit: 10,
+        total: 0,
+        shopId: '',
+        hasMore: true,
+        categories: [],
+        categoriesLoading: false,
+        categoriesError: null,
+      });
+
+      // Reset vendor store
+      useVendorStore.setState({
+        vendors: [],
+        selectedVendor: null,
+        loading: false,
+        error: null,
+        filters: {},
+        userLocation: null,
+      });
+    } catch (error) {
+      console.error('Error resetting stores:', error);
     }
-    try {
-      useCartStore.setState({ carts: {}, activeCartId: null });
-    } catch {
-      // noop
-    }
-    // Optionally clear all remaining app storage (kept to preserve existing behavior)
-    StorageService.clearAll();
   };
 
   const sendOtp = async (phoneNumber: string): Promise<string> => {

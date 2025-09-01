@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { RESULTS } from 'react-native-permissions';
 import { Images } from '../../assets';
 import { useNotifications } from '../../hooks';
 import { useLocation } from '../../hooks/Permissions/useLocation';
@@ -188,20 +189,12 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
 
   useEffect(() => {
     if (isGranted || hasSkippedLocation) {
-      // Setup notifications when location permission is granted or skipped
-      setupNotifications()
-        .then(cleanup => {
-          if (cleanup) {
-            cleanupRef.current = cleanup;
-          }
-          onPermissionsComplete();
-        })
-        .catch(error => {
-          console.warn('Failed to setup notifications:', error);
-          onPermissionsComplete();
-        });
+      // Complete permissions without setting up notifications here
+      // Notifications will be set up when user clicks "Allow Permissions" button
+      // or skipped entirely if user skips permissions
+      onPermissionsComplete();
     }
-  }, [isGranted, hasSkippedLocation, onPermissionsComplete, setupNotifications]);
+  }, [isGranted, hasSkippedLocation, onPermissionsComplete]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -225,8 +218,49 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
       // Request both location and notification permissions
       await requestLocationPermission();
       await requestPermissions();
+
+      // Setup notifications after user explicitly grants permissions
+      const cleanup = await setupNotifications();
+      if (cleanup) {
+        cleanupRef.current = cleanup;
+      }
+
+      // Complete permissions
+      onPermissionsComplete();
     } catch (error) {
       console.warn('Permission request failed:', error);
+      // Still complete permissions even if notification setup fails
+      onPermissionsComplete();
+    }
+  };
+
+  const handleSkip = async () => {
+    try {
+      // Request both permissions first to ensure they appear in device settings
+      // This will show the system permission dialogs, but we'll handle the user's choice
+      const locationResult = await requestLocationPermission();
+      const notificationResult = await requestPermissions();
+      console.log('locationResult', locationResult);
+      console.log('notificationResult', notificationResult);
+      // If user grants permissions, we should respect that choice
+      if (locationResult === RESULTS.GRANTED && notificationResult) {
+        // User actually granted permissions, so set them up
+        const cleanup = await setupNotifications();
+        if (cleanup) {
+          cleanupRef.current = cleanup;
+        }
+      } else {
+        // User denied permissions, mark as skipped
+        skipLocationPermission();
+      }
+
+      // Complete permissions
+      onPermissionsComplete();
+    } catch (error) {
+      console.warn('Skip permission request failed:', error);
+      // Still complete permissions even if permission request fails
+      skipLocationPermission();
+      onPermissionsComplete();
     }
   };
 
@@ -241,7 +275,10 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
           <Image style={styles.topLogo} source={Images.logoQv} />
         </View>
         <View style={styles.card}>
-          <TouchableOpacity style={styles.skipContainer} onPress={skipLocationPermission}>
+          <TouchableOpacity
+            style={styles.skipContainer}
+            onPress={handleSkip}
+          >
             <Text style={styles.skipText}>Skip</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Allow Permissions</Text>
@@ -265,7 +302,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
             </View>
           </View>
           <TouchableOpacity style={styles.permissionButton} onPress={handlePermission}>
-            <Text style={styles.permissionButtonText}>Allow Permissions</Text>
+            <Text style={styles.permissionButtonText}>Grant Permissions</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

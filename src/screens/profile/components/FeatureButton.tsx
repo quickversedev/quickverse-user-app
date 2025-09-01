@@ -12,16 +12,21 @@ export type FeatureItem = {
 
 const FeatureButton = ({ item }: { item: FeatureItem }) => {
   const { getColor } = useTheme();
+
+  // Set icon color based on item type
+  const iconColor = item.id === 'deleteAccount' ? '#FF4444' : getColor('text');
+  const textColor = item.id === 'deleteAccount' ? '#FF4444' : getColor('text');
+
   return (
     <TouchableOpacity
       style={[styles.featureButton, { backgroundColor: getColor('card') }]}
       onPress={item.onPress}
     >
       <View style={styles.featureContent}>
-        <Icon name={item.icon} size={24} color={getColor('text')} />
-        <Text style={[styles.featureText, { color: getColor('text') }]}>{item.title}</Text>
+        <Icon name={item.icon} size={24} color={iconColor} />
+        <Text style={[styles.featureText, { color: textColor }]}>{item.title}</Text>
       </View>
-      <Icon name="chevron-right" size={24} color={getColor('text')} />
+      <Icon name="chevron-right" size={24} color={iconColor} />
     </TouchableOpacity>
   );
 };

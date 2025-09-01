@@ -1,13 +1,13 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-  useWindowDimensions,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    ViewStyle,
+    useWindowDimensions,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
@@ -39,9 +39,8 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
   const loading = useOrderStore(state => state.loading);
   const { width: screenWidth } = useWindowDimensions();
 
-  // Calculate responsive widths
-  const containerWidth = Math.min(screenWidth - 32, 600); // max width of 600, 16px padding on each side
-  const barWidth = Math.min(containerWidth - 32, 540); // additional 16px padding inside container
+  // Match CartBar width
+  const containerWidth = screenWidth - 30; // Same as CartBar width
 
   useEffect(() => {
     const jwt = authData?.jwt || '';
@@ -67,11 +66,11 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
     const interval = setInterval(() => {
       const nextIndex = (currentIndex + 1) % inProgressOrders.length;
       setCurrentIndex(nextIndex);
-      scrollRef.current?.scrollTo({ x: nextIndex * screenWidth, animated: true });
+      scrollRef.current?.scrollTo({ x: nextIndex * containerWidth, animated: true });
     }, 3500);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, inProgressOrders.length, screenWidth]);
+  }, [currentIndex, inProgressOrders.length, containerWidth]);
 
   if (inProgressOrders.length === 0) return null;
 
@@ -149,7 +148,7 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
     const order = inProgressOrders[0];
     return (
       <View style={[styles.stickyContainer, style]} pointerEvents="box-none">
-        <View style={[styles.page, { maxWidth: containerWidth }]}>{renderBar(order)}</View>
+        <View style={[styles.page]}>{renderBar(order)}</View>
       </View>
     );
   }
@@ -163,13 +162,15 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={e => {
-          const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+          const idx = Math.round(e.nativeEvent.contentOffset.x / containerWidth);
           setCurrentIndex(idx);
         }}
         scrollEventThrottle={16}
+        style={{ width: containerWidth }}
+        contentContainerStyle={{ alignItems: 'center' }}
       >
         {inProgressOrders.map(order => (
-          <View key={order.orderId} style={[styles.page, { maxWidth: containerWidth }]}>
+          <View key={order.orderId} style={[styles.page, { width: containerWidth }]}>
             {renderBar(order)}
           </View>
         ))}
@@ -186,9 +187,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   page: {
-    width: '100%',
     alignItems: 'center',
-    paddingHorizontal: 16,
   },
   bar: {
     flexDirection: 'row',

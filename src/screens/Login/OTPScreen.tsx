@@ -6,11 +6,13 @@ import {
   Dimensions,
   Image,
   ImageBackground,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   StyleSheet,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 
@@ -106,6 +108,10 @@ const OTPScreen: React.FC = () => {
 
   const handleChangeNumber = () => {
     navigation.goBack();
+  };
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
   };
 
   const styles = StyleSheet.create({
@@ -221,90 +227,92 @@ const OTPScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-      >
-        <ImageBackground source={Images.bg1} style={styles.topBackground} resizeMode="cover" />
-        <View style={styles.logoContainer}>
-          <Image style={styles.topLogo} source={Images.logoQv} />
-        </View>
-
-        <View style={styles.card}>
-          <ThemeText variant="h2" style={styles.title}>
-            Verify OTP
-          </ThemeText>
-          <ThemeText variant="subtitle" color={theme.colors.subText} style={styles.subtitle}>
-            Enter the OTP sent to +91 {phoneNumber}
-          </ThemeText>
-
-          <CodeField
-            ref={ref}
-            {...props}
-            value={value}
-            onChangeText={setValue}
-            cellCount={CELL_COUNT}
-            rootStyle={styles.codeFieldRoot}
-            keyboardType="number-pad"
-            textContentType="oneTimeCode"
-            renderCell={({ index, symbol, isFocused }) => (
-              <View
-                key={index}
-                style={[styles.cell, isFocused ? styles.focusCell : styles.unfocusedCell]}
-                onLayout={getCellOnLayoutHandler(index)}
-              >
-                <ThemeText variant="h2" color={theme.colors.text}>
-                  {symbol || (isFocused ? <Cursor /> : null)}
-                </ThemeText>
-              </View>
-            )}
-          />
-
-          <View style={styles.resendContainer}>
-            <ThemeText variant="caption" color={theme.colors.subText} style={styles.resendText}>
-              Didn't receive OTP?
-            </ThemeText>
-            <TouchableOpacity onPress={handleResendOtp} disabled={!canResend || loading}>
-              <ThemeText
-                variant="caption"
-                color={canResend ? theme.colors.main : theme.colors.subText}
-                style={styles.link}
-              >
-                Resend
-              </ThemeText>
-            </TouchableOpacity>
-            {!canResend && (
-              <ThemeText variant="caption" color={theme.colors.subText} style={styles.timerText}>
-                ({resendTimeout}s)
-              </ThemeText>
-            )}
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.container}
+        >
+          <ImageBackground source={Images.bg1} style={styles.topBackground} resizeMode="cover" />
+          <View style={styles.logoContainer}>
+            <Image style={styles.topLogo} source={Images.logoQv} />
           </View>
 
-          <TouchableOpacity
-            style={[styles.otpButton, loading && { opacity: 0.7 }]}
-            onPress={verifyOTP}
-            disabled={loading || value.length !== CELL_COUNT}
-          >
-            {loading ? (
-              <ActivityIndicator color={theme.colors.background} />
-            ) : (
-              <ThemeText variant="body" color={theme.colors.background} style={styles.otpText}>
-                Verify OTP
-              </ThemeText>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={handleChangeNumber}>
-            <ThemeText
-              variant="caption"
-              color={theme.colors.main}
-              style={[styles.link, { textAlign: 'center' }]}
-            >
-              Change Number
+          <View style={styles.card}>
+            <ThemeText variant="h2" style={styles.title}>
+              Verify OTP
             </ThemeText>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+            <ThemeText variant="subtitle" color={theme.colors.subText} style={styles.subtitle}>
+              Enter the OTP sent to +91 {phoneNumber}
+            </ThemeText>
+
+            <CodeField
+              ref={ref}
+              {...props}
+              value={value}
+              onChangeText={setValue}
+              cellCount={CELL_COUNT}
+              rootStyle={styles.codeFieldRoot}
+              keyboardType="number-pad"
+              textContentType="oneTimeCode"
+              renderCell={({ index, symbol, isFocused }) => (
+                <View
+                  key={index}
+                  style={[styles.cell, isFocused ? styles.focusCell : styles.unfocusedCell]}
+                  onLayout={getCellOnLayoutHandler(index)}
+                >
+                  <ThemeText variant="h2" color={theme.colors.text}>
+                    {symbol || (isFocused ? <Cursor /> : null)}
+                  </ThemeText>
+                </View>
+              )}
+            />
+
+            <View style={styles.resendContainer}>
+              <ThemeText variant="caption" color={theme.colors.subText} style={styles.resendText}>
+                Didn't receive OTP?
+              </ThemeText>
+              <TouchableOpacity onPress={handleResendOtp} disabled={!canResend || loading}>
+                <ThemeText
+                  variant="caption"
+                  color={canResend ? theme.colors.main : theme.colors.subText}
+                  style={styles.link}
+                >
+                  Resend
+                </ThemeText>
+              </TouchableOpacity>
+              {!canResend && (
+                <ThemeText variant="caption" color={theme.colors.subText} style={styles.timerText}>
+                  ({resendTimeout}s)
+                </ThemeText>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.otpButton, loading && { opacity: 0.7 }]}
+              onPress={verifyOTP}
+              disabled={loading || value.length !== CELL_COUNT}
+            >
+              {loading ? (
+                <ActivityIndicator color={theme.colors.background} />
+              ) : (
+                <ThemeText variant="body" color={theme.colors.background} style={styles.otpText}>
+                  Verify OTP
+                </ThemeText>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleChangeNumber}>
+              <ThemeText
+                variant="caption"
+                color={theme.colors.main}
+                style={[styles.link, { textAlign: 'center' }]}
+              >
+                Change Number
+              </ThemeText>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 };

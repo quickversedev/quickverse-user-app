@@ -47,7 +47,7 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
   customerName,
   orderStatus,
 }) => {
-  const { getColor, getTypography } = useTheme();
+  const { theme, getColor, getTypography } = useTheme();
   const { authData } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<IssueCategory | null>(null);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
@@ -241,11 +241,38 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
       left: 0,
       zIndex: 1000,
       elevation: 5,
-      shadowColor: getColor('shadow').color,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: getColor('shadow').opacity,
-      shadowRadius: getColor('shadow').radius,
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: {
+        width: theme.colors.shadow.offset_width,
+        height: theme.colors.shadow.offset_height,
+      },
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
       overflow: 'hidden',
+    },
+    floatingCloseButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignSelf: 'center',
+      marginBottom: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 6,
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: {
+        width: theme.colors.shadow.offset_width,
+        height: theme.colors.shadow.offset_height,
+      },
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
+    },
+    relativeContainer: {
+      position: 'relative',
+    },
+    charCount: {
+      textAlign: 'right',
+      marginTop: 4,
     },
     dropdownItem: {
       paddingHorizontal: 16,
@@ -313,20 +340,25 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={handleClose}>
+        <TouchableOpacity
+          style={[styles.floatingCloseButton, { backgroundColor: getColor('card') }]}
+          onPress={handleClose}
+          activeOpacity={0.8}
+        >
+          <Icon name="close" size={22} color={getColor('text')} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.modalContent}
+          activeOpacity={1}
+          onPress={e => e.stopPropagation()}
+        >
           {/* Header with order info */}
           <View style={[styles.header, { borderBottomColor: getColor('border') }]}>
             <View style={styles.headerInfo}>
               <Text style={styles.headerDate}>{formatDate(orderDate)}</Text>
               <Text style={styles.headerCustomer}>By {customerName}</Text>
             </View>
-            <TouchableOpacity
-              style={[styles.closeButton, { backgroundColor: getColor('card') }]}
-              onPress={handleClose}
-            >
-              <Icon name="close" size={20} color={getColor('text')} />
-            </TouchableOpacity>
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(orderStatus) }]}>
               <Text style={styles.statusText}>{orderStatus.toUpperCase()}</Text>
             </View>
@@ -348,7 +380,7 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
             {/* Issue Category */}
             <View style={styles.formSection}>
               <Text style={styles.label}>Issue Category</Text>
-              <View style={{ position: 'relative' }}>
+              <View style={styles.relativeContainer}>
                 <TouchableOpacity
                   style={[
                     styles.categoryInput,
@@ -425,9 +457,7 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
                 maxLength={300}
                 textAlignVertical="top"
               />
-              <Text style={[styles.label, { textAlign: 'right', marginTop: 4 }]}>
-                {description.length}/300
-              </Text>
+              <Text style={[styles.label, styles.charCount]}>{description.length}/300</Text>
             </View>
 
             {/* Submit Button */}
@@ -450,8 +480,8 @@ const RaiseQueryModal: React.FC<RaiseQueryModalProps> = ({
               </Text>
             </TouchableOpacity>
           </ScrollView>
-        </View>
-      </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
     </Modal>
   );
 };

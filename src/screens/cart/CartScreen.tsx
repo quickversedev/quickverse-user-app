@@ -420,17 +420,20 @@ const CartScreen: React.FC = () => {
 
   // Effects
   React.useEffect(() => {
-    if (vendor?.shopId) {
-      checkAndFetchOffers(vendor.shopId, authData);
-    }
-  }, [vendor?.shopId, checkAndFetchOffers, authData]);
+    const initializeCart = async () => {
+      if (vendor?.shopId && authData) {
+        // Fetch coupons first
+        await checkAndFetchOffers(vendor.shopId, authData);
 
-  // Fetch SmartBiz addresses when screen loads
-  React.useEffect(() => {
-    if (vendor?.shopId && authData?.jwt && authData?.phone) {
-      fetchAddresses(vendor.shopId, authData.jwt, authData.phone);
-    }
-  }, [vendor?.shopId, authData?.jwt, authData?.phone, fetchAddresses]);
+        // Then fetch addresses if needed
+        if (authData.jwt && authData.phone) {
+          await fetchAddresses(vendor.shopId, authData.jwt, authData.phone);
+        }
+      }
+    };
+
+    initializeCart();
+  }, [vendor?.shopId, authData, checkAndFetchOffers, fetchAddresses]);
 
   // Revalidate coupons when cart contents change
   React.useEffect(() => {
@@ -442,11 +445,20 @@ const CartScreen: React.FC = () => {
 
   // Refresh cart data when screen loads
   React.useEffect(() => {
-    if (cart && authData?.jwt && authData?.phone) {
-      // Refresh cart data to ensure we have the latest state from server
-      refreshCart(cart.cartId, authData.jwt, authData.phone);
-    }
-  }, [cart?.cartId, authData?.jwt, authData?.phone, refreshCart]);
+    const refreshCartData = async () => {
+      if (cart && authData?.jwt && authData?.phone) {
+        // Refresh cart data to ensure we have the latest state from server
+        await refreshCart(cart.cartId, authData.jwt, authData.phone);
+
+        // After cart refresh, revalidate coupons
+        if (vendor?.shopId) {
+          await checkAndFetchOffers(vendor.shopId, authData);
+        }
+      }
+    };
+
+    refreshCartData();
+  }, [cart?.cartId, authData?.jwt, authData?.phone, refreshCart, vendor?.shopId, checkAndFetchOffers, authData]);
 
   React.useEffect(() => {
     if (cartItems.length === 0) {

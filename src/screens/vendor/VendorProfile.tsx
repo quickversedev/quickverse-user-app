@@ -1,6 +1,7 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Dimensions,
   Image,
   Linking,
@@ -9,7 +10,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -68,7 +69,7 @@ const VendorProfileComponent: React.FC = () => {
   const { authData } = useAuth();
 
   // Coupon store integration
-  const { availableCoupons, loading: couponsLoading, fetchVendorOffers } = useCouponStore();
+  const { availableCoupons, fetchVendorOffers } = useCouponStore();
 
   const [currentOffer, setCurrentOffer] = useState(0);
   const offersScrollRef = useRef<ScrollView>(null);
@@ -84,7 +85,8 @@ const VendorProfileComponent: React.FC = () => {
 
   // Fetch coupons when component mounts
   useEffect(() => {
-    fetchVendorOffers(vendor.shopId, authData);
+    if (authData?.jwt) {
+    fetchVendorOffers(vendor.shopId, authData);}
   }, [fetchVendorOffers, vendor.shopId, authData]);
 
   // Get coupons for this vendor
@@ -144,9 +146,42 @@ const VendorProfileComponent: React.FC = () => {
     return <Text style={styles.statValue}>{vendor.rating}</Text>;
   }, [vendor.rating]);
 
-  const handlePhoneCall = useCallback(() => {
-    if (vendor.phone) {
-      Linking.openURL(`tel:${vendor.phone}`);
+      const handlePhoneCall = useCallback(async () => {
+    if (!vendor.phone) {
+      console.warn('No phone number available for vendor');
+      return;
+    }
+
+    try {
+      // Format the phone number properly - remove all non-digit characters except +
+      const formattedPhone = vendor.phone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+
+      // Use the standard tel: scheme which is more reliable
+      const phoneUrl = `tel:${formattedPhone}`;
+
+
+
+      // Try to open the phone app directly
+      await Linking.openURL(phoneUrl);
+    } catch (error) {
+      console.error('Error making phone call:', error);
+
+      // If the first attempt fails, try with a simpler approach
+      try {
+        // Remove all formatting and try again
+        const cleanPhone = vendor.phone.replace(/\D/g, '');
+        const fallbackUrl = `tel:${cleanPhone}`;
+        await Linking.openURL(fallbackUrl);
+      } catch (fallbackError) {
+        console.error('Fallback phone call also failed:', fallbackError);
+
+        // Show user-friendly error message
+        Alert.alert(
+          'Phone Call Error',
+          'Unable to make phone call. Please try again or contact support.',
+          [{ text: 'OK', style: 'default' }]
+        );
+      }
     }
   }, [vendor.phone]);
 
@@ -250,6 +285,7 @@ const VendorProfileComponent: React.FC = () => {
           backgroundColor: getColor('primary'),
           borderRadius: 20,
           padding: 8,
+          opacity: vendor.phone ? 1 : 0.5,
         },
         rowStats: {
           flexDirection: 'row',
@@ -337,6 +373,27 @@ const VendorProfileComponent: React.FC = () => {
           marginTop: 8,
           marginBottom: 8,
         },
+        navigationButton: {
+          position: 'absolute',
+          bottom: 12,
+          right: 12,
+          backgroundColor: getColor('card'),
+          borderRadius: 20,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          flexDirection: 'row',
+          alignItems: 'center',
+          shadowColor: '#000',
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 4,
+        },
+        navigationButtonText: {
+          fontSize: getTypography('caption'),
+          fontWeight: '600',
+          marginLeft: 4,
+        },
       }),
     [getColor, getTypography, cardWidth]
   );
@@ -371,8 +428,21 @@ const VendorProfileComponent: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
-          <TouchableOpacity style={styles.callBtn} onPress={handlePhoneCall}>
-            <MaterialCommunityIcons name="phone" size={22} color={getColor('background')} />
+          <TouchableOpacity
+            style={styles.callBtn}
+            onPress={handlePhoneCall}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={`Call ${vendor.name}`}
+            accessibilityHint="Opens phone app to call this vendor"
+            activeOpacity={0.8}
+            disabled={!vendor.phone}
+          >
+            <MaterialCommunityIcons
+              name="phone"
+              size={22}
+              color={vendor.phone ? getColor('background') : getColor('subText')}
+            />
           </TouchableOpacity>
         </View>
         {/* Stats Row */}
@@ -441,23 +511,133 @@ const VendorProfileComponent: React.FC = () => {
           <Text style={styles.mapAddress}>{formattedAddress}</Text>
 
           {vendorCoordinates && (
-            <MapView
-              style={styles.map}
-              initialRegion={{
-                latitude: vendorCoordinates.latitude,
-                longitude: vendorCoordinates.longitude,
-                latitudeDelta: 0.005,
-                longitudeDelta: 0.005,
-              }}
-              pointerEvents="none"
-            >
-              <Marker
-                coordinate={{
+            <View style={{ position: 'relative' }}>
+              <MapView
+                style={styles.map}
+                initialRegion={{
                   latitude: vendorCoordinates.latitude,
                   longitude: vendorCoordinates.longitude,
+                  latitudeDelta: 0.005,
+                  longitudeDelta: 0.005,
                 }}
-              />
-            </MapView>
+                showsUserLocation={false}
+                showsMyLocationButton={false}
+                zoomEnabled={true}
+                scrollEnabled={true}
+                rotateEnabled={false}
+                pitchEnabled={false}
+              >
+                <Marker
+                  coordinate={{
+                    latitude: vendorCoordinates.latitude,
+                    longitude: vendorCoordinates.longitude,
+                  }}
+                  title={vendor.name}
+                  description={formattedAddress}
+                />
+              </MapView>
+
+              {/* Navigation Button Overlay */}
+              <TouchableOpacity
+                style={styles.navigationButton}
+                onPress={async () => {
+                  try {
+                    // Check which map apps are available
+                    const appleMapsUrl = `https://maps.apple.com/?daddr=${vendorCoordinates.latitude},${vendorCoordinates.longitude}`;
+                    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${vendorCoordinates.latitude},${vendorCoordinates.longitude}`;
+
+                    const canOpenAppleMaps = await Linking.canOpenURL(appleMapsUrl);
+                    const canOpenGoogleMaps = await Linking.canOpenURL(googleMapsUrl);
+
+                    const options = [];
+
+                    if (canOpenAppleMaps) {
+                      options.push({
+                        text: 'Apple Maps',
+                        onPress: () => Linking.openURL(appleMapsUrl),
+                      });
+                    }
+
+                    if (canOpenGoogleMaps) {
+                      options.push({
+                        text: 'Google Maps',
+                        onPress: () => Linking.openURL(googleMapsUrl),
+                      });
+                    }
+
+                    if (options.length === 0) {
+                      // Fallback: try to open Apple Maps anyway (iOS default)
+                      try {
+                        await Linking.openURL(appleMapsUrl);
+                      } catch (error) {
+                        Alert.alert('Error', 'No map apps available on this device.');
+                      }
+                      return;
+                    }
+
+                    if (options.length === 1) {
+                      // Only one option available, open it directly
+                      options[0].onPress();
+                      return;
+                    }
+
+                    // Show options for map apps
+                    Alert.alert(
+                      'Open Directions',
+                      'Choose your preferred map app:',
+                      [
+                        ...options,
+                        {
+                          text: 'Cancel',
+                          style: 'cancel',
+                        },
+                      ]
+                    );
+                  } catch (error) {
+                    console.error('Error checking map apps:', error);
+                    // Fallback to simple alert
+                    Alert.alert(
+                      'Open Directions',
+                      'Choose your preferred map app:',
+                      [
+                        {
+                          text: 'Apple Maps',
+                          onPress: () => {
+                            const appleMapsUrl = `https://maps.apple.com/?daddr=${vendorCoordinates.latitude},${vendorCoordinates.longitude}`;
+                            Linking.openURL(appleMapsUrl);
+                          },
+                        },
+                        {
+                          text: 'Google Maps',
+                          onPress: () => {
+                            const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${vendorCoordinates.latitude},${vendorCoordinates.longitude}`;
+                            Linking.openURL(googleMapsUrl);
+                          },
+                        },
+                        {
+                          text: 'Cancel',
+                          style: 'cancel',
+                        },
+                      ]
+                    );
+                  }
+                }}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Open directions in map app"
+                accessibilityHint="Opens a menu to choose between Apple Maps and Google Maps"
+                activeOpacity={0.8}
+              >
+                <MaterialCommunityIcons
+                  name="directions"
+                  size={20}
+                  color={getColor('primary')}
+                />
+                <Text style={[styles.navigationButtonText, { color: getColor('primary') }]}>
+                  Directions
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       </ScrollView>

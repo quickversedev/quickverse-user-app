@@ -7,8 +7,11 @@ export const usePages = () => {
   const { authData } = useAuth();
   const { pages, loading, error, fetchPages, setLoading, setError, clearError, getPageById } =
     usePagesStore();
-  const regionId = useConfigStore.getState().config?.regionId;
+
+
   const handleFetchPages = async () => {
+    const regionId = useConfigStore.getState().getRegionId();
+
     if (authData && regionId) {
       await fetchPages(regionId, authData as AuthSession);
     }
@@ -16,8 +19,10 @@ export const usePages = () => {
 
   const retryFetch = () => {
     clearError();
+    const regionId = useConfigStore.getState().getRegionId();
     if (authData && regionId) {
       handleFetchPages();
+      console.log('fetching pages');
     }
   };
 

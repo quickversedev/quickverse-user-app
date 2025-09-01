@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo } from 'react';
-import { NativeScrollEvent, NativeSyntheticEvent, ScrollView, ViewStyle } from 'react-native';
+import { NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, ViewStyle } from 'react-native';
 
 import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
 import SectionDivider from '../../../../components/common/SectionDivider';
@@ -54,7 +54,13 @@ const ForYouContentComponent: React.FC<ForYouContentProps> = ({
       scrollEventThrottle={scrollEventThrottle}
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
-      style={{ paddingVertical: 100 }}
+      style={{
+  paddingBottom: 100,
+  paddingTop: Platform.select({
+    ios: 80,
+    android: 100
+  })
+}}
     >
       {bannerData?.length > 0 && <AutoScrollBanner bannerData={bannerData} />}
 

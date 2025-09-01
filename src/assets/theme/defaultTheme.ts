@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { Theme } from '../../theme/ThemeContext';
 
 export const DefaultTheme: Theme = {
@@ -37,7 +38,11 @@ export const DefaultTheme: Theme = {
   },
 
   typography: {
-    fontFamily: 'BricolageGrotesque',
+    fontFamily: Platform.select({
+      ios: 'BricolageGrotesque-Regular',
+      android: 'BricolageGrotesque',
+      default: 'BricolageGrotesque',
+    }) as string,
     lineHeightMultiplier: 1.4,
 
     h1: 28, // for title

@@ -101,7 +101,7 @@ class DeviceInfoService {
         latitude: latitude || undefined,
         loginTimestamp: deviceInfo.loginTimestamp || new Date().toISOString(),
       };
-
+      console.log('requestData in update device info', requestData);
       const response = await apiCall(
         axiosInstance.post<DeviceInfoResponse>('/v1/updateDevice', requestData, {
           headers: {
