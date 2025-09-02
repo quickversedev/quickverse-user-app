@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import useCartStore from '../../../store/cart/cartStore';
 import useOrderStore from '../../../store/cart/orderStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -11,6 +12,7 @@ const { width } = Dimensions.get('window');
 const ANIMATION_DURATION = 250;
 
 const FloatingCartsStack: React.FC = () => {
+  const { authData } = useAuth();
   const carts = useCartStore(state => state.carts);
   const allCarts = Object.values(carts);
   const activeCartId = useCartStore(state => state.activeCartId);
@@ -19,6 +21,11 @@ const FloatingCartsStack: React.FC = () => {
   const hasInProgressOrder = useOrderStore(state =>
     state.orders.some(o => o.status !== 'delivered' && o.status !== 'cancelled')
   );
+
+  // Only render when user is logged in
+  if (!authData?.jwt || !authData?.phone) {
+    return null;
+  }
 
   // Sort carts: most recently active at the top
   const sortedCarts = [...allCarts].sort((a, b) => {
@@ -74,7 +81,10 @@ const FloatingCartsStack: React.FC = () => {
           backgroundColor: getColor('primary'),
           shadowColor: theme.colors.shadow.color,
           shadowOpacity: theme.colors.shadow.opacity,
-          shadowOffset: theme.colors.shadow.offset,
+          shadowOffset: {
+            width: theme.colors.shadow.offset_width,
+            height: theme.colors.shadow.offset_height,
+          },
           shadowRadius: theme.colors.shadow.radius,
           elevation: 4,
         },
@@ -82,7 +92,10 @@ const FloatingCartsStack: React.FC = () => {
           borderRadius: theme.borderRadius.md,
           shadowColor: theme.colors.shadow.color,
           shadowOpacity: theme.colors.shadow.opacity,
-          shadowOffset: theme.colors.shadow.offset,
+          shadowOffset: {
+            width: theme.colors.shadow.offset_width,
+            height: theme.colors.shadow.offset_height,
+          },
           shadowRadius: theme.colors.shadow.radius,
           elevation: 4,
           zIndex: 1,

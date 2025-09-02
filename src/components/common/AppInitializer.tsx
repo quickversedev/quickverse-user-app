@@ -53,7 +53,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   const initializationRef = useRef(false);
 
   // Store hooks for data fetching
-  const { fetchVendors, loading: vendorLoading, error: vendorError } = useVendorStore();
+  const { fetchVendors, loading: vendorLoading, error: vendorError, setError } = useVendorStore();
   const {
     fetchAddresses,
     loading: addressLoading,
@@ -78,9 +78,15 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   const refreshAppData = useCallback(async () => {
     if (!isLoggedIn) return;
     try {
+
       // Refresh critical data when app comes back from background
+      const vendorPromise = fetchVendors(selectedAddress?.coordinates || undefined).catch(() => {
+        // Do not surface vendor errors to global error UI when already initialized
+        if (isInitialized) setError(null);
+      });
+
       await Promise.allSettled([
-        fetchVendors(),
+        vendorPromise,
         fetchAddresses(),
         fetchInitialConfig({
           longitude: locationData?.location?.longitude?.toString(),
@@ -107,11 +113,14 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     locationData?.location?.latitude,
     authData?.jwt,
     authData?.phone,
+    selectedAddress?.coordinates,
+    isInitialized,
+    setError,
   ]);
 
   useAppStateRefresh({
     onForeground: refreshAppData,
-    refreshThreshold: 100000, // Refresh after 1 minute in background
+    refreshThreshold: 120000, // Refresh after 2 minute in background
     enabled: isLoggedIn && isInitialized,
   });
 
@@ -122,8 +131,10 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   // Combined loading and error states for UI
   // Exclude addressLoading if we have cached addresses (non-blocking API call)
   const isLoading =
-    vendorLoading || (!hasCachedAddresses && addressLoading) || configLoading || pagesLoading;
-  const error = vendorError;
+    (!isInitialized && vendorLoading) ||
+    (!hasCachedAddresses && addressLoading) ||
+    (!isInitialized && (configLoading || pagesLoading));
+  const error = !isInitialized ? vendorError : null;
   const { longitude: currentLongitude, latitude: currentLatitude } = locationData?.location || {};
   const permissionStatus = locationData?.permission;
   const initializeSelectedAddress = useCallback(async (): Promise<void> => {
@@ -353,8 +364,15 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
 
   const handleRetry = useCallback(() => {
     initializationRef.current = false;
-    initializeApp();
-  }, [initializeApp]);
+    if (selectedAddress?.coordinates) {
+      setError(null);
+      fetchVendors(selectedAddress.coordinates).then(() => {
+        setIsInitialized(true);
+      });
+    } else {
+      initializeApp();
+    }
+  }, [initializeApp, fetchVendors, selectedAddress?.coordinates, setError]);
 
   useEffect(() => {
     initializeApp();

@@ -1,7 +1,7 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo } from 'react';
-import { Alert, Modal, ScrollView } from 'react-native';
+import { Alert, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   CartFooter,
@@ -26,11 +26,13 @@ import { getCODCharges } from '../../services/paymentService';
 import { SmartBizAddress, useSmartBizAddressStore } from '../../store/address/smartBizAddressStore';
 import useCartStore from '../../store/cart/cartStore';
 import useCouponStore from '../../store/cart/couponStore';
+import useConfigStore from '../../store/configStore';
 import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Address } from '../../types/address';
 import { Product } from '../../types/product';
+import { getApproxDistanceKm } from '../../utils/storeUtils';
 import PaymentScreen from './PaymentScreen';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
@@ -57,6 +59,7 @@ const CartScreen: React.FC = () => {
     addToCart,
   } = useCartStore();
   const { vendors } = useVendorStore();
+  const { getDeliveryDistance } = useConfigStore();
   const {
     getAvailableCoupons,
     checkAndFetchOffers,
@@ -416,9 +419,27 @@ const CartScreen: React.FC = () => {
     return parts.join(', ');
   }, [selectedSmartBizAddress]);
 
+  // Check if delivery distance is within range (5km)
+  const isDeliveryDistanceValid = useMemo(() => {
+    if (!vendor?.coordinates || !selectedSmartBizAddress?.address?.latitude || !selectedSmartBizAddress?.address?.longitude) {
+      return true; // Assume valid if coordinates not available
+    }
+
+    const deliveryDistance = getDeliveryDistance() || 5; // Default to 5km if not configured
+
+    const distance = getApproxDistanceKm(
+      vendor.coordinates.latitude,
+      vendor.coordinates.longitude,
+      parseFloat(selectedSmartBizAddress.address.latitude),
+      parseFloat(selectedSmartBizAddress.address.longitude)
+    );
+    console.log('distance', distance);
+    return distance <= deliveryDistance;
+  }, [vendor?.coordinates, selectedSmartBizAddress?.address?.latitude, selectedSmartBizAddress?.address?.longitude, getDeliveryDistance]);
+
   const isCheckoutDisabled = useMemo(() => {
-    return !selectedPaymentOption || Boolean(paymentMethodsError) || isOrderLoading;
-  }, [selectedPaymentOption, paymentMethodsError, isOrderLoading]);
+    return !selectedPaymentOption || Boolean(paymentMethodsError) || isOrderLoading || !isDeliveryDistanceValid;
+  }, [selectedPaymentOption, paymentMethodsError, isOrderLoading, isDeliveryDistanceValid]);
 
   // Effects
   React.useEffect(() => {
@@ -590,6 +611,51 @@ const CartScreen: React.FC = () => {
         disabled={isCheckoutDisabled}
         loading={isOrderLoading}
       />
+
+      {/* Delivery Distance Warning Bar */}
+      {!isDeliveryDistanceValid && selectedSmartBizAddress && (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 140,
+            left: 16,
+            right: 16,
+            backgroundColor: '#FF6B6B',
+            borderRadius: 8,
+            padding: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            elevation: 4,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 4,
+          }}
+        >
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={{ color: '#FFF', fontSize: 14, fontWeight: '600' }}>
+              Location not deliverable
+            </Text>
+            <Text style={{ color: '#FFF', fontSize: 12, opacity: 0.9, marginTop: 2 }}>
+              Change your delivery address
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setShowSmartBizAddressModal(true)}
+            style={{
+              backgroundColor: '#FFF',
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 6,
+            }}
+          >
+            <Text style={{ color: '#FF6B6B', fontSize: 12, fontWeight: '600' }}>
+              Change
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* SmartBiz Address Selection Button */}
       {/* {vendor && (

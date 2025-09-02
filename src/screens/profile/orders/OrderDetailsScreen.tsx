@@ -1,3 +1,4 @@
+import notifee, { AuthorizationStatus } from '@notifee/react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -55,6 +56,7 @@ const OrderDetailsScreen = () => {
     if (orderId) {
       loadOrderById(orderId);
     }
+
   }, [orderId, loadOrderById]);
 
   // Check notification permission on component mount
@@ -65,23 +67,26 @@ const OrderDetailsScreen = () => {
   const checkNotificationPermission = async () => {
     try {
       if (Platform.OS === 'android') {
-        // For Android, check notification permission
+        // Android 13+ requires POST_NOTIFICATIONS; older versions don't
+        if (Platform.Version < 33) {
+          setShowPermissionBar(false);
+          return;
+        }
         const granted = await PermissionsAndroid.check(
           PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
         );
-        if (granted) {
-          setShowPermissionBar(false);
-        } else {
-          setShowPermissionBar(true);
-        }
+        setShowPermissionBar(!granted);
       } else if (Platform.OS === 'ios') {
-        // For iOS, we'll show the permission bar since we can't easily check permission status
-        // In a production app, you might want to use a library like react-native-permissions
-        setShowPermissionBar(true);
+        // iOS: use Notifee to check current authorization status
+        const settings = await notifee.getNotificationSettings();
+        const enabled =
+          settings.authorizationStatus === AuthorizationStatus.AUTHORIZED ||
+          settings.authorizationStatus === AuthorizationStatus.PROVISIONAL;
+        setShowPermissionBar(!enabled);
       }
     } catch (error) {
-      // If permission check fails, assume permission is needed
-      setShowPermissionBar(true);
+      // If permission check fails, don't block the UI with the bar
+      setShowPermissionBar(false);
     }
   };
 
@@ -91,6 +96,21 @@ const OrderDetailsScreen = () => {
 
       if (result) {
         // Permission granted, hide the bar
+        setShowPermissionBar(false);
+      }
+      else {
+        Alert.alert(
+          'Permission Blocked',
+          'Notification permissions have been permanently denied. To enable notifications:\n\n1. Go to App Settings > Notifications\n2. Turn on "Show notifications"\n3. Enable "Sound", "Vibration", and "Heads-up"\n\nWould you like to open App Settings now?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Open Settings',
+              onPress: () => Linking.openSettings(),
+            },
+          ]
+        );
+
         setShowPermissionBar(false);
       }
     } catch (error: unknown) {
@@ -124,7 +144,7 @@ const OrderDetailsScreen = () => {
       }
     }
   };
-
+  console.log('showPermissionBar*********', showPermissionBar);
   const handleBackPress = useCallback(() => {
     navigation.goBack();
   }, [navigation]);

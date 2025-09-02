@@ -41,6 +41,8 @@
 			</dict>
 		</dict>
 	</dict>
+  <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+  <string>We need your location to provide accurate delivery services, show nearby vendors, and personalize your experience.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We need your location to provide accurate delivery services, show nearby vendors, and personalize your experience.</string>
 	<key>NSUserNotificationUsageDescription</key>

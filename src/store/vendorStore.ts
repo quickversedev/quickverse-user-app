@@ -88,7 +88,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         ? {
             latitude: location.latitude,
             longitude: location.longitude,
-            radius: location.radius || 5000,
+            radius: location.radius || 8000,
           }
         : {};
 

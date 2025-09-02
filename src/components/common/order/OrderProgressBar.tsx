@@ -1,13 +1,13 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    ViewStyle,
-    useWindowDimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+  useWindowDimensions,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
@@ -51,7 +51,7 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
         // no-op; UI stays quiet on failure
       });
     }
-  }, [authData?.jwt, authData?.phone, orders.length, loading, fetchOrders]);
+  }, [authData?.jwt, authData?.phone, orders.length, loading]);
 
   const inProgressOrders = useMemo(() => {
     return orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');

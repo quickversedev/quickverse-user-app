@@ -337,6 +337,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     return (
       <Modal visible={visible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
           <View style={styles.modal}>
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
               <MaterialCommunityIcons name="close" size={20} color={getColor('text')} />
@@ -358,6 +359,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     return (
       <Modal visible={visible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
           <View style={styles.modal}>
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
               <MaterialCommunityIcons name="close" size={20} color={getColor('text')} />
@@ -392,6 +394,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={styles.modal}>
           <View style={styles.dragIndicator} />
 

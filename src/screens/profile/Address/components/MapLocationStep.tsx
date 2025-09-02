@@ -1,31 +1,32 @@
 import debounce from 'lodash.debounce';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Dimensions,
-  Image,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    Image,
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Icons, Images } from '../../../../assets';
 import SectionDivider from '../../../../components/common/SectionDivider';
 import { useLocation } from '../../../../hooks/Permissions/useLocation';
 import {
-  getAddressFromCoordinates,
-  getAutocompleteSuggestions,
-  type AddressComponents,
-  type Location,
-  type SearchResult,
+    getAddressFromCoordinates,
+    getAutocompleteSuggestions,
+    type AddressComponents,
+    type Location,
+    type SearchResult,
 } from '../../../../services/api/olaLocationService';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { getRegionFromLocation } from '../utils/mapUtils';
@@ -41,6 +42,7 @@ const MAP_HEIGHT = height * 0.60;
 
 const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const { getColor, getTypography, theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const {
     checkLocationPermission,
     requestLocationPermission,
@@ -268,7 +270,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     },
     searchBarContainer: {
       position: 'absolute',
-      top: 20,
+      top: Platform.OS === 'ios' ? 16 : 20,
       left: 0,
       right: 0,
       alignItems: 'center',
@@ -433,8 +435,9 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View
-        style={themedStyles.outerContainer}
+      <SafeAreaView
+        style={[themedStyles.outerContainer, { paddingTop: insets.top }]}
+        edges={['top', 'bottom']}
         accessible={true}
         accessibilityLabel="Map location selection screen"
       >
@@ -652,7 +655,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
             <Text style={themedStyles.outlinedButtonText}>Add Address Details</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     </TouchableWithoutFeedback>
   );
 };
