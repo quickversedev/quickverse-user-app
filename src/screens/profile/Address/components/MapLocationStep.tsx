@@ -38,7 +38,8 @@ interface MapLocationStepProps {
 }
 
 const PIN_SIZE = Math.max(48, width * 0.12);
-const MAP_HEIGHT = height * 0.6;
+
+const MAP_HEIGHT = height * 0.54;
 
 const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const { getColor, getTypography, theme } = useTheme();
@@ -239,7 +240,6 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const themedStyles = StyleSheet.create({
     outerContainer: {
       flex: 1,
-      backgroundColor: getColor('background'),
     },
     mapContainer: {
       overflow: 'hidden',
@@ -308,6 +308,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
+      zIndex: 100,
     },
     resultItem: {
       padding: 12,
@@ -434,9 +435,18 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   });
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+    <TouchableWithoutFeedback
+      onPress={() => {
+        Keyboard.dismiss();
+        // Close search results when clicking outside
+        if (searchResults.length > 0) {
+          setSearchResults([]);
+        }
+      }}
+      accessible={false}
+    >
       <SafeAreaView
-        style={[themedStyles.outerContainer, { paddingTop: insets.top }]}
+        style={[themedStyles.outerContainer]}
         edges={['top', 'bottom']}
         accessible={true}
         accessibilityLabel="Map location selection screen"
@@ -480,10 +490,12 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
               />
             )}
           </MapView>
-          {/* Center Pin Overlay */}
-          <View pointerEvents="none" style={themedStyles.centerPinContainer}>
-            <Image source={Images.mapLocation} style={themedStyles.centerPin} />
-          </View>
+          {/* Center Pin Overlay - Only show when no search results */}
+          {searchResults.length === 0 && (
+            <View pointerEvents="none" style={themedStyles.centerPinContainer}>
+              <Image source={Images.mapLocation} style={themedStyles.centerPin} />
+            </View>
+          )}
           {/* Search Bar Overlay */}
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}

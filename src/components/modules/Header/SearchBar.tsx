@@ -23,7 +23,7 @@ const SearchBarContent: React.FC = () => {
     >
       <Icon name="magnify" size={22} color={theme.colors.subText} style={styles.icon} />
       <TextInput
-        placeholder="Search for 'Shwarma'"
+        placeholder="Search for shops, products etc."
         placeholderTextColor={theme.colors.subText}
         style={[
           styles.input,

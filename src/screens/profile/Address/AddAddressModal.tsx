@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Icons } from '../../../assets';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { AddressComponents } from '../../../services/api/olaLocationService';
 import { useTheme } from '../../../theme/ThemeContext';
 import AddressDetailsStep from './AddressDetailsStep';
@@ -45,6 +44,7 @@ interface AddAddressModalProps {
 
 const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => {
   const { getColor, getTypography, theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState(1);
   const [location, setLocation] = useState<Location | null>(null);
   const [selectedAddressDescription, setSelectedAddressDescription] = useState<AddressComponents>({
@@ -132,12 +132,13 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      padding: Math.max(16, width * 0.04),
-      paddingTop: Math.max(12, width * 0.03),
+      paddingHorizontal: Math.max(16, width * 0.04),
+      paddingTop: Platform.OS === 'ios' ? Math.max(insets.top + 4, 8) : Math.max(16, width * 0.04),
+      // paddingBottom: Math.max(16, width * 0.04),
       borderBottomWidth: 1,
       borderBottomColor: getColor('border'),
       backgroundColor: getColor('card'),
-      minHeight: 60,
+      minHeight: Platform.OS === 'ios' ? Math.max(60, insets.top + 44) : 60,
       ...Platform.select({
         android: {
           elevation: 2,
@@ -182,7 +183,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       presentationStyle="fullScreen"
     >
       <SafeAreaView
-        style={{ flex: 1, backgroundColor: getColor('background') }}
+        style={{  flex: 1,backgroundColor: getColor('background') }}
         accessible={true}
         accessibilityLabel="Add address modal"
       >
@@ -199,7 +200,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
             }
             activeOpacity={0.7}
           >
-            <Image source={Icons.backArrow} style={{ width: 25, height: 25 }} />
+            <MaterialCommunityIcons name="arrow-left-thick" size={25} color={getColor('primary')} />
           </TouchableOpacity>
           <Text
             style={themedStyles.title}
