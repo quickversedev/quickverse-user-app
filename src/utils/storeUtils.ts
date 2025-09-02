@@ -3,8 +3,8 @@
  */
 
 export interface StoreTimeConfig {
-  openingTime: string; // Format: "HH:MM" (24-hour)
-  closingTime: string; // Format: "HH:MM" (24-hour)
+  openingTime: string; // Format: "HH:MM AM/PM" (12-hour)
+  closingTime: string; // Format: "HH:MM AM/PM" (12-hour)
   storeActive: boolean; // Manual override flag
 }
 
@@ -16,10 +16,28 @@ export interface StoreStatus {
 }
 
 /**
- * Converts time string (HH.MM.SS or HH:MM) to minutes since midnight
+ * Converts time string (HH:MM AM/PM or HH.MM.SS) to minutes since midnight
  */
 const timeToMinutes = (timeStr: string): number => {
-  // Handle both formats: "HH.MM.SS" and "HH:MM"
+  // Handle AM/PM format: "HH:MM AM/PM"
+  if (timeStr.includes('AM') || timeStr.includes('PM')) {
+    const timeParts = timeStr.split(' ');
+    const time = timeParts[0];
+    const period = timeParts[1];
+
+    const [hours, minutes] = time.split(':').map(Number);
+    let adjustedHours = hours;
+
+    if (period === 'PM' && hours !== 12) {
+      adjustedHours = hours + 12;
+    } else if (period === 'AM' && hours === 12) {
+      adjustedHours = 0;
+    }
+
+    return adjustedHours * 60 + minutes;
+  }
+
+  // Handle legacy formats: "HH.MM.SS" and "HH:MM"
   let timeParts: string[];
   if (timeStr.includes('.')) {
     timeParts = timeStr.split('.');
@@ -80,7 +98,7 @@ const formatTimeDifference = (minutes: number): string => {
  * Determines if a store is currently open based on:
  * 1. storeActive flag (manual override)
  * 2. Current time vs opening/closing times
- * 3. Handles overnight hours (e.g., 23:00 to 06:00)
+ * 3. Handles overnight hours (e.g., 11:00 PM to 6:00 AM)
  *
  * @param config - Store time configuration
  * @returns StoreStatus object with open status and details
@@ -97,12 +115,12 @@ export const isStoreOpen = (config: StoreTimeConfig): StoreStatus => {
   }
 
   try {
-    // Validate time format (supports both HH:MM and HH.MM.SS)
-    const timeRegex = /^([0-1]?[0-9]|2[0-3])[.:][0-5][0-9]([.:][0-5][0-9])?$/;
+    // Validate time format (supports HH:MM AM/PM, HH:MM, and HH.MM.SS)
+    const timeRegex = /^([0-1]?[0-9]|2[0-3])[.:][0-5][0-9]([.:][0-5][0-9])?$|^([0-9]|1[0-2]):[0-5][0-9] (AM|PM)$/;
     if (!timeRegex.test(openingTime) || !timeRegex.test(closingTime)) {
       return {
         isOpen: false,
-        reason: 'Invalid time format',
+        reason: 'Invalid time format. Use "HH:MM AM/PM" format (e.g., "9:30 AM", "2:45 PM")',
       };
     }
 
@@ -248,6 +266,60 @@ export const formatTimeToAMPM = (timeStr: string): string => {
     const displayMinutes = minutes.toString().padStart(2, '0');
 
     return `${displayHours}:${displayMinutes} ${period}`;
+  } catch (error) {
+    return timeStr; // Return original if parsing fails
+  }
+};
+
+/**
+ * Converts 12-hour AM/PM time format to 24-hour format
+ * Primary format: "HH:MM AM/PM"
+ * Legacy support: "HH.MM.SS" and "HH:MM"
+ *
+ * Examples:
+ * - "9:30 AM" → "09:30"
+ * - "2:45 PM" → "14:45"
+ * - "11:00 PM" → "23:00"
+ * - "12:15 AM" → "00:15"
+ * - "12:00 PM" → "12:00"
+ */
+export const formatTimeTo24Hour = (timeStr: string): string => {
+  try {
+    // Handle AM/PM format: "HH:MM AM/PM"
+    if (timeStr.includes('AM') || timeStr.includes('PM')) {
+      const timeParts = timeStr.split(' ');
+      const time = timeParts[0];
+      const period = timeParts[1];
+
+      const [hours, minutes] = time.split(':').map(Number);
+      let adjustedHours = hours;
+
+      if (period === 'PM' && hours !== 12) {
+        adjustedHours = hours + 12;
+      } else if (period === 'AM' && hours === 12) {
+        adjustedHours = 0;
+      }
+
+      return `${adjustedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+
+    // Handle legacy formats
+    let timeParts: string[];
+    if (timeStr.includes('.')) {
+      timeParts = timeStr.split('.');
+    } else {
+      timeParts = timeStr.split(':');
+    }
+
+    const hours = parseInt(timeParts[0], 10);
+    const minutes = parseInt(timeParts[1], 10);
+
+    // Validate hours and minutes
+    if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      return timeStr; // Return original if invalid
+    }
+
+    return `${hours.toString().padStart(2, '0')}:${minutes}`;
   } catch (error) {
     return timeStr; // Return original if parsing fails
   }

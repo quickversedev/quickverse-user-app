@@ -281,6 +281,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       if (authData) {
         await authService.signUp(fullName, dob, gender, email, authData.jwt, authData.phone);
+        setAuth({ ...authData, username: fullName });
       }
       setNewUserstate(false);
     } catch (error) {
