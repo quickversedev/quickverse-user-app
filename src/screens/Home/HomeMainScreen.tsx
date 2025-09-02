@@ -32,7 +32,7 @@ const HomeMainScreen = React.memo(() => {
   useAppStateRefresh({
     onForeground: async () => {
       try {
-        console.log('selectedAddress', selectedAddress);
+        //console.log('selectedAddress', selectedAddress);
         if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
           // Refresh vendors for current location
           getVendorsNearLocation({

@@ -109,7 +109,7 @@ class ProductDetailsService {
           data: mockVariants,
         };
       }
-      console.log('parentSku', parentSku);
+      //console.log('parentSku', parentSku);
       // Real API call - fetch product variants
       const apiResponse = await apiCall(
         axiosInstance.get<Product[]>(`/v3/product/${parentSku}`, {
@@ -147,7 +147,7 @@ class ProductDetailsService {
           },
         }));
       }
-      console.log('variants', variants);
+      //console.log('variants', variants);
       return {
         success: true,
         data: variants,
@@ -168,18 +168,6 @@ class ProductDetailsService {
     }
   }
 }
-
-// Export control functions for external use
-export const setUseProductDetailsMocks = (useMocks: boolean) => {
-  // Note: This would need to be implemented with a more sophisticated state management
-  // For now, you can manually change the constant above
-  // eslint-disable-next-line no-console
-  console.log(`Product Details Mock Mode: ${useMocks ? 'ENABLED' : 'DISABLED'}`);
-  // eslint-disable-next-line no-console
-  console.log(
-    'To change this setting, modify USE_PRODUCT_DETAILS_MOCKS in productDetailsService.ts'
-  );
-};
 
 export const getProductDetailsMockStatus = () => {
   return USE_PRODUCT_DETAILS_MOCKS;

@@ -246,7 +246,6 @@ export const useLocation = () => {
         };
       } else {
         // Permission not granted, return null location
-        console.log('❌ [useLocation] Permission not granted:', permission);
         return {
           permission,
           location: null,

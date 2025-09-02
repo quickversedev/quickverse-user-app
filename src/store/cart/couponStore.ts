@@ -102,7 +102,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
       if (!authData?.jwt) {
         throw new Error('No authentication token available');
       }
-      console.log('applyOfferToCart shopId', shopId);
+      //console.log('applyOfferToCart shopId', shopId);
       const apiResponse = await couponService.applyOffer(shopId, offerIdOrCode, false, authData);
 
       // Sync cart store with latest totals/products
@@ -151,7 +151,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
     pendingRequest = abortController;
 
     set({ vendorOffersLoading: true, vendorOffersError: null });
-    console.log('fetchVendorOffers vendorId', vendorId);
+    //console.log('fetchVendorOffers vendorId', vendorId);
     try {
       if (USE_COUPON_MOCKS) {
         // Use mock data from separate file
@@ -228,7 +228,7 @@ const useCouponStore = create<CouponStore>((set, get) => ({
     if (pendingRequest) {
       pendingRequest.abort();
     }
-    console.log('fetchCustomerOffers vendorId', vendorId);
+    //console.log('fetchCustomerOffers vendorId', vendorId);
     // Create new request ID and abort controller
     const requestId = ++currentRequestId;
     const abortController = new AbortController();

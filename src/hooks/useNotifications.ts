@@ -441,7 +441,7 @@ export const useNotifications = () => {
       }
 
       const token = await getToken(messaging);
-      console.log('[FCM] Token received:', token);
+      //console.log('[FCM] Token received:', token);
       if (!token) {
         throw new MessagingError('Failed to get FCM token', 'TOKEN_RETRIEVAL_FAILED');
       }

@@ -33,7 +33,7 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Use the custom hook to fetch update data
   const { updateData, loading, error, retry } = useFetchUpdateData();
-  console.log('updateData', updateData);
+  //console.log('updateData', updateData);
   // Mounted ref to prevent state updates after unmount
   const isMounted = useRef(true);
 
@@ -102,7 +102,7 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       setIsChecking(true);
       const currentVersion = DeviceInfo.getVersion();
-      console.log('currentVersion', currentVersion);
+      //console.log('currentVersion', currentVersion);
       if (!updateData?.min_required_version) {
         setIsUpdateRequired(false);
         return;

@@ -226,7 +226,7 @@ class CouponService {
           },
         })
       );
-      // console.log('customer offer response', data);
+      // //console.log('customer offer response', data);
 
       // Transform both eligible and non-eligible offers to Coupon format
       const eligibleCoupons = data.listOfEligibleOffers.map(offer =>

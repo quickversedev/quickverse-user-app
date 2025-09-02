@@ -47,7 +47,7 @@ export const useDeviceInfo = () => {
   const getDeviceInfoForLogging = useCallback(async () => {
     try {
       const deviceInfo = await deviceInfoService.getDeviceInfoForLogging();
-      console.log('Device Info:', deviceInfo);
+      //console.log('Device Info:', deviceInfo);
       return deviceInfo;
     } catch (error) {
       console.error('Failed to get device info for logging:', error);

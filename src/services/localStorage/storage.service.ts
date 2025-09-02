@@ -176,7 +176,7 @@ export const setUserAddresses = (addresses: any[]): void => {
  * @returns Address array or undefined
  */
 export const getUserAddresses = (): any[] | undefined => {
-  // console.log('getUserAddresses from storage', storage.getString(USER_ADDRESSES_KEY));
+  // //console.log('getUserAddresses from storage', storage.getString(USER_ADDRESSES_KEY));
   const raw = storage.getString(USER_ADDRESSES_KEY);
   if (!raw) return undefined;
   try {

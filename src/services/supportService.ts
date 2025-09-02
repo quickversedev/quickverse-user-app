@@ -8,7 +8,7 @@ export interface SupportEmailPayload {
 
 class SupportService {
   async sendSupportEmail(jwt: string, phone: string, payload: SupportEmailPayload): Promise<void> {
-    console.log('payload', payload);
+    //console.log('payload', payload);
     await apiCall(
       axiosInstance.post<void>('/v1/email', payload, {
         headers: {

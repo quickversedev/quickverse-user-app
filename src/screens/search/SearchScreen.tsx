@@ -90,7 +90,7 @@ const SearchScreen: React.FC = () => {
 
   const handleProductPress = (product: Product) => {
     // Find the vendor for this product
-    console.log('product', product);
+    //console.log('product', product);
     const vendor = getVendorById(product?.shopId);
 
     if (vendor) {
@@ -103,7 +103,7 @@ const SearchScreen: React.FC = () => {
     } else {
       // Fallback: just log if vendor not found
       // eslint-disable-next-line no-console
-      console.log('Vendor not found for product:', product.name);
+      //console.log('Vendor not found for product:', product.name);
     }
   };
 

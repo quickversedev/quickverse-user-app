@@ -61,7 +61,7 @@ const MyComponent = () => {
   const handleUpdateDeviceInfo = async () => {
     try {
       const response = await updateDeviceInfo(longitude, latitude);
-      console.log('Device info updated:', response);
+      //console.log('Device info updated:', response);
     } catch (error) {
       console.error('Failed to update device info:', error);
     }
@@ -69,7 +69,7 @@ const MyComponent = () => {
 
   const handleLogDeviceInfo = async () => {
     const deviceInfo = await getDeviceInfoForLogging();
-    console.log('Device Info:', deviceInfo);
+    //console.log('Device Info:', deviceInfo);
   };
 
   return (

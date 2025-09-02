@@ -202,8 +202,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
   const renderAttributeRow = (label: string, value: string | number | null, isLast = false) => {
     if (value === null || value === undefined) return null;
     const cleanValue = cleanHtmlText(value.toString());
-    console.log('cleanValue', cleanValue);
-    console.log('value', value);
+    //console.log('cleanValue', cleanValue);
+    //console.log('value', value);
     return (
       <View style={[styles.attributeRow, isLast && styles.lastAttributeRow]}>
         <Text style={styles.attributeLabel}>{label}</Text>

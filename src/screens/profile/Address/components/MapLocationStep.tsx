@@ -1,19 +1,19 @@
 import debounce from 'lodash.debounce';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    Image,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,11 +22,11 @@ import { Icons, Images } from '../../../../assets';
 import SectionDivider from '../../../../components/common/SectionDivider';
 import { useLocation } from '../../../../hooks/Permissions/useLocation';
 import {
-    getAddressFromCoordinates,
-    getAutocompleteSuggestions,
-    type AddressComponents,
-    type Location,
-    type SearchResult,
+  getAddressFromCoordinates,
+  getAutocompleteSuggestions,
+  type AddressComponents,
+  type Location,
+  type SearchResult,
 } from '../../../../services/api/olaLocationService';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { getRegionFromLocation } from '../utils/mapUtils';
@@ -38,7 +38,7 @@ interface MapLocationStepProps {
 }
 
 const PIN_SIZE = Math.max(48, width * 0.12);
-const MAP_HEIGHT = height * 0.60;
+const MAP_HEIGHT = height * 0.6;
 
 const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const { getColor, getTypography, theme } = useTheme();
@@ -142,7 +142,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
 
       // // Get current location and wait for it to be available
       // const coords = await getCurrentLocation();
-      // console.log('Current location obtained:', coords);
+      // //console.log('Current location obtained:', coords);
 
       const newLocation = {
         latitude: Number(currentLocation.latitude),

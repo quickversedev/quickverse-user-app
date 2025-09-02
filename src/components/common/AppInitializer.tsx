@@ -78,7 +78,6 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   const refreshAppData = useCallback(async () => {
     if (!isLoggedIn) return;
     try {
-
       // Refresh critical data when app comes back from background
       const vendorPromise = fetchVendors(selectedAddress?.coordinates || undefined).catch(() => {
         // Do not surface vendor errors to global error UI when already initialized
@@ -120,7 +119,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
 
   useAppStateRefresh({
     onForeground: refreshAppData,
-    refreshThreshold: 120000, // Refresh after 2 minute in background
+    refreshThreshold: 12000, // Refresh after 2 minute in background
     enabled: isLoggedIn && isInitialized,
   });
 

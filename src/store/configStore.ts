@@ -18,7 +18,7 @@ interface ConfigStore {
 
   // Getters
   getConfig: () => InitialConfigResponse | null;
-getDeliveryDistance: () => number | null;
+  getDeliveryDistance: () => number | null;
 
   getThemeId: () => string | null;
   getRegionId: () => string | null;
@@ -50,7 +50,7 @@ const useConfigStore = create<ConfigStore>((set, get) => ({
       if (config?.regionId) {
         setRegionId(config.regionId);
       }
-      console.log('config', config);
+      //console.log('config', config);
       set({
         config,
         loading: false,

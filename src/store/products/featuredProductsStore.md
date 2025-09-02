@@ -314,7 +314,7 @@ Enable debug logging by adding console logs in the store:
 
 ```typescript
 getFeaturedProducts: async (shopId: string, limit: number = DEFAULT_LIMIT) => {
-  console.log(`Fetching featured products for shop: ${shopId}`);
+  //console.log(`Fetching featured products for shop: ${shopId}`);
   // ... rest of implementation
 };
 ```

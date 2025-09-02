@@ -304,7 +304,7 @@ class CartApiService {
         };
       });
     }
-    console.log('apiResponse', apiResponse);
+    //console.log('apiResponse', apiResponse);
     // Extract applied coupon from smartBizOffer if it exists
     const appliedCoupon = apiResponse.smartBizOffer
       ? {

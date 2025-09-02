@@ -34,7 +34,7 @@ const AppBootstrap: React.FC = () => {
   const { updateDeviceInfo } = useDeviceInfo();
   const { setupNotifications } = useNotifications();
   // eslint-disable-next-line no-console
-  console.log('auth jwt :', authData?.jwt);
+  //console.log('auth jwt :', authData?.jwt);
   const bootstrap = async () => {
     setBootError(null);
     try {

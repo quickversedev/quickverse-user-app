@@ -218,11 +218,11 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
       // Request both location and notification permissions
       await requestLocationPermission();
       const notificationResult = await requestPermissions();
-      console.log('notificationResult', notificationResult);
+      //console.log('notificationResult', notificationResult);
 
       // Setup notifications if notification permission was granted
       if (notificationResult) {
-        console.log('notificationResult', notificationResult);
+        //console.log('notificationResult', notificationResult);
         try {
           const cleanup = await setupNotifications();
           if (cleanup) {

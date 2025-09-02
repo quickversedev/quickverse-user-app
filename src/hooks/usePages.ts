@@ -8,7 +8,6 @@ export const usePages = () => {
   const { pages, loading, error, fetchPages, setLoading, setError, clearError, getPageById } =
     usePagesStore();
 
-
   const handleFetchPages = async () => {
     const regionId = useConfigStore.getState().getRegionId();
 
@@ -22,7 +21,6 @@ export const usePages = () => {
     const regionId = useConfigStore.getState().getRegionId();
     if (authData && regionId) {
       handleFetchPages();
-      console.log('fetching pages');
     }
   };
 

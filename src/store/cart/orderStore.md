@@ -313,6 +313,6 @@ Enable debug logging by setting:
 
 ```tsx
 // In your development environment
-console.log('Orders:', useOrderStore.getState().orders);
-console.log('Filters:', useOrderStore.getState().filters);
+//console.log('Orders:', useOrderStore.getState().orders);
+//console.log('Filters:', useOrderStore.getState().filters);
 ```

@@ -53,7 +53,7 @@ const FoodContentComponent: React.FC<FoodContentProps> = ({
     },
     [navigation]
   );
-  console.log('foodVendors', bannerData);
+  //console.log('foodVendors', bannerData);
   // Memoize styles to prevent recreation on every render
   const styles = useMemo(
     () =>

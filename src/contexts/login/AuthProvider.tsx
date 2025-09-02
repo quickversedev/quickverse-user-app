@@ -101,7 +101,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Set up session expired callback for axios interceptor
   useEffect(() => {
     setSessionExpiredCallback(() => {
-      console.log('session expired');
+      //console.log('session expired');
       resetAuthState();
     });
 

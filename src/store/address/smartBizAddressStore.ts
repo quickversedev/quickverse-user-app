@@ -72,7 +72,7 @@ export const useSmartBizAddressStore = create<SmartBizAddressState>()(
         }
 
         set({ loading: true, error: null });
-        console.log('fetching addresse s from smart biz');
+        //console.log('fetching addresse s from smart biz');
         try {
           const data: SmartBizAddressResponse = await apiCall(
             axiosInstance.get(`/v2/listAddresses?shopId=${vendorId}`, {
@@ -82,7 +82,7 @@ export const useSmartBizAddressStore = create<SmartBizAddressState>()(
               },
             })
           );
-          console.log('smart biz address data', data);
+          //console.log('smart biz address data', data);
           set({
             addresses: data.addresses,
             defaultAddressId: data.defaultAddressId,

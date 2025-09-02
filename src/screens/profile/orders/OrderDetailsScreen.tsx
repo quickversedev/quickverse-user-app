@@ -56,7 +56,6 @@ const OrderDetailsScreen = () => {
     if (orderId) {
       loadOrderById(orderId);
     }
-
   }, [orderId, loadOrderById]);
 
   // Check notification permission on component mount
@@ -97,8 +96,7 @@ const OrderDetailsScreen = () => {
       if (result) {
         // Permission granted, hide the bar
         setShowPermissionBar(false);
-      }
-      else {
+      } else {
         Alert.alert(
           'Permission Blocked',
           'Notification permissions have been permanently denied. To enable notifications:\n\n1. Go to App Settings > Notifications\n2. Turn on "Show notifications"\n3. Enable "Sound", "Vibration", and "Heads-up"\n\nWould you like to open App Settings now?',
@@ -144,14 +142,14 @@ const OrderDetailsScreen = () => {
       }
     }
   };
-  console.log('showPermissionBar*********', showPermissionBar);
+  //console.log('showPermissionBar*********', showPermissionBar);
   const handleBackPress = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
 
   const handleViewSummary = useCallback(() => {
     // TODO: Navigate to bill summary screen
-    // console.log('View summary pressed');
+    // //console.log('View summary pressed');
   }, []);
 
   const [cancellingOrder, setCancellingOrder] = useState(false);
@@ -260,7 +258,7 @@ const OrderDetailsScreen = () => {
 
   const handleGetHelp = useCallback(() => {
     // TODO: Navigate to help screen
-    // console.log('Get help pressed');
+    // //console.log('Get help pressed');
   }, []);
 
   const getStatusColor = useCallback((status: string) => {

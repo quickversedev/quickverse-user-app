@@ -79,7 +79,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   // Create vendor-specific cart ID
   const cartId = `vendor_${vendor.shopId}`;
-  console.log('isStoreClosed', isStoreClosed);
+  //console.log('isStoreClosed', isStoreClosed);
   // Get current cart
   const cart = carts[cartId];
 
@@ -300,7 +300,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const handleSuggestedItemAdd = (item: SuggestedItem) => {
     if (!authData?.jwt) return;
     // Add suggested item to cart
-    console.log('item', item);
+    //console.log('item', item);
     const cartProduct = {
       sku: item.id,
       shopId: vendor.shopId,

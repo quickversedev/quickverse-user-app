@@ -343,9 +343,9 @@ class ProductsService {
 // Export helper functions for mock control
 export const setUseProductsMocks = (useMocks: boolean) => {
   // eslint-disable-next-line no-console
-  console.log(`Products Mock Mode: ${useMocks ? 'ENABLED' : 'DISABLED'}`);
+  //console.log(`Products Mock Mode: ${useMocks ? 'ENABLED' : 'DISABLED'}`);
   // eslint-disable-next-line no-console
-  console.log('To change this setting, modify USE_PRODUCTS_MOCKS in productsService.ts');
+  //console.log('To change this setting, modify USE_PRODUCTS_MOCKS in productsService.ts');
 };
 
 export const getProductsMockStatus = () => {
