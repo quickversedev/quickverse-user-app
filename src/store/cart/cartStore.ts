@@ -86,6 +86,7 @@ interface CartStore {
   setAppliedCoupon: (cartId: string, coupon: Cart['appliedCoupon']) => void;
   getAppliedCoupon: (cartId: string) => Cart['appliedCoupon'];
   removeAppliedCoupon: (cartId: string) => void;
+  latestRequestIdPerCart: Record<string, number>;
 }
 
 const useCartStore = create<CartStore>()(
@@ -95,32 +96,59 @@ const useCartStore = create<CartStore>()(
       activeCartId: null,
       loading: false,
       error: null,
+      latestRequestIdPerCart: {},
 
       addToCart: async (cartId, product, jwtToken, phone) => {
-        set({ loading: true, error: null });
+        const state = get();
+        const prevCart = state.carts[cartId];
+
+        if (!jwtToken) {
+          set({ error: 'No authentication token available' });
+          return;
+        }
+
+        // optimistic update
+        set(s => {
+          const cart = s.carts[cartId] || { products: {} };
+
+          return {
+            carts: {
+              ...s.carts,
+              [cartId]: {
+                ...cart,
+                products: {
+                  ...cart.products,
+                  [product.sku]: {
+                    ...(cart.products?.[product.sku] || product),
+                    quantity: (cart.products?.[product.sku]?.quantity || 0) + 1,
+                  },
+                },
+              },
+            },
+            error: null,
+          };
+        });
 
         try {
-          if (!jwtToken) {
-            throw new Error('No authentication token available');
-          }
-
-          // Extract shopId from cartId (assuming format: vendor_shopId)
           const shopId = cartId.replace('vendor_', '');
-
-          // Call API to add product
           const apiResponse = await cartApiService.addToCart(shopId, product.sku, jwtToken, phone);
 
-          // Sync local cart with API response
+          // overwrite with API response (ensures discounts/totals are correct)
           get().syncCartWithApi(cartId, apiResponse);
-
-          set({ loading: false });
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to add to cart',
-            loading: false,
-          });
+        } catch (error: any) {
+          // rollback if failed
+          if (prevCart) {
+            set(s => ({
+              carts: {
+                ...s.carts,
+                [cartId]: prevCart,
+              },
+              error: error?.message || 'Failed to add to cart',
+            }));
+          }
         }
       },
+
 
       removeFromCart: async (cartId, sku, jwtToken, phone) => {
         set({ loading: true, error: null });
@@ -150,54 +178,123 @@ const useCartStore = create<CartStore>()(
       },
 
       increment: async (cartId, sku, jwtToken, phone) => {
-        set({ loading: true, error: null });
+        const state = get();
+        const prevCart = state.carts[cartId];
+        if (!prevCart) return;
+
+        // track requests per cart
+        const requestId = (state.latestRequestIdPerCart[cartId] || 0) + 1;
+        set({
+          latestRequestIdPerCart: {
+            ...state.latestRequestIdPerCart,
+            [cartId]: requestId,
+          },
+        });
+
+        // optimistic update
+        set(s => {
+          const cart = s.carts[cartId];
+          if (!cart) return {};
+          return {
+            carts: {
+              ...s.carts,
+              [cartId]: {
+                ...cart,
+                products: {
+                  ...cart.products,
+                  [sku]: {
+                    ...cart.products[sku],
+                    quantity: (cart.products[sku]?.quantity || 0) + 1,
+                  },
+                },
+              },
+            },
+            error: null,
+          };
+        });
+
         try {
-          if (!jwtToken) {
-            throw new Error('No authentication token available');
-          }
-
           const shopId = cartId.replace('vendor_', '');
-
           const apiResponse = await cartApiService.addToCart(shopId, sku, jwtToken, phone);
 
-          // Sync cart with API response (includes updated smartBizOffer)
-          get().syncCartWithApi(cartId, apiResponse);
-
-          set({ loading: false });
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to increment quantity',
-            loading: false,
-          });
+          if (get().latestRequestIdPerCart[cartId] === requestId) {
+            get().syncCartWithApi(cartId, apiResponse);
+          }
+        } catch (error: any) {
+          if (get().latestRequestIdPerCart[cartId] === requestId && prevCart) {
+            set(s => ({
+              carts: {
+                ...s.carts,
+                [cartId]: prevCart,
+              },
+              error: error?.message || 'Failed to increment quantity',
+            }));
+          }
         }
       },
 
+
       decrement: async (cartId, sku, jwtToken, phone) => {
-        set({ loading: true, error: null });
+        const state = get();
+        const prevCart = state.carts[cartId];
+        if (!prevCart) return;
+
+        const requestId = (state.latestRequestIdPerCart[cartId] || 0) + 1;
+        set({
+          latestRequestIdPerCart: {
+            ...state.latestRequestIdPerCart,
+            [cartId]: requestId,
+          },
+        });
+
+        // optimistic update
+        set(s => {
+          const cart = s.carts[cartId];
+          if (!cart) return {};
+          const currentQty = cart.products[sku]?.quantity || 0;
+          if (currentQty <= 0) return {};
+
+          return {
+            carts: {
+              ...s.carts,
+              [cartId]: {
+                ...cart,
+                products: {
+                  ...cart.products,
+                  [sku]: {
+                    ...cart.products[sku],
+                    quantity: currentQty - 1,
+                  },
+                },
+              },
+            },
+            error: null,
+          };
+        });
+
         try {
-          if (!jwtToken) {
-            throw new Error('No authentication token available');
-          }
-
           const shopId = cartId.replace('vendor_', '');
+          const apiResponse = await cartApiService.deleteFromCart(
+            shopId,
+            sku,
+            false,
+            jwtToken,
+            phone
+          );
 
-          const response = await cartApiService.deleteFromCart(shopId, sku, false, jwtToken, phone);
-
-          get().syncCartWithApi(cartId, response);
-          //  Check if there are items left in the cart before calling getCart
-          const currentCart = get().carts[cartId];
-          console.log('currentCart', currentCart);
-          if (currentCart && Object.keys(currentCart.products).length > 0) {
-            // Call getCart API to get the latest cart state
-            const getCartResponse = await cartApiService.getCart(shopId, jwtToken, phone);
-            get().syncCartWithApi(cartId, getCartResponse);
+          if (get().latestRequestIdPerCart[cartId] === requestId) {
+            get().syncCartWithApi(cartId, apiResponse);
           }
-          set({ loading: false });
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to decrement quantity',
-            loading: false,
-          });
+        } catch (error: any) {
+          if (get().latestRequestIdPerCart[cartId] === requestId && prevCart) {
+            set(s => ({
+              carts: {
+                ...s.carts,
+                [cartId]: prevCart,
+              },
+              error: error?.message || 'Failed to decrement quantity',
+            }));
+          }
         }
       },
 

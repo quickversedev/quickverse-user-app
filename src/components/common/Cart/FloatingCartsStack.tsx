@@ -173,6 +173,9 @@ const FloatingCartsStack: React.FC = () => {
             if (!expanded && idx > 0) return null;
             // Guard: skip if animatedValues[idx] is undefined
             if (!animatedValues[idx]) return null;
+            // Guard: skip if cart.cartId is undefined
+            if (!cart.cartId) return null;
+            
             // When collapsed, wrap the cart in TouchableOpacity to expand on press
             const CartContent = (
               <Animated.View
