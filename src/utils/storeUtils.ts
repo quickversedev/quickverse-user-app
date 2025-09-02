@@ -116,7 +116,7 @@ export const isStoreOpen = (config: StoreTimeConfig): StoreStatus => {
 
   try {
     // Validate time format (supports HH:MM AM/PM, HH:MM, and HH.MM.SS)
-    const timeRegex = /^([0-1]?[0-9]|2[0-3])[.:][0-5][0-9]([.:][0-5][0-9])?$|^([0-9]|1[0-2]):[0-5][0-9] (AM|PM)$/;
+    const timeRegex = /^([0-1]?[0-9]|2[0-3])[.:][0-5][0-9]([.:][0-5][0-9])?$|^([0-9]|0[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/;
     if (!timeRegex.test(openingTime) || !timeRegex.test(closingTime)) {
       return {
         isOpen: false,
@@ -244,6 +244,11 @@ export const willStoreBeOpenAt = (config: StoreTimeConfig, targetTime: Date): bo
  */
 export const formatTimeToAMPM = (timeStr: string): string => {
   try {
+    // Check if time is already in AM/PM format
+    if (timeStr.includes('AM') || timeStr.includes('PM')) {
+      return timeStr; // Return as-is if already formatted
+    }
+
     // Handle both formats: "HH.MM.SS" and "HH:MM"
     let timeParts: string[];
     if (timeStr.includes('.')) {

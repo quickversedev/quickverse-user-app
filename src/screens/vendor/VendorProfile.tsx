@@ -470,7 +470,7 @@ const VendorProfileComponent: React.FC = () => {
               style={styles.statIcon}
             />
             <Text style={styles.statValue}>
-              {formatTimeToAMPM(vendor.openingTime)}--{formatTimeToAMPM(vendor.closingTime)}
+              {formatTimeToAMPM(vendor.openingTime)} - {formatTimeToAMPM(vendor.closingTime)}
             </Text>
             <Text style={styles.statLabel}>Timings</Text>
           </View>
