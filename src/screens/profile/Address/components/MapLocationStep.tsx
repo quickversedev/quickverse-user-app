@@ -1,19 +1,19 @@
 import debounce from 'lodash.debounce';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    Image,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,11 +22,11 @@ import { Icons, Images } from '../../../../assets';
 import SectionDivider from '../../../../components/common/SectionDivider';
 import { useLocation } from '../../../../hooks/Permissions/useLocation';
 import {
-    getAddressFromCoordinates,
-    getAutocompleteSuggestions,
-    type AddressComponents,
-    type Location,
-    type SearchResult,
+  getAddressFromCoordinates,
+  getAutocompleteSuggestions,
+  type AddressComponents,
+  type Location,
+  type SearchResult,
 } from '../../../../services/api/olaLocationService';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { getRegionFromLocation } from '../utils/mapUtils';
@@ -38,7 +38,7 @@ interface MapLocationStepProps {
 }
 
 const PIN_SIZE = Math.max(48, width * 0.12);
-const MAP_HEIGHT = height * 0.60;
+const MAP_HEIGHT = height * 0.54;
 
 const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const { getColor, getTypography, theme } = useTheme();
@@ -239,7 +239,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const themedStyles = StyleSheet.create({
     outerContainer: {
       flex: 1,
-      backgroundColor: getColor('background'),
+
     },
     mapContainer: {
       overflow: 'hidden',
@@ -308,6 +308,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
+      zIndex: 100,
     },
     resultItem: {
       padding: 12,
@@ -434,9 +435,16 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   });
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+    <TouchableWithoutFeedback onPress={() => {
+      Keyboard.dismiss();
+      // Close search results when clicking outside
+      if (searchResults.length > 0) {
+        setSearchResults([]);
+
+      }
+    }} accessible={false}>
       <SafeAreaView
-        style={[themedStyles.outerContainer, { paddingTop: insets.top }]}
+        style={[themedStyles.outerContainer]}
         edges={['top', 'bottom']}
         accessible={true}
         accessibilityLabel="Map location selection screen"
@@ -480,10 +488,12 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
               />
             )}
           </MapView>
-          {/* Center Pin Overlay */}
-          <View pointerEvents="none" style={themedStyles.centerPinContainer}>
-            <Image source={Images.mapLocation} style={themedStyles.centerPin} />
-          </View>
+          {/* Center Pin Overlay - Only show when no search results */}
+          {searchResults.length === 0 && (
+            <View pointerEvents="none" style={themedStyles.centerPinContainer}>
+              <Image source={Images.mapLocation} style={themedStyles.centerPin} />
+            </View>
+          )}
           {/* Search Bar Overlay */}
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
