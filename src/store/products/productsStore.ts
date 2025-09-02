@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { Product } from '../../assets/mock/products';
 import productsService, { Category } from '../../services/productsService';
+import { Product } from '../../types/product';
 
 interface ProductsStore {
   products: Product[];
@@ -63,13 +63,38 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       // Handle case where response is directly an array of products
       const newProducts = Array.isArray(response) ? response : response?.products || [];
       const total = response?.total || newProducts.length;
+
+      // Filter products to keep only unique ones based on SKU
+      const filterUniqueProducts = (products: Product[]) => {
+        const seenSkus = new Set<string>();
+        return products.filter(product => {
+          if (product.sku && !seenSkus.has(product.sku)) {
+            seenSkus.add(product.sku);
+            return true;
+          }
+          return false;
+        });
+      };
+
+      // Apply unique filtering to new products and existing products when appending
+      let finalProducts: Product[];
+      if (append) {
+        const existingProducts = get().products;
+        const combinedProducts = [...existingProducts, ...newProducts];
+        finalProducts = filterUniqueProducts(combinedProducts);
+
+      } else {
+        finalProducts = filterUniqueProducts(newProducts);
+
+      }
+
       set(state => ({
-        products: append ? [...state.products, ...newProducts] : newProducts,
-        offset: currentOffset + newProducts.length,
+        products: finalProducts,
+        offset: currentOffset + finalProducts.length,
         total,
-        hasMore: currentOffset + newProducts.length < total,
+        hasMore: currentOffset + finalProducts.length < total,
         loading: false,
-        fullyLoaded: currentOffset + newProducts.length >= total,
+        fullyLoaded: currentOffset + finalProducts.length >= total,
         error: null,
       }));
     } catch (error: unknown) {

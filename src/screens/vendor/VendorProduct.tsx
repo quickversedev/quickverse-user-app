@@ -148,7 +148,7 @@ const VendorProductComponent: React.FC = () => {
   useEffect(() => {
     setShopId(vendor.shopId);
     resetProducts();
-    fetchProducts({ offset: 0, limit: 50 });
+    fetchProducts({ offset: 0, limit: 1000 });
     fetchCategories(vendor.shopId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendor.shopId]);

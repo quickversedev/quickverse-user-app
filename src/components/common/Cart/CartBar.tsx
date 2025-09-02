@@ -2,13 +2,13 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useMemo, useRef } from 'react';
 import {
-  Animated,
-  Dimensions,
-  PanResponder,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-  ViewStyle,
+    Animated,
+    Dimensions,
+    PanResponder,
+    StyleSheet,
+    TouchableOpacity,
+    View,
+    ViewStyle,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
@@ -44,8 +44,9 @@ const CartBar: React.FC<CartBarProps> = ({
   const { getColor } = useTheme();
   const translateX = useRef(new Animated.Value(0)).current;
   const [isRevealed, setIsRevealed] = React.useState(false);
-  const getVendorNameById = useVendorStore(state => state.getVendorNameById);
-  const vendorName = getVendorNameById(shopId) || shopId;
+  const getVendorById = useVendorStore(state => state.getVendorById);
+  const vendor = getVendorById(shopId);
+  const vendorName = vendor?.name || shopId;
   const { navigate } = useNavigation<StackNavigationProp<RootStackParamList>>();
   const clearCart = useCartStore(state => state.clearCart);
   const { authData } = useAuth();
@@ -169,6 +170,11 @@ const CartBar: React.FC<CartBarProps> = ({
       }
     }
   };
+
+  // Don't render CartBar if vendor doesn't exist
+  if (!vendor) {
+    return null;
+  }
 
   return (
     <View style={[styles.stickyContainer, style]}>
