@@ -46,7 +46,7 @@ const showToast = (message: string) => {
  */
 export const API_CONFIG = {
   /** Base URL for the QuickVerse API server */
-  baseURL: 'http://beta.quickverse.in/quickVerse',
+  baseURL: 'http://prd.quickverse.in/quickVerse',
 
   /** Default timeout for all requests (15 seconds) */
   timeout: 15000,
