@@ -63,7 +63,6 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
         authData.phone
       );
       setAddresses(fetchedAddresses);
-      console.log('fetchedAddresses ************************', fetchedAddresses);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch addresses';
       setError(errorMessage);
@@ -103,7 +102,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
     fetchAddresses();
   };
 
-  const defaultAddress = smartBizAddressService.getDefaultAddress();
+  const defaultAddress = smartBizAddressService.getDefaultAddress(vendorId);
 
   const themedStyles = StyleSheet.create({
     backdrop: {

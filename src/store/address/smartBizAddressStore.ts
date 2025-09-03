@@ -41,7 +41,7 @@ class SmartBizAddressService {
   ): Promise<SmartBizAddress[]> {
     const now = Date.now();
     const cachedData = this.vendorCache.get(vendorId);
-    console.log('cachedData', cachedData);
+
     // Check if we have recent data for this specific vendor
     if (
       cachedData &&
@@ -50,7 +50,7 @@ class SmartBizAddressService {
     ) {
       return cachedData.addresses;
     }
-    console.log('shop doesnt exist in cache, calling api');
+
     try {
       const data: SmartBizAddressResponse = await apiCall(
         axiosInstance.get(`/v2/listAddresses?shopId=${vendorId}`, {

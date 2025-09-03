@@ -231,7 +231,7 @@ const CartScreen: React.FC = () => {
     },
     [cart, authData, decrement, featuredProducts, convertToProduct]
   );
-  console.log('selectedSmartBizAddress', selectedSmartBizAddress);
+
   const handleCheckout = useCallback(async () => {
     // const shouldShowCompulsoryModal =
     //   !permissionDataInAuth?.permission ||
