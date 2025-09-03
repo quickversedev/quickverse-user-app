@@ -13,7 +13,7 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
+  View,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -435,245 +435,247 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     >
       {/* Top-level container lets touches pass through unless blocked by children */}
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-        {/* Visual dimming layer (no touch events) */}
-        <View
-          style={[themedStyles.backdrop, { backgroundColor: 'rgba(0, 0, 0, 0.7)' }]}
-          pointerEvents="none"
-        />
-
-        {/* Area above modal that closes when tapped */}
-        <TouchableOpacity
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: screenHeight - MODAL_HEIGHT,
-          }}
-          onPress={handleClose}
-          activeOpacity={1}
-        />
-
-        {/* Search results overlay rendered as a sibling of modal content (so it can capture touches independently) */}
-        {showSearchResults && searchResults.length > 0 && searchLayout.height > 0 && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+          {/* Visual dimming layer (no touch events) */}
           <View
+            style={[themedStyles.backdrop, { backgroundColor: 'rgba(0, 0, 0, 0.7)' }]}
+            pointerEvents="none"
+          />
+
+          {/* Area above modal that closes when tapped */}
+          <TouchableOpacity
             style={{
               position: 'absolute',
-              top: overlayTop,
-              left: 20,
-              right: 20,
-              zIndex: 99999,
-              elevation: 99999,
+              top: 0,
+              left: 0,
+              right: 0,
+              height: screenHeight - MODAL_HEIGHT,
             }}
-            pointerEvents="box-none"
-          >
-            <View style={themedStyles.searchResultsContainer} pointerEvents="auto">
-              {/* wrapper captures touch so list can scroll */}
-              <View onStartShouldSetResponder={() => true}>
-                <FlatList
-                  data={searchResults}
-                  keyExtractor={(item, index) => item.place_id || index.toString()}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={themedStyles.searchResultItem}
-                      onPress={() => handleSearchResultSelect(item)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={themedStyles.searchResultMainText}>
-                        {item.structured_formatting.main_text}
-                      </Text>
-                      <Text style={themedStyles.searchResultSecondaryText}>
-                        {item.structured_formatting.secondary_text}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  style={{ maxHeight: 200 }}
-                  contentContainerStyle={{ paddingVertical: 4 }}
-                  keyboardShouldPersistTaps="handled"
-                  nestedScrollEnabled={true}
-                  keyboardDismissMode="on-drag"
-                  overScrollMode="always"
-                  showsVerticalScrollIndicator={true}
-                />
-              </View>
-            </View>
-          </View>
-        )}
+            onPress={handleClose}
+            activeOpacity={1}
+          />
 
-        {/* Modal Content (rendered on top) */}
-        <View style={themedStyles.modalContainer}>
-          <View style={themedStyles.header}>
-            <TouchableOpacity
-              style={themedStyles.closeButton}
-              onPress={handleClose}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Close address selection"
-              activeOpacity={0.7}
+          {/* Search results overlay rendered as a sibling of modal content (so it can capture touches independently) */}
+          {showSearchResults && searchResults.length > 0 && searchLayout.height > 0 && (
+            <View
+              style={{
+                position: 'absolute',
+                top: overlayTop,
+                left: 20,
+                right: 20,
+                zIndex: 99999,
+                elevation: 99999,
+              }}
+              pointerEvents="box-none"
             >
-              <MaterialCommunityIcons name="close" size={20} color={getColor('text')} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={themedStyles.content}>
-            {/* Search Bar and Current Location Button - Only show if needCompulsoryAddress is false */}
-            {!needCompulsoryAddress && (
-              <>
-                <View
-                  style={themedStyles.searchContainer}
-                  onLayout={e => setSearchLayout(e.nativeEvent.layout)}
-                >
-                  <View style={themedStyles.searchBar}>
-                    <MaterialCommunityIcons
-                      name="magnify"
-                      size={20}
-                      color={getColor('subText')}
-                      style={themedStyles.searchIcon}
-                    />
-                    <TextInput
-                      style={themedStyles.searchInput}
-                      placeholder="Search for locations worldwide..."
-                      placeholderTextColor={getColor('placeholder')}
-                      value={searchQuery}
-                      onChangeText={handleSearchInputChange}
-                      accessible={true}
-                      accessibilityRole="search"
-                      accessibilityLabel="Search for locations worldwide"
-                      returnKeyType="search"
-                      autoCapitalize="words"
-                    />
-                    {searchQuery.length > 0 && (
+              <View style={themedStyles.searchResultsContainer} pointerEvents="auto">
+                {/* wrapper captures touch so list can scroll */}
+                <View onStartShouldSetResponder={() => true}>
+                  <FlatList
+                    data={searchResults}
+                    keyExtractor={(item, index) => item.place_id || index.toString()}
+                    renderItem={({ item }) => (
                       <TouchableOpacity
-                        onPress={handleClearSearch}
-                        accessible={true}
-                        accessibilityRole="button"
-                        accessibilityLabel="Clear search"
-                        accessibilityHint="Clears the search input"
+                        style={themedStyles.searchResultItem}
+                        onPress={() => handleSearchResultSelect(item)}
                         activeOpacity={0.7}
                       >
-                        <MaterialCommunityIcons
-                          name="close-circle"
-                          size={22}
-                          color={getColor('subText')}
-                        />
+                        <Text style={themedStyles.searchResultMainText}>
+                          {item.structured_formatting.main_text}
+                        </Text>
+                        <Text style={themedStyles.searchResultSecondaryText}>
+                          {item.structured_formatting.secondary_text}
+                        </Text>
                       </TouchableOpacity>
                     )}
-                    {searchLoading && (
-                      <ActivityIndicator
-                        size="small"
-                        color={getColor('primary')}
-                        style={{ marginLeft: 8 }}
+                    style={{ maxHeight: 200 }}
+                    contentContainerStyle={{ paddingVertical: 4 }}
+                    keyboardShouldPersistTaps="handled"
+                    nestedScrollEnabled={true}
+                    keyboardDismissMode="on-drag"
+                    overScrollMode="always"
+                    showsVerticalScrollIndicator={true}
+                  />
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Modal Content (rendered on top) */}
+          <View style={themedStyles.modalContainer}>
+            <View style={themedStyles.header}>
+              <TouchableOpacity
+                style={themedStyles.closeButton}
+                onPress={handleClose}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Close address selection"
+                activeOpacity={0.7}
+              >
+                <MaterialCommunityIcons name="close" size={20} color={getColor('text')} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={themedStyles.content}>
+              {/* Search Bar and Current Location Button - Only show if needCompulsoryAddress is false */}
+              {!needCompulsoryAddress && (
+                <>
+                  <View
+                    style={themedStyles.searchContainer}
+                    onLayout={e => setSearchLayout(e.nativeEvent.layout)}
+                  >
+                    <View style={themedStyles.searchBar}>
+                      <MaterialCommunityIcons
+                        name="magnify"
+                        size={20}
+                        color={getColor('subText')}
+                        style={themedStyles.searchIcon}
                       />
+                      <TextInput
+                        style={themedStyles.searchInput}
+                        placeholder="Search for locations worldwide..."
+                        placeholderTextColor={getColor('placeholder')}
+                        value={searchQuery}
+                        onChangeText={handleSearchInputChange}
+                        accessible={true}
+                        accessibilityRole="search"
+                        accessibilityLabel="Search for locations worldwide"
+                        returnKeyType="search"
+                        autoCapitalize="words"
+                      />
+                      {searchQuery.length > 0 && (
+                        <TouchableOpacity
+                          onPress={handleClearSearch}
+                          accessible={true}
+                          accessibilityRole="button"
+                          accessibilityLabel="Clear search"
+                          accessibilityHint="Clears the search input"
+                          activeOpacity={0.7}
+                        >
+                          <MaterialCommunityIcons
+                            name="close-circle"
+                            size={22}
+                            color={getColor('subText')}
+                          />
+                        </TouchableOpacity>
+                      )}
+                      {searchLoading && (
+                        <ActivityIndicator
+                          size="small"
+                          color={getColor('primary')}
+                          style={{ marginLeft: 8 }}
+                        />
+                      )}
+                    </View>
+
+                    <TouchableOpacity
+                      style={themedStyles.currentLocationButton}
+                      onPress={handleUseCurrentLocation}
+                      disabled={locationLoading}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel="Use current location"
+                      accessibilityHint="Sets your current GPS location as the delivery address"
+                      activeOpacity={0.8}
+                    >
+                      <MaterialCommunityIcons
+                        name="crosshairs-gps"
+                        size={20}
+                        color={getColor('white')}
+                      />
+                      <Text style={themedStyles.currentLocationButtonText}>
+                        {locationLoading ? 'Getting Location...' : 'Use Current Location'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+
+              {/* Section Divider */}
+              <View style={themedStyles.sectionDividerContainer}>
+                <SectionDivider text="CHOOSE DELIVERY ADDRESS" fontSize={16} />
+              </View>
+
+              {/* Addresses Section or Login Prompt */}
+              {!isLoggedIn ? (
+                <View style={themedStyles.emptyContainer}>
+                  <Text style={themedStyles.emptyText}>
+                    Please log in to manage your addresses.
+                  </Text>
+                  <LoginButton />
+                </View>
+              ) : (
+                <>
+                  {/* Addresses Container */}
+                  <View style={themedStyles.addressesContainer}>
+                    {loading ? (
+                      <View style={themedStyles.loadingContainer}>
+                        <Text style={themedStyles.emptyText}>Loading addresses...</Text>
+                      </View>
+                    ) : filteredAddresses.length === 0 ? (
+                      <View style={themedStyles.emptyContainer}>
+                        <MaterialCommunityIcons
+                          name="map-marker-off"
+                          size={48}
+                          color={getColor('subText')}
+                          style={{ marginBottom: 16 }}
+                        />
+                        <Text style={themedStyles.emptyText}>
+                          No addresses found. Add your first address to get started.
+                        </Text>
+                      </View>
+                    ) : (
+                      <>
+                        <ScrollView
+                          showsVerticalScrollIndicator={false}
+                          contentContainerStyle={{ paddingBottom: 20 }}
+                          style={{ flex: 1 }}
+                          scrollEnabled={!showSearchResults}
+                          nestedScrollEnabled={true}
+                        >
+                          {filteredAddresses.map((address, index) => (
+                            <View
+                              key={address.addressID || index}
+                              style={themedStyles.addressCardContainer}
+                            >
+                              <AddressCard
+                                address={address}
+                                size="small"
+                                onPress={() => handleAddressSelect(address)}
+                                isSelected={selectedAddress?.addressID === address.addressID}
+                              />
+                            </View>
+                          ))}
+                        </ScrollView>
+                      </>
                     )}
                   </View>
 
+                  {/* Add Address Button */}
                   <TouchableOpacity
-                    style={themedStyles.currentLocationButton}
-                    onPress={handleUseCurrentLocation}
-                    disabled={locationLoading}
+                    style={themedStyles.addButton}
+                    onPress={handleAddNewAddress}
                     accessible={true}
                     accessibilityRole="button"
-                    accessibilityLabel="Use current location"
-                    accessibilityHint="Sets your current GPS location as the delivery address"
+                    accessibilityLabel="Add new address"
+                    accessibilityHint="Opens the add address form"
                     activeOpacity={0.8}
                   >
-                    <MaterialCommunityIcons
-                      name="crosshairs-gps"
-                      size={20}
-                      color={getColor('white')}
-                    />
-                    <Text style={themedStyles.currentLocationButtonText}>
-                      {locationLoading ? 'Getting Location...' : 'Use Current Location'}
-                    </Text>
+                    <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
+                    <Text style={themedStyles.addButtonText}>Add Address Details</Text>
                   </TouchableOpacity>
-                </View>
-              </>
-            )}
-
-            {/* Section Divider */}
-            <View style={themedStyles.sectionDividerContainer}>
-              <SectionDivider text="CHOOSE DELIVERY ADDRESS" fontSize={16} />
+                </>
+              )}
             </View>
-
-            {/* Addresses Section or Login Prompt */}
-            {!isLoggedIn ? (
-              <View style={themedStyles.emptyContainer}>
-                <Text style={themedStyles.emptyText}>Please log in to manage your addresses.</Text>
-                <LoginButton />
-              </View>
-            ) : (
-              <>
-                {/* Addresses Container */}
-                <View style={themedStyles.addressesContainer}>
-                  {loading ? (
-                    <View style={themedStyles.loadingContainer}>
-                      <Text style={themedStyles.emptyText}>Loading addresses...</Text>
-                    </View>
-                  ) : filteredAddresses.length === 0 ? (
-                    <View style={themedStyles.emptyContainer}>
-                      <MaterialCommunityIcons
-                        name="map-marker-off"
-                        size={48}
-                        color={getColor('subText')}
-                        style={{ marginBottom: 16 }}
-                      />
-                      <Text style={themedStyles.emptyText}>
-                        No addresses found. Add your first address to get started.
-                      </Text>
-                    </View>
-                  ) : (
-                    <>
-                      <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 20 }}
-                        style={{ flex: 1 }}
-                        scrollEnabled={!showSearchResults}
-                        nestedScrollEnabled={true}
-                      >
-                        {filteredAddresses.map((address, index) => (
-                          <View
-                            key={address.addressID || index}
-                            style={themedStyles.addressCardContainer}
-                          >
-                            <AddressCard
-                              address={address}
-                              size="small"
-                              onPress={() => handleAddressSelect(address)}
-                              isSelected={selectedAddress?.addressID === address.addressID}
-                            />
-                          </View>
-                        ))}
-                      </ScrollView>
-                    </>
-                  )}
-                </View>
-
-                {/* Add Address Button */}
-                <TouchableOpacity
-                  style={themedStyles.addButton}
-                  onPress={handleAddNewAddress}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel="Add new address"
-                  accessibilityHint="Opens the add address form"
-                  activeOpacity={0.8}
-                >
-                  <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
-                  <Text style={themedStyles.addButtonText}>Add Address Details</Text>
-                </TouchableOpacity>
-              </>
-            )}
           </View>
-        </View>
 
-        {/* Add Address Modal */}
-        <AddAddressModal
-          visible={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          onSave={handleAddAddressSuccess}
-        />
-      </View>
+          {/* Add Address Modal */}
+          <AddAddressModal
+            visible={showAddModal}
+            onClose={() => setShowAddModal(false)}
+            onSave={handleAddAddressSuccess}
+          />
+        </View>
       </TouchableWithoutFeedback>
     </Modal>
   );
