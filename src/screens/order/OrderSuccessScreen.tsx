@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useEffect } from 'react';
 import { Dimensions, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -47,10 +47,29 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
     navigation.navigate('MainApp');
   }, [navigation]);
 
+  // ... existing code ...
+
   const handleTrackOrder = useCallback(() => {
-    // Navigate to OrderDetails with orderId
-    navigation.navigate('OrderDetails', { orderId });
+    // Replace the current screen with MainApp, then navigate to OrderDetails
+    // This ensures that when back is pressed from OrderDetails, it goes to MainApp
+
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 1,
+        routes: [{ name: 'MainApp' }, { name: 'OrderDetails', params: { orderId } }],
+      })
+    );
   }, [navigation, orderId]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleTrackOrder();
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [handleTrackOrder]);
+
+  // ... existing code ...
 
   return (
     <View style={[styles.container, { backgroundColor: getColor('background') }]}>

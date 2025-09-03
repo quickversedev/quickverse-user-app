@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
+  FlatList,
   Modal,
   Platform,
   ScrollView,
@@ -58,6 +59,9 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+
+  // Layout of the search container inside the modal (used to position overlay)
+  const [searchLayout, setSearchLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
   // Default location (Pune, India)
   const defaultLocation: Location = {
@@ -308,30 +312,25 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       includeFontPadding: false,
     },
     searchResultsContainer: {
-      position: 'absolute',
-      top: '100%',
-      left: 0,
-      right: 0,
+      // this container will be used inside the overlay; keep it simple
       backgroundColor: getColor('card'),
       borderRadius: theme.borderRadius.md,
       maxHeight: 200,
       elevation: 8,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: theme.colors.shadow.offset,
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
-      zIndex: 20,
+      zIndex: 9999,
       overflow: 'hidden',
     },
     currentLocationButton: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      // backgroundColor: getColor('primary'),
       paddingHorizontal: 16,
-      // paddingVertical: 12,
+      paddingTop: 16,
       borderRadius: theme.borderRadius.md,
-      // marginTop: 12,
       marginBottom: 16,
     },
     currentLocationButtonText: {
@@ -359,18 +358,14 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       includeFontPadding: false,
       marginTop: 2,
     },
-    sectionDividerContainer: {
-      // marginVertical: 20,
-    },
+    sectionDividerContainer: {},
     addressesContainer: {
       flex: 1,
       borderRadius: theme.borderRadius.md,
       padding: 20,
       maxHeight: MODAL_HEIGHT * 0.6,
     },
-    addressCardContainer: {
-      // marginBottom: 4,
-    },
+    addressCardContainer: {},
     editButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -423,6 +418,10 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     },
   });
 
+  // compute top position for overlay: top of modal + searchLayout.y + searchLayout.height
+  const modalTop = screenHeight - MODAL_HEIGHT;
+  const overlayTop = modalTop + (searchLayout.y || 0) + (searchLayout.height || 0);
+
   return (
     <Modal
       visible={visible}
@@ -432,17 +431,73 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       statusBarTranslucent={true}
       onRequestClose={handleClose}
     >
-      <View style={StyleSheet.absoluteFill}>
-        {/* Backdrop */}
-        <View style={[themedStyles.backdrop, { backgroundColor: 'rgba(0, 0, 0, 0.9)' }]}>
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            onPress={handleClose}
-            activeOpacity={1}
-          />
-        </View>
+      {/* Top-level container lets touches pass through unless blocked by children */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        {/* Visual dimming layer (no touch events) */}
+        <View
+          style={[themedStyles.backdrop, { backgroundColor: 'rgba(0, 0, 0, 0.7)' }]}
+          pointerEvents="none"
+        />
 
-        {/* Modal Content */}
+        {/* Area above modal that closes when tapped */}
+        <TouchableOpacity
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: screenHeight - MODAL_HEIGHT,
+          }}
+          onPress={handleClose}
+          activeOpacity={1}
+        />
+
+        {/* Search results overlay rendered as a sibling of modal content (so it can capture touches independently) */}
+        {showSearchResults && searchResults.length > 0 && searchLayout.height > 0 && (
+          <View
+            style={{
+              position: 'absolute',
+              top: overlayTop,
+              left: 20,
+              right: 20,
+              zIndex: 99999,
+              elevation: 99999,
+            }}
+            pointerEvents="box-none"
+          >
+            <View style={themedStyles.searchResultsContainer} pointerEvents="auto">
+              {/* wrapper captures touch so list can scroll */}
+              <View onStartShouldSetResponder={() => true}>
+                <FlatList
+                  data={searchResults}
+                  keyExtractor={(item, index) => item.place_id || index.toString()}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={themedStyles.searchResultItem}
+                      onPress={() => handleSearchResultSelect(item)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={themedStyles.searchResultMainText}>
+                        {item.structured_formatting.main_text}
+                      </Text>
+                      <Text style={themedStyles.searchResultSecondaryText}>
+                        {item.structured_formatting.secondary_text}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  style={{ maxHeight: 200 }}
+                  contentContainerStyle={{ paddingVertical: 4 }}
+                  keyboardShouldPersistTaps="handled"
+                  nestedScrollEnabled={true}
+                  overScrollMode="always"
+                  showsVerticalScrollIndicator={true}
+                />
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Modal Content (rendered on top) */}
         <View style={themedStyles.modalContainer}>
           <View style={themedStyles.header}>
             <TouchableOpacity
@@ -461,7 +516,10 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
             {/* Search Bar and Current Location Button - Only show if needCompulsoryAddress is false */}
             {!needCompulsoryAddress && (
               <>
-                <View style={themedStyles.searchContainer}>
+                <View
+                  style={themedStyles.searchContainer}
+                  onLayout={e => setSearchLayout(e.nativeEvent.layout)}
+                >
                   <View style={themedStyles.searchBar}>
                     <MaterialCommunityIcons
                       name="magnify"
@@ -506,71 +564,26 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                     )}
                   </View>
 
-                  {/* Search Results Dropdown */}
-                  {showSearchResults && searchResults.length > 0 && (
-                    <View
-                      style={themedStyles.searchResultsContainer}
-                      pointerEvents="box-none"
-                      onStartShouldSetResponder={() => true}
-                      onTouchStart={e => e.stopPropagation()}
-                      onTouchMove={e => e.stopPropagation()}
-                    >
-                      <ScrollView
-                        style={{ maxHeight: 200 }}
-                        contentContainerStyle={{ paddingVertical: 4 }}
-                        keyboardShouldPersistTaps="handled"
-                        showsVerticalScrollIndicator={true}
-                        nestedScrollEnabled={true}
-                        scrollEnabled={true}
-                        onScroll={event => {
-                          // Prevent scroll events from propagating to parent scrollable components
-                          event.stopPropagation();
-                        }}
-                        scrollEventThrottle={16}
-                      >
-                        {searchResults.map((result, index) => (
-                          <TouchableOpacity
-                            key={result.place_id || index}
-                            style={themedStyles.searchResultItem}
-                            onPress={() => handleSearchResultSelect(result)}
-                            accessible={true}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Select ${result.structured_formatting.main_text}`}
-                            accessibilityHint={`Selects ${result.structured_formatting.main_text} as the location`}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={themedStyles.searchResultMainText}>
-                              {result.structured_formatting.main_text}
-                            </Text>
-                            <Text style={themedStyles.searchResultSecondaryText}>
-                              {result.structured_formatting.secondary_text}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
+                  <TouchableOpacity
+                    style={themedStyles.currentLocationButton}
+                    onPress={handleUseCurrentLocation}
+                    disabled={locationLoading}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Use current location"
+                    accessibilityHint="Sets your current GPS location as the delivery address"
+                    activeOpacity={0.8}
+                  >
+                    <MaterialCommunityIcons
+                      name="crosshairs-gps"
+                      size={20}
+                      color={getColor('white')}
+                    />
+                    <Text style={themedStyles.currentLocationButtonText}>
+                      {locationLoading ? 'Getting Location...' : 'Use Current Location'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-
-                <TouchableOpacity
-                  style={themedStyles.currentLocationButton}
-                  onPress={handleUseCurrentLocation}
-                  disabled={locationLoading}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel="Use current location"
-                  accessibilityHint="Sets your current GPS location as the delivery address"
-                  activeOpacity={0.8}
-                >
-                  <MaterialCommunityIcons
-                    name="crosshairs-gps"
-                    size={20}
-                    color={getColor('white')}
-                  />
-                  <Text style={themedStyles.currentLocationButtonText}>
-                    {locationLoading ? 'Getting Location...' : 'Use Current Location'}
-                  </Text>
-                </TouchableOpacity>
               </>
             )}
 
@@ -602,7 +615,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                         style={{ marginBottom: 16 }}
                       />
                       <Text style={themedStyles.emptyText}>
-                        No addresses found.{'\n'}Add your first address to get started.
+                        No addresses found. Add your first address to get started.
                       </Text>
                     </View>
                   ) : (
@@ -660,3 +673,5 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     </Modal>
   );
 };
+
+export default AddressSelectionModal;

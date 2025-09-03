@@ -20,7 +20,7 @@ const VendorLocationEmptyState: React.FC<VendorLocationEmptyStateProps> = ({
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: 40,
+      paddingVertical: 80,
       paddingHorizontal: 20,
       backgroundColor: getColor('background'),
     },
@@ -44,7 +44,7 @@ const VendorLocationEmptyState: React.FC<VendorLocationEmptyStateProps> = ({
     },
     iconContainer: {
       backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      borderRadius: theme.borderRadius.full,
+      borderRadius: theme.borderRadius.max,
       padding: 4,
     },
   });

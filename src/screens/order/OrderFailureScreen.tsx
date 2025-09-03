@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { RootStackParamList } from '../../routes/AppStack';
@@ -20,7 +20,13 @@ const OrderFailureScreen: React.FC<OrderFailureScreenProps> = ({ route }) => {
   const { getColor } = useTheme();
   const navigation = useNavigation<OrderFailureScreenNavigationProp>();
   const { errorMessage } = route.params;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigation.navigate('MainApp');
+    }, 3000);
 
+    return () => clearTimeout(timer);
+  }, [navigation]);
   const handleBackToHome = () => {
     navigation.navigate('MainApp');
   };

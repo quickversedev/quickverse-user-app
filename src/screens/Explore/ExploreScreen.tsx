@@ -78,25 +78,77 @@ const ExploreScreen = () => {
   }, []);
 
   // Custom vendor marker component for better iOS compatibility
-  const VendorMarker = useCallback(({ vendor, coordinates }: { vendor: Vendor; coordinates: any }) => {
-    if (Platform.OS === 'ios') {
+  const VendorMarker = useCallback(
+    ({ vendor, coordinates }: { vendor: Vendor; coordinates: any }) => {
+      if (Platform.OS === 'ios') {
+        return (
+          <Marker key={vendor.shopId} coordinate={coordinates} anchor={{ x: 0.5, y: 1.0 }}>
+            <View style={styles.iosVendorPin}>
+              <MaterialCommunityIcons name="store" size={16} color={getColor('white')} />
+            </View>
+            <Callout tooltip onPress={() => navigation.navigate('VendorProduct', { vendor })}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('VendorProduct', { vendor })}
+                activeOpacity={0.8}
+                style={styles.calloutContainer}
+              >
+                <View
+                  style={[
+                    styles.calloutCard,
+                    { backgroundColor: getColor('card'), borderColor: getColor('border') },
+                  ]}
+                >
+                  <ThemeText
+                    variant="subtitle"
+                    color={getColor('text')}
+                    style={styles.calloutTitle}
+                  >
+                    {vendor.name || 'Vendor'}
+                  </ThemeText>
+                  <ThemeText
+                    variant="caption"
+                    color={getColor('subText')}
+                    style={styles.calloutSubtitle}
+                  >
+                    {typeof vendor.rating === 'number' && vendor.rating > 0
+                      ? `${vendor.category || 'Vendor'} • ${vendor.rating}★`
+                      : vendor.category || 'Vendor'}
+                  </ThemeText>
+                  <ThemeText
+                    variant="caption"
+                    color={getColor('text')}
+                    style={styles.calloutDescription}
+                    numberOfLines={2}
+                  >
+                    {vendor.description || ''}
+                  </ThemeText>
+                  <View style={styles.calloutActions}>
+                    <View style={[styles.calloutButton, { backgroundColor: getColor('primary') }]}>
+                      <ThemeText
+                        variant="small"
+                        color={getColor('white')}
+                        style={styles.calloutButtonText}
+                      >
+                        View
+                      </ThemeText>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </Callout>
+          </Marker>
+        );
+      }
+
+      // Android marker with image
       return (
         <Marker
           key={vendor.shopId}
           coordinate={coordinates}
           anchor={{ x: 0.5, y: 1.0 }}
+          image={Images.foodPin}
         >
-          <View style={styles.iosVendorPin}>
-            <MaterialCommunityIcons
-              name="store"
-              size={16}
-              color={getColor('white')}
-            />
-          </View>
-          <Callout
-            tooltip
-            onPress={() => navigation.navigate('VendorProduct', { vendor })}
-          >
+          <Callout tooltip onPress={() => navigation.navigate('VendorProduct', { vendor })}>
             <TouchableOpacity
               onPress={() => navigation.navigate('VendorProduct', { vendor })}
               activeOpacity={0.8}
@@ -108,11 +160,7 @@ const ExploreScreen = () => {
                   { backgroundColor: getColor('card'), borderColor: getColor('border') },
                 ]}
               >
-                <ThemeText
-                  variant="subtitle"
-                  color={getColor('text')}
-                  style={styles.calloutTitle}
-                >
+                <ThemeText variant="subtitle" color={getColor('text')} style={styles.calloutTitle}>
                   {vendor.name || 'Vendor'}
                 </ThemeText>
                 <ThemeText
@@ -133,12 +181,7 @@ const ExploreScreen = () => {
                   {vendor.description || ''}
                 </ThemeText>
                 <View style={styles.calloutActions}>
-                  <View
-                    style={[
-                      styles.calloutButton,
-                      { backgroundColor: getColor('primary') },
-                    ]}
-                  >
+                  <View style={[styles.calloutButton, { backgroundColor: getColor('primary') }]}>
                     <ThemeText
                       variant="small"
                       color={getColor('white')}
@@ -153,77 +196,9 @@ const ExploreScreen = () => {
           </Callout>
         </Marker>
       );
-    }
-
-    // Android marker with image
-    return (
-      <Marker
-        key={vendor.shopId}
-        coordinate={coordinates}
-        anchor={{ x: 0.5, y: 1.0 }}
-        image={Images.foodPin}
-      >
-        <Callout
-          tooltip
-          onPress={() => navigation.navigate('VendorProduct', { vendor })}
-        >
-          <TouchableOpacity
-            onPress={() => navigation.navigate('VendorProduct', { vendor })}
-            activeOpacity={0.8}
-            style={styles.calloutContainer}
-          >
-            <View
-              style={[
-                styles.calloutCard,
-                { backgroundColor: getColor('card'), borderColor: getColor('border') },
-              ]}
-            >
-              <ThemeText
-                variant="subtitle"
-                color={getColor('text')}
-                style={styles.calloutTitle}
-              >
-                {vendor.name || 'Vendor'}
-              </ThemeText>
-              <ThemeText
-                variant="caption"
-                color={getColor('subText')}
-                style={styles.calloutSubtitle}
-              >
-                {typeof vendor.rating === 'number' && vendor.rating > 0
-                  ? `${vendor.category || 'Vendor'} • ${vendor.rating}★`
-                  : vendor.category || 'Vendor'}
-              </ThemeText>
-              <ThemeText
-                variant="caption"
-                color={getColor('text')}
-                style={styles.calloutDescription}
-                numberOfLines={2}
-              >
-                {vendor.description || ''}
-              </ThemeText>
-              <View style={styles.calloutActions}>
-                <View
-                  style={[
-                    styles.calloutButton,
-                    { backgroundColor: getColor('primary') },
-                  ]}
-                >
-                  <ThemeText
-                    variant="small"
-                    color={getColor('white')}
-                    style={styles.calloutButtonText}
-                  >
-                    View
-                  </ThemeText>
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </Callout>
-      </Marker>
-    );
-  }, [getColor, navigation, styles]);
+    },
+    [getColor, navigation, styles]
+  );
 
   // Memoized vendors based on selected address
   const memoizedVendors = useMemo(() => {
@@ -471,7 +446,7 @@ const ExploreScreen = () => {
       ? 'Refreshing vendors...'
       : selectedAddress?.coordinates
       ? `5km radius from ${selectedAddress.name || 'your saved address'} (${
-          vendors.length
+          memoizedVendors.length
         } vendors)`
       : '5km radius from your location';
 
@@ -520,7 +495,7 @@ const ExploreScreen = () => {
                   radius={5000} // 5km in meters
                   fillColor="rgba(255, 152, 0, 0.15)" // More visible orange fill
                   strokeColor="rgba(255, 152, 0, 0.8)" // Much more visible orange border
-                  strokeWidth={3} // Thicker border
+                  strokeWidth={2} // Thicker border
                 />
 
                 {/* Additional smaller circle for better visibility */}
@@ -532,7 +507,7 @@ const ExploreScreen = () => {
                   radius={1000} // 1km inner circle
                   fillColor="rgba(255, 152, 0, 0.05)" // Very light fill
                   strokeColor="rgba(255, 152, 0, 0.4)" // Medium visibility border
-                  strokeWidth={2}
+                  strokeWidth={4}
                 />
               </>
             )}
