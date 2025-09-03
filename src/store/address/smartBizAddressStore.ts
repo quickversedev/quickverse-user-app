@@ -1,5 +1,3 @@
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
 import axiosInstance, { apiCall } from '../../config/api/axios.config';
 
 export interface SmartBizAddress {
@@ -26,128 +24,121 @@ export interface SmartBizAddressResponse {
   addresses: SmartBizAddress[];
 }
 
-interface SmartBizAddressState {
+interface VendorAddressCache {
   addresses: SmartBizAddress[];
   defaultAddressId: string | null;
-  loading: boolean;
-  error: string | null;
-  lastFetched: number | null;
-
-  // Actions
-  fetchAddresses: (vendorId: string, sessionKey: string, phone: string) => Promise<void>;
-  setAddresses: (addresses: SmartBizAddress[], defaultAddressId: string) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  clearError: () => void;
-  reset: () => void;
-
-  // Computed
-  getDefaultAddress: () => SmartBizAddress | null;
-  getAddressById: (id: string) => SmartBizAddress | null;
-  getAddressesByTag: (tag: string) => SmartBizAddress[];
+  lastFetched: number;
 }
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+class SmartBizAddressService {
+  private vendorCache: Map<string, VendorAddressCache> = new Map();
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-export const useSmartBizAddressStore = create<SmartBizAddressState>()(
-  devtools(
-    (set, get) => ({
-      addresses: [],
-      defaultAddressId: null,
-      loading: false,
-      error: null,
-      lastFetched: null,
-
-      fetchAddresses: async (vendorId: string, sessionKey: string, phone: string) => {
-        const state = get();
-        const now = Date.now();
-
-        // Check if we have recent data
-        if (
-          state.lastFetched &&
-          now - state.lastFetched < CACHE_DURATION &&
-          state.addresses.length > 0
-        ) {
-          return;
-        }
-
-        set({ loading: true, error: null });
-        //console.log('fetching addresse s from smart biz');
-        try {
-          const data: SmartBizAddressResponse = await apiCall(
-            axiosInstance.get(`/v2/listAddresses?shopId=${vendorId}`, {
-              headers: {
-                SessionKey: sessionKey,
-                phone: phone,
-              },
-            })
-          );
-          //console.log('smart biz address data', data);
-          set({
-            addresses: data.addresses,
-            defaultAddressId: data.defaultAddressId,
-            loading: false,
-            error: null,
-            lastFetched: now,
-          });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch addresses';
-          set({
-            loading: false,
-            error: errorMessage,
-          });
-        }
-      },
-
-      setAddresses: (addresses: SmartBizAddress[], defaultAddressId: string) => {
-        set({
-          addresses,
-          defaultAddressId,
-          lastFetched: Date.now(),
-        });
-      },
-
-      setLoading: (loading: boolean) => {
-        set({ loading });
-      },
-
-      setError: (error: string | null) => {
-        set({ error });
-      },
-
-      clearError: () => {
-        set({ error: null });
-      },
-
-      reset: () => {
-        set({
-          addresses: [],
-          defaultAddressId: null,
-          loading: false,
-          error: null,
-          lastFetched: null,
-        });
-      },
-
-      // Computed getters
-      getDefaultAddress: () => {
-        const state = get();
-        if (!state.defaultAddressId) return null;
-        return state.addresses.find(addr => addr.id === state.defaultAddressId) || null;
-      },
-
-      getAddressById: (id: string) => {
-        const state = get();
-        return state.addresses.find(addr => addr.id === id) || null;
-      },
-
-      getAddressesByTag: (tag: string) => {
-        const state = get();
-        return state.addresses.filter(addr => addr.address.tag === tag);
-      },
-    }),
-    {
-      name: 'smart-biz-address-store',
+  async fetchAddresses(
+    vendorId: string,
+    sessionKey: string,
+    phone: string
+  ): Promise<SmartBizAddress[]> {
+    const now = Date.now();
+    const cachedData = this.vendorCache.get(vendorId);
+    console.log('cachedData', cachedData);
+    // Check if we have recent data for this specific vendor
+    if (
+      cachedData &&
+      now - cachedData.lastFetched < this.CACHE_DURATION &&
+      cachedData.addresses.length > 0
+    ) {
+      return cachedData.addresses;
     }
-  )
-);
+    console.log('shop doesnt exist in cache, calling api');
+    try {
+      const data: SmartBizAddressResponse = await apiCall(
+        axiosInstance.get(`/v2/listAddresses?shopId=${vendorId}`, {
+          headers: {
+            SessionKey: sessionKey,
+            phone: phone,
+          },
+        })
+      );
+
+      // Cache the data for this specific vendor
+      this.vendorCache.set(vendorId, {
+        addresses: data.addresses,
+        defaultAddressId: data.defaultAddressId,
+        lastFetched: now,
+      });
+
+      return data.addresses;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch addresses';
+      throw new Error(errorMessage);
+    }
+  }
+
+  setAddresses(vendorId: string, addresses: SmartBizAddress[], defaultAddressId: string): void {
+    this.vendorCache.set(vendorId, {
+      addresses,
+      defaultAddressId,
+      lastFetched: Date.now(),
+    });
+  }
+
+  getAddresses(vendorId: string): SmartBizAddress[] {
+    const cachedData = this.vendorCache.get(vendorId);
+    return cachedData?.addresses || [];
+  }
+
+  getDefaultAddress(vendorId: string): SmartBizAddress | null {
+    const cachedData = this.vendorCache.get(vendorId);
+    if (!cachedData?.defaultAddressId) return null;
+    return cachedData.addresses.find(addr => addr.id === cachedData.defaultAddressId) || null;
+  }
+
+  getAddressById(vendorId: string, id: string): SmartBizAddress | null {
+    const cachedData = this.vendorCache.get(vendorId);
+    if (!cachedData) return null;
+    return cachedData.addresses.find(addr => addr.id === id) || null;
+  }
+
+  getAddressesByTag(vendorId: string, tag: string): SmartBizAddress[] {
+    const cachedData = this.vendorCache.get(vendorId);
+    if (!cachedData) return [];
+    return cachedData.addresses.filter(addr => addr.address.tag === tag);
+  }
+
+  clearCache(vendorId?: string): void {
+    if (vendorId) {
+      // Clear cache for specific vendor
+      this.vendorCache.delete(vendorId);
+    } else {
+      // Clear all cache
+      this.vendorCache.clear();
+    }
+  }
+
+  isDataStale(vendorId: string): boolean {
+    const cachedData = this.vendorCache.get(vendorId);
+    if (!cachedData) return true;
+    return Date.now() - cachedData.lastFetched > this.CACHE_DURATION;
+  }
+
+  getCachedVendors(): string[] {
+    return Array.from(this.vendorCache.keys());
+  }
+
+  getCacheInfo(vendorId: string): { hasData: boolean; isStale: boolean; addressCount: number } {
+    const cachedData = this.vendorCache.get(vendorId);
+    if (!cachedData) {
+      return { hasData: false, isStale: true, addressCount: 0 };
+    }
+
+    return {
+      hasData: true,
+      isStale: this.isDataStale(vendorId),
+      addressCount: cachedData.addresses.length,
+    };
+  }
+}
+
+// Export a singleton instance
+export const smartBizAddressService = new SmartBizAddressService();

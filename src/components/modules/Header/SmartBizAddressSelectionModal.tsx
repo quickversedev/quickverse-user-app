@@ -16,7 +16,7 @@ import { useAuth } from '../../../contexts/login/AuthProvider';
 import AddAddressModal from '../../../screens/profile/Address/AddAddressModal';
 import {
   SmartBizAddress,
-  useSmartBizAddressStore,
+  smartBizAddressService,
 } from '../../../store/address/smartBizAddressStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import SectionDivider from '../../common/SectionDivider';
@@ -41,17 +41,42 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
 }) => {
   const { getColor, getTypography, theme } = useTheme();
   const { authData } = useAuth();
-  const { addresses, loading, error, fetchAddresses, getDefaultAddress } =
-    useSmartBizAddressStore();
+
+  // Local state for addresses
+  const [addresses, setAddresses] = useState<SmartBizAddress[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const isLoggedIn = Boolean(authData?.jwt);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  const fetchAddresses = async () => {
+    if (!isLoggedIn || !vendorId || !authData?.jwt || !authData?.phone) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const fetchedAddresses = await smartBizAddressService.fetchAddresses(
+        vendorId,
+        authData.jwt,
+        authData.phone
+      );
+      setAddresses(fetchedAddresses);
+      console.log('fetchedAddresses ************************', fetchedAddresses);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch addresses';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (visible && isLoggedIn && vendorId && authData?.jwt && authData?.phone) {
-      fetchAddresses(vendorId, authData.jwt, authData.phone);
+      fetchAddresses();
     }
-  }, [visible, isLoggedIn, vendorId, authData?.jwt, authData?.phone, fetchAddresses]);
+  }, [visible, isLoggedIn, vendorId, authData?.jwt, authData?.phone]);
 
   const handleClose = () => {
     onClose();
@@ -64,7 +89,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
 
   const handleRetry = () => {
     if (isLoggedIn && vendorId && authData?.jwt && authData?.phone) {
-      fetchAddresses(vendorId, authData.jwt, authData.phone);
+      fetchAddresses();
     }
   };
 
@@ -74,9 +99,11 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
 
   const handleAddAddressSuccess = () => {
     setShowAddModal(false);
+    // Refresh addresses after adding new one
+    fetchAddresses();
   };
 
-  const defaultAddress = getDefaultAddress();
+  const defaultAddress = smartBizAddressService.getDefaultAddress();
 
   const themedStyles = StyleSheet.create({
     backdrop: {

@@ -23,7 +23,7 @@ import { RootStackParamList } from '../../routes/AppStack';
 import orderService, { CreateOrderRequest } from '../../services/createOrderService';
 import createPaymentService, { CreatePaymentRequest } from '../../services/createPaymentService';
 import { getCODCharges } from '../../services/paymentService';
-import { SmartBizAddress, useSmartBizAddressStore } from '../../store/address/smartBizAddressStore';
+import { SmartBizAddress, smartBizAddressService } from '../../store/address/smartBizAddressStore';
 import useCartStore from '../../store/cart/cartStore';
 import useCouponStore from '../../store/cart/couponStore';
 import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
@@ -65,7 +65,6 @@ const CartScreen: React.FC = () => {
     vendorOffersError,
     customerOffersError,
   } = useCouponStore();
-  const { fetchAddresses } = useSmartBizAddressStore();
 
   // Auth hooks
   const { selectedAddress, setSelectedAddress, permissionDataInAuth, authData } = useAuth();
@@ -232,7 +231,7 @@ const CartScreen: React.FC = () => {
     },
     [cart, authData, decrement, featuredProducts, convertToProduct]
   );
-
+  console.log('selectedSmartBizAddress', selectedSmartBizAddress);
   const handleCheckout = useCallback(async () => {
     // const shouldShowCompulsoryModal =
     //   !permissionDataInAuth?.permission ||
@@ -431,15 +430,15 @@ const CartScreen: React.FC = () => {
     const initializeCart = async () => {
       if (vendor?.shopId && authData?.jwt && authData?.phone) {
         // Fetch addresses first
-        await fetchAddresses(vendor.shopId, authData.jwt, authData.phone);
-
+        await smartBizAddressService.fetchAddresses(vendor.shopId, authData.jwt, authData.phone);
+        // console.log('smartBizAddressService.fetchAddresses', smartBizAddressService.getAddresses());
         // Then fetch coupons after addresses are loaded
         await checkAndFetchOffers(vendor.shopId, authData);
       }
     };
 
     initializeCart();
-  }, [vendor?.shopId, authData?.jwt, authData?.phone, checkAndFetchOffers, fetchAddresses]);
+  }, [vendor?.shopId, authData?.jwt, authData?.phone, checkAndFetchOffers]);
 
   // Revalidate coupons when cart contents change
   React.useEffect(() => {

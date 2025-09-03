@@ -73,6 +73,7 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
                 opacity: 0.3 + Math.random() * 0.7,
                 left: Math.random() * width * 0.8 + width * 0.1,
                 top: Math.random() * height * 0.3 + height * 0.1,
+                zIndex: 1, // Ensure dots are behind the success circle
               },
             ]}
           />
@@ -157,6 +158,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
+    paddingVertical: 20,
     marginBottom: 16,
   },
   orderInfo: {

@@ -270,6 +270,9 @@ const useOrderStore = create<OrderStore>((set, get) => ({
           image: item.productDetails?.productImageUrl,
         })),
         totalAmount: Number(apiOrder.totalOrderAmount || 0),
+        totalInvoiceAmount: Number(apiOrder.totalOrderAmount || 0),
+        deliveryFees: Number(apiOrder.deliveryFees || 0),
+        additionalPaymentCharges: Number(apiOrder.additionalPaymentCharges || 0),
         status: normalizeStatus(apiOrder.state),
         orderDate:
           typeof apiOrder.creationTime === 'string' && /\D/.test(apiOrder.creationTime)

@@ -54,7 +54,7 @@ const OrderDetailsScreen = () => {
 
   React.useEffect(() => {
     if (orderId) {
-      loadOrderById(orderId);
+      loadOrderById(orderId, selectedOrder?.shopId);
     }
   }, [orderId, loadOrderById]);
 
