@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
+  Keyboard,
   Modal,
   Platform,
   ScrollView,
@@ -11,7 +12,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  TouchableWithoutFeedback,
+  View
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -432,6 +434,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       onRequestClose={handleClose}
     >
       {/* Top-level container lets touches pass through unless blocked by children */}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
         {/* Visual dimming layer (no touch events) */}
         <View
@@ -489,6 +492,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                   contentContainerStyle={{ paddingVertical: 4 }}
                   keyboardShouldPersistTaps="handled"
                   nestedScrollEnabled={true}
+                  keyboardDismissMode="on-drag"
                   overScrollMode="always"
                   showsVerticalScrollIndicator={true}
                 />
@@ -670,6 +674,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
           onSave={handleAddAddressSuccess}
         />
       </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };
