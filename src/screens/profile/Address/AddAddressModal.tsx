@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { AddressComponents } from '../../../services/api/olaLocationService';
@@ -134,7 +134,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       alignItems: 'center',
       paddingHorizontal: Math.max(16, width * 0.04),
       paddingTop: Platform.OS === 'ios' ? Math.max(insets.top + 4, 8) : Math.max(16, width * 0.04),
-      // paddingBottom: Math.max(16, width * 0.04),
+      paddingBottom: Math.max(16, width * 0.04),
       borderBottomWidth: 1,
       borderBottomColor: getColor('border'),
       backgroundColor: getColor('card'),
@@ -177,57 +177,51 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
 
   return (
     <Modal
-      visible={visible}
-      animationType="slide"
-      onRequestClose={handleBack}
-      presentationStyle="fullScreen"
-    >
-      <SafeAreaView
-        style={{  flex: 1,backgroundColor: getColor('background') }}
-        accessible={true}
-        accessibilityLabel="Add address modal"
-      >
-        <View style={themedStyles.header}>
-          <TouchableOpacity
-            onPress={handleBack}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={
-              step === 1 ? 'Cancel adding address' : 'Go back to location selection'
-            }
-            accessibilityHint={
-              step === 1 ? 'Closes the add address form' : 'Returns to the previous step'
-            }
-            activeOpacity={0.7}
-          >
-            <MaterialCommunityIcons name="arrow-left-thick" size={25} color={getColor('primary')} />
-          </TouchableOpacity>
-          <Text
-            style={themedStyles.title}
-            accessible={true}
-            accessibilityRole="header"
-            accessibilityLabel={step === 1 ? 'Select location step' : 'Add address details step'}
-          >
-            {step === 1 ? 'Select Location' : 'Add Address Details'}
-          </Text>
-          <View style={themedStyles.placeholder} />
-        </View>
+  visible={visible}
+  animationType="slide"
+  onRequestClose={handleBack}
+  presentationStyle="fullScreen"
+>
+  <View
+    style={{
+      flex: 1,
+      backgroundColor: getColor('background'),
+      // paddingTop: insets.top,     // ✅ handles notch/status bar
+      paddingBottom: insets.bottom, // ✅ handles iPhone home indicator
+    }}
+  >
+    {/* Header */}
+    <View style={themedStyles.header}>
+      <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
+        <MaterialCommunityIcons
+          name="arrow-left-thick"
+          size={25}
+          color={getColor('primary')}
+        />
+      </TouchableOpacity>
+      <Text style={themedStyles.title}>
+        {step === 1 ? 'Select Location' : 'Add Address Details'}
+      </Text>
+      <View style={themedStyles.placeholder} />
+    </View>
 
-        {step === 1 ? (
-          <MapLocationStep onLocationSelect={handleLocationSelect} />
-        ) : (
-          <AddressDetailsStep
-            location={location}
-            selectedAddressDescription={selectedAddressDescription}
-            details={addressDetails}
-            onDetailsChange={setAddressDetails}
-            onSave={handleSaveAddress}
-            onSuccess={handleAddressSaveSuccess}
-            apiError={apiError}
-          />
-        )}
-      </SafeAreaView>
-    </Modal>
+    {/* Body */}
+    {step === 1 ? (
+      <MapLocationStep onLocationSelect={handleLocationSelect} />
+    ) : (
+      <AddressDetailsStep
+        location={location}
+        selectedAddressDescription={selectedAddressDescription}
+        details={addressDetails}
+        onDetailsChange={setAddressDetails}
+        onSave={handleSaveAddress}
+        onSuccess={handleAddressSaveSuccess}
+        apiError={apiError}
+      />
+    )}
+  </View>
+</Modal>
+
   );
 };
 

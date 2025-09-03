@@ -1,6 +1,6 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MapView, { Callout, Circle, Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -66,6 +66,164 @@ const ExploreScreen = () => {
   const getVendorPin = useCallback(() => {
     return Images.foodPin; // flag.png
   }, []);
+
+  // Helper function to get vendor pin with proper iOS handling
+  const getVendorPinForPlatform = useCallback((vendor: Vendor) => {
+    // For iOS, we'll use a custom marker component instead of image prop
+    // This ensures better compatibility and visibility
+    if (Platform.OS === 'ios') {
+      return null; // Return null to use custom marker component
+    }
+    return Images.foodPin; // Use image prop for Android
+  }, []);
+
+  // Custom vendor marker component for better iOS compatibility
+  const VendorMarker = useCallback(({ vendor, coordinates }: { vendor: Vendor; coordinates: any }) => {
+    if (Platform.OS === 'ios') {
+      return (
+        <Marker
+          key={vendor.shopId}
+          coordinate={coordinates}
+          anchor={{ x: 0.5, y: 1.0 }}
+        >
+          <View style={styles.iosVendorPin}>
+            <MaterialCommunityIcons
+              name="store"
+              size={16}
+              color={getColor('white')}
+            />
+          </View>
+          <Callout
+            tooltip
+            onPress={() => navigation.navigate('VendorProduct', { vendor })}
+          >
+            <TouchableOpacity
+              onPress={() => navigation.navigate('VendorProduct', { vendor })}
+              activeOpacity={0.8}
+              style={styles.calloutContainer}
+            >
+              <View
+                style={[
+                  styles.calloutCard,
+                  { backgroundColor: getColor('card'), borderColor: getColor('border') },
+                ]}
+              >
+                <ThemeText
+                  variant="subtitle"
+                  color={getColor('text')}
+                  style={styles.calloutTitle}
+                >
+                  {vendor.name || 'Vendor'}
+                </ThemeText>
+                <ThemeText
+                  variant="caption"
+                  color={getColor('subText')}
+                  style={styles.calloutSubtitle}
+                >
+                  {typeof vendor.rating === 'number' && vendor.rating > 0
+                    ? `${vendor.category || 'Vendor'} • ${vendor.rating}★`
+                    : vendor.category || 'Vendor'}
+                </ThemeText>
+                <ThemeText
+                  variant="caption"
+                  color={getColor('text')}
+                  style={styles.calloutDescription}
+                  numberOfLines={2}
+                >
+                  {vendor.description || ''}
+                </ThemeText>
+                <View style={styles.calloutActions}>
+                  <View
+                    style={[
+                      styles.calloutButton,
+                      { backgroundColor: getColor('primary') },
+                    ]}
+                  >
+                    <ThemeText
+                      variant="small"
+                      color={getColor('white')}
+                      style={styles.calloutButtonText}
+                    >
+                      View
+                    </ThemeText>
+                  </View>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Callout>
+        </Marker>
+      );
+    }
+
+    // Android marker with image
+    return (
+      <Marker
+        key={vendor.shopId}
+        coordinate={coordinates}
+        anchor={{ x: 0.5, y: 1.0 }}
+        image={Images.foodPin}
+      >
+        <Callout
+          tooltip
+          onPress={() => navigation.navigate('VendorProduct', { vendor })}
+        >
+          <TouchableOpacity
+            onPress={() => navigation.navigate('VendorProduct', { vendor })}
+            activeOpacity={0.8}
+            style={styles.calloutContainer}
+          >
+            <View
+              style={[
+                styles.calloutCard,
+                { backgroundColor: getColor('card'), borderColor: getColor('border') },
+              ]}
+            >
+              <ThemeText
+                variant="subtitle"
+                color={getColor('text')}
+                style={styles.calloutTitle}
+              >
+                {vendor.name || 'Vendor'}
+              </ThemeText>
+              <ThemeText
+                variant="caption"
+                color={getColor('subText')}
+                style={styles.calloutSubtitle}
+              >
+                {typeof vendor.rating === 'number' && vendor.rating > 0
+                  ? `${vendor.category || 'Vendor'} • ${vendor.rating}★`
+                  : vendor.category || 'Vendor'}
+              </ThemeText>
+              <ThemeText
+                variant="caption"
+                color={getColor('text')}
+                style={styles.calloutDescription}
+                numberOfLines={2}
+              >
+                {vendor.description || ''}
+              </ThemeText>
+              <View style={styles.calloutActions}>
+                <View
+                  style={[
+                    styles.calloutButton,
+                    { backgroundColor: getColor('primary') },
+                  ]}
+                >
+                  <ThemeText
+                    variant="small"
+                    color={getColor('white')}
+                    style={styles.calloutButtonText}
+                  >
+                    View
+                  </ThemeText>
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Callout>
+      </Marker>
+    );
+  }, [getColor, navigation, styles]);
 
   // Memoized vendors based on selected address
   const memoizedVendors = useMemo(() => {
@@ -245,6 +403,30 @@ const ExploreScreen = () => {
       // borderWidth: 2,
       // borderColor: '#FF6B6B',
     },
+    // iOS-specific vendor pin styles
+    iosVendorPin: {
+      width: 32,
+      height: 32,
+      backgroundColor: getColor('error'),
+      borderRadius: 16,
+      borderWidth: 2,
+      borderColor: getColor('white'),
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: getColor('shadow'),
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 4,
+      // Ensure proper positioning on iOS
+      position: 'absolute',
+      top: -16, // Center the pin on the marker position
+      left: -16,
+    },
+    iosVendorPinIcon: {
+      color: getColor('white'),
+      fontSize: 16,
+    },
 
     calloutContainer: {
       alignItems: 'center',
@@ -360,73 +542,7 @@ const ExploreScreen = () => {
               const coordinates = getVendorCoordinates(vendor);
               if (!coordinates) return null;
 
-              return (
-                <Marker
-                  key={vendor.shopId}
-                  coordinate={coordinates}
-                  anchor={{ x: 0.5, y: 1.0 }}
-                  image={getVendorPin()}
-                >
-                  <Callout
-                    tooltip
-                    onPress={() => navigation.navigate('VendorProduct', { vendor })}
-                  >
-                    <TouchableOpacity
-                      onPress={() => navigation.navigate('VendorProduct', { vendor })}
-                      activeOpacity={0.8}
-                      style={styles.calloutContainer}
-                    >
-                      <View
-                        style={[
-                          styles.calloutCard,
-                          { backgroundColor: getColor('card'), borderColor: getColor('border') },
-                        ]}
-                      >
-                        <ThemeText
-                          variant="subtitle"
-                          color={getColor('text')}
-                          style={styles.calloutTitle}
-                        >
-                          {vendor.name || 'Vendor'}
-                        </ThemeText>
-                        <ThemeText
-                          variant="caption"
-                          color={getColor('subText')}
-                          style={styles.calloutSubtitle}
-                        >
-                          {typeof vendor.rating === 'number' && vendor.rating > 0
-                            ? `${vendor.category || 'Vendor'} • ${vendor.rating}★`
-                            : vendor.category || 'Vendor'}
-                        </ThemeText>
-                        <ThemeText
-                          variant="caption"
-                          color={getColor('text')}
-                          style={styles.calloutDescription}
-                          numberOfLines={2}
-                        >
-                          {vendor.description || ''}
-                        </ThemeText>
-                        <View style={styles.calloutActions}>
-                          <View
-                            style={[
-                              styles.calloutButton,
-                              { backgroundColor: getColor('primary') },
-                            ]}
-                          >
-                            <ThemeText
-                              variant="small"
-                              color={getColor('white')}
-                              style={styles.calloutButtonText}
-                            >
-                              View
-                            </ThemeText>
-                          </View>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  </Callout>
-                </Marker>
-              );
+              return <VendorMarker key={vendor.shopId} vendor={vendor} coordinates={coordinates} />;
             })}
           </MapView>
         ) : (
