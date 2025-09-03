@@ -90,7 +90,13 @@ const CartScreen: React.FC = () => {
 
   // Memoized derived state
   const cart = useMemo(() => {
-    return cartId ? carts[cartId] : activeCartId ? carts[activeCartId] : undefined;
+    const selectedCart = cartId ? carts[cartId] : activeCartId ? carts[activeCartId] : undefined;
+    // Ensure cart has required properties
+    if (selectedCart && !selectedCart.cartId) {
+      console.warn('Cart missing cartId property:', selectedCart);
+      return undefined;
+    }
+    return selectedCart;
   }, [cartId, activeCartId, carts]);
 
   const cartItems = useMemo(() => {
@@ -98,7 +104,8 @@ const CartScreen: React.FC = () => {
   }, [cart]);
 
   const vendor = useMemo(() => {
-    return vendors.find(v => v.shopId === cart?.cartId.replace('vendor_', ''));
+    if (!cart?.cartId) return undefined;
+    return vendors.find(v => v.shopId === cart.cartId.replace('vendor_', ''));
   }, [vendors, cart?.cartId]);
 
   const appliedCoupon = useMemo(() => {
@@ -157,7 +164,7 @@ const CartScreen: React.FC = () => {
   const convertToProduct = useCallback(
     (item: { id: string; name: string; price: number; image: number }, index: number): Product => {
       if (index === -1) throw new Error('Invalid suggested item');
-      const shopId = cart?.cartId.replace('vendor_', '') || '';
+      const shopId = cart?.cartId ? cart.cartId.replace('vendor_', '') : '';
       return {
         sku: item.id,
         shopId,
@@ -475,10 +482,10 @@ const CartScreen: React.FC = () => {
   ]);
 
   React.useEffect(() => {
-    if (cartItems.length === 0) {
+    if (!cart || cartItems.length === 0) {
       navigation.goBack();
     }
-  }, [cartItems.length, navigation]);
+  }, [cart, cartItems.length, navigation]);
 
   // Set default payment option when payment methods are loaded
   React.useEffect(() => {
@@ -529,6 +536,11 @@ const CartScreen: React.FC = () => {
     };
     fetchFeatured();
   }, [vendor?.shopId, getFeaturedProducts]);
+
+  // Early return if cart or vendor is not available
+  if (!cart || !vendor) {
+    return null;
+  }
 
   return (
     <SafeAreaView

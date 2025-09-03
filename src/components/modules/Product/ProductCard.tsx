@@ -38,8 +38,8 @@ interface ProductCardProps {
 // Extract styles outside component to prevent recreation on every render
 const createStyles = (
   size: 'xs' | 'small' | 'regular',
-  getColor: (color: string) => string,
-  getTypography: (size: string) => number,
+  getColor: (color: any) => string,
+  getTypography: (type: 'small' | 'caption' | 'h1' | 'h2' | 'subtitle' | 'body') => number,
   theme: { borderRadius: { sm: number } },
   veg: boolean,
   backgroundColor?: string
@@ -135,7 +135,7 @@ const createStyles = (
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(128, 128, 128, 0.7)',
+      backgroundColor: 'rgba(202, 198, 198, 0.15)',
       zIndex: 10,
       justifyContent: 'center',
       alignItems: 'center',
@@ -186,13 +186,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
     veg,
   } = product;
 
-  const imageSource: ImageSourcePropType = useMemo(
-    () =>
-      typeof image === 'string'
-        ? { uri: image }
-        : image || require('../../../assets/images/food.png'),
-    [image]
-  );
+  const imageSource: ImageSourcePropType = useMemo(() => {
+    if (typeof image === 'string' && image.trim()) {
+      // Clean the URL by removing invalid characters and whitespace
+      const cleanUrl = image.trim().replace(/^@+/, ''); // Remove leading @ symbols
+      if (cleanUrl && cleanUrl.startsWith('http')) {
+        return { uri: cleanUrl };
+      }
+    }
+    if (image && typeof image === 'object') {
+      return image;
+    }
+    return require('../../../assets/images/food.png');
+  }, [image]);
 
   const styles = useMemo(
     () => createStyles(size, getColor, getTypography, theme, veg, backgroundColor),
@@ -217,8 +223,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
           resizeMode="cover"
           // Ensure proper image fitting
           onError={() => console.warn('Failed to load image:', image)}
+          // Add fallback image
+          defaultSource={require('../../../assets/images/food.png')}
           // Add loading indicator
-          loadingIndicatorSource={require('../../../assets/images/food.png')}
         />
 
         {showRating && (
@@ -233,10 +240,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {showDiscount && (
           <View style={styles.badgeTag}>
             <BadgeTag
-              value={discount}
-              color="#F44336"
+              text={`${discount}%`}
+              variant="error"
               size={size === 'xs' ? 'small' : size === 'regular' ? 'medium' : size}
-              orientation="vertical"
             />
           </View>
         )}

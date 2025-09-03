@@ -16,7 +16,7 @@ const BadgeTag: React.FC<BadgeTagProps> = ({
   size = 'medium',
   style,
 }) => {
-  const { getColor, theme } = useTheme();
+  const { getColor } = useTheme();
 
   const getVariantStyles = () => {
     switch (variant) {
@@ -50,7 +50,8 @@ const BadgeTag: React.FC<BadgeTagProps> = ({
   const styles = StyleSheet.create({
     container: {
       backgroundColor: variantStyles.backgroundColor,
-      borderRadius: sizeStyles.borderRadius,
+      // borderRadius: sizeStyles.borderRadius,
+      borderBottomRightRadius: sizeStyles.borderRadius,
       paddingHorizontal: sizeStyles.paddingHorizontal,
       paddingVertical: sizeStyles.paddingVertical,
       alignSelf: 'flex-start',

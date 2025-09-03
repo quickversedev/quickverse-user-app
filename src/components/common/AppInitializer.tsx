@@ -119,7 +119,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
 
   useAppStateRefresh({
     onForeground: refreshAppData,
-    refreshThreshold: 12000, // Refresh after 2 minute in background
+    refreshThreshold: 120000, // Refresh after 2 minute in background
     enabled: isLoggedIn && isInitialized,
   });
 

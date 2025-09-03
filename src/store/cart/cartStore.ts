@@ -107,6 +107,16 @@ const useCartStore = create<CartStore>()(
           return;
         }
 
+        // track requests per cart
+        const requestId = (state.latestRequestIdPerCart[cartId] || 0) + 1;
+        set({
+          latestRequestIdPerCart: {
+            ...state.latestRequestIdPerCart,
+            [cartId]: requestId,
+          },
+          error: null,
+        });
+
         // optimistic update
         set(s => {
           const cart = s.carts[cartId] || { products: {} };
@@ -125,7 +135,6 @@ const useCartStore = create<CartStore>()(
                 },
               },
             },
-            error: null,
           };
         });
 
@@ -133,11 +142,13 @@ const useCartStore = create<CartStore>()(
           const shopId = cartId.replace('vendor_', '');
           const apiResponse = await cartApiService.addToCart(shopId, product.sku, jwtToken, phone);
 
-          // overwrite with API response (ensures discounts/totals are correct)
-          get().syncCartWithApi(cartId, apiResponse);
+          // only accept latest response
+          if (get().latestRequestIdPerCart[cartId] === requestId) {
+            get().syncCartWithApi(cartId, apiResponse);
+          }
         } catch (error: any) {
-          // rollback if failed
-          if (prevCart) {
+          // rollback if latest request failed
+          if (get().latestRequestIdPerCart[cartId] === requestId && prevCart) {
             set(s => ({
               carts: {
                 ...s.carts,

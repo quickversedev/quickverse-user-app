@@ -133,7 +133,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: Math.max(16, width * 0.04),
-      paddingTop: Platform.OS === 'ios' ? Math.max(insets.top + 4, 8) : Math.max(16, width * 0.04),
+      paddingTop: Platform.OS === 'ios' ? 8 : 16,
       // paddingBottom: Math.max(16, width * 0.04),
       borderBottomWidth: 1,
       borderBottomColor: getColor('border'),
@@ -183,7 +183,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       presentationStyle="fullScreen"
     >
       <SafeAreaView
-        style={{  flex: 1,backgroundColor: getColor('background') }}
+        style={{ flex: 1, backgroundColor: getColor('background') }}
         accessible={true}
         accessibilityLabel="Add address modal"
       >

@@ -22,11 +22,6 @@ const FloatingCartsStack: React.FC = () => {
     state.orders.some(o => o.status !== 'delivered' && o.status !== 'cancelled')
   );
 
-  // Only render when user is logged in
-  if (!authData?.jwt || !authData?.phone) {
-    return null;
-  }
-
   // Sort carts: most recently active at the top
   const sortedCarts = [...allCarts].sort((a, b) => {
     if (a.cartId === activeCartId) return -1;
@@ -114,6 +109,11 @@ const FloatingCartsStack: React.FC = () => {
   // Only hide if there are no carts AND no in-progress order to show
   if (allCarts.length === 0 && !hasInProgressOrder) return null;
 
+  // Only render when user is logged in
+  if (!authData?.jwt || !authData?.phone) {
+    return null;
+  }
+
   // Show a hint of the next cart behind the first when collapsed
   const showSecondCartBehind = !expanded && sortedCarts.length > 1;
 
@@ -150,7 +150,7 @@ const FloatingCartsStack: React.FC = () => {
                 name="chevron-up"
                 size={28}
                 color={getColor('primary')}
-                // style={styles.chevronIcon}regist
+                style={styles.chevronIcon}
               />
             )}
           </TouchableOpacity>
@@ -175,7 +175,7 @@ const FloatingCartsStack: React.FC = () => {
             if (!animatedValues[idx]) return null;
             // Guard: skip if cart.cartId is undefined
             if (!cart.cartId) return null;
-            
+
             // When collapsed, wrap the cart in TouchableOpacity to expand on press
             const CartContent = (
               <Animated.View
@@ -197,9 +197,12 @@ const FloatingCartsStack: React.FC = () => {
                 ]}
               >
                 <CartBar
-                  itemCount={Object.values(cart.products).reduce((sum, p) => sum + p.quantity, 0)}
-                  shopId={cart.cartId.replace('vendor_', '')}
-                  cartId={cart.cartId}
+                  itemCount={Object.values(cart.products || {}).reduce(
+                    (sum, p) => sum + (p?.quantity || 0),
+                    0
+                  )}
+                  shopId={cart.cartId ? cart.cartId.replace('vendor_', '') : ''}
+                  cartId={cart.cartId || ''}
                   isExpanded={expanded || allCarts.length === 1}
                   onExpand={() => setExpanded(true)}
                 />

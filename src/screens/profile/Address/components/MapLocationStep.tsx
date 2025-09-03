@@ -16,7 +16,7 @@ import {
   View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Icons, Images } from '../../../../assets';
 import SectionDivider from '../../../../components/common/SectionDivider';
@@ -43,7 +43,7 @@ const MAP_HEIGHT = height * 0.54;
 
 const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const { getColor, getTypography, theme } = useTheme();
-  const insets = useSafeAreaInsets();
+
   const {
     checkLocationPermission,
     requestLocationPermission,

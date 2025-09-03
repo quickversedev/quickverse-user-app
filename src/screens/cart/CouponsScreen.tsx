@@ -256,7 +256,13 @@ const CouponsScreen: React.FC = () => {
 
   // Get current cart and vendor
   const cart = activeCartId ? carts[activeCartId] : Object.values(carts)[0];
-  const vendor = vendors.find(v => v.shopId === cart?.cartId.replace('vendor_', ''));
+  // Ensure cart has required properties
+  if (cart && !cart.cartId) {
+    console.warn('Cart missing cartId property:', cart);
+  }
+  const vendor = cart?.cartId
+    ? vendors.find(v => v.shopId === cart.cartId.replace('vendor_', ''))
+    : undefined;
   const vendorId = vendor?.shopId || '';
 
   // Get vendor-specific coupons
@@ -329,6 +335,11 @@ const CouponsScreen: React.FC = () => {
     // Clear the error state by calling the store method
     useCouponStore.setState({ applyCouponError: null });
   };
+
+  // Early return if cart is not properly configured
+  if (!cart?.cartId || !vendor) {
+    return null;
+  }
 
   const styles = StyleSheet.create({
     container: {
