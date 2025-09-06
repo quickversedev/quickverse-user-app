@@ -15,13 +15,7 @@ interface GeolocationPosition {
   coords: {
     latitude: number;
     longitude: number;
-    accuracy: number;
-    altitude: number | null;
-    altitudeAccuracy: number | null;
-    heading: number | null;
-    speed: number | null;
   };
-  timestamp: number;
 }
 
 interface GeolocationError {
@@ -37,7 +31,7 @@ type Location = {
 
 export type PermissionAndLocation = {
   permission: PermissionStatus;
-  location: { latitude: number; longitude: number };
+  location: { latitude: number; longitude: number } | null;
 };
 
 export const useLocation = () => {
@@ -58,106 +52,129 @@ export const useLocation = () => {
     []
   );
 
+  /** 🔹 Single helper to update state */
+  const updateLocation = (coords: { latitude: number; longitude: number }) => {
+    setLocation({ ...coords, error: null });
+  };
+
+  /** 🔹 Wrap Geolocation.getCurrentPosition into Promise */
+  const fetchLocation = useCallback(
+    (options: { enableHighAccuracy: boolean; timeout: number; maximumAge: number }) =>
+      new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+        if (hasSkippedLocation) {
+          reject(new Error('Location permission skipped by user'));
+          return;
+        }
+        Geolocation.getCurrentPosition(
+          (pos: GeolocationPosition) => {
+            const coords = {
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+            };
+            updateLocation(coords);
+            resolve(coords);
+          },
+          (err: GeolocationError) => {
+            setLocation({ latitude: null, longitude: null, error: err.message });
+            reject(err);
+          },
+          options
+        );
+      }),
+    [hasSkippedLocation]
+  );
+
+  /** 🔹 Check permission */
   const checkLocationPermission = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await check(locationPermission);
       setPermissionStatus(result);
-      // Reset hasSkippedLocation if permission is granted
+
       if (result === RESULTS.GRANTED) {
         setHasSkippedLocation(false);
         setSkipPermissions(false);
       }
       return result;
-    } catch (error) {
-      console.error('Error checking location permission:', error);
-      setPermissionStatus(RESULTS.UNAVAILABLE);
-      return RESULTS.UNAVAILABLE;
     } finally {
       setIsLoading(false);
     }
   }, [locationPermission]);
 
-  const getCurrentLocation = useCallback(
-    (highAccuracy = false) => {
-      return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
-        if (hasSkippedLocation) {
-          setLocation({
-            latitude: null,
-            longitude: null,
-            error: 'Location permission skipped by user',
-          });
-          reject(new Error('Location permission skipped by user'));
-          return;
-        }
-
-        setIsLoading(true);
-        Geolocation.getCurrentPosition(
-          (position: GeolocationPosition) => {
-            const coords = {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            };
-            setLocation({
-              ...coords,
-              error: null,
-            });
-            setIsLoading(false);
-            resolve(coords);
-          },
-          (error: GeolocationError) => {
-            setLocation({
-              latitude: null,
-              longitude: null,
-              error: error.message,
-            });
-            setIsLoading(false);
-            reject(error);
-          },
-          {
-            enableHighAccuracy: highAccuracy,
-            timeout: 15000,
-            maximumAge: 10000,
-          }
-        );
-      });
-    },
-    [hasSkippedLocation]
-  );
-
+  /** 🔹 Request permission */
   const requestLocationPermission = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await request(locationPermission);
       setPermissionStatus(result);
-      // If user grants permission, reset the skipped flag
+
       if (result === RESULTS.GRANTED) {
         setHasSkippedLocation(false);
         setSkipPermissions(false);
       }
       return result;
-    } catch (error) {
-      console.error('Error requesting location permission:', error);
-      setPermissionStatus(RESULTS.UNAVAILABLE);
-      return RESULTS.UNAVAILABLE;
     } finally {
       setIsLoading(false);
     }
   }, [locationPermission]);
 
+  /** 🔹 Optimized permission + location fetch */
+  const getPermissionAndLocation = useCallback(async (): Promise<PermissionAndLocation> => {
+    try {
+      const permission = await check(locationPermission);
+      setPermissionStatus(permission);
+
+      if (permission !== RESULTS.GRANTED) {
+        return { permission, location: null };
+      }
+
+      // 1. Try quick cached fix
+      const cached = await fetchLocation({
+        enableHighAccuracy: false,
+        timeout: 3000,
+        maximumAge: 5 * 60 * 1000,
+      }).catch(() => null);
+
+      if (cached) {
+        // Fire background refresh, but don’t block UI
+        fetchLocation({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }).catch(err =>
+          console.warn('Background location refresh failed:', err.message)
+        );
+        console.log('cached', cached);
+
+        return { permission, location: cached };
+      }
+
+      // 2. Otherwise, wait for a fresh fix
+      const live = await fetchLocation({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+      return { permission, location: live };
+    } catch (err: any) {
+      console.error('❌ [useLocation] Error in getPermissionAndLocation:', err);
+      setPermissionStatus(RESULTS.UNAVAILABLE);
+      setLocation({
+        latitude: null,
+        longitude: null,
+        error: err?.message ?? 'Unknown error',
+      });
+      return { permission: RESULTS.UNAVAILABLE, location: null };
+    }
+  }, [locationPermission, fetchLocation]);
+
+  /** 🔹 Skip flow */
+  const skipLocationPermission = () => {
+    setSkipPermissions(true);
+    setHasSkippedLocation(true);
+    setPermissionStatus(RESULTS.DENIED);
+    setLocation({ latitude: null, longitude: null, error: 'Location permission skipped by user' });
+  };
+
+  /** 🔹 Denied permission modal */
   const handleDeniedPermissionModal = () => {
     Alert.alert(
       'Permission Required',
       'We need access to your location to provide accurate results and personalized services. Please enable location permissions in your device settings.',
       [
-        {
-          text: 'Skip',
-          onPress: () => {
-            handleSkipPermission();
-            setPermissionStatus(RESULTS.DENIED);
-          },
-          style: 'cancel',
-        },
+        { text: 'Skip', onPress: skipLocationPermission, style: 'cancel' },
         {
           text: 'Open Settings',
           onPress: () => openSettings().catch(() => console.warn('Cannot open settings')),
@@ -166,132 +183,26 @@ export const useLocation = () => {
     );
   };
 
-  const handleSkipPermission = () => {
-    setSkipPermissions(true);
-    setHasSkippedLocation(true);
-  };
-
-  const skipLocationPermission = () => {
-    handleSkipPermission();
-    setPermissionStatus(RESULTS.DENIED);
-    setLocation({
-      latitude: null,
-      longitude: null,
-      error: 'Location permission skipped by user',
-    });
-  };
-
-  /**
-   * Optimized function that returns both permission status and current location
-   * This function minimizes time by checking permission and getting location in sequence
-   * Returns: { permission: string, location: { latitude: number, longitude: number } | null }
-   */
-  const getPermissionAndLocation = useCallback(async () => {
-    try {
-      // Step 1: Check permission status
-      const permission = await check(locationPermission);
-
-      // Update state immediately
-      setPermissionStatus(permission);
-
-      // Step 2: If permission granted, get location immediately
-      if (permission === RESULTS.GRANTED) {
-        // Reset skipped flags
-        setHasSkippedLocation(false);
-        setSkipPermissions(false);
-
-        // Get location with optimized settings
-        const locationResult = await new Promise<{ latitude: number; longitude: number }>(
-          (resolve, reject) => {
-            // Note: Once permission is granted above, we should not block
-            // location retrieval based on any previously skipped state.
-            // Proceed to fetch current position.
-
-            Geolocation.getCurrentPosition(
-              (position: GeolocationPosition) => {
-                const coords = {
-                  latitude: position.coords.latitude,
-                  longitude: position.coords.longitude,
-                };
-                // Update state immediately
-                setLocation({
-                  ...coords,
-                  error: null,
-                });
-
-                resolve(coords);
-              },
-              (error: GeolocationError) => {
-                const errorState = {
-                  latitude: null,
-                  longitude: null,
-                  error: error.message,
-                };
-                setLocation(errorState);
-                console.warn('❌ [useLocation] Location fetch failed:', error.message);
-                reject(error);
-              },
-              {
-                enableHighAccuracy: false, // Faster, less battery
-                timeout: 10000, // Reduced timeout for faster failure
-                maximumAge: 30000, // Accept cached location up to 30 seconds
-              }
-            );
-          }
-        );
-
-        return {
-          permission,
-          location: locationResult,
-        };
-      } else {
-        // Permission not granted, return null location
-        return {
-          permission,
-          location: null,
-        };
-      }
-    } catch (error) {
-      console.error('❌ [useLocation] Error in getPermissionAndLocation:', error);
-      setPermissionStatus(RESULTS.UNAVAILABLE);
-      setLocation({
-        latitude: null,
-        longitude: null,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-
-      return {
-        permission: RESULTS.UNAVAILABLE,
-        location: null,
-      };
-    }
-  }, [locationPermission, hasSkippedLocation]);
-
+  /** 🔹 Check permission on app focus */
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
-    const checkInitialPermissions = async () => {
-      const hasSkippedPermissions = await getSkipPermission();
-      if (isMounted) {
-        if (hasSkippedPermissions) {
-          setHasSkippedLocation(true);
-        }
+    (async () => {
+      if (await getSkipPermission()) {
+        setHasSkippedLocation(true);
+      }
+      if (mounted) checkLocationPermission();
+    })();
+
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active' && mounted) {
         checkLocationPermission();
       }
-    };
-
-    const handleAppStateChange = (nextAppState: string) => {
-      if (nextAppState === 'active' && isMounted) {
-        checkLocationPermission();
-      }
-    };
-
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-    checkInitialPermissions();
+    });
 
     return () => {
-      isMounted = false;
-      subscription.remove();
+      mounted = false;
+      sub.remove();
     };
   }, [checkLocationPermission]);
 
@@ -300,12 +211,13 @@ export const useLocation = () => {
     isLoading,
     location,
     hasSkippedLocation,
-    getCurrentLocation,
+    getCurrentLocation: fetchLocation,
     checkLocationPermission,
     requestLocationPermission,
+    getPermissionAndLocation,
     handleDeniedPermissionModal,
     skipLocationPermission,
-    getPermissionAndLocation,
+    // derived helpers
     isGranted: permissionStatus === RESULTS.GRANTED,
     isDenied: permissionStatus === RESULTS.DENIED,
     isBlocked: permissionStatus === RESULTS.BLOCKED,

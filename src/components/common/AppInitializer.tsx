@@ -51,6 +51,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   // UI state
   const [isInitialized, setIsInitialized] = useState(false);
   const initializationRef = useRef(false);
+  const prevAddressRef = useRef<Address | null>(null);
 
   // Store hooks for data fetching
   const { fetchVendors, loading: vendorLoading, error: vendorError, setError } = useVendorStore();
@@ -297,29 +298,36 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     getDefaultLocation,
   ]);
 
-  const initializeApp = useCallback(async () => {
+  const initializeApp = useCallback(async (): Promise<void> => {
     if (initializationRef.current) return;
     initializationRef.current = true;
-
+    console.log('isLoggedIn in app initializer', selectedAddress);
     try {
+      let storedAddresses: Address[] = [];
       // Step 1: Load addresses from MMKV storage first
       if (isLoggedIn) {
-        loadAddressesFromStorage();
+        storedAddresses = await loadAddressesFromStorage();
       }
 
-      // Step 2: Fetch config in parallel
+      // Step 2: Fetch config in parallel - use selectedAddress if available, otherwise use locationData
       const configPromise = fetchInitialConfig({
-        longitude: locationData?.location?.longitude?.toString(),
-        latitude: locationData?.location?.latitude?.toString(),
+        longitude:
+          selectedAddress?.coordinates?.longitude?.toString() ||
+          locationData?.location?.longitude?.toString(),
+        latitude:
+          selectedAddress?.coordinates?.latitude?.toString() ||
+          locationData?.location?.latitude?.toString(),
       });
-
       // Step 3: Handle address fetching based on MMKV storage state
       const addressPromise = isLoggedIn
         ? (async () => {
-            if (!cachedAddresses || cachedAddresses.length === 0) {
+            console.log('storedAddresses in app initializer', storedAddresses);
+            if (!storedAddresses || storedAddresses.length === 0) {
               // MMKV storage is empty, wait for API call to resolve
+              console.log('cachedAddresses', cachedAddresses);
               await fetchAddresses();
             } else {
+              console.log('Not cachedAddresses', cachedAddresses);
               fetchAddresses().catch(() => {
                 // Silently handle API errors for non-blocking calls
               });
@@ -333,9 +341,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       await Promise.allSettled([fetchTheme(), fetchPages()]);
 
       // Step 5: Initialize selected address
-      await (async () => {
-        await initializeSelectedAddress();
-      })();
+      await initializeSelectedAddress();
 
       // Step 6: Fetch orders if user is logged in
       if (isLoggedIn && authData?.jwt && authData?.phone) {
@@ -355,6 +361,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     isLoggedIn,
     locationData?.location?.latitude,
     locationData?.location?.longitude,
+    selectedAddress,
     cachedAddresses,
     authData?.jwt,
     authData?.phone,
@@ -378,13 +385,31 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   }, [initializeApp]);
 
   useEffect(() => {
-    if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
-      fetchVendors(selectedAddress.coordinates).then(() => {
+    const prev = prevAddressRef.current;
+    const curr = selectedAddress;
+
+    if (!prev && curr) {
+      // null → address (first set), skip
+      prevAddressRef.current = curr;
+      fetchVendors(curr.coordinates).then(() => {
         setIsInitialized(true);
       });
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAddress?.coordinates?.latitude, selectedAddress?.coordinates?.longitude]);
+
+    if (prev && curr && prev.addressID !== curr.addressID) {
+      setIsInitialized(false);
+      initializationRef.current = false;
+
+      initializeApp().then(() => {
+        fetchVendors(curr.coordinates).then(() => {
+          setIsInitialized(true);
+        });
+      });
+    }
+
+    prevAddressRef.current = curr;
+  }, [selectedAddress, initializeApp, fetchVendors]);
 
   // Show skeleton loader during initialization
   if (isLoading) {

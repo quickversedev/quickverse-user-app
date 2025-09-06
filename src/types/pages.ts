@@ -1,5 +1,3 @@
-import { AuthSession } from '../services/localStorage/storage.service';
-
 export interface Promotion {
   shopId: string;
   title: string;
@@ -23,7 +21,7 @@ export interface PagesState {
 }
 
 export interface PagesActions {
-  fetchPages: (regionId: string, authSession: AuthSession) => Promise<void>;
+  fetchPages: (regionId: string) => Promise<void>;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;

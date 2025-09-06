@@ -68,9 +68,12 @@ const useAddressStore = create<AddressStore>((set, get) => ({
       const storedAddresses = getUserAddresses();
       if (storedAddresses) {
         set({ addresses: storedAddresses });
+        return storedAddresses;
       }
+      return [];
     } catch (err) {
       console.error('Error loading addresses from storage:', err);
+      return [];
     }
   },
 

@@ -18,6 +18,7 @@ import { usePromotions } from '../../../../hooks/usePromotions';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import useVendorStore from '../../../../store/vendorStore';
 import { useTheme } from '../../../../theme/ThemeContext';
+import { Vendor } from '../../../../types/vendor';
 import { getStoreStatus } from '../../../../utils/storeUtils';
 
 const { width } = Dimensions.get('window');
@@ -41,14 +42,14 @@ const PharmacyContentComponent: React.FC<PharmacyContentProps> = ({
 
   // Directly use vendor store - vendors are pre-sorted
   const { getVendorsByCategory } = useVendorStore();
-  const pharmacyVendors = useMemo(() => getVendorsByCategory('Pharmacy'), [getVendorsByCategory]);
+  const pharmacyVendors = getVendorsByCategory('Pharmacy');
   const hasVendors = pharmacyVendors.length > 0;
 
   const { promotions: bannerData, hasPromotions } = usePromotions('Pharmacy');
 
   // Memoize vendor press handler
   const handleVendorPress = useCallback(
-    (vendor: any) => {
+    (vendor: Vendor) => {
       navigation.navigate('VendorProduct', { vendor });
     },
     [navigation]
