@@ -29,20 +29,7 @@ class DeviceInfoService {
    */
   private async getDeviceInfo(): Promise<Partial<DeviceInfoRequest>> {
     try {
-      const [
-        deviceId,
-        deviceType,
-        deviceModel,
-        osVersion,
-        appVersion,
-        uniqueId,
-        brand,
-        model,
-        systemVersion,
-        version,
-        buildNumber,
-        isTablet,
-      ] = await Promise.all([
+      const [deviceId, uniqueId, brand, model, systemVersion, version] = await Promise.all([
         DeviceInfo.getDeviceId(),
         Platform.OS,
         DeviceInfo.getModel(),
