@@ -1,35 +1,51 @@
-import { createStackNavigator } from '@react-navigation/stack';
-import React, { useEffect } from 'react';
-import { useAuth } from '../contexts/login/AuthProvider';
-import { useLocationPermission } from '../hooks/Permissions/usePermissions';
-import { useNotifications } from '../hooks/useNotifications';
+import {
+  CardStyleInterpolators,
+  createStackNavigator,
+  TransitionSpecs,
+} from '@react-navigation/stack';
+import React from 'react';
+import { Platform } from 'react-native';
 import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
-import Registration from '../screens/login/Registration';
+import CartScreen from '../screens/cart/CartScreen';
+import CouponsScreen from '../screens/cart/CouponsScreen';
+
+import OrderFailureScreen from '../screens/order/OrderFailureScreen';
+import OrderSuccessScreen from '../screens/order/OrderSuccessScreen';
+import AboutUsScreen from '../screens/profile/AboutUsScreen';
+import AddressScreen from '../screens/profile/Address/AddressScreen';
+import HelpDeskScreen from '../screens/profile/HelpDeskScreen';
+import OrderDetailsScreen from '../screens/profile/orders/OrderDetailsScreen';
+import SearchScreen from '../screens/search/SearchScreen';
+import ProductDetailDemo from '../screens/vendor/ProductDetailDemo';
+import VendorDetails from '../screens/vendor/VendorDetails';
+import VendorProduct from '../screens/vendor/VendorProduct';
+import VendorProfile from '../screens/vendor/VendorProfile';
+import { Vendor } from '../types/vendor';
 
 export type RootStackParamList = {
   MainApp: undefined;
   Profile: undefined;
+  VendorProduct: { vendor: Vendor; searchQuery?: string };
+  VendorProfile: { vendor: Vendor };
+  VendorDetails: { vendor: Vendor };
+  ProductDetailDemo: undefined;
+  Cart: { cartId: string } | undefined;
+  Orders: undefined;
+  OrderDetails: { orderId: string };
+  OrderSuccess: { orderId: string; amount: number; date: string; shopId?: string };
+  OrderFailure: { errorMessage?: string };
+  Coupons: undefined;
+
+  Search: undefined;
+  Address: undefined;
+  HelpDesk: undefined;
+  AboutUs: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 export const AppStack = () => {
-  const { isDenied, handleDeniedPermissionModal } = useLocationPermission();
-  const { isNewUser } = useAuth();
-  const { requestPermissions } = useNotifications();
-
-  useEffect(() => {
-    if (isDenied) {
-      handleDeniedPermissionModal();
-    }
-    requestPermissions();
-  }, [handleDeniedPermissionModal, isDenied, requestPermissions]);
-
-  if (isNewUser) {
-    return <Registration />;
-  }
-
   return (
     <Stack.Navigator
       screenOptions={{
@@ -38,6 +54,78 @@ export const AppStack = () => {
     >
       <Stack.Screen name="MainApp" component={TabNavigation} />
       <Stack.Screen name="Profile" component={ProfileStack} />
+      <Stack.Screen name="VendorProduct" component={VendorProduct} />
+      <Stack.Screen name="VendorProfile" component={VendorProfile} />
+      <Stack.Screen
+        name="VendorDetails"
+        component={VendorDetails}
+        options={{
+          presentation: 'modal',
+          animationEnabled: true,
+          gestureEnabled: true,
+          gestureDirection: 'vertical-inverted',
+          cardStyleInterpolator: ({ current, layouts }) => ({
+            cardStyle: {
+              transform: [
+                {
+                  translateY: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-layouts.screen.height, 0],
+                  }),
+                },
+              ],
+            },
+            overlayStyle: {
+              opacity: current.progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 0.1],
+              }),
+            },
+          }),
+          transitionSpec: {
+            open: { animation: 'timing', config: { duration: 280 } },
+            close: { animation: 'timing', config: { duration: 240 } },
+          },
+        }}
+      />
+      <Stack.Screen name="ProductDetailDemo" component={ProductDetailDemo} />
+      <Stack.Screen name="Cart" component={CartScreen} />
+      <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
+      <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
+      <Stack.Screen name="OrderFailure" component={OrderFailureScreen} />
+      <Stack.Screen name="Coupons" component={CouponsScreen} />
+
+      <Stack.Screen
+        name="Search"
+        component={SearchScreen}
+        options={{
+          animationEnabled: true,
+          gestureEnabled: true,
+          gestureDirection: 'vertical',
+          cardStyleInterpolator: Platform.select({
+            ios: CardStyleInterpolators.forVerticalIOS,
+            android: CardStyleInterpolators.forFadeFromBottomAndroid,
+            default: CardStyleInterpolators.forFadeFromBottomAndroid,
+          }),
+          transitionSpec: Platform.select({
+            ios: {
+              open: TransitionSpecs.TransitionIOSSpec,
+              close: TransitionSpecs.TransitionIOSSpec,
+            },
+            android: {
+              open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+              close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+            },
+            default: {
+              open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+              close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+            },
+          }),
+        }}
+      />
+      <Stack.Screen name="Address" component={AddressScreen} />
+      <Stack.Screen name="HelpDesk" component={HelpDeskScreen} />
+      <Stack.Screen name="AboutUs" component={AboutUsScreen} />
     </Stack.Navigator>
   );
 };

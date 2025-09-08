@@ -1,63 +1,16 @@
-import React from 'react';
-import {
-  Animated,
-  Dimensions,
-  Image,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from 'react-native';
-import { ThemeText } from '../../../../components/common/theme/ThemeText';
-import { useTheme } from '../../../../theme/ThemeContext';
+import { useNavigation } from '@react-navigation/native';
+import React, { useCallback, useMemo } from 'react';
+import { NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, ViewStyle } from 'react-native';
 
-const { width } = Dimensions.get('window');
-const cardWidth = width * 0.9;
-
-const dummyRecommendations = [
-  {
-    id: '1',
-    type: 'restaurant',
-    name: 'Healthy Bites Cafe',
-    description: 'Based on your healthy eating preferences',
-    image: require('../../../../assets/images/bg_1.png'),
-    tag: 'Recommended',
-  },
-  {
-    id: '2',
-    type: 'grocery',
-    name: 'Organic Essentials Pack',
-    description: 'Similar to your last grocery order',
-    image: require('../../../../assets/images/bg_1.png'),
-    tag: 'Recent',
-  },
-  {
-    id: '3',
-    type: 'pharmacy',
-    name: 'Wellness Package',
-    description: 'Recommended health products',
-    image: require('../../../../assets/images/bg_1.png'),
-    tag: 'New',
-  },
-  {
-    id: '4',
-    type: 'restaurant',
-    name: 'Quick Bites Express',
-    description: 'Popular in your area',
-    image: require('../../../../assets/images/bg_1.png'),
-    tag: 'Trending',
-  },
-  {
-    id: '5',
-    type: 'grocery',
-    name: 'Fresh Fruits Bundle',
-    description: 'Seasonal picks for you',
-    image: require('../../../../assets/images/bg_1.png'),
-    tag: 'Season Special',
-  },
-];
+import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
+import SectionDivider from '../../../../components/common/SectionDivider';
+import VendorList from '../../../../components/modules/Vendor/VendorList';
+import VendorProductList from '../../../../components/modules/Vendor/VendorProductList';
+import { usePages } from '../../../../hooks/usePages';
+import useVendorStore from '../../../../store/vendorStore';
+import { AppNavigationProp } from '../../../../types/navigation';
+import { Product } from '../../../../types/product';
+import { Vendor } from '../../../../types/vendor';
 
 interface ForYouContentProps {
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -66,91 +19,65 @@ interface ForYouContentProps {
   showsVerticalScrollIndicator?: boolean;
 }
 
-export const ForYouContent: React.FC<ForYouContentProps> = ({
+const ForYouContentComponent: React.FC<ForYouContentProps> = ({
   onScroll,
   scrollEventThrottle,
   contentContainerStyle,
   showsVerticalScrollIndicator,
 }) => {
-  const { theme } = useTheme();
+  const navigation = useNavigation<AppNavigationProp>();
+  const { vendors } = useVendorStore();
+  const { getPromotionsByPageId } = usePages();
+
+  // Get promotions for ForYou page
+  const bannerData = useMemo(() => {
+    const promotions = getPromotionsByPageId('ForYou');
+    return promotions || [];
+  }, [getPromotionsByPageId]);
+
+  // Memoize vendor press handler
+  const handleVendorPress = useCallback(
+    (vendor: Vendor) => {
+      navigation.navigate('VendorProduct', { vendor });
+    },
+    [navigation]
+  );
+
+  // Memoize product press handler
+  const handleProductPress = useCallback((_product: Product) => {
+    // Handle product press if needed
+  }, []);
 
   return (
-    <Animated.ScrollView
+    <ScrollView
       onScroll={onScroll}
       scrollEventThrottle={scrollEventThrottle}
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+      style={{
+  paddingBottom: 100,
+  paddingTop: Platform.select({
+    ios: 80,
+    android: 100
+  })
+}}
     >
-      <ThemeText variant="h2" style={styles.sectionTitle}>
-        Recommended For You
-      </ThemeText>
+      {bannerData?.length > 0 && <AutoScrollBanner bannerData={bannerData} />}
 
-      {dummyRecommendations.map(item => (
-        <TouchableOpacity
-          key={item.id}
-          style={[styles.itemCard, { backgroundColor: theme.colors.card }]}
-        >
-          <Image source={item.image} style={styles.itemImage} />
-          <View style={styles.itemInfo}>
-            <View style={styles.headerRow}>
-              <ThemeText variant="h2">{item.name}</ThemeText>
-              <View style={[styles.tag, { backgroundColor: theme.colors.primary }]}>
-                <ThemeText variant="small" color={theme.colors.white}>
-                  {item.tag}
-                </ThemeText>
-              </View>
-            </View>
-            <ThemeText variant="body" color={theme.colors.subText}>
-              {item.description}
-            </ThemeText>
-            <ThemeText variant="small" color={theme.colors.primary} style={styles.type}>
-              {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-            </ThemeText>
-          </View>
-        </TouchableOpacity>
-      ))}
-    </Animated.ScrollView>
+      <SectionDivider text="Shops" fontSize={16} style={{ marginVertical: 12 }} />
+      <VendorList />
+      {/* <BadgeTagDemo /> */}
+      <SectionDivider text="BESTSELLERS" fontSize={16} style={{ marginVertical: 12 }} />
+      <VendorProductList
+        vendors={vendors}
+        onVendorPress={handleVendorPress}
+        onProductPress={handleProductPress}
+        useFlatList={false} // Disable FlatList when nested in ScrollView
+      />
+    </ScrollView>
   );
 };
 
-const styles = StyleSheet.create({
-  sectionTitle: {
-    marginHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 12,
-  },
-  itemCard: {
-    width: cardWidth,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    overflow: 'hidden',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  itemImage: {
-    width: '100%',
-    height: 150,
-    resizeMode: 'cover',
-  },
-  itemInfo: {
-    padding: 12,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  tag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  type: {
-    marginTop: 8,
-  },
-});
+ForYouContentComponent.displayName = 'ForYouContent';
+
+export const ForYouContent = React.memo(ForYouContentComponent);

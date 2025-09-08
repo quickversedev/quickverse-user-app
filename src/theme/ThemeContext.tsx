@@ -1,31 +1,28 @@
 // src/theme/ThemeContext.tsx
+// NOTE: ThemeProvider will always use DefaultTheme if useDefaultTheme is true in the config or if the API fails, as handled by the store.
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { DefaultTheme } from '../assets/theme/defaultTheme';
+import useThemeStore from '../store/themeStore';
 
 type ButtonColors = {
-  default: {
-    background: string;
-    text: string;
-  };
-  pressed: {
-    background: string;
-    text: string;
-  };
-  disabled: {
-    background: string;
-    text: string;
-  };
+  default_background: string;
+  default_text: string;
+  pressed_background: string;
+  pressed_text: string;
+  disabled_background: string;
+  disabled_text: string;
 };
 
 type Shadow = {
   color: string;
   opacity: number;
-  offset: { width: number; height: number };
+  offset_width: number;
+  offset_height: number;
   radius: number;
 };
 
 export type Colors = {
-  primary: string;
+  main: string;
   secondary: string;
   background: string;
   tabBackground: string;
@@ -57,7 +54,7 @@ type Typography = {
 type BorderRadius = {
   sm: number;
   md: number;
-  full: number;
+  max: number;
 };
 
 export type Theme = {
@@ -70,30 +67,26 @@ type ThemeContextType = {
   theme: Theme;
   isLoading: boolean;
   error: Error | null;
-  getColor: <T extends keyof Colors>(colorKey: T) => Colors[T];
-  getButtonColor: (state: keyof ButtonColors, element: 'background' | 'text') => string;
+  getColor: (colorKey: keyof Colors | 'primary' | 'primaryLight' | 'success') => string;
+  getButtonColor: (
+    state: 'default' | 'pressed' | 'disabled',
+    element: 'background' | 'text'
+  ) => string;
   getTypography: (type: keyof Omit<Typography, 'fontFamily' | 'lineHeightMultiplier'>) => number;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const API_ENDPOINT = 'https://your-api.com/theme-config';
-
 const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>(DefaultTheme);
+  const [theme, setTheme] = useState(DefaultTheme);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const themeStore = useThemeStore();
 
   useEffect(() => {
-    const fetchTheme = async () => {
+    const loadTheme = async () => {
       try {
-        const response = await fetch(API_ENDPOINT);
-        if (!response.ok) throw new Error('Failed to fetch theme');
-
-        const apiTheme = await response.json();
-        const validatedTheme = validateTheme(apiTheme);
-
-        setTheme(validatedTheme);
+        setTheme(themeStore.getTheme());
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Unknown error'));
         setTheme(DefaultTheme);
@@ -101,19 +94,32 @@ const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         setIsLoading(false);
       }
     };
-
-    fetchTheme();
+    loadTheme();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const validateTheme = (apiTheme: any): Theme => {
+  const _validateTheme = (apiTheme: unknown): Theme => {
     // Basic validation - expand according to your API contract
-    const isValid = apiTheme?.colors?.button?.default?.background && apiTheme?.typography?.h1;
+    const isValid =
+      apiTheme &&
+      typeof apiTheme === 'object' &&
+      apiTheme !== null &&
+      'colors' in apiTheme &&
+      'typography' in apiTheme &&
+      typeof (apiTheme as Partial<Theme>)?.colors?.button?.default_background === 'string' &&
+      typeof (apiTheme as Partial<Theme>)?.typography?.h1 === 'number';
 
-    return isValid ? apiTheme : DefaultTheme;
+    return isValid ? (apiTheme as Theme) : DefaultTheme;
   };
 
-  const getColor = <T extends keyof Colors>(colorKey: T): Colors[T] => {
-    return theme.colors[colorKey] || DefaultTheme.colors[colorKey];
+  const getColor = (colorKey: keyof Colors | 'primary' | 'primaryLight' | 'success'): string => {
+    const map: Record<string, keyof Colors> = {
+      primary: 'main',
+      primaryLight: 'overlay',
+      success: 'secondary',
+    };
+    const resolvedKey = (map[colorKey as string] || colorKey) as keyof Colors;
+    return (theme.colors[resolvedKey] || DefaultTheme.colors[resolvedKey]) as string;
   };
 
   const getTypography = (
@@ -122,8 +128,13 @@ const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     return theme.typography[type] || DefaultTheme.typography[type];
   };
 
-  const getButtonColor = (state: keyof ButtonColors, element: 'background' | 'text'): string => {
-    return theme.colors.button[state][element] || DefaultTheme.colors.button[state][element];
+  const getButtonColor = (
+    state: 'default' | 'pressed' | 'disabled',
+    element: 'background' | 'text'
+  ): string => {
+    const key = `${state}_${element}` as keyof ButtonColors;
+    const value = theme.colors.button[key] ?? DefaultTheme.colors.button[key];
+    return value as string;
   };
 
   return (

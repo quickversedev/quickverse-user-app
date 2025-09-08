@@ -1,6 +1,6 @@
 {
   "name": "quickverse",
-  "version": "0.0.1",
+  "version": "3.0.0",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@notifee/react-native": "^9.1.8",
+    "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-native-community/datetimepicker": "^8.3.0",
     "@react-native-community/geolocation": "^3.4.0",
     "@react-native-firebase/app": "^22.4.0",
@@ -34,8 +35,10 @@
     "react-native-device-info": "^14.0.4",
     "react-native-gesture-handler": "^2.25.0",
     "react-native-get-random-values": "^1.11.0",
+    "react-native-linear-gradient": "^2.8.3",
     "react-native-maps": "^1.24.3",
     "react-native-mmkv": "^3.2.0",
+    "react-native-modal-datetime-picker": "^17.1.0",
     "react-native-permissions": "^5.4.1",
     "react-native-reanimated": "^3.17.5",
     "react-native-safe-area-context": "^5.4.0",

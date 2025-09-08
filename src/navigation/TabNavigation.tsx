@@ -1,9 +1,8 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React, { createContext, useEffect, useRef } from 'react';
-import { Animated, StyleSheet } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import DummyScreen1 from '../screens/Home/DummyScreen1';
-import DummyScreen2 from '../screens/Home/DummyScreen2';
+import { Animated, Image, StyleSheet } from 'react-native';
+import { Icons } from '../assets';
+import ExploreScreen from '../screens/Explore/ExploreScreen';
 import HomeScreen from '../screens/Home/HomeScreen';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -100,29 +99,35 @@ const TabNavigation = () => {
         }}
       >
         <Tab.Screen
-          name="For You"
+          name="Home"
           component={HomeScreen}
           options={{
             tabBarIcon: ({ color }) => (
-              <MaterialCommunityIcons name="home" color={color} size={24} />
+              <Image
+                source={Icons.home}
+                style={{
+                  width: 24,
+                  height: 24,
+                  tintColor: color,
+                }}
+              />
             ),
           }}
         />
+
         <Tab.Screen
-          name="Food"
-          component={DummyScreen1}
+          name="Explore"
+          component={ExploreScreen}
           options={{
             tabBarIcon: ({ color }) => (
-              <MaterialCommunityIcons name="food" color={color} size={24} />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Grocery"
-          component={DummyScreen2}
-          options={{
-            tabBarIcon: ({ color }) => (
-              <MaterialCommunityIcons name="cart" color={color} size={24} />
+              <Image
+                source={Icons.explore}
+                style={{
+                  width: 24,
+                  height: 24,
+                  tintColor: color,
+                }}
+              />
             ),
           }}
         />

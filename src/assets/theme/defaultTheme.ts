@@ -1,8 +1,9 @@
+import { Platform } from 'react-native';
 import { Theme } from '../../theme/ThemeContext';
 
 export const DefaultTheme: Theme = {
   colors: {
-    primary: '#FAE588', // used in shadowColor
+    main: '#FAE588',
     secondary: '#FFE885', // used in otpButton background
     background: '#111827', // screen background
     tabBackground: '#1F2937',
@@ -17,24 +18,19 @@ export const DefaultTheme: Theme = {
     placeholder: '#9CA3AF',
 
     button: {
-      default: {
-        background: '#FFE885',
-        text: '#000000',
-      },
-      pressed: {
-        background: '#E6D172',
-        text: '#000000',
-      },
-      disabled: {
-        background: '#CCCCCC',
-        text: '#666666',
-      },
+      default_background: '#FFE885',
+      default_text: '#000000',
+      pressed_background: '#E6D172',
+      pressed_text: '#000000',
+      disabled_background: '#CCCCCC',
+      disabled_text: '#666666',
     },
 
     shadow: {
       color: '#FAE588',
       opacity: 0.15,
-      offset: { width: 0, height: 5 },
+      offset_width: 0,
+      offset_height: 5,
       radius: 10,
     },
 
@@ -42,7 +38,11 @@ export const DefaultTheme: Theme = {
   },
 
   typography: {
-    fontFamily: 'BricolageGrotesque',
+    fontFamily: Platform.select({
+      ios: 'BricolageGrotesque-Regular',
+      android: 'BricolageGrotesque',
+      default: 'BricolageGrotesque',
+    }) as string,
     lineHeightMultiplier: 1.4,
 
     h1: 28, // for title
@@ -56,6 +56,6 @@ export const DefaultTheme: Theme = {
   borderRadius: {
     sm: 8,
     md: 15,
-    full: 9999,
+    max: 9999,
   },
 };

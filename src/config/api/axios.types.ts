@@ -1,17 +1,11 @@
-import { InternalAxiosRequestConfig } from 'axios';
-
-export interface RetryConfig extends InternalAxiosRequestConfig {
-  retryCount?: number;
-}
-
 export interface ApiError {
   status: number;
   message: string;
+  code?: string; // Error code from API response
   isCancelled?: boolean;
-  response?: {
-    status?: number;
-    data?: {
-      message?: string;
-    };
+  apiEndpoint?: string; // API endpoint that failed
+  error?: {
+    code: string;
+    message: string;
   };
 }

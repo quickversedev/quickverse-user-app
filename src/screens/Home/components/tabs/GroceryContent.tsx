@@ -1,58 +1,27 @@
-import React from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import React, { useCallback, useMemo } from 'react';
 import {
   Animated,
   Dimensions,
-  Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
   StyleSheet,
-  TouchableOpacity,
+  Text,
   View,
   ViewStyle,
 } from 'react-native';
-import { ThemeText } from '../../../../components/common/theme/ThemeText';
+import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
+import VendorCard from '../../../../components/modules/Vendor/VendorCard';
+import VendorEmptyState from '../../../../components/modules/Vendor/VendorEmptyState';
+import { usePromotions } from '../../../../hooks/usePromotions';
+import { RootStackParamList } from '../../../../routes/AppStack';
+import useVendorStore from '../../../../store/vendorStore';
 import { useTheme } from '../../../../theme/ThemeContext';
+import { getStoreStatus } from '../../../../utils/storeUtils';
 
 const { width } = Dimensions.get('window');
-const cardWidth = width * 0.9;
-
-const dummyGroceryItems = [
-  {
-    id: '1',
-    name: 'Fresh Vegetables Pack',
-    price: '₹199',
-    description: 'Assorted fresh vegetables',
-    image: require('../../../../assets/images/bg_1.png'),
-  },
-  {
-    id: '2',
-    name: 'Organic Fruits Bundle',
-    price: '₹299',
-    description: 'Selection of organic fruits',
-    image: require('../../../../assets/images/bg_1.png'),
-  },
-  {
-    id: '3',
-    name: 'Daily Essentials Kit',
-    price: '₹499',
-    description: 'Basic household items',
-    image: require('../../../../assets/images/bg_1.png'),
-  },
-  {
-    id: '4',
-    name: 'Breakfast Bundle',
-    price: '₹399',
-    description: 'Complete breakfast items',
-    image: require('../../../../assets/images/bg_1.png'),
-  },
-  {
-    id: '5',
-    name: 'Snacks Package',
-    price: '₹299',
-    description: 'Assorted healthy snacks',
-    image: require('../../../../assets/images/bg_1.png'),
-  },
-];
+const cardWidth = (width - 48) / 2; // 2 columns with margins
 
 interface GroceryContentProps {
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -61,73 +30,229 @@ interface GroceryContentProps {
   showsVerticalScrollIndicator?: boolean;
 }
 
-export const GroceryContent: React.FC<GroceryContentProps> = ({
+const GroceryContentComponent: React.FC<GroceryContentProps> = ({
   onScroll,
   scrollEventThrottle,
   contentContainerStyle,
   showsVerticalScrollIndicator,
 }) => {
   const { theme } = useTheme();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
+  // Directly use vendor store - vendors are pre-sorted
+  const { getVendorsByCategory } = useVendorStore();
+  const groceryVendors = useMemo(() => getVendorsByCategory('Grocery'), [getVendorsByCategory]);
+  const hasVendors = groceryVendors.length > 0;
+
+  const { promotions: bannerData, hasPromotions } = usePromotions('Grocery');
+
+  // Memoize vendor press handler
+  const handleVendorPress = useCallback(
+    (vendor: any) => {
+      navigation.navigate('VendorProduct', { vendor });
+    },
+    [navigation]
+  );
+
+  // Memoize styles to prevent recreation on every render
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: theme.colors.background,
+          paddingVertical: 65,
+          marginBottom: 100,
+        },
+        header: {
+          marginTop: 30,
+          alignItems: 'center',
+          paddingVertical: 20,
+          paddingHorizontal: 16,
+        },
+        title: {
+          fontSize: 32,
+          fontWeight: 'bold',
+          color: '#4CAF50',
+          textAlign: 'center',
+          marginBottom: 8,
+        },
+        logoContainer: {
+          alignItems: 'center',
+          marginTop: 16,
+        },
+        logo: {
+          width: 450,
+          height: 200,
+          borderRadius: 12,
+        },
+        promoBanner: {
+          backgroundColor: '#2E7D32',
+          marginHorizontal: 16,
+          marginVertical: 16,
+          borderRadius: 12,
+          padding: 16,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        },
+        bannerContent: {
+          flex: 1,
+        },
+        bannerTitle: {
+          color: '#fff',
+          fontSize: 16,
+          fontWeight: 'bold',
+          marginBottom: 4,
+        },
+        bannerSubtitle: {
+          color: '#fff',
+          fontSize: 12,
+          marginBottom: 8,
+        },
+        bannerButton: {
+          backgroundColor: '#4CAF50',
+          paddingHorizontal: 12,
+          paddingVertical: 6,
+          borderRadius: 6,
+          alignSelf: 'flex-start',
+        },
+        bannerButtonText: {
+          color: '#fff',
+          fontSize: 12,
+          fontWeight: 'bold',
+        },
+        bannerImage: {
+          width: 60,
+          height: 60,
+          borderRadius: 8,
+          backgroundColor: '#fff',
+        },
+        sectionTitle: {
+          marginHorizontal: 16,
+          marginTop: 20,
+          marginBottom: 12,
+          fontSize: 20,
+          fontWeight: 'bold',
+          color: theme.colors.text,
+        },
+        vendorGrid: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+          paddingHorizontal: 16,
+        },
+        vendorCard: {
+          width: cardWidth,
+          backgroundColor: theme.colors.card,
+          borderRadius: 12,
+          marginBottom: 16,
+          overflow: 'hidden',
+          elevation: 3,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 3.84,
+        },
+        vendorImage: {
+          width: '100%',
+          height: 120,
+          resizeMode: 'cover',
+        },
+        vendorInfo: {
+          padding: 12,
+        },
+        vendorName: {
+          color: theme.colors.text,
+          fontSize: 16,
+          fontWeight: 'bold',
+          marginBottom: 4,
+        },
+        vendorRating: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 4,
+        },
+        ratingText: {
+          color: theme.colors.text,
+          fontSize: 14,
+          marginLeft: 4,
+        },
+        vendorMeta: {
+          flexDirection: 'row',
+          alignItems: 'center',
+        },
+        metaText: {
+          color: theme.colors.subText,
+          fontSize: 12,
+          marginLeft: 4,
+        },
+        favoriteButton: {
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          borderRadius: 12,
+          padding: 4,
+        },
+        bannerScrollContainer: {
+          paddingHorizontal: 16,
+        },
+        bannerContainer: {
+          width: width - 32, // Full width minus padding
+          marginVertical: 8,
+          marginRight: 12,
+        },
+      }),
+    [theme.colors.background, theme.colors.text, theme.colors.card, theme.colors.subText]
+  );
 
   return (
     <Animated.ScrollView
+      style={styles.container}
       onScroll={onScroll}
       scrollEventThrottle={scrollEventThrottle}
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
     >
-      <ThemeText variant="h2" style={styles.sectionTitle}>
-        Grocery Delivery
-      </ThemeText>
+      {hasVendors ? (
+        <>
+          {/* Header */}
+          {/* <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <CategoryLogo category="Grocery" style={styles.logo} resizeMode="cover" />
+            </View>
+          </View> */}
 
-      {dummyGroceryItems.map(item => (
-        <TouchableOpacity
-          key={item.id}
-          style={[styles.itemCard, { backgroundColor: theme.colors.card }]}
-        >
-          <Image source={item.image} style={styles.itemImage} />
-          <View style={styles.itemInfo}>
-            <ThemeText variant="h2">{item.name}</ThemeText>
-            <ThemeText variant="body" color={theme.colors.subText}>
-              {item.description}
-            </ThemeText>
-            <ThemeText variant="subtitle" style={styles.price}>
-              {item.price}
-            </ThemeText>
+          {/* Promotional Banner */}
+          {hasPromotions && <AutoScrollBanner bannerData={bannerData} />}
+
+          {/* Vendors Grid */}
+          <Text style={styles.sectionTitle}>Grocery Delivery</Text>
+          <View style={styles.vendorGrid}>
+            {groceryVendors.map(vendor => {
+              const storeStatus = getStoreStatus(vendor);
+              return (
+                <VendorCard
+                  key={vendor.shopId}
+                  vendor={vendor}
+                  onPress={handleVendorPress}
+                  favoriteColor="#4CAF50"
+                  disabled={!storeStatus.isOpen}
+                />
+              );
+            })}
           </View>
-        </TouchableOpacity>
-      ))}
+        </>
+      ) : (
+        <View style={styles.header}>
+          <VendorEmptyState category="Grocery" />
+        </View>
+      )}
     </Animated.ScrollView>
   );
 };
 
-const styles = StyleSheet.create({
-  sectionTitle: {
-    marginHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 12,
-  },
-  itemCard: {
-    width: cardWidth,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    overflow: 'hidden',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  itemImage: {
-    width: '100%',
-    height: 150,
-    resizeMode: 'cover',
-  },
-  itemInfo: {
-    padding: 12,
-  },
-  price: {
-    marginTop: 8,
-  },
-});
+GroceryContentComponent.displayName = 'GroceryContent';
+
+export const GroceryContent = React.memo(GroceryContentComponent);

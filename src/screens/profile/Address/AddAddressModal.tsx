@@ -8,8 +8,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAddress } from '../../../hooks';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { AddressComponents } from '../../../services/api/olaLocationService';
 import { useTheme } from '../../../theme/ThemeContext';
 import AddressDetailsStep from './AddressDetailsStep';
 import MapLocationStep from './components/MapLocationStep';
@@ -28,7 +30,8 @@ interface AddressDetails {
   city: string;
   state: string;
   pincode: string;
-  landmark: string;
+  phoneNumber: string;
+  addressLine3?: string;
   tag: string;
   isDefaultAddress: boolean;
 }
@@ -41,9 +44,16 @@ interface AddAddressModalProps {
 
 const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => {
   const { getColor, getTypography, theme } = useTheme();
-  const { addAddress, loading, error } = useAddress();
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState(1);
   const [location, setLocation] = useState<Location | null>(null);
+  const [selectedAddressDescription, setSelectedAddressDescription] = useState<AddressComponents>({
+    country: '',
+    state: '',
+    city: '',
+    postalCode: '',
+    formatted_address: '',
+  });
   const [addressDetails, setAddressDetails] = useState<AddressDetails>({
     name: '',
     addressLine1: '',
@@ -51,45 +61,44 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
     city: '',
     state: '',
     pincode: '',
-    landmark: '',
-    tag: 'Home',
+    phoneNumber: '',
+    addressLine3: '',
+    tag: '',
     isDefaultAddress: false,
   });
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const handleLocationSelect = (selectedLocation: Location) => {
+  const handleLocationSelect = (
+    selectedLocation: Location,
+    addressDescription: AddressComponents
+  ) => {
     setLocation(selectedLocation);
+    setSelectedAddressDescription(addressDescription);
     setStep(2);
   };
 
-  const handleSaveAddress = async (details: AddressDetails) => {
+  const handleSaveAddress = async (_details: AddressDetails) => {
     setApiError(null);
-    try {
-      const newAddress = {
-        ...details,
-        latitude: location ? location.latitude.toString() : undefined,
-        longitude: location ? location.longitude.toString() : undefined,
-      };
-      const result = await addAddress(newAddress);
-      if (result.success) {
-        onSave(newAddress);
-        resetForm();
-      } else {
-        setApiError(
-          (result.error as { message?: string })?.message ||
-            'Failed to save address. Please try again.'
-        );
-      }
-    } catch (error: unknown) {
-      setApiError(
-        (error as { message?: string })?.message || 'Failed to save address. Please try again.'
-      );
-    }
+    // The API call is now handled by AddressDetailsStep internally
+    // This function is kept for any additional logic if needed
+  };
+
+  const handleAddressSaveSuccess = () => {
+    // Close the modal when address is successfully saved
+    resetForm();
+    onClose();
   };
 
   const resetForm = () => {
     setStep(1);
     setLocation(null);
+    setSelectedAddressDescription({
+      country: '',
+      state: '',
+      city: '',
+      postalCode: '',
+      formatted_address: '',
+    });
     setAddressDetails({
       name: '',
       addressLine1: '',
@@ -97,10 +106,12 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       city: '',
       state: '',
       pincode: '',
-      landmark: '',
-      tag: 'Home',
+      phoneNumber: '',
+      addressLine3: '',
+      tag: '',
       isDefaultAddress: false,
     });
+    setApiError(null);
   };
 
   const handleBack = () => {
@@ -121,19 +132,20 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      padding: Math.max(16, width * 0.04),
-      paddingTop: Platform.OS === 'ios' ? Math.max(16, width * 0.04) : Math.max(12, width * 0.03),
+      paddingHorizontal: Math.max(16, width * 0.04),
+      paddingTop: Platform.OS === 'ios' ? Math.max(insets.top + 4, 8) : Math.max(16, width * 0.04),
+      paddingBottom: Math.max(16, width * 0.04),
       borderBottomWidth: 1,
       borderBottomColor: getColor('border'),
       backgroundColor: getColor('card'),
-      minHeight: 60,
+      minHeight: Platform.OS === 'ios' ? Math.max(60, insets.top + 44) : 60,
       ...Platform.select({
         android: {
           elevation: 2,
         },
         ios: {
           shadowColor: theme.colors.shadow.color,
-          shadowOffset: theme.colors.shadow.offset,
+          shadowOffset: { width: 0, height: 2 },
           shadowOpacity: theme.colors.shadow.opacity,
           shadowRadius: theme.colors.shadow.radius,
         },
@@ -170,43 +182,37 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       onRequestClose={handleBack}
       presentationStyle="fullScreen"
     >
-      <View style={themedStyles.container} accessible={true} accessibilityLabel="Add address modal">
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: getColor('background'),
+          // paddingTop: insets.top,     // ✅ handles notch/status bar
+          paddingBottom: insets.bottom, // ✅ handles iPhone home indicator
+        }}
+      >
+        {/* Header */}
         <View style={themedStyles.header}>
-          <TouchableOpacity
-            onPress={handleBack}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={
-              step === 1 ? 'Cancel adding address' : 'Go back to location selection'
-            }
-            accessibilityHint={
-              step === 1 ? 'Closes the add address form' : 'Returns to the previous step'
-            }
-            activeOpacity={0.7}
-          >
-            <Text style={themedStyles.backButton}>{step === 1 ? 'Cancel' : 'Back'}</Text>
+          <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
+            <MaterialCommunityIcons name="arrow-left-thick" size={25} color={getColor('primary')} />
           </TouchableOpacity>
-          <Text
-            style={themedStyles.title}
-            accessible={true}
-            accessibilityRole="header"
-            accessibilityLabel={step === 1 ? 'Select location step' : 'Add address details step'}
-          >
+          <Text style={themedStyles.title}>
             {step === 1 ? 'Select Location' : 'Add Address Details'}
           </Text>
           <View style={themedStyles.placeholder} />
         </View>
 
+        {/* Body */}
         {step === 1 ? (
           <MapLocationStep onLocationSelect={handleLocationSelect} />
         ) : (
           <AddressDetailsStep
             location={location}
+            selectedAddressDescription={selectedAddressDescription}
             details={addressDetails}
             onDetailsChange={setAddressDetails}
             onSave={handleSaveAddress}
-            isLoading={loading}
-            apiError={apiError || error}
+            onSuccess={handleAddressSaveSuccess}
+            apiError={apiError}
           />
         )}
       </View>

@@ -3,14 +3,15 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useTheme } from '../../../theme/ThemeContext';
-import { Address } from '../../../types/address';
+import type { Address } from '../../../types/address';
 import { ThemeText } from '../../common/theme/ThemeText';
 import { AddressSelectionModal } from './AddressSelectionModal';
 
 export const LocationSelector = () => {
   const { theme } = useTheme();
-  const { selectedAddress, setSelectedAddress } = useAuth();
+  const { selectedAddress, setSelectedAddress, authData } = useAuth();
   const [showAddressModal, setShowAddressModal] = useState(false);
+  // Selected address is managed by AuthProvider (initialized in AppInitializer and user selection)
 
   const handleAddressSelect = (address: Address) => {
     setSelectedAddress(address);
@@ -19,16 +20,39 @@ export const LocationSelector = () => {
 
   const getDisplayAddress = () => {
     if (selectedAddress) {
-      return `${selectedAddress.city} - ${selectedAddress.zipCode}`;
+      let displayText = '';
+
+      // For searched addresses, show city and state if available
+      if (selectedAddress.city && selectedAddress.state) {
+        displayText = `${selectedAddress.city}, ${selectedAddress.state}`;
+      }
+      // Fallback to city and postal code
+      else if (selectedAddress.city && selectedAddress.postalCode) {
+        displayText = `${selectedAddress.city} - ${selectedAddress.postalCode}`;
+      }
+      // Just show city if available
+      else {
+        displayText = selectedAddress.city;
+      }
+      // Fallback to address
+
+      // Add ellipsis if text is too long (more than 25 characters)
+      if (displayText.length > 25) {
+        return `${displayText.substring(0, 22)}...`;
+      }
+
+      return displayText;
     }
     return 'Select Address';
   };
 
   const getDisplayName = () => {
-    if (selectedAddress?.name) {
-      return `Hey, ${selectedAddress.name.split(' ')[0]}`;
+    const username = authData?.username;
+
+    if (username && username.trim().length > 0) {
+      return `Hey, ${username.split(' ')[0]}`;
     }
-    return 'Hey, User';
+    return 'Hey, Howdy';
   };
 
   return (
@@ -42,7 +66,7 @@ export const LocationSelector = () => {
         accessibilityHint="Opens address selection modal"
         activeOpacity={0.7}
       >
-        <Icon name="map-marker" size={24} color={theme.colors.primary} style={styles.icon} />
+        <Icon name="map-marker" size={24} color={theme.colors.main} style={styles.icon} />
         <View style={styles.textContainer}>
           <ThemeText variant="body" style={styles.greeting}>
             {getDisplayName()}

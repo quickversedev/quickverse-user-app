@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import {
-  Image,
+  Alert,
   Platform,
   SafeAreaView,
   StyleSheet,
@@ -10,95 +10,134 @@ import {
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import LoginButton from '../../components/common/LoginButton';
 import { useAuth } from '../../contexts/login/AuthProvider';
+import deleteUserService from '../../services/deleteUserService';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
-
-type FeatureItem = {
-  id: string;
-  title: string;
-  icon: string;
-  onPress: () => void;
-};
-
-const FeatureButton = ({ item }: { item: FeatureItem }) => {
-  const { getColor } = useTheme();
-  return (
-    <TouchableOpacity
-      style={[styles.featureButton, { backgroundColor: getColor('card') }]}
-      onPress={item.onPress}
-    >
-      <View style={styles.featureContent}>
-        <Icon name={item.icon} size={24} color={getColor('text')} />
-        <Text style={[styles.featureText, { color: getColor('text') }]}>{item.title}</Text>
-      </View>
-      <Icon name="chevron-right" size={24} color={getColor('text')} />
-    </TouchableOpacity>
-  );
-};
+import FeatureButton, { FeatureItem } from './components/FeatureButton';
+import ProfileHeader from './components/ProfileHeader';
 
 const ProfileScreen = () => {
-  const { signOut } = useAuth();
+  const { signOut, authData } = useAuth();
   const { getColor } = useTheme();
   const navigation = useNavigation<AppNavigationProp>();
+  const [isDangerZoneExpanded, setIsDangerZoneExpanded] = React.useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = React.useState(false);
+
+  const isLoggedIn = Boolean(authData?.jwt);
+
+  const handleDeleteAccount = async () => {
+    if (!authData?.jwt) {
+      Alert.alert('Error', 'You must be logged in to delete your account.');
+      return;
+    }
+
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeletingAccount(true);
+            try {
+              await deleteUserService.deleteUser(authData.jwt);
+
+              // Show success message
+              Alert.alert(
+                'Account Deleted',
+                'Your account has been successfully deleted. You will be logged out.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // Sign out the user
+                      signOut();
+                    },
+                  },
+                ]
+              );
+            } catch (error) {
+              Alert.alert(
+                'Error',
+                error instanceof Error
+                  ? error.message
+                  : 'Failed to delete account. Please try again.',
+                [{ text: 'OK' }]
+              );
+            } finally {
+              setIsDeletingAccount(false);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   const features: FeatureItem[] = [
+    ...(isLoggedIn
+      ? [
+          {
+            id: 'addresses',
+            title: 'Addresses',
+            icon: 'map-marker-outline',
+            onPress: () => {
+              navigation.navigate('Address');
+            },
+          },
+          {
+            id: 'orders',
+            title: 'Orders',
+            icon: 'package-variant',
+            onPress: () => {
+              navigation.navigate('Orders');
+            },
+          },
+        ]
+      : []),
     {
-      id: 'feature1',
-      title: 'Addresses',
-      icon: 'circle-outline',
+      id: 'help',
+      title: 'Help',
+      icon: 'help-circle-outline',
       onPress: () => {
-        // navigation is not defined in this scope, so we need to get it from props or useNavigation
-        // We'll use the useNavigation hook from @react-navigation/native
-        // Make sure to import: import { useNavigation } from '@react-navigation/native';
-        // And add: const navigation = useNavigation();
-        navigation.navigate('Addresses');
+        navigation.navigate('HelpDesk');
       },
     },
     {
-      id: 'feature2',
-      title: 'Feature 02',
-      icon: 'circle-outline',
-      onPress: () => {},
-    },
-    {
-      id: 'feature3',
-      title: 'Feature 03',
-      icon: 'circle-outline',
-      onPress: () => {},
-    },
-    {
-      id: 'feature4',
-      title: 'Feature 04',
-      icon: 'circle-outline',
-      onPress: () => {},
+      id: 'about',
+      title: 'About Us',
+      icon: 'information-outline',
+      onPress: () => {
+        navigation.navigate('AboutUs');
+      },
     },
   ];
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: getColor('background') }]}>
       <View style={styles.container}>
-        {/* User Info Section with Logo */}
-        <View style={styles.userSection}>
-          <View style={styles.userInfoContainer}>
-            <View style={[styles.avatarContainer, { backgroundColor: getColor('card') }]}>
-              <Icon name="account" size={40} color={getColor('text')} />
-            </View>
-            <View style={styles.userInfo}>
-              <Text style={[styles.userName, { color: getColor('text') }]} numberOfLines={1}>
-                Rahul Sharma
-              </Text>
-              <Text style={[styles.userPhone, { color: getColor('subText') }]} numberOfLines={1}>
-                +91 97XXX XXXXX
-              </Text>
-            </View>
-          </View>
-          <Image
-            source={require('../../assets/images/logo_qv.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: getColor('card') }]}
+          onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          activeOpacity={0.7}
+        >
+          <Icon name="arrow-left" size={24} color={getColor('text')} />
+        </TouchableOpacity>
+
+        {isLoggedIn ? (
+          <ProfileHeader username={authData?.username} phone={authData?.phone} />
+        ) : (
+          <LoginButton />
+        )}
 
         {/* Features Section */}
         <View style={[styles.featuresContainer, { backgroundColor: getColor('card') }]}>
@@ -107,17 +146,59 @@ const ProfileScreen = () => {
           ))}
         </View>
 
-        {/* Logout Button */}
-        <TouchableOpacity
-          style={[styles.logoutButton, { backgroundColor: getColor('card') }]}
-          onPress={signOut}
-        >
-          <View style={styles.featureContent}>
-            <Icon name="logout" size={24} color="#FF4444" />
-            <Text style={[styles.logoutText]}>Logout</Text>
+        {/* Delete Account Section */}
+        {isLoggedIn && (
+          <View style={[styles.deleteAccountContainer, { backgroundColor: getColor('card') }]}>
+            <TouchableOpacity
+              style={styles.deleteAccountHeader}
+              onPress={() => setIsDangerZoneExpanded(!isDangerZoneExpanded)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.deleteAccountHeaderContent}>
+                <Icon name="alert-circle-outline" size={20} color="#FF4444" />
+                <Text style={[styles.deleteAccountTitle, { color: getColor('text') }]}>
+                  Danger Zone
+                </Text>
+              </View>
+              <Icon
+                name={isDangerZoneExpanded ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color="#FF4444"
+              />
+            </TouchableOpacity>
+
+            {isDangerZoneExpanded && (
+              <TouchableOpacity
+                style={[styles.deleteAccountButton, { borderColor: getColor('border') }]}
+                onPress={handleDeleteAccount}
+                disabled={isDeletingAccount}
+                activeOpacity={0.7}
+              >
+                <View style={styles.featureContent}>
+                  <Icon name="delete-forever" size={24} color="#FF4444" />
+                  <Text style={styles.deleteAccountText}>
+                    {isDeletingAccount ? 'Deleting...' : 'Delete Account'}
+                  </Text>
+                </View>
+                <Icon name="chevron-right" size={24} color="#FF4444" />
+              </TouchableOpacity>
+            )}
           </View>
-          <Icon name="chevron-right" size={24} color="#FF4444" />
-        </TouchableOpacity>
+        )}
+
+        {/* Logout Button */}
+        {isLoggedIn && (
+          <TouchableOpacity
+            style={[styles.logoutButton, { backgroundColor: getColor('card') }]}
+            onPress={signOut}
+          >
+            <View style={styles.featureContent}>
+              <Icon name="logout" size={24} color="#FF4444" />
+              <Text style={[styles.logoutText]}>Logout</Text>
+            </View>
+            <Icon name="chevron-right" size={24} color="#FF4444" />
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -131,6 +212,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   userSection: {
     flexDirection: 'row',
@@ -175,14 +276,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 16,
   },
-  featureButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
   featureContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -200,6 +293,46 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   logoutText: {
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#FF4444',
+  },
+  deleteAccountContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 68, 68, 0.2)',
+  },
+  deleteAccountHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 68, 68, 0.1)',
+  },
+  deleteAccountHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deleteAccountTitle: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  deleteAccountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderTopWidth: 1,
+  },
+  deleteAccountText: {
     marginLeft: 12,
     fontSize: 16,
     fontWeight: '500',

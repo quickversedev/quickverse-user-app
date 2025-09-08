@@ -1,5 +1,16 @@
+import { useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { Animated, Image, Platform, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import {
+  Animated,
+  Image,
+  ImageBackground,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { Images } from '../../../assets';
 import { NavigationItems } from '../../../screens/Home/components/NavigationItems';
 import { useTheme } from '../../../theme/ThemeContext';
 import { LocationSelector } from './LocationSelector';
@@ -13,6 +24,11 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ translateY, hiddenSectionsOpacity }) => {
   const { theme } = useTheme();
+  const navigation = useNavigation();
+
+  const handleSearchPress = () => {
+    navigation.navigate('Search' as never);
+  };
 
   return (
     <Animated.View
@@ -38,11 +54,13 @@ export const Header: React.FC<HeaderProps> = ({ translateY, hiddenSectionsOpacit
 
           {/* Section 3: Logo */}
           <View style={styles.logoContainer}>
-            <Image
-              source={require('../../../assets/images/homeBackground.png')}
-              style={styles.logo}
+            <ImageBackground
+              source={Images.homeBackground}
+              style={styles.backgroundImage}
               resizeMode="cover"
-            />
+            >
+              <Image source={Images.homeBackground} style={styles.logo} resizeMode="cover" />
+            </ImageBackground>
           </View>
         </Animated.View>
 
@@ -50,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({ translateY, hiddenSectionsOpacit
         <View style={styles.visibleSections}>
           {/* Section 2: Search Bar */}
           <View style={styles.searchSection}>
-            <SearchBar />
+            <SearchBar onPress={handleSearchPress} />
           </View>
 
           {/* Section 4: Navigation Tabs */}
@@ -84,7 +102,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   hiddenSections: {
-    paddingHorizontal: 16,
+    // paddingHorizontal: 16,
   },
   visibleSections: {
     width: '100%',
@@ -97,6 +115,7 @@ const styles = StyleSheet.create({
       ios: 2,
       android: 0,
     }),
+    paddingHorizontal: 16,
   },
   searchSection: {
     width: '100%',
@@ -108,7 +127,7 @@ const styles = StyleSheet.create({
       ios: 150,
       android: 130,
     }),
-    marginHorizontal: -16,
+    paddingHorizontal: -16,
     overflow: 'hidden',
   },
   logo: {
@@ -117,5 +136,9 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     borderBottomWidth: 3,
+  },
+  backgroundImage: {
+    width: '100%',
+    height: '100%',
   },
 });

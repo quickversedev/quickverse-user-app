@@ -11,14 +11,55 @@ import {
   getToken,
   onMessage,
   onNotificationOpenedApp,
+  registerDeviceForRemoteMessages,
 } from '@react-native-firebase/messaging';
-import { useCallback, useEffect } from 'react';
-import { PermissionsAndroid, Platform } from 'react-native';
+import { useCallback } from 'react';
+import { PermissionsAndroid, Platform, Vibration } from 'react-native';
+
+// Import the logo for notifications
+const notificationLogo = Platform.OS === 'ios' ? 'logo_qv' : 'logo_qv';
+
+// Helper function to get notification icon based on type
+const getNotificationIcon = (type?: string) => {
+  switch (type) {
+    case 'order':
+      return 'ic_launcher'; // Use default icon for order notifications
+    case 'promo':
+      return notificationLogo; // Use app logo for promotional notifications
+    case 'alert':
+      return 'ic_launcher'; // Use default icon for alerts
+    default:
+      return notificationLogo; // Use app logo as default
+  }
+};
+
+// Helper function to determine notification type from message data
+const getNotificationTypeFromData = (data?: { [key: string]: string | object }) => {
+  if (!data) return 'default';
+
+  // Check for order-related data
+  if (data.orderId || data.order_id || data.orderStatus || data.order_status) {
+    return 'order';
+  }
+
+  // Check for promotional data
+  if (data.promo || data.promotion || data.offer || data.discount) {
+    return 'promo';
+  }
+
+  // Check for alert data
+  if (data.alert || data.urgent || data.emergency) {
+    return 'alert';
+  }
+
+  return 'default';
+};
 
 interface NotificationPayload {
   title?: string;
   body?: string;
   data?: { [key: string]: string | object };
+  type?: 'default' | 'order' | 'promo' | 'alert';
 }
 
 // Custom error types for better error handling
@@ -42,6 +83,9 @@ class MessagingError extends Error {
     this.name = 'MessagingError';
   }
 }
+
+let notificationsSetup = false;
+const processedForegroundIds = new Set<string>();
 
 export const useNotifications = () => {
   const handleError = (error: unknown, context: string) => {
@@ -68,15 +112,38 @@ export const useNotifications = () => {
         name: 'Default Channel',
         importance: AndroidImportance.HIGH,
         visibility: AndroidVisibility.PUBLIC,
+        sound: 'default',
+        vibration: true,
+        // Android-specific settings for better foreground notification handling
+        lights: true,
+        lightColor: '#FF0000', // Red light for notifications
+        vibrationPattern: [0, 250, 500, 250], // Custom vibration pattern: delay, duration, delay, duration
       });
     } catch (error) {
-      throw new NotificationError(
-        'Failed to create notification channel',
-        'CHANNEL_CREATION_FAILED'
-      );
+      // Log the actual error for debugging
+      console.warn('Channel creation error details:', error);
+
+      // Try to create a minimal channel as fallback
+      try {
+        await notifee.createChannel({
+          id: 'default',
+          name: 'Default Channel',
+          importance: AndroidImportance.HIGH,
+        });
+      } catch (fallbackError) {
+        console.warn('Fallback channel creation also failed:', fallbackError);
+        // Don't throw error, just log it and continue
+        // The notification might still work without custom channel settings
+      }
     }
   };
 
+  /**
+   * Display a notification with app logo
+   * @param payload - Notification payload with title, body, data, and optional type
+   * @param payload.type - Optional notification type: 'default' | 'order' | 'promo' | 'alert'
+   *                       Different types use different icons (app logo vs default icon)
+   */
   const displayNotification = async (payload: NotificationPayload) => {
     try {
       // Validate payload
@@ -93,10 +160,13 @@ export const useNotifications = () => {
 
       // Create a channel if it doesn't exist (Android requirement)
       if (Platform.OS === 'android') {
-        await createDefaultChannel().catch(error => {
+        try {
+          await createDefaultChannel();
+        } catch (error) {
           // Log channel creation error but continue with notification
           handleError(error, 'Channel creation failed');
-        });
+          // Continue without custom channel - system will use default
+        }
       }
 
       // Display the notification
@@ -108,6 +178,19 @@ export const useNotifications = () => {
           channelId: 'default',
           pressAction: {
             id: 'default',
+          },
+          largeIcon: getNotificationIcon(payload.type), // Use appropriate icon based on type
+          smallIcon: 'logo_qv', // Use the default launcher icon as small icon
+        },
+        ios: {
+          // Play the system default sound on iOS
+          sound: 'default',
+          interruptionLevel: 'active',
+          // Ensure notifications present with sound while app is in the foreground
+          foregroundPresentationOptions: {
+            alert: true,
+            badge: true,
+            sound: true,
           },
         },
       });
@@ -121,38 +204,46 @@ export const useNotifications = () => {
     try {
       if (Platform.OS === 'ios') {
         const settings = await notifee.requestPermission();
+
         if (!settings) {
           throw new PermissionError(
             'Failed to get iOS notification settings',
             'IOS_SETTINGS_FAILED'
           );
         }
+
         return settings.authorizationStatus;
       }
 
       if (Platform.OS === 'android') {
-        const hasPermission = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
-        );
-
-        if (hasPermission === PermissionsAndroid.RESULTS.DENIED) {
-          throw new PermissionError('Notification permission denied', 'PERMISSION_DENIED');
-        }
-
-        if (hasPermission === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
-          throw new PermissionError(
-            'Notification permission permanently denied',
-            'PERMISSION_BLOCKED'
+        // On Android 13+ (API 33), POST_NOTIFICATIONS runtime permission is required
+        if (typeof Platform.Version === 'number' && Platform.Version >= 33) {
+          const hasPermission = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
           );
+
+          if (hasPermission === PermissionsAndroid.RESULTS.DENIED) {
+            throw new PermissionError('Notification permission denied', 'PERMISSION_DENIED');
+          }
+
+          if (hasPermission === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+            throw new PermissionError(
+              'Notification permission permanently denied',
+              'PERMISSION_BLOCKED'
+            );
+          }
+
+          return hasPermission === PermissionsAndroid.RESULTS.GRANTED;
         }
 
-        return hasPermission === PermissionsAndroid.RESULTS.GRANTED;
+        // On Android 12 and below, no runtime permission is required for notifications
+        return true;
       }
 
       throw new PermissionError('Unsupported platform for notifications', 'PLATFORM_UNSUPPORTED');
     } catch (error) {
       handleError(error, 'Request permissions failed');
-      return false;
+      throw error;
     }
   };
 
@@ -172,11 +263,38 @@ export const useNotifications = () => {
             throw new MessagingError('Received empty message in foreground', 'EMPTY_MESSAGE');
           }
 
-          await displayNotification({
-            title: remoteMessage.notification?.title,
-            body: remoteMessage.notification?.body,
-            data: remoteMessage.data || {},
-          });
+          // De-duplicate by messageId if available
+          const messageId = (remoteMessage as any).messageId as string | undefined;
+          if (messageId) {
+            if (processedForegroundIds.has(messageId)) {
+              return; // already processed
+            }
+            processedForegroundIds.add(messageId);
+            // keep set from growing unbounded
+            if (processedForegroundIds.size > 2000) {
+              processedForegroundIds.clear();
+            }
+          }
+
+          // Always show notifications in foreground to ensure user sees them
+          // The system won't show foreground notifications automatically
+          const notificationType = getNotificationTypeFromData(remoteMessage.data);
+
+          // Use notification payload if available, otherwise fall back to data
+          const title = remoteMessage.notification?.title || (remoteMessage.data?.title as string);
+          const body = remoteMessage.notification?.body || (remoteMessage.data?.body as string);
+
+          if (title || body) {
+            await displayNotification({
+              title,
+              body,
+              data: remoteMessage.data || {},
+              type: notificationType,
+            });
+
+            // Trigger a short vibration to draw attention
+            Vibration.vibrate(20);
+          }
         } catch (error) {
           handleError(error, 'Foreground message handling failed');
         }
@@ -197,6 +315,7 @@ export const useNotifications = () => {
         );
       }
 
+      // Only handle data-only messages to prevent duplicates
       messaging.setBackgroundMessageHandler(
         async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
           try {
@@ -204,12 +323,24 @@ export const useNotifications = () => {
               throw new MessagingError('Received empty message in background', 'EMPTY_MESSAGE');
             }
 
-            if (Platform.OS === 'ios') {
-              await displayNotification({
-                title: remoteMessage.notification?.title,
-                body: remoteMessage.notification?.body,
-                data: remoteMessage.data || {},
-              });
+            // For background, only handle data-only messages to prevent duplicates
+            // System will automatically show notifications with notification payload
+            if (!remoteMessage.notification) {
+              const notificationType = getNotificationTypeFromData(remoteMessage.data);
+              const data = (remoteMessage.data || {}) as { [key: string]: string };
+              const title = data.title as string | undefined;
+              const body = data.body as string | undefined;
+
+              // Only display if we have any visible content
+              if (title || body) {
+                await displayNotification({
+                  title,
+                  body,
+                  data,
+                  type: notificationType,
+                });
+              }
+            } else {
             }
           } catch (error) {
             handleError(error, 'Background message handling failed');
@@ -239,6 +370,7 @@ export const useNotifications = () => {
               'EMPTY_MESSAGE'
             );
           }
+
           // Implement navigation logic here
         } catch (error) {
           handleError(error, 'Notification open handling failed');
@@ -270,7 +402,6 @@ export const useNotifications = () => {
   }, []);
 
   const setupNotifeeBackgroundHandler = () => {
-
     try {
       notifee.onBackgroundEvent(async ({ type, detail }: Event) => {
         try {
@@ -279,6 +410,8 @@ export const useNotifications = () => {
           }
 
           if (type === EventType.PRESS && detail?.notification) {
+            // Handle notification press with logo support
+            // The notification already has the logo from when it was created
             // Implement navigation logic here
           }
         } catch (error) {
@@ -302,11 +435,16 @@ export const useNotifications = () => {
         );
       }
 
+      // Register device for remote messages on iOS
+      if (Platform.OS === 'ios') {
+        await registerDeviceForRemoteMessages(messaging);
+      }
+
       const token = await getToken(messaging);
+      //console.log('[FCM] Token received:', token);
       if (!token) {
         throw new MessagingError('Failed to get FCM token', 'TOKEN_RETRIEVAL_FAILED');
       }
-
       return token;
     } catch (error) {
       handleError(error, 'Get FCM token failed');
@@ -314,57 +452,58 @@ export const useNotifications = () => {
     }
   };
 
-  useEffect(() => {
+  const setupNotifications = async () => {
+    // Prevent duplicate setup across the app's lifetime
+    if (notificationsSetup) {
+      return () => {};
+    }
+
     let unsubscribeForeground: (() => void) | undefined;
     let unsubscribeBackground: (() => void) | undefined;
     let unsubscribeOpened: (() => void) | undefined;
+    try {
+      const permissionStatus = await requestPermissions();
 
-    const setupNotifications = async () => {
-
-      try {
-        const permissionStatus = await requestPermissions();
-
-        if (!permissionStatus) {
-          throw new PermissionError(
-            'Notification permissions not granted',
-            'PERMISSION_NOT_GRANTED'
-          );
-        }
-
-        // Get the FCM token
-        const token = await getFCMToken();
-        if (!token) {
-          throw new MessagingError('No FCM token available', 'TOKEN_UNAVAILABLE');
-        }
-
-        // Setup handlers
-        unsubscribeForeground = setupForegroundHandler();
-        unsubscribeBackground = setupNotifeeBackgroundHandler();
-        unsubscribeOpened = setupNotificationOpenedHandler();
-        setupBackgroundHandler();
-        await setupInitialNotification();
-      } catch (error) {
-        handleError(error, 'Setup notifications failed');
+      if (!permissionStatus) {
+        throw new PermissionError('Notification permissions not granted', 'PERMISSION_NOT_GRANTED');
       }
-    };
 
-    setupNotifications();
-
-    // Cleanup
-    return () => {
-      try {
-        unsubscribeForeground?.();
-        unsubscribeBackground?.();
-        unsubscribeOpened?.();
-      } catch (error) {
-        handleError(error, 'Notification cleanup failed');
+      // Get the FCM token
+      const token = await getFCMToken();
+      if (!token) {
+        throw new MessagingError('No FCM token available', 'TOKEN_UNAVAILABLE');
       }
-    };
-  }, [setupInitialNotification, setupNotificationOpenedHandler]);
+
+      // Setup handlers - prevent duplicates by being selective
+      unsubscribeForeground = setupForegroundHandler();
+      unsubscribeBackground = setupNotifeeBackgroundHandler();
+      unsubscribeOpened = setupNotificationOpenedHandler();
+      // Only setup Firebase background handler for data-only messages
+      setupBackgroundHandler();
+      await setupInitialNotification();
+
+      // Mark as set up and return cleanup function
+      notificationsSetup = true;
+      return () => {
+        try {
+          unsubscribeForeground?.();
+          unsubscribeBackground?.();
+          unsubscribeOpened?.();
+          notificationsSetup = false; // Reset flag on cleanup
+        } catch (error) {
+          handleError(error, 'Notification cleanup failed');
+        }
+      };
+    } catch (error) {
+      handleError(error, 'Setup notifications failed');
+      return () => {}; // Return no-op cleanup function on error
+    }
+  };
 
   return {
     displayNotification,
     getFCMToken,
     requestPermissions,
+    setupNotifications,
   };
 };

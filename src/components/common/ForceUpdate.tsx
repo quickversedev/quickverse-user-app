@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 
 import DeviceInfo from 'react-native-device-info';
+import { Images } from '../../assets';
 import useFetchUpdateData from '../../hooks/useFetchUpdateData';
 import { Theme, useTheme } from '../../theme/ThemeContext';
 
@@ -32,7 +33,7 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Use the custom hook to fetch update data
   const { updateData, loading, error, retry } = useFetchUpdateData();
-
+  //console.log('updateData', updateData);
   // Mounted ref to prevent state updates after unmount
   const isMounted = useRef(true);
 
@@ -101,7 +102,7 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       setIsChecking(true);
       const currentVersion = DeviceInfo.getVersion();
-
+      //console.log('currentVersion', currentVersion);
       if (!updateData?.min_required_version) {
         setIsUpdateRequired(false);
         return;
@@ -156,13 +157,9 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Loading state
   if (loading || isChecking) {
-    console.log('loading ::::::', loading, isChecking);
     return (
       <View style={getStyles(theme).loadingContainer}>
-        <Image
-          style={getStyles(theme).loadingLogo}
-          source={require('../../assets/images/logo_qv.png')}
-        />
+        <Image style={getStyles(theme).loadingLogo} source={Images.logoQv} />
         <ActivityIndicator
           size="large"
           color={theme.colors.secondary}
@@ -174,23 +171,20 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   // Error state
-  if (error) {
-    return (
-      <View style={getStyles(theme).errorContainer}>
-        <Image
-          style={getStyles(theme).errorLogo}
-          source={require('../../assets/images/logo_qv.png')}
-        />
-        <Text style={getStyles(theme).errorTitle}>Connection Error</Text>
-        <Text style={getStyles(theme).errorText}>
-          Failed to check for updates. Please check your internet connection.
-        </Text>
-        <TouchableOpacity style={getStyles(theme).retryButton} onPress={handleRetry}>
-          <Text style={getStyles(theme).retryButtonText}>Try Again</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  // if (error) {
+  //   return (
+  //     <View style={getStyles(theme).errorContainer}>
+  //       <Image style={getStyles(theme).errorLogo} source={Images.logoQv} />
+  //       <Text style={getStyles(theme).errorTitle}>Connection Error</Text>
+  //       <Text style={getStyles(theme).errorText}>
+  //         Failed to check for updates. Please check your internet connection.
+  //       </Text>
+  //       <TouchableOpacity style={getStyles(theme).retryButton} onPress={handleRetry}>
+  //         <Text style={getStyles(theme).retryButtonText}>Try Again</Text>
+  //       </TouchableOpacity>
+  //     </View>
+  //   );
+  // }
 
   // Update required state
   if (isUpdateRequired) {
@@ -204,16 +198,13 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
         ]}
       >
         <ImageBackground
-          source={require('../../assets/images/bg_1.png')}
+          source={Images.bg1}
           style={getStyles(theme).topBackground}
           resizeMode="cover"
         />
 
         <View style={getStyles(theme).logoContainer}>
-          <Image
-            style={getStyles(theme).topLogo}
-            source={require('../../assets/images/logo_qv.png')}
-          />
+          <Image style={getStyles(theme).topLogo} source={Images.logoQv} />
         </View>
 
         <Animated.View
@@ -256,7 +247,7 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }
 
-  return children;
+  return <>{children}</>;
 };
 
 export default ForceUpdateChecker;
