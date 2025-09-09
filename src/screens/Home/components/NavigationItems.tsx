@@ -81,10 +81,10 @@ const styles = StyleSheet.create({
   },
   selectedIndicator: {
     position: 'absolute',
-    bottom: 0,
+    bottom: -3, // Position it to overlap the border
     left: 0,
     right: 0,
-    height: 3,
+    height: 4,
   },
   label: {
     fontSize: 11,

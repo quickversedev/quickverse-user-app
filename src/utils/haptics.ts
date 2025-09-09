@@ -8,10 +8,10 @@ export const triggerAddToCartHaptic = (): void => {
   // Short, light pulse. iOS compresses short durations; Android respects exact ms.
   // Keep it subtle to avoid intrusive feedback.
   if (Platform.OS === 'android') {
-    Vibration.vibrate(15);
+    Vibration.vibrate(8);
   } else {
     // On iOS, very short durations can be ignored; a small pattern helps
-    Vibration.vibrate([0, 10]);
+    Vibration.vibrate([0, 5]);
   }
 };
 

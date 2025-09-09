@@ -857,7 +857,7 @@ const VendorProductComponent: React.FC = () => {
           paddingVertical: 12,
           paddingHorizontal: 16,
           alignItems: 'center',
-          marginTop: -16,
+          marginTop: -26,
           marginBottom: 16,
           borderBottomLeftRadius: 16,
           borderBottomRightRadius: 16,

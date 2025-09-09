@@ -1,6 +1,12 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo } from 'react';
-import { NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, ViewStyle } from 'react-native';
+import {
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Platform,
+  ScrollView,
+  ViewStyle,
+} from 'react-native';
 
 import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
 import SectionDivider from '../../../../components/common/SectionDivider';
@@ -55,16 +61,16 @@ const ForYouContentComponent: React.FC<ForYouContentProps> = ({
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
       style={{
-  paddingBottom: 100,
-  paddingTop: Platform.select({
-    ios: 80,
-    android: 100
-  })
-}}
+        paddingBottom: 100,
+        paddingTop: Platform.select({
+          ios: 80,
+          android: 100,
+        }),
+      }}
     >
       {bannerData?.length > 0 && <AutoScrollBanner bannerData={bannerData} />}
 
-      <SectionDivider text="Shops" fontSize={16} style={{ marginVertical: 12 }} />
+      <SectionDivider text="SHOPS" fontSize={16} style={{ marginVertical: 12 }} />
       <VendorList />
       {/* <BadgeTagDemo /> */}
       <SectionDivider text="BESTSELLERS" fontSize={16} style={{ marginVertical: 12 }} />
