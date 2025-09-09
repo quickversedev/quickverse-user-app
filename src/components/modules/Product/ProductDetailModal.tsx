@@ -329,7 +329,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       ? variants.map(variant => ({
           id: variant.sku,
           name: variant.name,
-          value: `${variant.attributes?.size} | ${variant.attributes?.color}`,
+          value: [variant.attributes?.size, variant.attributes?.color].filter(Boolean).join(' | '),
         }))
       : [];
   // Loading state for variants

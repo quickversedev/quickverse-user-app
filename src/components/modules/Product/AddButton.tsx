@@ -127,16 +127,15 @@ const AddButton: React.FC<AddButtonProps> = ({
   if (shouldShowBadge) {
     return (
       <>
-        <View style={{ position: 'relative' }}>
-          <TouchableOpacity style={styles.addButton} onPress={handleSafePress}>
-            <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
-            <View style={styles.badge}>
-              <ThemeText variant="small" color={getColor('white')} style={styles.badgeText}>
-                {numberOfVariants}
-              </ThemeText>
-            </View>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.addButton} onPress={handleSafePress}>
+          <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
+          <View style={styles.badge}>
+            <ThemeText variant="small" color={getColor('white')} style={styles.badgeText}>
+              {numberOfVariants}
+            </ThemeText>
+          </View>
+        </TouchableOpacity>
+
         {renderLoginModal()}
       </>
     );

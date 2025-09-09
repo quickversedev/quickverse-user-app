@@ -38,7 +38,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
   attributes,
 }) => {
   const { getColor, getTypography } = useTheme();
-  const [isProductInfoExpanded, setIsProductInfoExpanded] = useState(false);
+
   const [isAttributesExpanded, setIsAttributesExpanded] = useState(true);
 
   const styles = StyleSheet.create({
@@ -202,8 +202,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
   const renderAttributeRow = (label: string, value: string | number | null, isLast = false) => {
     if (value === null || value === undefined) return null;
     const cleanValue = cleanHtmlText(value.toString());
-    //console.log('cleanValue', cleanValue);
-    //console.log('value', value);
+    console.log('cleanValue', cleanValue);
+    console.log('value', value);
     return (
       <View style={[styles.attributeRow, isLast && styles.lastAttributeRow]}>
         <Text style={styles.attributeLabel}>{label}</Text>
@@ -220,7 +220,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
         <Text style={styles.productName}>{productName}</Text>
         {veg !== undefined && <VegIcon veg={veg} size="regular" />}
       </View>
-
+      {console.log('variants', variants)}
       {variants.length > 1 && (
         <View style={styles.variantsContainer}>
           <View style={styles.variantsList}>
@@ -244,9 +244,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
           </View>
         </View>
       )}
-
       {/* Product Info Collapsible Section */}
-
       {/* Attributes Collapsible Section */}
       {attributes &&
         renderCollapsibleSection(

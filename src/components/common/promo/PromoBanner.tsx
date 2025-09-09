@@ -189,9 +189,9 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
   const bannerShadow =
     Platform.OS === 'ios'
       ? {
-          shadowColor: getColor('shadow').color,
-          shadowOpacity: getColor('shadow').opacity,
-          shadowRadius: getColor('shadow').radius,
+          shadowColor: theme.colors.shadow.color,
+          shadowOpacity: theme.colors.shadow.opacity,
+          shadowRadius: theme.colors.shadow.radius,
         }
       : {
           elevation: 2,
