@@ -191,10 +191,10 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       height: getResponsiveValue(32, 40, 48),
       alignItems: 'center',
       justifyContent: 'center',
-      shadowColor: getColor('shadow').color,
+      shadowColor: theme.colors.shadow.color,
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: getColor('shadow').opacity,
-      shadowRadius: getColor('shadow').radius,
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
       elevation: 3,
     },
     content: {

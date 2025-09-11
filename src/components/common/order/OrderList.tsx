@@ -34,6 +34,7 @@ const OrderList: React.FC<OrderListProps> = ({
 
   // State hooks
   const [refreshing, setRefreshing] = useState(false);
+  const [isLoadMoreClicking, setIsLoadMoreClicking] = useState(false);
 
   // Auto-refresh orders when app comes back from background
   useAppStateRefresh({
@@ -50,8 +51,9 @@ const OrderList: React.FC<OrderListProps> = ({
   // Memoized values
 
   const filteredOrders = useMemo(() => {
-    // Always return fresh orders when loading or refreshing
-    if (loading || refreshing) return [];
+    // Keep showing current items during pagination; only clear on true initial loads or refreshes
+    if (refreshing) return [];
+    if (loading && orders.length === 0) return [];
     return orders;
   }, [orders, loading, refreshing]);
   const keyExtractor = useMemo(() => (item: Order) => item.orderId, []);
@@ -93,11 +95,15 @@ const OrderList: React.FC<OrderListProps> = ({
     }
   }, [refreshOrders, refreshing, loading]);
 
-  const handleLoadMore = useCallback(() => {
-    if (hasMoreOrders && !loading) {
-      loadMoreOrders();
+  const handleLoadMoreClick = useCallback(async () => {
+    if (!hasMoreOrders || loading || isLoadMoreClicking) return;
+    setIsLoadMoreClicking(true);
+    try {
+      await loadMoreOrders();
+    } finally {
+      setIsLoadMoreClicking(false);
     }
-  }, [hasMoreOrders, loading, loadMoreOrders]);
+  }, [hasMoreOrders, loading, isLoadMoreClicking, loadMoreOrders]);
 
   const handleOrderSomething = useCallback(() => {
     // Navigate to main app (home screen)
@@ -141,35 +147,35 @@ const OrderList: React.FC<OrderListProps> = ({
               let gridLayout: {
                 rows: number;
                 cols: number;
-                itemStyle: { flex: number; height: string };
+                itemStyle: { flex: number; height: number };
               };
               if (displayItems.length === 1) {
                 // 1 item: takes full 2x2 space
                 gridLayout = {
                   rows: 1,
                   cols: 1,
-                  itemStyle: { flex: 1, height: '100%' },
+                  itemStyle: { flex: 1, height: 60 },
                 };
               } else if (displayItems.length === 2) {
                 // 2 items: each takes 1x2 space (side by side)
                 gridLayout = {
                   rows: 1,
                   cols: 2,
-                  itemStyle: { flex: 1, height: '100%' },
+                  itemStyle: { flex: 1, height: 60 },
                 };
               } else if (displayItems.length === 3) {
                 // 3 items: first takes 1x2, other two take 1x1 each
                 gridLayout = {
                   rows: 2,
                   cols: 2,
-                  itemStyle: { flex: 1, height: '50%' },
+                  itemStyle: { flex: 1, height: 30 },
                 };
               } else {
                 // 4+ items: standard 2x2 grid
                 gridLayout = {
                   rows: 2,
                   cols: 2,
-                  itemStyle: { flex: 1, height: '50%' },
+                  itemStyle: { flex: 1, height: 30 },
                 };
               }
 
@@ -323,19 +329,39 @@ const OrderList: React.FC<OrderListProps> = ({
             progressViewOffset={showStatusFilter ? 60 : 0}
           />
         }
-        onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}
         windowSize={10}
         initialNumToRender={5}
         ListFooterComponent={
-          filteredOrders.length > 0 && loading && hasMoreOrders ? (
-            <ActivityIndicator size="large" color={getColor('primary')} style={styles.loader} />
+          filteredOrders.length > 0 && hasMoreOrders ? (
+            loading && !isLoadMoreClicking ? (
+              <ActivityIndicator size="small" color={getColor('primary')} style={styles.loader} />
+            ) : isLoadMoreClicking ? (
+              <View style={styles.footerLoadingRow}>
+                <ActivityIndicator size="small" color={getColor('primary')} />
+                <Text style={[styles.footerLoadingText, { color: getColor('subText') }]}>
+                  Loading more…
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.footerContainer}>
+                <TouchableOpacity
+                  style={[styles.loadMoreButton, { borderColor: getColor('primary') }]}
+                  onPress={handleLoadMoreClick}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.loadMoreText, { color: getColor('primary') }]}>
+                    Load more
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )
           ) : null
         }
         ListEmptyComponent={
-          loading && !refreshing ? (
+          loading && orders.length === 0 ? (
             <ActivityIndicator size="large" color={getColor('primary')} style={styles.loader} />
           ) : (
             <View style={styles.emptyContainer}>
@@ -509,6 +535,33 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginVertical: 20,
+  },
+  footerContainer: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerLoadingRow: {
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  footerLoadingText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  loadMoreButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: 'transparent',
+  },
+  loadMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   emptyContainer: {
     flex: 1,
