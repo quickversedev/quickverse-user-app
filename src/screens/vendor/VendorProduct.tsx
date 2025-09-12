@@ -1128,11 +1128,11 @@ const VendorProductComponent: React.FC = () => {
           />
 
           {/* Store Status Banner */}
-          {!isStoreActive && (
+          {/* {!isStoreActive && (
             <View style={styles.closedBanner}>
               <Text style={styles.closedText}>WE ARE CLOSED</Text>
             </View>
-          )}
+          )} */}
 
           {/* Zero State - Show when no products available */}
           {!productsLoading && products.length === 0 && (

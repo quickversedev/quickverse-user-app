@@ -5,6 +5,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { Images } from '../../assets';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
+import { getStoreStatus } from '../../utils/storeUtils';
 import { ThemeText } from '../common/theme/ThemeText';
 
 interface VendorHeaderCardProps {
@@ -19,19 +20,33 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, st
   const scale = useRef(new Animated.Value(1)).current;
   const [logoError, setLogoError] = useState(false);
 
+  const storeStatus = getStoreStatus({
+    storeActive: vendor.storeActive,
+    openingTime: vendor.openingTime,
+    closingTime: vendor.closingTime,
+  });
+  const isStoreClosed = !storeStatus.isOpen;
+
   const styles = StyleSheet.create({
     container: {
-      flexDirection: 'row',
-      alignItems: 'center',
       backgroundColor: getColor('card'),
       borderRadius: theme.borderRadius.md,
-      margin: 16,
-      padding: 12,
-      shadowColor: getColor('primary'),
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      borderWidth: 1,
-      borderColor: getColor('primary'),
+      paddingVertical: 16,
+      // marginTop: 16,
+      marginTop: 16,
+      // marginBottom: 16,
+      marginHorizontal: 16,
+      overflow: 'hidden',
+      position: 'relative',
+      zIndex: 2,
+    },
+    mainContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      // paddingTop: 12,
+      // paddingBottom: 12,
+      paddingLeft: 12,
+      paddingRight: 12,
     },
     logo: {
       width: 48,
@@ -51,6 +66,35 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, st
       paddingHorizontal: 6,
       paddingVertical: 2,
       marginLeft: 8,
+    },
+    chevronContainer: {
+      marginLeft: 'auto',
+      alignSelf: 'center',
+    },
+
+    closedBanner: {
+      marginTop: -12,
+      marginHorizontal: 17,
+      paddingTop: 16,
+      paddingBottom: 6,
+      // paddingVertical:,
+      borderLeftWidth: 2,
+      borderRightWidth: 2,
+      borderBottomWidth: 2,
+      borderColor: getColor('error'),
+      borderBottomLeftRadius: 16,
+      borderBottomRightRadius: 16,
+      backgroundColor: 'rgba(255, 0, 0, 0.08)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+      zIndex: 1,
+    },
+    closedText: {
+      color: getColor('error'),
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 1.5,
     },
   });
 
@@ -91,37 +135,53 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, st
 
   return (
     <Animated.View style={[{ transform: [{ scale }] }, style]}>
-      <TouchableOpacity
-        style={styles.container}
-        onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        activeOpacity={0.9}
-      >
-        <Image
-          source={logoError || !vendor.logo ? Images.bg1 : { uri: vendor.logo }}
-          style={styles.logo}
-          onError={() => setLogoError(true)}
-        />
-        <View style={styles.info}>
-          <ThemeText variant="h2" color={getColor('text')}>
-            {vendor.name}
-          </ThemeText>
-          <View style={styles.meta}>
-            <ThemeText variant="caption" color={getColor('subText')} style={{ marginRight: 8 }}>
-              ⏱ {vendor.preparationTime}
+      <View style={styles.container}>
+        <TouchableOpacity
+          style={styles.mainContent}
+          onPress={handlePress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          activeOpacity={0.9}
+        >
+          <Image
+            source={logoError || !vendor.logo ? Images.bg1 : { uri: vendor.logo }}
+            style={styles.logo}
+            onError={() => setLogoError(true)}
+          />
+          <View style={styles.info}>
+            <ThemeText variant="h2" color={getColor('text')}>
+              {vendor.name}
             </ThemeText>
-            <ThemeText variant="caption" color={getColor('subText')} style={{ marginRight: 8 }}>
-              | {formatAddress()}
-            </ThemeText>
-            <View style={styles.ratingBox}>
-              <MaterialCommunityIcons name="star" size={14} color="#fff" />
-              {renderRating()}
+            <View style={styles.meta}>
+              <MaterialCommunityIcons name="flash" size={16} color={getColor('primary')} />
+              <ThemeText
+                variant="caption"
+                color={getColor('subText')}
+                style={{ marginLeft: 4, marginRight: 8 }}
+              >
+                {vendor.preparationTime}
+              </ThemeText>
+              <ThemeText variant="caption" color={getColor('subText')} style={{ marginRight: 8 }}>
+                • {formatAddress()}
+              </ThemeText>
+              <View style={styles.ratingBox}>
+                <MaterialCommunityIcons name="star" size={14} color="#fff" />
+                {renderRating()}
+              </View>
             </View>
           </View>
+          <View style={styles.chevronContainer}>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={getColor('primary')} />
+          </View>
+        </TouchableOpacity>
+      </View>
+      {isStoreClosed && (
+        <View style={styles.closedBanner}>
+          <ThemeText variant="caption" color={getColor('error')} style={styles.closedText}>
+            WE ARE CLOSED
+          </ThemeText>
         </View>
-        <MaterialCommunityIcons name="chevron-right" size={28} color={getColor('primary')} />
-      </TouchableOpacity>
+      )}
     </Animated.View>
   );
 };
