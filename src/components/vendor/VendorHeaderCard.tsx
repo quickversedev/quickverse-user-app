@@ -94,7 +94,7 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, st
       color: getColor('error'),
       fontWeight: '700',
       textTransform: 'uppercase',
-      letterSpacing: 1.5,
+      letterSpacing: 4,
     },
   });
 
