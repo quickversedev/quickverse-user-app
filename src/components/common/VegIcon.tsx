@@ -10,9 +10,10 @@ interface VegIconProps {
 const VegIcon: React.FC<VegIconProps> = memo(({ veg, size = 'regular' }) => {
   const styles = StyleSheet.create({
     container: {
-      width: size === 'xs' ? 12 : 18,
-      height: size === 'xs' ? 12 : 18,
-      borderWidth: 1,
+      width: size === 'xs' ? 14 : 18,
+      height: size === 'xs' ? 14 : 18,
+      borderWidth: 1.5,
+      borderRadius: 4,
       borderColor: veg ? '#4CAF50' : '#FF6B6B',
       backgroundColor: 'transparent',
       marginRight: size === 'xs' ? 4 : 6,

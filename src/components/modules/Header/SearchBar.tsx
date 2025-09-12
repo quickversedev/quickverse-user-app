@@ -32,6 +32,7 @@ const SearchBarContent: React.FC = () => {
             fontSize: theme.typography.body,
             lineHeight: theme.typography.body * theme.typography.lineHeightMultiplier,
             fontFamily: theme.typography.fontFamily,
+            fontWeight: 'normal',
           },
         ]}
         editable={false}

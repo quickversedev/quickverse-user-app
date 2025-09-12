@@ -68,11 +68,15 @@ const VendorCard: React.FC<VendorCardProps> = ({
       borderRadius: theme.borderRadius.md,
       marginBottom: 16,
       overflow: 'hidden',
-      elevation: 3,
-      shadowColor: getColor('shadow').color,
-      shadowOffset: getColor('shadow').offset,
-      shadowOpacity: getColor('shadow').opacity,
-      shadowRadius: getColor('shadow').radius,
+      // White glow on iOS
+      shadowColor: getColor('white'),
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.18,
+      shadowRadius: 10,
+      // Android fallback (elevation shadow is dark, so use border for subtle glow)
+      elevation: 2,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.08)',
     },
     vendorImage: {
       width: '100%',
