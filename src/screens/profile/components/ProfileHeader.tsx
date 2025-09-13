@@ -1,7 +1,6 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Images } from '../../../assets';
 import { useTheme } from '../../../theme/ThemeContext';
 
 type ProfileHeaderProps = {
@@ -45,7 +44,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ username, phone }) => {
           ) : null}
         </View>
       </View>
-      <Image source={Images.logoQv} style={styles.logo} resizeMode="contain" />
     </View>
   );
 };

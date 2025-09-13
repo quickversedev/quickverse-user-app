@@ -157,13 +157,13 @@ const VendorCard: React.FC<VendorCardProps> = ({
           </View>
         )}
         {imageSource && <Image source={imageSource} style={styles.vendorImage} />}
-        <TouchableOpacity style={styles.favoriteButton} onPress={() => onFavoritePress?.(vendor)}>
+        {/* <TouchableOpacity style={styles.favoriteButton} onPress={() => onFavoritePress?.(vendor)}>
           <MaterialCommunityIcons
             name={_isFavorite ? 'heart' : 'heart-outline'}
             size={20}
             color={_isFavorite ? _favoriteColor : getColor('error')}
           />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
       <View style={styles.vendorInfo}>
         <ThemeText

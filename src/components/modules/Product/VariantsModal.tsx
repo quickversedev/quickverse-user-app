@@ -55,7 +55,7 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       fetchVariants(product.primarySKU);
     }
   }, [visible, product.primarySKU, fetchVariants]);
-  console.log('product', product);
+
   useEffect(() => {
     if (!visible) {
       reset();
@@ -117,7 +117,7 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
   const styles = StyleSheet.create({
     modalOverlay: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
       justifyContent: 'flex-end',
     },
     modal: {
@@ -130,8 +130,8 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
 
     closeButton: {
       position: 'absolute',
-      top: 20,
-      right: 20,
+      top: -50,
+      alignSelf: 'center',
       zIndex: 10,
       backgroundColor: getColor('card'),
       borderRadius: 20,

@@ -321,13 +321,10 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       // Step 3: Handle address fetching based on MMKV storage state
       const addressPromise = isLoggedIn
         ? (async () => {
-            console.log('storedAddresses in app initializer', storedAddresses);
             if (!storedAddresses || storedAddresses.length === 0) {
               // MMKV storage is empty, wait for API call to resolve
-              console.log('cachedAddresses', cachedAddresses);
               await fetchAddresses();
             } else {
-              console.log('Not cachedAddresses', cachedAddresses);
               fetchAddresses().catch(() => {
                 // Silently handle API errors for non-blocking calls
               });
