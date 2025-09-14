@@ -1,13 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback } from 'react';
-import {
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  ViewStyle,
-} from 'react-native';
+import React, { useCallback, useRef } from 'react';
+import { Animated, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
 import SectionDivider from '../../../../components/common/SectionDivider';
@@ -49,37 +42,30 @@ const ForYouContentComponent: React.FC<ForYouContentProps> = ({
     // Handle product press if needed
   }, []);
 
-  const styles = StyleSheet.create({
-    scroll: {
-      paddingBottom: 100,
-      paddingTop: Platform.select({
-        ios: 80,
-        android: 100,
-      }),
-    },
-  });
+  // No outer ScrollView; padding handled by FlatList contentContainerStyle
+
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   return (
-    <ScrollView
+    <VendorProductList
+      vendors={vendors}
+      onVendorPress={handleVendorPress}
+      onProductPress={handleProductPress}
       onScroll={onScroll}
-      scrollEventThrottle={scrollEventThrottle}
-      contentContainerStyle={contentContainerStyle}
+      scrollEventThrottle={scrollEventThrottle ?? 16}
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
-      style={styles.scroll}
-    >
-      {hasPromotions && <AutoScrollBanner bannerData={bannerData} />}
-
-      <SectionDivider text="SHOPS" fontSize={16} style={{ marginVertical: 12 }} />
-      <VendorList />
-      {/* <BadgeTagDemo /> */}
-      <SectionDivider text="BESTSELLERS" fontSize={16} style={{ marginVertical: 12 }} />
-      <VendorProductList
-        vendors={vendors}
-        onVendorPress={handleVendorPress}
-        onProductPress={handleProductPress}
-        useFlatList={false} // Disable FlatList when nested in ScrollView
-      />
-    </ScrollView>
+      contentContainerStyle={contentContainerStyle}
+      scrollY={scrollY}
+      header={
+        <>
+          {hasPromotions && <AutoScrollBanner bannerData={bannerData} />}
+          <SectionDivider text="SHOPS" fontSize={16} style={{ marginVertical: 12 }} />
+          <VendorList />
+          {/* <BadgeTagDemo /> */}
+          <SectionDivider text="BESTSELLERS" fontSize={16} style={{ marginVertical: 12 }} />
+        </>
+      }
+    />
   );
 };
 

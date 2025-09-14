@@ -1,5 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, StyleSheet, View, ViewToken } from 'react-native';
+import {
+  ActivityIndicator,
+  Animated,
+  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Platform,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+  ViewToken,
+} from 'react-native';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import useFeaturedProductsStoreHook from '../../../hooks/useFeaturedProductsStore';
 import useCartStore from '../../../store/cart/cartStore';
@@ -13,7 +25,12 @@ interface VendorProductListProps {
   vendors: Vendor[];
   onVendorPress: (vendor: Vendor) => void;
   onProductPress: (product: Product) => void;
-  useFlatList?: boolean;
+  header?: React.ReactNode;
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  scrollEventThrottle?: number;
+  showsVerticalScrollIndicator?: boolean;
+  contentContainerStyle?: StyleProp<ViewStyle>;
+  scrollY?: Animated.Value;
 }
 
 // Constants for better performance
@@ -26,7 +43,12 @@ const VendorProductListComponent: React.FC<VendorProductListProps> = ({
   vendors,
   onVendorPress,
   onProductPress: _onProductPress,
-  useFlatList = true,
+  header,
+  onScroll,
+  scrollEventThrottle,
+  showsVerticalScrollIndicator,
+  contentContainerStyle,
+  scrollY,
 }) => {
   const { getColor } = useTheme();
   const { authData } = useAuth();
@@ -51,11 +73,9 @@ const VendorProductListComponent: React.FC<VendorProductListProps> = ({
 
   // Get currently visible vendors (for lazy loading)
   const visibleVendors = useMemo(() => {
-    if (useFlatList) {
-      return vendors.slice(0, loadedVendorsCount);
-    }
-    return vendors;
-  }, [vendors, loadedVendorsCount, useFlatList]);
+    // Render only a slice to avoid mounting a large number of cards at once
+    return vendors.slice(0, loadedVendorsCount);
+  }, [vendors, loadedVendorsCount]);
 
   // Memoize viewability config
   const viewabilityConfig = useMemo(
@@ -72,6 +92,12 @@ const VendorProductListComponent: React.FC<VendorProductListProps> = ({
         container: {
           backgroundColor: getColor('background'),
         },
+        headerSpacer: {
+          marginBottom: 16,
+        },
+        footer: {
+          paddingVertical: 12,
+        },
       }),
     [getColor]
   );
@@ -79,18 +105,19 @@ const VendorProductListComponent: React.FC<VendorProductListProps> = ({
   // Memoize FlatList performance props
   const flatListProps = useMemo(
     () => ({
-      removeClippedSubviews: true,
+      removeClippedSubviews: Platform.OS === 'android',
       maxToRenderPerBatch: BATCH_SIZE,
-      windowSize: 10,
+      windowSize: 7,
       initialNumToRender: INITIAL_BATCH_SIZE,
-      showsVerticalScrollIndicator: false,
+      updateCellsBatchingPeriod: 50,
+      onEndReachedThreshold: 0.5,
     }),
     []
   );
 
   // Load more vendors when needed
   const loadMoreVendors = useCallback(async () => {
-    if (!useFlatList || isLoadingMore || loadedVendorsCount >= vendorsLength) return;
+    if (isLoadingMore || loadedVendorsCount >= vendorsLength) return;
 
     setIsLoadingMore(true);
     try {
@@ -105,12 +132,12 @@ const VendorProductListComponent: React.FC<VendorProductListProps> = ({
     } finally {
       setIsLoadingMore(false);
     }
-  }, [useFlatList, isLoadingMore, loadedVendorsCount, vendorsLength, vendors, prefetchForVendors]);
+  }, [isLoadingMore, loadedVendorsCount, vendorsLength, vendors, prefetchForVendors]);
 
   // Handle viewability change for lazy loading
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken<Vendor>[] }) => {
-      if (!useFlatList || viewableItems.length === 0) return;
+      if (viewableItems.length === 0) return;
 
       const highestVisibleIndex = Math.max(...viewableItems.map(item => item.index || 0));
 
@@ -121,22 +148,20 @@ const VendorProductListComponent: React.FC<VendorProductListProps> = ({
       ) {
         loadMoreVendors();
       }
+
+      // Auto-boost initial batch if too few visible items (e.g., hidden cards)
+      const desired = Math.min(INITIAL_BATCH_SIZE, vendorsLength);
+      if (viewableItems.length < desired && loadedVendorsCount < vendorsLength) {
+        setLoadedVendorsCount(c => Math.min(c + BATCH_SIZE, vendorsLength));
+      }
     },
-    [useFlatList, loadedVendorsCount, vendorsLength, isLoadingMore, loadMoreVendors]
+    [loadedVendorsCount, vendorsLength, isLoadingMore, loadMoreVendors]
   );
 
   // Memoize key extractor
   const keyExtractor = useCallback((vendor: Vendor) => vendor.shopId, []);
 
-  // Memoize getItemLayout
-  const getItemLayout = useCallback(
-    (data: ArrayLike<Vendor> | null | undefined, index: number) => ({
-      length: ITEM_HEIGHT,
-      offset: ITEM_HEIGHT * index,
-      index,
-    }),
-    []
-  );
+  // getItemLayout intentionally omitted: card heights may vary; avoiding jumpiness
 
   // Memoize handleAddToCart
   const handleAddToCart = useCallback(
@@ -198,66 +223,73 @@ const VendorProductListComponent: React.FC<VendorProductListProps> = ({
     setSelectedVendorForDetail(null);
   }, []);
 
-  // Memoize product ID for modal
-  const selectedProductId = useMemo(
-    () => selectedProductForDetail?.sku || '',
-    [selectedProductForDetail?.sku]
-  );
-
   // Initial load of first batch
   useEffect(() => {
     if (vendorsLength > 0) {
-      const initialVendors = useFlatList ? vendors.slice(0, INITIAL_BATCH_SIZE) : vendors;
+      const initialVendors = vendors.slice(0, INITIAL_BATCH_SIZE);
 
       prefetchForVendors(initialVendors).catch(error => {
         console.warn('Failed to prefetch featured products:', error);
       });
     }
-  }, [vendorsLength, vendors, prefetchForVendors, useFlatList]);
+  }, [vendorsLength, vendors, prefetchForVendors]);
 
-  // Render vendors based on the useFlatList prop
+  // Render vendors with a safe top inset so header isn't hidden
   const renderVendors = useCallback(() => {
-    if (useFlatList) {
-      return (
-        <FlatList
-          ref={flatListRef}
-          data={visibleVendors}
-          renderItem={renderVendorItem}
-          keyExtractor={keyExtractor}
-          onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
-          getItemLayout={getItemLayout}
-          {...flatListProps}
-        />
-      );
-    }
+    const topInsetHeight = Platform.select({ ios: 80, android: 100 });
+    const composedHeader = (
+      <>
+        <View style={{ height: topInsetHeight }} />
+        {header || null}
+      </>
+    );
 
     return (
-      <View>
-        {visibleVendors.map(vendor => (
-          <View key={vendor.shopId}>
-            <VendorProductCard
-              vendor={vendor}
-              onVendorPress={onVendorPress}
-              onProductPress={product => handleProductPress(product, vendor)}
-              onAddToCart={product => handleAddToCart(product, vendor)}
-            />
-          </View>
-        ))}
-      </View>
+      <Animated.FlatList
+        ref={flatListRef}
+        data={visibleVendors}
+        renderItem={renderVendorItem}
+        keyExtractor={keyExtractor}
+        ListHeaderComponent={composedHeader}
+        ListHeaderComponentStyle={styles.headerSpacer}
+        contentContainerStyle={[{ paddingBottom: 100 }, contentContainerStyle]}
+        onScroll={
+          scrollY
+            ? Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+                useNativeDriver: true,
+                listener: onScroll,
+              })
+            : onScroll
+        }
+        scrollEventThrottle={scrollEventThrottle ?? 16}
+        showsVerticalScrollIndicator={showsVerticalScrollIndicator ?? false}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        onEndReached={loadMoreVendors}
+        ListFooterComponent={
+          isLoadingMore ? (
+            <View style={styles.footer}>
+              <ActivityIndicator size="small" />
+            </View>
+          ) : null
+        }
+        {...flatListProps}
+      />
     );
   }, [
-    useFlatList,
+    header,
+    contentContainerStyle,
     visibleVendors,
     renderVendorItem,
     keyExtractor,
     onViewableItemsChanged,
     viewabilityConfig,
-    getItemLayout,
+    loadMoreVendors,
+    isLoadingMore,
     flatListProps,
-    onVendorPress,
-    handleProductPress,
-    handleAddToCart,
+    onScroll,
+    scrollEventThrottle,
+    showsVerticalScrollIndicator,
   ]);
 
   return (
