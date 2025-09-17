@@ -32,13 +32,13 @@ const useFetchUpdateData = () => {
     setError(null);
 
     try {
-          const data = await apiCall<ApiResponse>(
-            axiosInstance.get('/v3/appConfig', {
-              headers: {
-                Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
-              },
-            })
-          );
+      const data = await apiCall<ApiResponse>(
+        axiosInstance.get('/v3/appConfig', {
+          headers: {
+            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+          },
+        })
+      );
       // const data = {
       //   minVersion: '1.0.0',
       //   appStoreURL: 'https://itunes.apple.com/app/id1542005830',
