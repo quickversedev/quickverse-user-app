@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, ScrollView, StyleSheet } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { ThemeText } from '../../common/theme/ThemeText';
 
@@ -52,9 +52,13 @@ const VendorEmptyState: React.FC<VendorEmptyStateProps> = ({ message, category }
   const styles = StyleSheet.create({
     container: {
       flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: 32,
+      paddingTop: 60,
     },
     image: {
       width: 120,
@@ -74,7 +78,12 @@ const VendorEmptyState: React.FC<VendorEmptyStateProps> = ({ message, category }
   });
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={true}
+      bounces={false}
+    >
       <Image source={require('../../../assets/images/empty_vendors.png')} style={styles.image} />
       <ThemeText variant="h2" color={getColor('text')} style={styles.emptyTitle}>
         {displayMessage.title}
@@ -82,7 +91,7 @@ const VendorEmptyState: React.FC<VendorEmptyStateProps> = ({ message, category }
       <ThemeText variant="body" color={getColor('subText')} style={styles.emptySubtitle}>
         {displayMessage.subtitle}
       </ThemeText>
-    </View>
+    </ScrollView>
   );
 };
 
