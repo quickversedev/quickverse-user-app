@@ -1,5 +1,5 @@
 import Geolocation from '@react-native-community/geolocation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppState, Platform } from 'react-native';
 import {
   check,
@@ -9,7 +9,15 @@ import {
   request,
   RESULTS,
 } from 'react-native-permissions';
-import { getSkipPermission, setSkipPermissions } from '../../services/localStorage/storage.service';
+import type { StoredCoords } from '../../services/localStorage/storage.service';
+import {
+  getLocationCoords,
+  getLocationPermission,
+  getSkipPermission,
+  setLocationCoords,
+  setLocationPermission,
+  setSkipPermissions,
+} from '../../services/localStorage/storage.service';
 
 interface GeolocationPosition {
   coords: {
@@ -43,6 +51,65 @@ export const useLocation = () => {
     error: null,
   });
   const [hasSkippedLocation, setHasSkippedLocation] = useState<boolean>(false);
+  const hasLoggedStorageError = useRef<boolean>(false);
+
+  const logStorageError = (error: unknown) => {
+    if (hasLoggedStorageError.current) return;
+    hasLoggedStorageError.current = true;
+    console.warn('Storage unavailable, proceeding without persistence', error);
+  };
+
+  // Safe storage helpers
+  const safeSetLocationPermission = useCallback((value: PermissionStatus) => {
+    try {
+      setLocationPermission(value);
+    } catch (e) {
+      logStorageError(e);
+    }
+  }, []);
+
+  const safeGetLocationPermission = useCallback((): PermissionStatus | undefined => {
+    try {
+      return getLocationPermission();
+    } catch (e) {
+      logStorageError(e);
+      return undefined;
+    }
+  }, []);
+
+  const safeSetSkipPermissions = useCallback((value: boolean) => {
+    try {
+      setSkipPermissions(value);
+    } catch (e) {
+      logStorageError(e);
+    }
+  }, []);
+
+  const safeGetSkipPermission = useCallback((): boolean | undefined => {
+    try {
+      return getSkipPermission();
+    } catch (e) {
+      logStorageError(e);
+      return undefined;
+    }
+  }, []);
+
+  const safeSetLocationCoords = useCallback((coords: StoredCoords) => {
+    try {
+      setLocationCoords(coords);
+    } catch (e) {
+      logStorageError(e);
+    }
+  }, []);
+
+  const safeGetLocationCoords = useCallback((): StoredCoords | undefined => {
+    try {
+      return getLocationCoords();
+    } catch (e) {
+      logStorageError(e);
+      return undefined;
+    }
+  }, []);
 
   const locationPermission = useMemo(
     () =>
@@ -53,9 +120,13 @@ export const useLocation = () => {
   );
 
   /** 🔹 Single helper to update state */
-  const updateLocation = (coords: { latitude: number; longitude: number }) => {
-    setLocation({ ...coords, error: null });
-  };
+  const updateLocation = useCallback(
+    (coords: StoredCoords) => {
+      setLocation({ ...coords, error: null });
+      safeSetLocationCoords(coords);
+    },
+    [safeSetLocationCoords]
+  );
 
   /** 🔹 Wrap Geolocation.getCurrentPosition into Promise */
   const fetchLocation = useCallback(
@@ -81,7 +152,7 @@ export const useLocation = () => {
           options
         );
       }),
-    [hasSkippedLocation]
+    [hasSkippedLocation, updateLocation]
   );
 
   /** 🔹 Check permission */
@@ -90,16 +161,17 @@ export const useLocation = () => {
     try {
       const result = await check(locationPermission);
       setPermissionStatus(result);
+      safeSetLocationPermission(result);
 
       if (result === RESULTS.GRANTED) {
         setHasSkippedLocation(false);
-        setSkipPermissions(false);
+        safeSetSkipPermissions(false);
       }
       return result;
     } finally {
       setIsLoading(false);
     }
-  }, [locationPermission]);
+  }, [locationPermission, safeSetLocationPermission, safeSetSkipPermissions]);
 
   /** 🔹 Request permission */
   const requestLocationPermission = useCallback(async () => {
@@ -107,28 +179,41 @@ export const useLocation = () => {
     try {
       const result = await request(locationPermission);
       setPermissionStatus(result);
+      safeSetLocationPermission(result);
 
       if (result === RESULTS.GRANTED) {
         setHasSkippedLocation(false);
-        setSkipPermissions(false);
+        safeSetSkipPermissions(false);
       }
       return result;
     } finally {
       setIsLoading(false);
     }
-  }, [locationPermission]);
+  }, [locationPermission, safeSetLocationPermission, safeSetSkipPermissions]);
 
   /** 🔹 Optimized permission + location fetch */
   const getPermissionAndLocation = useCallback(async (): Promise<PermissionAndLocation> => {
     try {
       const permission = await check(locationPermission);
       setPermissionStatus(permission);
+      safeSetLocationPermission(permission);
 
       if (permission !== RESULTS.GRANTED) {
         return { permission, location: null };
       }
 
-      // 1. Try quick cached fix
+      // 1. Try MMKV-stored coords first
+      const stored = safeGetLocationCoords();
+      if (stored) {
+        updateLocation(stored);
+        // Fire background refresh, but don’t block UI
+        fetchLocation({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }).catch(err =>
+          console.warn('Background location refresh failed:', err.message)
+        );
+        return { permission, location: stored };
+      }
+
+      // 2. Try quick cached fix from device provider
       const cached = await fetchLocation({
         enableHighAccuracy: false,
         timeout: 3000,
@@ -140,25 +225,30 @@ export const useLocation = () => {
         fetchLocation({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }).catch(err =>
           console.warn('Background location refresh failed:', err.message)
         );
-        console.log('cached', cached);
-
         return { permission, location: cached };
       }
 
-      // 2. Otherwise, wait for a fresh fix
+      // 3. Otherwise, wait for a fresh fix
       const live = await fetchLocation({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
       return { permission, location: live };
-    } catch (err: any) {
-      console.error('❌ [useLocation] Error in getPermissionAndLocation:', err);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('❌ [useLocation] Error in getPermissionAndLocation:', message);
       setPermissionStatus(RESULTS.UNAVAILABLE);
       setLocation({
         latitude: null,
         longitude: null,
-        error: err?.message ?? 'Unknown error',
+        error: message ?? 'Unknown error',
       });
       return { permission: RESULTS.UNAVAILABLE, location: null };
     }
-  }, [locationPermission, fetchLocation]);
+  }, [
+    locationPermission,
+    fetchLocation,
+    safeSetLocationPermission,
+    safeGetLocationCoords,
+    updateLocation,
+  ]);
 
   /** 🔹 Skip flow */
   const skipLocationPermission = () => {
@@ -188,9 +278,14 @@ export const useLocation = () => {
     let mounted = true;
 
     (async () => {
-      if (await getSkipPermission()) {
+      if (safeGetSkipPermission()) {
         setHasSkippedLocation(true);
       }
+      // Preload stored permission and coords synchronously
+      const storedPermission = safeGetLocationPermission();
+      if (storedPermission) setPermissionStatus(storedPermission);
+      const storedCoords = safeGetLocationCoords();
+      if (storedCoords) updateLocation(storedCoords);
       if (mounted) checkLocationPermission();
     })();
 
@@ -204,7 +299,13 @@ export const useLocation = () => {
       mounted = false;
       sub.remove();
     };
-  }, [checkLocationPermission]);
+  }, [
+    checkLocationPermission,
+    safeGetSkipPermission,
+    safeGetLocationPermission,
+    safeGetLocationCoords,
+    updateLocation,
+  ]);
 
   return {
     permissionStatus,
