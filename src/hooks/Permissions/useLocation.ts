@@ -128,14 +128,26 @@ export const useLocation = () => {
     [safeSetLocationCoords]
   );
 
-  /** 🔹 Wrap Geolocation.getCurrentPosition into Promise */
+  /** 🔹 Wrap Geolocation.getCurrentPosition into Promise (with defaults) */
   const fetchLocation = useCallback(
-    (options: { enableHighAccuracy: boolean; timeout: number; maximumAge: number }) =>
+    (
+      options: {
+        enableHighAccuracy?: boolean;
+        timeout?: number;
+        maximumAge?: number;
+      } = {}
+    ) =>
       new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
         if (hasSkippedLocation) {
           reject(new Error('Location permission skipped by user'));
           return;
         }
+        const mergedOptions = {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+          ...options,
+        } as const;
         Geolocation.getCurrentPosition(
           (pos: GeolocationPosition) => {
             const coords = {
@@ -149,7 +161,7 @@ export const useLocation = () => {
             setLocation({ latitude: null, longitude: null, error: err.message });
             reject(err);
           },
-          options
+          mergedOptions
         );
       }),
     [hasSkippedLocation, updateLocation]
