@@ -119,6 +119,15 @@ android {
     }
 }
 
+// Force specific Google Play Services versions project-wide to avoid runtime mismatches
+configurations.all {
+    resolutionStrategy {
+        force "com.google.android.gms:play-services-base:18.4.0"
+        force "com.google.android.gms:play-services-maps:19.1.0"
+        force "com.google.android.gms:play-services-location:21.0.1"
+    }
+}
+
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
@@ -130,17 +139,20 @@ dependencies {
     }
 
     // Google Play Services - use compatible versions
-    implementation "com.google.android.gms:play-services-base:18.2.0"
-    implementation "com.google.android.gms:play-services-maps:18.1.0"
+    implementation "com.google.android.gms:play-services-base:18.4.0"
+    implementation "com.google.android.gms:play-services-maps:19.1.0"
     implementation "com.google.android.gms:play-services-location:21.0.1"
 
     // Force consistent versions to avoid conflicts
     constraints {
-        implementation("com.google.android.gms:play-services-base:18.2.0") {
+        implementation("com.google.android.gms:play-services-base:18.4.0") {
             because "Ensure consistent Google Play Services version"
         }
         implementation("com.google.android.gms:play-services-location:21.0.1") {
             because "Ensure consistent location services version"
+        }
+        implementation("com.google.android.gms:play-services-maps:19.1.0") {
+            because "Required for GoogleMapOptions.mapColorScheme used by RN Maps Fabric"
         }
     }
 }
