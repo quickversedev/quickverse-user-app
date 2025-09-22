@@ -436,7 +436,7 @@ const ExploreScreen = () => {
                     latitude: selectedAddress.coordinates.latitude,
                     longitude: selectedAddress.coordinates.longitude,
                   }}
-                  radius={5000} // 5km in meters
+                  radius={4000} // 4km in meters
                   fillColor="rgba(255, 152, 0, 0.15)" // More visible orange fill
                   strokeColor="rgba(255, 152, 0, 0.8)" // Much more visible orange border
                   strokeWidth={2} // Thicker border
