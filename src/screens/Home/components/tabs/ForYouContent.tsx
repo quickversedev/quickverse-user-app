@@ -1,12 +1,12 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useMemo } from 'react';
-import { NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, ViewStyle } from 'react-native';
+import React, { useCallback, useRef } from 'react';
+import { Animated, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
 import SectionDivider from '../../../../components/common/SectionDivider';
 import VendorList from '../../../../components/modules/Vendor/VendorList';
 import VendorProductList from '../../../../components/modules/Vendor/VendorProductList';
-import { usePages } from '../../../../hooks/usePages';
+import { usePromotions } from '../../../../hooks';
 import useVendorStore from '../../../../store/vendorStore';
 import { AppNavigationProp } from '../../../../types/navigation';
 import { Product } from '../../../../types/product';
@@ -27,13 +27,7 @@ const ForYouContentComponent: React.FC<ForYouContentProps> = ({
 }) => {
   const navigation = useNavigation<AppNavigationProp>();
   const { vendors } = useVendorStore();
-  const { getPromotionsByPageId } = usePages();
-
-  // Get promotions for ForYou page
-  const bannerData = useMemo(() => {
-    const promotions = getPromotionsByPageId('ForYou');
-    return promotions || [];
-  }, [getPromotionsByPageId]);
+  const { promotions: bannerData, hasPromotions } = usePromotions('ForYou');
 
   // Memoize vendor press handler
   const handleVendorPress = useCallback(
@@ -48,33 +42,30 @@ const ForYouContentComponent: React.FC<ForYouContentProps> = ({
     // Handle product press if needed
   }, []);
 
-  return (
-    <ScrollView
-      onScroll={onScroll}
-      scrollEventThrottle={scrollEventThrottle}
-      contentContainerStyle={contentContainerStyle}
-      showsVerticalScrollIndicator={showsVerticalScrollIndicator}
-      style={{
-  paddingBottom: 100,
-  paddingTop: Platform.select({
-    ios: 80,
-    android: 100
-  })
-}}
-    >
-      {bannerData?.length > 0 && <AutoScrollBanner bannerData={bannerData} />}
+  // No outer ScrollView; padding handled by FlatList contentContainerStyle
 
-      <SectionDivider text="Shops" fontSize={16} style={{ marginVertical: 12 }} />
-      <VendorList />
-      {/* <BadgeTagDemo /> */}
-      <SectionDivider text="BESTSELLERS" fontSize={16} style={{ marginVertical: 12 }} />
-      <VendorProductList
-        vendors={vendors}
-        onVendorPress={handleVendorPress}
-        onProductPress={handleProductPress}
-        useFlatList={false} // Disable FlatList when nested in ScrollView
-      />
-    </ScrollView>
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  return (
+    <VendorProductList
+      vendors={vendors}
+      onVendorPress={handleVendorPress}
+      onProductPress={handleProductPress}
+      onScroll={onScroll}
+      scrollEventThrottle={scrollEventThrottle ?? 16}
+      showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+      contentContainerStyle={contentContainerStyle}
+      scrollY={scrollY}
+      header={
+        <>
+          {hasPromotions && <AutoScrollBanner bannerData={bannerData} />}
+          <SectionDivider text="SHOPS" fontSize={16} style={{ marginVertical: 12 }} />
+          <VendorList />
+          {/* <BadgeTagDemo /> */}
+          <SectionDivider text="BESTSELLERS" fontSize={16} style={{ marginVertical: 12 }} />
+        </>
+      }
+    />
   );
 };
 

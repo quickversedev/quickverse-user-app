@@ -857,7 +857,7 @@ const VendorProductComponent: React.FC = () => {
           paddingVertical: 12,
           paddingHorizontal: 16,
           alignItems: 'center',
-          marginTop: -16,
+          marginTop: -26,
           marginBottom: 16,
           borderBottomLeftRadius: 16,
           borderBottomRightRadius: 16,
@@ -1128,11 +1128,11 @@ const VendorProductComponent: React.FC = () => {
           />
 
           {/* Store Status Banner */}
-          {!isStoreActive && (
+          {/* {!isStoreActive && (
             <View style={styles.closedBanner}>
               <Text style={styles.closedText}>WE ARE CLOSED</Text>
             </View>
-          )}
+          )} */}
 
           {/* Zero State - Show when no products available */}
           {!productsLoading && products.length === 0 && (

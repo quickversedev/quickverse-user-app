@@ -94,7 +94,7 @@ const CartFooter: React.FC<CartFooterProps> = ({
     <View style={styles.footerBar}>
       <TouchableOpacity style={styles.addressBox} onPress={handleAddressPress}>
         <Image source={Icons.selectedAddress} style={styles.addressIcon} />
-        <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="tail">
+        <Text style={styles.addressText} numberOfLines={2} ellipsizeMode="tail">
           {address}
         </Text>
         <MaterialCommunityIcons

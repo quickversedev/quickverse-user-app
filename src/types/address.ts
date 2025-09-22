@@ -49,7 +49,7 @@ export type AddressActions = {
     newAddress: NewAddress,
     authSession: AuthSession
   ) => Promise<{ success: boolean; error?: any }>;
-  loadAddressesFromStorage: () => void;
+  loadAddressesFromStorage: () => Address[];
   clearAddressesFromStorage: () => void;
   setLoading: (loading: boolean) => void;
   setAddingLoading: (loading: boolean) => void;

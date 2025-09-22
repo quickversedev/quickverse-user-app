@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import axiosInstance, { apiCall } from '../../config/api/axios.config';
-import { AuthSession } from '../../services/localStorage/storage.service';
 import { Page, PagesStore } from '../../types/pages';
 
 const usePagesStore = create<PagesStore>((set, get) => ({
@@ -14,13 +13,9 @@ const usePagesStore = create<PagesStore>((set, get) => ({
   setError: (error: string | null) => set({ error }),
   clearError: () => set({ error: null }),
 
-  fetchPages: async (regionId: string, authSession: AuthSession) => {
+  fetchPages: async (regionId: string) => {
     try {
       set({ loading: true, error: null });
-
-      if (!authSession?.jwt) {
-        throw new Error('Authentication required. Please login again.');
-      }
 
       const data = await apiCall(
         axiosInstance.get(`/v3/pages?regionId=${regionId}`, {

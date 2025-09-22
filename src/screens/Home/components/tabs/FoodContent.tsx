@@ -18,6 +18,7 @@ import { usePromotions } from '../../../../hooks/usePromotions';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import useVendorStore from '../../../../store/vendorStore';
 import { useTheme } from '../../../../theme/ThemeContext';
+import { Vendor } from '../../../../types/vendor';
 import { getStoreStatus } from '../../../../utils/storeUtils';
 
 const { width } = Dimensions.get('window');
@@ -39,16 +40,16 @@ const FoodContentComponent: React.FC<FoodContentProps> = ({
   const { theme } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  // Directly use vendor store - vendors are pre-sorted
+  // Subscribe to vendor store changes
   const { getVendorsByCategory } = useVendorStore();
-  const foodVendors = useMemo(() => getVendorsByCategory('Food'), [getVendorsByCategory]);
+  const foodVendors = getVendorsByCategory('Food');
   const hasVendors = foodVendors.length > 0;
 
   const { promotions: bannerData, hasPromotions } = usePromotions('Food');
 
   // Memoize vendor press handler
   const handleVendorPress = useCallback(
-    (vendor: any) => {
+    (vendor: Vendor) => {
       navigation.navigate('VendorProduct', { vendor });
     },
     [navigation]

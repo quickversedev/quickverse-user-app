@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { mockVendors } from '../assets/mock/vendor';
 import axiosInstance, { apiCall } from '../config/api/axios.config';
 import { LocationFilter, Vendor, VendorFilters, VendorStore } from '../types/vendor';
+import { getDistanceInKm } from '../utils/distance';
 import { isStoreOpen } from '../utils/storeUtils';
 
 // Request debouncing mechanism
@@ -11,19 +12,16 @@ let pendingRequest: AbortController | null = null;
 const USE_VENDOR_MOCKS = false; // Set to false for real API
 const VENDOR_API_URL = '/v3/shops'; // Adjust as needed
 
-// Helper function to calculate distance between two points (Haversine formula)
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 6371; // Earth's radius in kilometers
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+// Helper to extract vendor coordinates from either new or legacy shape
+const getVendorCoords = (vendor: Vendor): { lat?: number; lon?: number } => {
+  if (vendor.coordinates?.latitude != null && vendor.coordinates?.longitude != null) {
+    return { lat: vendor.coordinates.latitude, lon: vendor.coordinates.longitude };
+  }
+  const legacy = vendor.location?.coordinates; // [lon, lat]
+  if (legacy && legacy.length === 2) {
+    return { lon: legacy[0], lat: legacy[1] };
+  }
+  return {};
 };
 
 // Helper function to sort vendors by store open status
@@ -46,6 +44,46 @@ const sortVendorsByActiveStatus = (vendors: Vendor[]): Vendor[] => {
     if (!storeAStatus.isOpen && storeBStatus.isOpen) return 1;
     return 0;
   });
+};
+
+// Combined sorting function: first by distance, then by active status
+const sortVendorsByDistanceAndActiveStatus = (
+  vendors: Vendor[],
+  location?: LocationFilter
+): Vendor[] => {
+  if (!location) {
+    return sortVendorsByActiveStatus(vendors);
+  }
+
+  const { latitude, longitude } = location;
+  return [...vendors]
+    .map(v => {
+      const { lat, lon } = getVendorCoords(v);
+      const distance =
+        lat != null && lon != null
+          ? getDistanceInKm(latitude, longitude, lat, lon)
+          : Number.POSITIVE_INFINITY;
+
+      // Check if store is open
+      const storeStatus = isStoreOpen({
+        openingTime: v.openingTime,
+        closingTime: v.closingTime,
+        storeActive: v.storeActive,
+      });
+
+      return { v, distance, isOpen: storeStatus.isOpen };
+    })
+    .sort((a, b) => {
+      // First sort by distance
+      if (a.distance !== b.distance) {
+        return a.distance - b.distance;
+      }
+      // Then sort by active status (open stores first)
+      if (a.isOpen && !b.isOpen) return -1;
+      if (!a.isOpen && b.isOpen) return 1;
+      return 0;
+    })
+    .map(x => x.v);
 };
 
 const useVendorStore = create<VendorStore>((set, get) => ({
@@ -76,7 +114,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
       setTimeout(() => {
         // Only update if this is still the current request
         if (requestId === currentRequestId) {
-          const sortedVendors = sortVendorsByActiveStatus(mockVendors);
+          const sortedVendors = sortVendorsByDistanceAndActiveStatus(mockVendors, location);
           set({ vendors: sortedVendors, loading: false, userLocation: location || null });
         }
       }, 1000);
@@ -88,7 +126,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         ? {
             latitude: location.latitude,
             longitude: location.longitude,
-            radius: location.radius || 8000,
+            radius: location.radius || 4000,
           }
         : {};
 
@@ -104,7 +142,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
 
       // Only update state if this is still the current request
       if (requestId === currentRequestId) {
-        const sortedVendors = sortVendorsByActiveStatus(data);
+        const sortedVendors = sortVendorsByDistanceAndActiveStatus(data, location);
         set({
           vendors: sortedVendors,
           loading: false,
@@ -154,8 +192,9 @@ const useVendorStore = create<VendorStore>((set, get) => ({
   },
 
   setVendors: (vendors: Vendor[]) => {
-    const sortedVendors = sortVendorsByActiveStatus(vendors);
-    set({ vendors: sortedVendors });
+    const loc = get().userLocation;
+    const sorted = sortVendorsByDistanceAndActiveStatus(vendors, loc || undefined);
+    set({ vendors: sorted });
   },
   setSelectedVendor: (vendor: Vendor | null) => set({ selectedVendor: vendor }),
   setLoading: (loading: boolean) => set({ loading }),
@@ -238,12 +277,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         return false; // Skip vendors without location data
       }
 
-      const distance = calculateDistance(
-        location.latitude,
-        location.longitude,
-        vendorLat,
-        vendorLon
-      );
+      const distance = getDistanceInKm(location.latitude, location.longitude, vendorLat, vendorLon);
       return distance <= radius;
     });
   },

@@ -8,15 +8,15 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { SectionDivider } from '../../components/common';
 import PromoBanner from '../../components/common/promo/PromoBanner';
+import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import useCouponStore from '../../store/cart/couponStore';
 import { useTheme } from '../../theme/ThemeContext';
@@ -86,7 +86,8 @@ const VendorProfileComponent: React.FC = () => {
   // Fetch coupons when component mounts
   useEffect(() => {
     if (authData?.jwt) {
-    fetchVendorOffers(vendor.shopId, authData);}
+      fetchVendorOffers(vendor.shopId, authData);
+    }
   }, [fetchVendorOffers, vendor.shopId, authData]);
 
   // Get coupons for this vendor
@@ -141,12 +142,20 @@ const VendorProfileComponent: React.FC = () => {
 
   const renderRating = useCallback(() => {
     if (!vendor.rating || vendor.rating === 0) {
-      return <Text style={styles.statValue}>Not Rated</Text>;
+      return (
+        <ThemeText variant="caption" color={getColor('text')} style={styles.statValue}>
+          Not Rated
+        </ThemeText>
+      );
     }
-    return <Text style={styles.statValue}>{vendor.rating}</Text>;
-  }, [vendor.rating]);
+    return (
+      <ThemeText variant="caption" color={getColor('text')} style={styles.statValue}>
+        {vendor.rating}
+      </ThemeText>
+    );
+  }, [vendor.rating, getColor]);
 
-      const handlePhoneCall = useCallback(async () => {
+  const handlePhoneCall = useCallback(async () => {
     if (!vendor.phone) {
       console.warn('No phone number available for vendor');
       return;
@@ -158,8 +167,6 @@ const VendorProfileComponent: React.FC = () => {
 
       // Use the standard tel: scheme which is more reliable
       const phoneUrl = `tel:${formattedPhone}`;
-
-
 
       // Try to open the phone app directly
       await Linking.openURL(phoneUrl);
@@ -255,9 +262,6 @@ const VendorProfileComponent: React.FC = () => {
           justifyContent: 'center',
         },
         name: {
-          color: getColor('text'),
-          fontSize: getTypography('h2'),
-          fontWeight: 'bold',
           marginBottom: 2,
         },
         saveRow: {
@@ -275,10 +279,7 @@ const VendorProfileComponent: React.FC = () => {
           alignItems: 'center',
         },
         saveBtnText: {
-          color: getColor('subText'),
-          fontSize: getTypography('caption'),
           marginLeft: 4,
-          fontWeight: 'bold',
         },
         callBtn: {
           marginLeft: 8,
@@ -303,14 +304,9 @@ const VendorProfileComponent: React.FC = () => {
           marginBottom: 2,
         },
         statLabel: {
-          color: getColor('subText'),
-          fontSize: getTypography('body') - 2,
-          fontWeight: 'bold',
           marginTop: 2,
         },
         statValue: {
-          color: getColor('text'),
-          fontSize: getTypography('caption') - 2,
           marginTop: 2,
         },
         offersRow: {
@@ -324,17 +320,12 @@ const VendorProfileComponent: React.FC = () => {
           marginRight: 12,
         },
         sectionTitle: {
-          color: getColor('text'),
-          fontSize: getTypography('h2'),
-          fontWeight: 'bold',
           marginHorizontal: 16,
           marginTop: 18,
           marginBottom: 8,
         },
         reviewCount: {
-          color: getColor('subText'),
           marginLeft: 4,
-          fontSize: getTypography('caption'),
         },
         mapContainer: {
           marginHorizontal: 16,
@@ -349,14 +340,9 @@ const VendorProfileComponent: React.FC = () => {
           elevation: 2,
         },
         mapAddress: {
-          color: getColor('text'),
-          fontWeight: 'bold',
-          fontSize: getTypography('body'),
           marginBottom: 4,
         },
         mapSubAddress: {
-          color: getColor('subText'),
-          fontSize: getTypography('caption'),
           marginBottom: 8,
         },
         map: {
@@ -365,8 +351,6 @@ const VendorProfileComponent: React.FC = () => {
           borderRadius: 8,
         },
         noOffersText: {
-          color: getColor('subText'),
-          fontSize: getTypography('body'),
           textAlign: 'center',
           fontStyle: 'italic',
           marginHorizontal: 16,
@@ -390,8 +374,6 @@ const VendorProfileComponent: React.FC = () => {
           elevation: 4,
         },
         navigationButtonText: {
-          fontSize: getTypography('caption'),
-          fontWeight: '600',
           marginLeft: 4,
         },
       }),
@@ -416,7 +398,9 @@ const VendorProfileComponent: React.FC = () => {
         <View style={styles.profileCard}>
           <Image source={{ uri: vendor.logo }} style={styles.logo} />
           <View style={styles.info}>
-            <Text style={styles.name}>{vendor.name}</Text>
+            <ThemeText variant="h2" color={getColor('text')} style={styles.name}>
+              {vendor.name}
+            </ThemeText>
             <View style={styles.saveRow}>
               <TouchableOpacity style={styles.saveBtn}>
                 <MaterialCommunityIcons
@@ -424,7 +408,9 @@ const VendorProfileComponent: React.FC = () => {
                   size={18}
                   color={getColor('subText')}
                 />
-                <Text style={styles.saveBtnText}>Save To Collections</Text>
+                <ThemeText variant="caption" color={getColor('subText')} style={styles.saveBtnText}>
+                  Save To Collections
+                </ThemeText>
               </TouchableOpacity>
             </View>
           </View>
@@ -454,13 +440,19 @@ const VendorProfileComponent: React.FC = () => {
               color={getColor('primary')}
               style={styles.statIcon}
             />
-            <Text style={styles.statValue}>{vendor.preparationTime}</Text>
-            <Text style={styles.statLabel}>Prepare Time</Text>
+            <ThemeText variant="caption" color={getColor('text')} style={styles.statValue}>
+              {vendor.preparationTime}
+            </ThemeText>
+            <ThemeText variant="body" color={getColor('subText')} style={styles.statLabel}>
+              Prepare Time
+            </ThemeText>
           </View>
           <View style={styles.statCol}>
             <MaterialCommunityIcons name="star" size={18} color="#1ec28b" style={styles.statIcon} />
             {renderRating()}
-            <Text style={styles.statLabel}>Rating</Text>
+            <ThemeText variant="body" color={getColor('subText')} style={styles.statLabel}>
+              Rating
+            </ThemeText>
           </View>
           <View style={styles.statCol}>
             <MaterialCommunityIcons
@@ -469,10 +461,12 @@ const VendorProfileComponent: React.FC = () => {
               color={getColor('subText')}
               style={styles.statIcon}
             />
-            <Text style={styles.statValue}>
+            <ThemeText variant="caption" color={getColor('text')} style={styles.statValue}>
               {formatTimeToAMPM(vendor.openingTime)} - {formatTimeToAMPM(vendor.closingTime)}
-            </Text>
-            <Text style={styles.statLabel}>Timings</Text>
+            </ThemeText>
+            <ThemeText variant="body" color={getColor('subText')} style={styles.statLabel}>
+              Timings
+            </ThemeText>
           </View>
         </View>
         {/* Offers/Coupons */}
@@ -508,7 +502,9 @@ const VendorProfileComponent: React.FC = () => {
 
         <SectionDivider text="Location Details" fontSize={20} />
         <View style={styles.mapContainer}>
-          <Text style={styles.mapAddress}>{formattedAddress}</Text>
+          <ThemeText variant="body" color={getColor('text')} style={styles.mapAddress}>
+            {formattedAddress}
+          </ThemeText>
 
           {vendorCoordinates && (
             <View style={{ position: 'relative' }}>
@@ -582,44 +578,36 @@ const VendorProfileComponent: React.FC = () => {
                     }
 
                     // Show options for map apps
-                    Alert.alert(
-                      'Open Directions',
-                      'Choose your preferred map app:',
-                      [
-                        ...options,
-                        {
-                          text: 'Cancel',
-                          style: 'cancel',
-                        },
-                      ]
-                    );
+                    Alert.alert('Open Directions', 'Choose your preferred map app:', [
+                      ...options,
+                      {
+                        text: 'Cancel',
+                        style: 'cancel',
+                      },
+                    ]);
                   } catch (error) {
                     console.error('Error checking map apps:', error);
                     // Fallback to simple alert
-                    Alert.alert(
-                      'Open Directions',
-                      'Choose your preferred map app:',
-                      [
-                        {
-                          text: 'Apple Maps',
-                          onPress: () => {
-                            const appleMapsUrl = `https://maps.apple.com/?daddr=${vendorCoordinates.latitude},${vendorCoordinates.longitude}`;
-                            Linking.openURL(appleMapsUrl);
-                          },
+                    Alert.alert('Open Directions', 'Choose your preferred map app:', [
+                      {
+                        text: 'Apple Maps',
+                        onPress: () => {
+                          const appleMapsUrl = `https://maps.apple.com/?daddr=${vendorCoordinates.latitude},${vendorCoordinates.longitude}`;
+                          Linking.openURL(appleMapsUrl);
                         },
-                        {
-                          text: 'Google Maps',
-                          onPress: () => {
-                            const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${vendorCoordinates.latitude},${vendorCoordinates.longitude}`;
-                            Linking.openURL(googleMapsUrl);
-                          },
+                      },
+                      {
+                        text: 'Google Maps',
+                        onPress: () => {
+                          const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${vendorCoordinates.latitude},${vendorCoordinates.longitude}`;
+                          Linking.openURL(googleMapsUrl);
                         },
-                        {
-                          text: 'Cancel',
-                          style: 'cancel',
-                        },
-                      ]
-                    );
+                      },
+                      {
+                        text: 'Cancel',
+                        style: 'cancel',
+                      },
+                    ]);
                   }
                 }}
                 accessible={true}
@@ -628,14 +616,14 @@ const VendorProfileComponent: React.FC = () => {
                 accessibilityHint="Opens a menu to choose between Apple Maps and Google Maps"
                 activeOpacity={0.8}
               >
-                <MaterialCommunityIcons
-                  name="directions"
-                  size={20}
+                <MaterialCommunityIcons name="directions" size={20} color={getColor('primary')} />
+                <ThemeText
+                  variant="caption"
                   color={getColor('primary')}
-                />
-                <Text style={[styles.navigationButtonText, { color: getColor('primary') }]}>
+                  style={styles.navigationButtonText}
+                >
                   Directions
-                </Text>
+                </ThemeText>
               </TouchableOpacity>
             </View>
           )}

@@ -18,6 +18,7 @@ import QuantitySelector from './QuantitySelector';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 8;
 const CARD_WIDTH = ((SCREEN_WIDTH - CARD_MARGIN * 4) / 3) * 0.92;
+const CARD_WIDTH_SMALL = CARD_WIDTH * 0.8;
 const EXTRA_SMALL_CARD_WIDTH = ((SCREEN_WIDTH - CARD_MARGIN * 6) / 4) * 0.9;
 
 interface ProductCardProps {
@@ -49,14 +50,15 @@ const createStyles = (
       backgroundColor: backgroundColor || getColor('background'),
       borderRadius: theme.borderRadius.sm,
       margin: CARD_MARGIN,
-      width: size === 'xs' ? EXTRA_SMALL_CARD_WIDTH : CARD_WIDTH,
+      width:
+        size === 'xs' ? EXTRA_SMALL_CARD_WIDTH : size === 'small' ? CARD_WIDTH_SMALL : CARD_WIDTH,
       alignItems: 'center',
       position: 'relative',
       overflow: 'hidden',
     },
     imageContainer: {
       width: '100%',
-      aspectRatio: 7 / 5,
+      aspectRatio: size === 'small' ? 4.8 / 5 : 7 / 5,
       borderRadius: theme.borderRadius.sm,
       overflow: 'hidden',
       marginBottom: size === 'xs' ? 4 : 8,
@@ -97,17 +99,28 @@ const createStyles = (
 
     name: {
       color: getColor('text'),
+      // Keep a consistent two-line block height
       fontSize: size === 'xs' ? getTypography('caption') - 3 : getTypography('caption') - 2,
+      lineHeight:
+        (size === 'xs' ? getTypography('caption') - 3 : getTypography('caption') - 2) * 1.2,
+      minHeight:
+        (size === 'xs' ? getTypography('caption') - 3 : getTypography('caption') - 2) * 1.2 * 2,
       fontWeight: 'bold',
       flex: 1,
-      maxWidth: size === 'xs' ? 90 : 130,
+      maxWidth: size === 'xs' ? 90 : size === 'small' ? 110 : 130,
     },
     priceRow: {
       flexDirection: 'row',
+      justifyContent: 'space-between',
       alignItems: 'center',
-      alignSelf: 'flex-start',
+      alignSelf: 'stretch',
+      width: '100%',
       marginHorizontal: size === 'xs' ? 2 : 4,
       marginBottom: size === 'xs' ? 4 : 8,
+    },
+    priceLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     mrp: {
       color: getColor('subText'),
@@ -273,15 +286,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
       </View>
 
       <View style={styles.nameContainer}>
-        <VegIcon veg={veg} size="xs" />
         <Text style={[styles.name, isOutOfStock && { opacity: 0.6 }]} numberOfLines={2}>
           {name}
         </Text>
       </View>
 
       <View style={styles.priceRow}>
-        {showMrp && <Text style={[styles.mrp, isOutOfStock && { opacity: 0.6 }]}>₹{mrp}</Text>}
-        <Text style={[styles.price, isOutOfStock && { opacity: 0.6 }]}>₹{price}</Text>
+        <View style={styles.priceLeft}>
+          {showMrp && <Text style={[styles.mrp, isOutOfStock && { opacity: 0.6 }]}>₹{mrp}</Text>}
+          <Text style={[styles.price, isOutOfStock && { opacity: 0.6 }]}>₹{price}</Text>
+        </View>
+        <View style={{ marginRight: 4 }}>
+          <VegIcon veg={veg} size="xs" />
+        </View>
       </View>
     </View>
   );

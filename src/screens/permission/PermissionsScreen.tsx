@@ -183,9 +183,9 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
 
   useEffect(() => {
     if (!isLoading && !isDenied) {
-      getCurrentLocation();
+      getCurrentLocation({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
     }
-  }, [isDenied, hasSkippedLocation]);
+  }, [isDenied, hasSkippedLocation, isLoading, getCurrentLocation]);
 
   useEffect(() => {
     if (isGranted || hasSkippedLocation) {

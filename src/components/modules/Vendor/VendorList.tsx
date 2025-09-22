@@ -1,7 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import type { RootStackParamList } from '../../../routes/AppStack';
 import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -12,6 +13,7 @@ const VendorList = () => {
   const { loading, error, vendors } = useVendorStore();
   const { getColor } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const { selectedAddress: _selectedAddress } = useAuth();
 
   // const sortedVendors = useMemo(() => {
   //   return [...vendors].sort((a, b) => {
@@ -41,6 +43,8 @@ const VendorList = () => {
     }));
   }, [vendors]);
 
+  const renderSeparator = useCallback(() => <View style={styles.separator} />, [styles.separator]);
+
   if (loading) return null;
   if (error) return null;
   return (
@@ -59,7 +63,7 @@ const VendorList = () => {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={renderSeparator}
       />
     </View>
   );

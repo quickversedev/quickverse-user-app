@@ -1,4 +1,3 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import React, { useState } from 'react';
@@ -51,24 +50,13 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
   const auth = useAuth();
   const { theme } = useTheme();
 
-  const handleDateChange = (event: { type: string }, selectedDate?: Date) => {
-    // Android: the native picker returns 'set' when confirmed and 'dismissed' when cancelled
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-      if (event.type === 'set' && selectedDate) {
-        setDateOfBirth(selectedDate);
-        setErrors(prev => ({ ...prev, dateOfBirth: '' }));
-      }
-    }
-  };
-
-  const handleConfirmDateIOS = (selectedDate: Date) => {
+  const handleConfirmDate = (selectedDate: Date) => {
     setDateOfBirth(selectedDate);
     setErrors(prev => ({ ...prev, dateOfBirth: '' }));
     setShowDatePicker(false);
   };
 
-  const handleCancelIOS = () => {
+  const handleCancelDate = () => {
     setShowDatePicker(false);
   };
 
@@ -263,7 +251,10 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
       padding: 24,
       marginTop: height * 0.24,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: theme.colors.shadow.offset,
+      shadowOffset: {
+        width: theme.colors.shadow.offset_width,
+        height: theme.colors.shadow.offset_height,
+      },
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
       elevation: 6,
@@ -537,25 +528,17 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
                   ) : null}
                 </View>
 
-                {Platform.OS === 'ios' ? (
+                {showDatePicker && (
                   <DateTimePickerModal
                     isVisible={showDatePicker}
                     mode="date"
-                    date={dateOfBirth || new Date()}
-                    onConfirm={handleConfirmDateIOS}
-                    onCancel={handleCancelIOS}
+                    date={dateOfBirth || new Date(2000, 0, 1)}
+                    onConfirm={handleConfirmDate}
+                    onCancel={handleCancelDate}
                     maximumDate={new Date()}
+                    minimumDate={new Date(1900, 0, 1)}
+                    display={Platform.OS === 'android' ? 'spinner' : 'inline'}
                   />
-                ) : (
-                  showDatePicker && (
-                    <DateTimePicker
-                      value={dateOfBirth || new Date()}
-                      mode="date"
-                      display="default"
-                      onChange={handleDateChange}
-                      maximumDate={new Date()}
-                    />
-                  )
                 )}
 
                 <TouchableOpacity

@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Animated,
   Dimensions,
@@ -23,7 +22,7 @@ const { height, width } = Dimensions.get('window');
 
 const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isUpdateRequired, setIsUpdateRequired] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
+
   const { theme } = useTheme();
 
   // Animation refs
@@ -32,7 +31,7 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
   // Use the custom hook to fetch update data
-  const { updateData, loading, error, retry } = useFetchUpdateData();
+  const { updateData, loading, error } = useFetchUpdateData();
   //console.log('updateData', updateData);
   // Mounted ref to prevent state updates after unmount
   const isMounted = useRef(true);
@@ -42,12 +41,6 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
       isMounted.current = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (!loading && !error && updateData) {
-      checkForUpdate();
-    }
-  }, [loading, error, updateData]);
 
   // Animate in when update is required
   useEffect(() => {
@@ -96,11 +89,10 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
     return false;
   };
 
-  const checkForUpdate = async () => {
+  const checkForUpdate = useCallback(async () => {
     if (!isMounted.current) return;
 
     try {
-      setIsChecking(true);
       const currentVersion = DeviceInfo.getVersion();
       //console.log('currentVersion', currentVersion);
       if (!updateData?.min_required_version) {
@@ -115,15 +107,16 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } catch (err) {
       console.error('Error checking for updates:', err);
-      if (isMounted.current) {
-        Alert.alert('Error', 'Failed to check for updates. Please try again.');
-      }
     } finally {
-      if (isMounted.current) {
-        setIsChecking(false);
-      }
+      // no-op; we do not block UI while checking for updates
     }
-  };
+  }, [updateData]);
+
+  useEffect(() => {
+    if (!loading && !error && updateData) {
+      checkForUpdate();
+    }
+  }, [loading, error, updateData, checkForUpdate]);
 
   const handleUpdate = async () => {
     try {
@@ -141,34 +134,15 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
       } else {
         Alert.alert('Error', 'Cannot open store URL');
       }
-    } catch (error) {
-      console.error('Error opening store:', error);
+    } catch (err) {
+      console.error('Error opening store:', err);
       if (isMounted.current) {
         Alert.alert('Error', 'Failed to open store');
       }
     }
   };
 
-  const handleRetry = () => {
-    if (!isMounted.current) return;
-    setIsChecking(true);
-    retry();
-  };
-
-  // Loading state
-  if (loading || isChecking) {
-    return (
-      <View style={getStyles(theme).loadingContainer}>
-        <Image style={getStyles(theme).loadingLogo} source={Images.logoQv} />
-        <ActivityIndicator
-          size="large"
-          color={theme.colors.secondary}
-          style={getStyles(theme).spinner}
-        />
-        <Text style={getStyles(theme).loadingText}>Checking for updates...</Text>
-      </View>
-    );
-  }
+  // Do not block the UI while fetching update info; continue unless update is required
 
   // Error state
   // if (error) {
@@ -287,7 +261,10 @@ const getStyles = (theme: Theme) =>
       borderWidth: 1,
       borderColor: theme.colors.borderHighlight,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: theme.colors.shadow.offset,
+      shadowOffset: {
+        width: theme.colors.shadow.offset_width,
+        height: theme.colors.shadow.offset_height,
+      },
       shadowOpacity: theme.colors.shadow.opacity,
       shadowRadius: theme.colors.shadow.radius,
       elevation: 8,

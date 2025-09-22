@@ -45,7 +45,7 @@ const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
       width: imageWidth,
       height: imageHeight,
       borderRadius: 16,
-      backgroundColor: getColor('card'),
+      backgroundColor: getColor('background'),
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 16,

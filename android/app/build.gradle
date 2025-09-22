@@ -57,9 +57,9 @@ react {
 }
 
 /**
- * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
+ * Set this to true to Run Proguard (R8) on Release builds to shrink/obfuscate code.
  */
-def enableProguardInReleaseBuilds = false
+def enableProguardInReleaseBuilds = true
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -86,8 +86,8 @@ android {
         applicationId "com.quickverse"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 36
-        versionName "3.0.0"
+        versionCode 39
+        versionName "3.0.1"
     }
     signingConfigs {
         debug {
@@ -114,8 +114,18 @@ android {
             // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
-            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            // Use optimized default rules with project-specific rules
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
+    }
+}
+
+// Force specific Google Play Services versions project-wide to avoid runtime mismatches
+configurations.all {
+    resolutionStrategy {
+        force "com.google.android.gms:play-services-base:18.4.0"
+        force "com.google.android.gms:play-services-maps:19.1.0"
+        force "com.google.android.gms:play-services-location:21.0.1"
     }
 }
 
@@ -130,17 +140,20 @@ dependencies {
     }
 
     // Google Play Services - use compatible versions
-    implementation "com.google.android.gms:play-services-base:18.2.0"
-    implementation "com.google.android.gms:play-services-maps:18.1.0"
+    implementation "com.google.android.gms:play-services-base:18.4.0"
+    implementation "com.google.android.gms:play-services-maps:19.1.0"
     implementation "com.google.android.gms:play-services-location:21.0.1"
 
     // Force consistent versions to avoid conflicts
     constraints {
-        implementation("com.google.android.gms:play-services-base:18.2.0") {
+        implementation("com.google.android.gms:play-services-base:18.4.0") {
             because "Ensure consistent Google Play Services version"
         }
         implementation("com.google.android.gms:play-services-location:21.0.1") {
             because "Ensure consistent location services version"
+        }
+        implementation("com.google.android.gms:play-services-maps:19.1.0") {
+            because "Required for GoogleMapOptions.mapColorScheme used by RN Maps Fabric"
         }
     }
 }

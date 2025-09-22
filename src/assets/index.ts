@@ -41,7 +41,7 @@ export const Icons = {
   pharmacyIcon: require('./images/icons/pharmacy.png'),
 
   // Utility Icons
-  bottle: require('./images/icons/Bottle.png'),
+  bottle: require('./images/icons/grocery.png'),
   addressPin: require('./images/icons/addressPin.png'),
   explore: require('./images/icons/explore.png'),
   man: require('./images/icons/man.png'),

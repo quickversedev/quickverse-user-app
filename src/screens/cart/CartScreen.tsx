@@ -1,8 +1,9 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo } from 'react';
-import { Alert, Modal, ScrollView } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   CartFooter,
   CartHeader,
@@ -26,11 +27,13 @@ import { getCODCharges } from '../../services/paymentService';
 import { SmartBizAddress, smartBizAddressService } from '../../store/address/smartBizAddressStore';
 import useCartStore from '../../store/cart/cartStore';
 import useCouponStore from '../../store/cart/couponStore';
+import useConfigStore from '../../store/configStore';
 import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Address } from '../../types/address';
 import { Product } from '../../types/product';
+import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
 import PaymentScreen from './PaymentScreen';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
@@ -80,12 +83,20 @@ const CartScreen: React.FC = () => {
     'cod'
   ); // Default to COD
   const [isOrderLoading, setIsOrderLoading] = React.useState(false);
+  const [showDistanceModal, setShowDistanceModal] = React.useState(false);
 
   // Theme
   const { getColor } = useTheme();
   const { getFeaturedProducts } = useFeaturedProductsStore();
   const [featuredProducts, setFeaturedProducts] = React.useState<Product[]>([]);
   // const [smartBizAddressId, setSmartBizAddressId] = React.useState<string | null>(null);
+  // Normalize delivery radius to kilometers if config is in meters
+  const deliveryRadiusKmRaw = useConfigStore(state => state.getDeliveryDistance());
+  const deliveryRadiusKm = useMemo(() => {
+    if (deliveryRadiusKmRaw == null) return null;
+    // Heuristic: if value is large (likely meters), convert to km
+    return deliveryRadiusKmRaw > 100 ? deliveryRadiusKmRaw / 1000 : deliveryRadiusKmRaw;
+  }, [deliveryRadiusKmRaw]);
 
   // Memoized derived state
   const cart = useMemo(() => {
@@ -134,6 +145,51 @@ const CartScreen: React.FC = () => {
   const codCharges = useMemo(() => {
     return getCODCharges(paymentMethods);
   }, [paymentMethods]);
+
+  const vendorLatLon = useMemo(() => {
+    if (!vendor) return null;
+    // Prefer GeoJSON location if present, fallback to coordinates field
+    if (vendor.location?.coordinates && vendor.location.coordinates.length === 2) {
+      const [lon, lat] = vendor.location.coordinates;
+      if (typeof lat === 'number' && typeof lon === 'number') {
+        return { lat, lon };
+      }
+    }
+    if (
+      vendor.coordinates &&
+      typeof vendor.coordinates.latitude === 'number' &&
+      typeof vendor.coordinates.longitude === 'number'
+    ) {
+      return { lat: vendor.coordinates.latitude, lon: vendor.coordinates.longitude };
+    }
+    return null;
+  }, [vendor]);
+
+  const customerLatLon = useMemo(() => {
+    if (!selectedSmartBizAddress?.address) return null;
+    const lat = parseFloat(selectedSmartBizAddress.address.latitude);
+    const lon = parseFloat(selectedSmartBizAddress.address.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+      return { lat, lon };
+    }
+    return null;
+  }, [selectedSmartBizAddress]);
+
+  const distanceKm = useMemo(() => {
+    if (!vendorLatLon || !customerLatLon) return null;
+    const km = getDistanceInKm(
+      vendorLatLon.lat,
+      vendorLatLon.lon,
+      customerLatLon.lat,
+      customerLatLon.lon
+    );
+    return Number.isFinite(km) ? km : null;
+  }, [vendorLatLon, customerLatLon]);
+
+  const distanceText = useMemo(() => {
+    if (distanceKm == null) return '';
+    return `${formatDistanceKm(distanceKm)} away`;
+  }, [distanceKm]);
 
   // Memoized event handlers
   const handleClearCart = useCallback(() => {
@@ -241,6 +297,13 @@ const CartScreen: React.FC = () => {
     if (shouldShowCompulsoryModal) {
       // setShowAddressModal(true);
       setShowSmartBizAddressModal(true);
+      return;
+    }
+
+    // Prevent checkout if beyond delivery radius
+    const maxKm = deliveryRadiusKm ?? 5;
+    if (distanceKm != null && distanceKm > maxKm) {
+      setShowDistanceModal(true);
       return;
     }
 
@@ -357,6 +420,8 @@ const CartScreen: React.FC = () => {
     selectedSmartBizAddress,
     navigation,
     clearCart,
+    distanceKm,
+    deliveryRadiusKm,
   ]);
 
   // Helper function to get ordinal suffix
@@ -418,8 +483,9 @@ const CartScreen: React.FC = () => {
 
     const { addressLine1, city, state } = selectedSmartBizAddress?.address;
     const parts = [addressLine1, city, state].filter(Boolean);
-    return parts.join(', ');
-  }, [selectedSmartBizAddress]);
+    const base = parts.join(', ');
+    return distanceText ? `${base} • ${distanceText}` : base;
+  }, [selectedSmartBizAddress, distanceText]);
 
   const isCheckoutDisabled = useMemo(() => {
     return !selectedPaymentOption || Boolean(paymentMethodsError) || isOrderLoading;
@@ -657,8 +723,115 @@ const CartScreen: React.FC = () => {
           onRetry={refetchPaymentMethods}
         />
       </Modal>
+
+      {/* Distance Warning Modal */}
+      <Modal
+        visible={showDistanceModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDistanceModal(false)}
+      >
+        <SafeAreaView
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 24,
+          }}
+        >
+          <View style={[styles.distanceCard, { backgroundColor: getColor('card') }]}>
+            <View
+              style={[styles.iconBadge, { backgroundColor: getColor('primary'), opacity: 0.12 }]}
+            >
+              <MaterialCommunityIcons
+                name="map-marker-distance"
+                size={28}
+                color={getColor('primary')}
+              />
+            </View>
+            <Text style={[styles.title, { color: getColor('text') }]}>Outside delivery radius</Text>
+            <Text style={[styles.subtitle, { color: getColor('subText') }]}>
+              We currently deliver within {formatDistanceKm(deliveryRadiusKm ?? 5)} of the store.
+            </Text>
+            {Number.isFinite(distanceKm ?? NaN) ? (
+              <Text style={[styles.note, { color: getColor('subText') }]}>
+                Your address is {formatDistanceKm(distanceKm as number)} away.
+              </Text>
+            ) : null}
+
+            <View style={styles.actions}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowDistanceModal(false);
+                  setShowSmartBizAddressModal(true);
+                }}
+                style={[styles.primaryBtn, { backgroundColor: getColor('primary') }]}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.primaryBtnText, { color: getColor('white') }]}>
+                  Change address
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowDistanceModal(false)}
+                style={styles.secondaryBtn}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.secondaryBtnText, { color: getColor('primary') }]}>
+                  Maybe later
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 export default React.memo(CartScreen);
+
+const styles = StyleSheet.create({
+  distanceCard: {
+    borderRadius: 14,
+    padding: 20,
+    width: '100%',
+  },
+  iconBadge: {
+    alignSelf: 'center',
+    borderRadius: 28,
+    padding: 10,
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  subtitle: {
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  note: {
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  actions: {
+    marginTop: 16,
+  },
+  primaryBtn: {
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  primaryBtnText: {
+    fontWeight: '700',
+  },
+  secondaryBtn: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  secondaryBtnText: {},
+});

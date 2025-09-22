@@ -243,7 +243,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
     },
     modalContainer: {
       position: 'absolute',
@@ -418,6 +418,22 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       justifyContent: 'center',
       alignItems: 'center',
     },
+    searchOverlay: {
+      position: 'absolute',
+      left: 20,
+      right: 20,
+      zIndex: 99999,
+      elevation: 99999,
+    },
+    closeArea: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+    },
+    backdropDimmed: {
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    },
   });
 
   // compute top position for overlay: top of modal + searchLayout.y + searchLayout.height
@@ -437,20 +453,11 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           {/* Visual dimming layer (no touch events) */}
-          <View
-            style={[themedStyles.backdrop, { backgroundColor: 'rgba(0, 0, 0, 0.7)' }]}
-            pointerEvents="none"
-          />
+          <View style={[themedStyles.backdrop, themedStyles.backdropDimmed]} pointerEvents="none" />
 
           {/* Area above modal that closes when tapped */}
           <TouchableOpacity
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: screenHeight - MODAL_HEIGHT,
-            }}
+            style={[themedStyles.closeArea, { height: screenHeight - MODAL_HEIGHT }]}
             onPress={handleClose}
             activeOpacity={1}
           />
@@ -458,14 +465,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
           {/* Search results overlay rendered as a sibling of modal content (so it can capture touches independently) */}
           {showSearchResults && searchResults.length > 0 && searchLayout.height > 0 && (
             <View
-              style={{
-                position: 'absolute',
-                top: overlayTop,
-                left: 20,
-                right: 20,
-                zIndex: 99999,
-                elevation: 99999,
-              }}
+              style={[themedStyles.searchOverlay, { top: overlayTop }]}
               pointerEvents="box-none"
             >
               <View style={themedStyles.searchResultsContainer} pointerEvents="auto">

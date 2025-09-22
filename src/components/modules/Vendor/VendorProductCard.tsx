@@ -74,7 +74,10 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
     // Otherwise, add directly to cart
     onAddToCart(product);
   };
-
+  // If there are no featured items (and not loading), hide the entire card
+  if (!loading && (error || sortedFeaturedProducts.length === 0)) {
+    return null;
+  }
   const handleVariantSelect = (variant: any) => {
     if (!selectedProduct) return;
 
@@ -141,7 +144,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
           authData?.jwt &&
           decrement(cartId, item.sku, authData.jwt, authData.phone)
         }
-        size="xs"
+        size="small"
         disabled={isStoreClosed || !item.inStock}
         showVariantsCount={false}
         onPress={() => onProductPress(item)}
@@ -185,7 +188,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 16,
+      // marginBottom: 16,
     },
     vendorLogo: {
       width: 32,
@@ -195,6 +198,13 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
     },
     vendorInfo: {
       flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    vendorNameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     vendorName: {
       // No additional styles needed
@@ -285,7 +295,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       borderRadius: 8,
       paddingVertical: 12,
       paddingHorizontal: 16,
-      marginBottom: 16,
+      marginVertical: 8,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -322,16 +332,16 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
           style={styles.vendorLogo}
         />
         <View style={styles.vendorInfo}>
-          <ThemeText variant="subtitle" style={styles.vendorName} color={getColor('text')}>
-            {vendor.name}
-          </ThemeText>
+          <View style={styles.vendorNameRow}>
+            <ThemeText variant="subtitle" style={styles.vendorName} color={getColor('text')}>
+              {vendor.name}
+            </ThemeText>
+            <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('subText')} />
+          </View>
           <View style={styles.vendorMeta}>
             <MaterialCommunityIcons name="flash" size={18} color={getColor('primary')} />
             <ThemeText variant="caption" style={styles.deliveryTime} color={getColor('subText')}>
               30 mins
-            </ThemeText>
-            <ThemeText variant="caption" style={styles.location} color={getColor('subText')}>
-              • {vendor.shopAddress?.city || 'Location'}
             </ThemeText>
           </View>
         </View>
@@ -365,7 +375,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       </View>
 
       {/* Explore More Button */}
-      <TouchableOpacity style={styles.exploreButton} onPress={() => onVendorPress(vendor)}>
+      {/* <TouchableOpacity style={styles.exploreButton} onPress={() => onVendorPress(vendor)}>
         <ThemeText variant="caption" style={styles.exploreButtonText} color={getColor('primary')}>
           Explore More
         </ThemeText>
@@ -375,7 +385,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
           color={getColor('primary')}
           style={{ alignSelf: 'center', marginTop: 1 }}
         />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* Variants Modal */}
       {selectedProduct && (

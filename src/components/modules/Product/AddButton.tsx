@@ -51,26 +51,26 @@ const AddButton: React.FC<AddButtonProps> = ({
       right: 2,
       bottom: 2,
       borderWidth: 1,
-      borderColor: getColor('primary'),
+      borderColor: getColor('card'),
       borderRadius: theme.borderRadius.sm,
       minWidth: size === 'xs' ? 45 : size === 'small' ? 40 : 60,
       height: size === 'xs' ? 28 : size === 'small' ? 32 : 36,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: getColor('card'),
+      backgroundColor: getColor('primary'),
       zIndex: 3,
-      shadowColor: '#000',
+      shadowColor: theme.colors.shadow.color,
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
       elevation: 2,
     },
     addButtonWithVariants: {
       flexDirection: 'column',
     },
     addButtonText: {
-      color: getColor('primary'),
+      color: getColor('card'),
       marginLeft: 4,
     },
     addButtonTextWithVariants: {
@@ -127,16 +127,15 @@ const AddButton: React.FC<AddButtonProps> = ({
   if (shouldShowBadge) {
     return (
       <>
-        <View style={{ position: 'relative' }}>
-          <TouchableOpacity style={styles.addButton} onPress={handleSafePress}>
-            <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
-            <View style={styles.badge}>
-              <ThemeText variant="small" color={getColor('white')} style={styles.badgeText}>
-                {numberOfVariants}
-              </ThemeText>
-            </View>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.addButton} onPress={handleSafePress}>
+          <MaterialCommunityIcons name="plus" size={20} color={getColor('card')} />
+          <View style={styles.badge}>
+            <ThemeText variant="small" color={getColor('white')} style={styles.badgeText}>
+              {numberOfVariants}
+            </ThemeText>
+          </View>
+        </TouchableOpacity>
+
         {renderLoginModal()}
       </>
     );
@@ -152,7 +151,7 @@ const AddButton: React.FC<AddButtonProps> = ({
         >
           <ThemeText
             variant="caption"
-            color={getColor('primary')}
+            color={getColor('card')}
             style={[styles.addButtonText, styles.addButtonTextWithVariants]}
           >
             ADD
@@ -170,10 +169,10 @@ const AddButton: React.FC<AddButtonProps> = ({
     <>
       <TouchableOpacity style={styles.addButton} onPress={handleSafePress}>
         {size === 'xs' || size === 'small' ? (
-          <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
+          <MaterialCommunityIcons name="plus" size={20} color={getColor('card')} />
         ) : (
-          <ThemeText variant="caption" color={getColor('primary')} style={styles.addButtonText}>
-            ADD +
+          <ThemeText variant="caption" color={getColor('card')} style={styles.addButtonText}>
+            ADD
           </ThemeText>
         )}
       </TouchableOpacity>

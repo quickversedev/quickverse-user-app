@@ -3,7 +3,7 @@ import { useLocation } from '../../hooks/Permissions/useLocation';
 import HomeMainScreen from './HomeMainScreen';
 
 const HomeScreen = () => {
-  const { isDenied,isBlocked, handleDeniedPermissionModal } = useLocation();
+  const { isDenied, isBlocked, handleDeniedPermissionModal } = useLocation();
   const modalShownRef = useRef(false);
 
   useEffect(() => {

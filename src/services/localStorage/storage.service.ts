@@ -1,5 +1,6 @@
 // src/services/storage.service.ts
 import { MMKV } from 'react-native-mmkv';
+import { PermissionStatus } from 'react-native-permissions';
 
 // Initialize MMKV
 export const storage = new MMKV();
@@ -11,6 +12,8 @@ const ALREADY_LAUNCHED_KEY = '@alreadyLaunched';
 const REGION_ID_KEY = '@RegionId';
 const USER_ADDRESSES_KEY = '@UserAddresses';
 const RECENT_SEARCHES_KEY = '@RecentSearches';
+const LOCATION_COORDS_KEY = '@LocationCoords';
+const LOCATION_PERMISSION_KEY = '@LocationPermission';
 
 export const setSkipLoginFlow = (skipLogin: boolean): void => {
   storage.set(SKIP_LOGIN_KEY, skipLogin);
@@ -279,4 +282,47 @@ export const StorageService = {
   removeItem: (key: string): void => {
     storage.delete(key);
   },
+};
+
+/**
+ * Location storage helpers (MMKV)
+ */
+export type StoredCoords = { latitude: number; longitude: number };
+
+export const setLocationCoords = (coords: StoredCoords): void => {
+  try {
+    storage.set(LOCATION_COORDS_KEY, JSON.stringify(coords));
+  } catch {
+    // noop
+  }
+};
+
+export const getLocationCoords = (): StoredCoords | undefined => {
+  const raw = storage.getString(LOCATION_COORDS_KEY);
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as StoredCoords;
+    if (parsed && typeof parsed.latitude === 'number' && typeof parsed.longitude === 'number') {
+      return parsed;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+export const removeLocationCoords = (): void => {
+  storage.delete(LOCATION_COORDS_KEY);
+};
+
+export const setLocationPermission = (permission: PermissionStatus): void => {
+  storage.set(LOCATION_PERMISSION_KEY, permission);
+};
+
+export const getLocationPermission = (): PermissionStatus | undefined => {
+  return (storage.getString(LOCATION_PERMISSION_KEY) as PermissionStatus) ?? undefined;
+};
+
+export const removeLocationPermission = (): void => {
+  storage.delete(LOCATION_PERMISSION_KEY);
 };

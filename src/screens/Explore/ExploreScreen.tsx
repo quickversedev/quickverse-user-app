@@ -4,7 +4,6 @@ import { ActivityIndicator, Platform, StyleSheet, TouchableOpacity, View } from 
 import MapView, { Callout, Circle, Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { Images } from '../../assets';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAppStateRefresh } from '../../hooks/useAppStateRefresh';
@@ -62,138 +61,252 @@ const ExploreScreen = () => {
     return null;
   }, []);
 
-  // Helper function to get vendor pin - use flag asset for all vendors
-  const getVendorPin = useCallback(() => {
-    return Images.foodPin; // flag.png
-  }, []);
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: getColor('background'),
+    },
+    mapContainer: {
+      flex: 1,
+      overflow: 'hidden',
+    },
+    map: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    header: {
+      position: 'absolute',
+      top: 50,
+      left: 20,
+      right: 20,
+      backgroundColor: getColor('card'),
+      padding: 16,
+      borderRadius: theme.borderRadius.md,
+      zIndex: 10,
+      elevation: 6,
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
+    },
+    title: {
+      color: getColor('text'),
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 4,
+    },
+    subtitle: {
+      color: getColor('subText'),
+      fontSize: 14,
+      fontWeight: '400',
+    },
+    currentLocationButton: {
+      position: 'absolute',
+      bottom: 100,
+      right: 20,
+      backgroundColor: getColor('card'),
+      borderRadius: theme.borderRadius.md,
+      padding: 12,
+      elevation: 6,
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
+    },
+    currentLocationDot: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: '#2196F3',
+      borderWidth: 3,
+      borderColor: '#fff',
+      shadowColor: '#2196F3',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.5,
+      shadowRadius: 6,
+      elevation: 6,
+    },
+    loadingText: {
+      color: getColor('text'),
+      marginLeft: 12,
+      fontSize: 16,
+    },
+    mapLoadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: getColor('card'),
+    },
+    radiusIndicator: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 8,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: getColor('border'),
+    },
+    radiusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: '#2196F3',
+      marginRight: 8,
+    },
+    radiusText: {
+      color: getColor('subText'),
+      fontSize: 12,
+    },
+    customMapPin: {
+      flex: 1,
+      width: 50,
+      height: 50,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    iosVendorPin: {
+      width: 32,
+      height: 32,
+      backgroundColor: getColor('error'),
+      borderRadius: 16,
+      borderWidth: 2,
+      borderColor: getColor('white'),
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: getColor('shadow'),
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 4,
+      position: 'absolute',
+      top: -16,
+      left: -16,
+    },
+    iosVendorPinIcon: {
+      color: getColor('white'),
+      fontSize: 16,
+    },
+    androidVendorPin: {
+      width: 36,
+      height: 36,
+      backgroundColor: getColor('error'),
+      borderRadius: 18,
+      borderWidth: 3,
+      borderColor: getColor('white'),
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: getColor('shadow'),
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 6,
+    },
+    calloutContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    calloutCard: {
+      width: 240,
+      borderRadius: theme.borderRadius.md,
+      padding: 12,
+      borderWidth: 1,
+      backgroundColor: getColor('card'),
+    },
+    calloutTitle: {
+      fontWeight: '700',
+      marginBottom: 4,
+    },
+    calloutSubtitle: {
+      marginBottom: 4,
+    },
+    calloutDescription: {
+      marginBottom: 12,
+    },
+    calloutActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      backgroundColor: 'transparent',
+      marginTop: 8,
+    },
+    calloutButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: theme.borderRadius.sm,
+    },
+    calloutButtonText: {
+      fontWeight: '600',
+    },
+  });
 
-  // Helper function to get vendor pin with proper iOS handling
-  const getVendorPinForPlatform = useCallback((vendor: Vendor) => {
-    // For iOS, we'll use a custom marker component instead of image prop
-    // This ensures better compatibility and visibility
-    if (Platform.OS === 'ios') {
-      return null; // Return null to use custom marker component
-    }
-    return Images.foodPin; // Use image prop for Android
-  }, []);
-
-  // Custom vendor marker component for better iOS compatibility
+  // Custom vendor marker component for better cross-platform compatibility
   const VendorMarker = useCallback(
     ({ vendor, coordinates }: { vendor: Vendor; coordinates: any }) => {
+      const calloutContent = (
+        <Callout tooltip onPress={() => navigation.navigate('VendorProduct', { vendor })}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('VendorProduct', { vendor })}
+            activeOpacity={0.8}
+            style={styles.calloutContainer}
+          >
+            <View
+              style={[
+                styles.calloutCard,
+                { backgroundColor: getColor('card'), borderColor: getColor('border') },
+              ]}
+            >
+              <ThemeText variant="subtitle" color={getColor('text')} style={styles.calloutTitle}>
+                {vendor.name || 'Vendor'}
+              </ThemeText>
+              <ThemeText
+                variant="caption"
+                color={getColor('subText')}
+                style={styles.calloutSubtitle}
+              >
+                {typeof vendor.rating === 'number' && vendor.rating > 0
+                  ? `${vendor.category || 'Vendor'} • ${vendor.rating}★`
+                  : vendor.category || 'Vendor'}
+              </ThemeText>
+              <ThemeText
+                variant="caption"
+                color={getColor('text')}
+                style={styles.calloutDescription}
+                numberOfLines={2}
+              >
+                {vendor.description || ''}
+              </ThemeText>
+              <View style={styles.calloutActions}>
+                <View style={[styles.calloutButton, { backgroundColor: getColor('primary') }]}>
+                  <ThemeText
+                    variant="small"
+                    color={getColor('white')}
+                    style={styles.calloutButtonText}
+                  >
+                    View
+                  </ThemeText>
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Callout>
+      );
+
       if (Platform.OS === 'ios') {
         return (
           <Marker key={vendor.shopId} coordinate={coordinates} anchor={{ x: 0.5, y: 1.0 }}>
             <View style={styles.iosVendorPin}>
               <MaterialCommunityIcons name="store" size={16} color={getColor('white')} />
             </View>
-            <Callout tooltip onPress={() => navigation.navigate('VendorProduct', { vendor })}>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('VendorProduct', { vendor })}
-                activeOpacity={0.8}
-                style={styles.calloutContainer}
-              >
-                <View
-                  style={[
-                    styles.calloutCard,
-                    { backgroundColor: getColor('card'), borderColor: getColor('border') },
-                  ]}
-                >
-                  <ThemeText
-                    variant="subtitle"
-                    color={getColor('text')}
-                    style={styles.calloutTitle}
-                  >
-                    {vendor.name || 'Vendor'}
-                  </ThemeText>
-                  <ThemeText
-                    variant="caption"
-                    color={getColor('subText')}
-                    style={styles.calloutSubtitle}
-                  >
-                    {typeof vendor.rating === 'number' && vendor.rating > 0
-                      ? `${vendor.category || 'Vendor'} • ${vendor.rating}★`
-                      : vendor.category || 'Vendor'}
-                  </ThemeText>
-                  <ThemeText
-                    variant="caption"
-                    color={getColor('text')}
-                    style={styles.calloutDescription}
-                    numberOfLines={2}
-                  >
-                    {vendor.description || ''}
-                  </ThemeText>
-                  <View style={styles.calloutActions}>
-                    <View style={[styles.calloutButton, { backgroundColor: getColor('primary') }]}>
-                      <ThemeText
-                        variant="small"
-                        color={getColor('white')}
-                        style={styles.calloutButtonText}
-                      >
-                        View
-                      </ThemeText>
-                    </View>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            </Callout>
+            {calloutContent}
           </Marker>
         );
       }
 
-      // Android marker with image
+      // Android marker with custom view
       return (
-        <Marker
-          key={vendor.shopId}
-          coordinate={coordinates}
-          anchor={{ x: 0.5, y: 1.0 }}
-          image={Images.foodPin}
-        >
-          <Callout tooltip onPress={() => navigation.navigate('VendorProduct', { vendor })}>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('VendorProduct', { vendor })}
-              activeOpacity={0.8}
-              style={styles.calloutContainer}
-            >
-              <View
-                style={[
-                  styles.calloutCard,
-                  { backgroundColor: getColor('card'), borderColor: getColor('border') },
-                ]}
-              >
-                <ThemeText variant="subtitle" color={getColor('text')} style={styles.calloutTitle}>
-                  {vendor.name || 'Vendor'}
-                </ThemeText>
-                <ThemeText
-                  variant="caption"
-                  color={getColor('subText')}
-                  style={styles.calloutSubtitle}
-                >
-                  {typeof vendor.rating === 'number' && vendor.rating > 0
-                    ? `${vendor.category || 'Vendor'} • ${vendor.rating}★`
-                    : vendor.category || 'Vendor'}
-                </ThemeText>
-                <ThemeText
-                  variant="caption"
-                  color={getColor('text')}
-                  style={styles.calloutDescription}
-                  numberOfLines={2}
-                >
-                  {vendor.description || ''}
-                </ThemeText>
-                <View style={styles.calloutActions}>
-                  <View style={[styles.calloutButton, { backgroundColor: getColor('primary') }]}>
-                    <ThemeText
-                      variant="small"
-                      color={getColor('white')}
-                      style={styles.calloutButtonText}
-                    >
-                      View
-                    </ThemeText>
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </Callout>
+        <Marker key={vendor.shopId} coordinate={coordinates} anchor={{ x: 0.5, y: 1.0 }}>
+          <View style={styles.androidVendorPin}>
+            <MaterialCommunityIcons name="store" size={18} color={getColor('white')} />
+          </View>
+          {calloutContent}
         </Marker>
       );
     },
@@ -272,175 +385,6 @@ const ExploreScreen = () => {
     }, 100);
   };
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: getColor('background'),
-    },
-    mapContainer: {
-      flex: 1,
-      overflow: 'hidden',
-    },
-    map: {
-      ...StyleSheet.absoluteFillObject,
-    },
-    header: {
-      position: 'absolute',
-      top: 50,
-      left: 20,
-      right: 20,
-      backgroundColor: getColor('card'),
-      padding: 16,
-      borderRadius: theme.borderRadius.md,
-      zIndex: 10,
-      elevation: 6,
-      shadowColor: theme.colors.shadow.color,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: theme.colors.shadow.opacity,
-      shadowRadius: theme.colors.shadow.radius,
-    },
-    title: {
-      color: getColor('text'),
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginBottom: 4,
-    },
-    subtitle: {
-      color: getColor('subText'),
-      fontSize: 14,
-      fontWeight: '400',
-    },
-    currentLocationButton: {
-      position: 'absolute',
-      bottom: 100,
-      right: 20,
-      backgroundColor: getColor('card'),
-      borderRadius: theme.borderRadius.md,
-      padding: 12,
-      elevation: 6,
-      shadowColor: theme.colors.shadow.color,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: theme.colors.shadow.opacity,
-      shadowRadius: theme.colors.shadow.radius,
-    },
-    currentLocationDot: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: '#2196F3',
-      borderWidth: 3,
-      borderColor: '#fff',
-      shadowColor: '#2196F3',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.5,
-      shadowRadius: 6,
-      elevation: 6,
-    },
-
-    loadingText: {
-      color: getColor('text'),
-      marginLeft: 12,
-      fontSize: 16,
-    },
-    mapLoadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: getColor('card'),
-    },
-    radiusIndicator: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: 8,
-      paddingTop: 8,
-      borderTopWidth: 1,
-      borderTopColor: getColor('border'),
-    },
-    radiusDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: '#2196F3',
-      marginRight: 8,
-    },
-    radiusText: {
-      color: getColor('subText'),
-      fontSize: 12,
-    },
-    customMapPin: {
-      flex: 1,
-      width: 50,
-      height: 50,
-      justifyContent: 'center',
-      alignItems: 'center',
-      // backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      // borderRadius: 25,
-      // borderWidth: 2,
-      // borderColor: '#FF6B6B',
-    },
-    // iOS-specific vendor pin styles
-    iosVendorPin: {
-      width: 32,
-      height: 32,
-      backgroundColor: getColor('error'),
-      borderRadius: 16,
-      borderWidth: 2,
-      borderColor: getColor('white'),
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: getColor('shadow'),
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      elevation: 4,
-      // Ensure proper positioning on iOS
-      position: 'absolute',
-      top: -16, // Center the pin on the marker position
-      left: -16,
-    },
-    iosVendorPinIcon: {
-      color: getColor('white'),
-      fontSize: 16,
-    },
-
-    calloutContainer: {
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    calloutCard: {
-      width: 240,
-      borderRadius: theme.borderRadius.md,
-      padding: 12,
-      borderWidth: 1,
-      backgroundColor: getColor('card'),
-    },
-    calloutTitle: {
-      fontWeight: '700',
-      marginBottom: 4,
-    },
-    calloutSubtitle: {
-      marginBottom: 4,
-    },
-    calloutDescription: {
-      marginBottom: 12,
-    },
-    calloutActions: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-      backgroundColor: 'transparent',
-      marginTop: 8,
-    },
-    calloutButton: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: theme.borderRadius.sm,
-    },
-    calloutButtonText: {
-      fontWeight: '600',
-    },
-  });
-
   const radiusText =
     isRefreshing || isAutoRefreshing
       ? 'Refreshing vendors...'
@@ -492,22 +436,10 @@ const ExploreScreen = () => {
                     latitude: selectedAddress.coordinates.latitude,
                     longitude: selectedAddress.coordinates.longitude,
                   }}
-                  radius={5000} // 5km in meters
+                  radius={4000} // 4km in meters
                   fillColor="rgba(255, 152, 0, 0.15)" // More visible orange fill
                   strokeColor="rgba(255, 152, 0, 0.8)" // Much more visible orange border
                   strokeWidth={2} // Thicker border
-                />
-
-                {/* Additional smaller circle for better visibility */}
-                <Circle
-                  center={{
-                    latitude: selectedAddress.coordinates.latitude,
-                    longitude: selectedAddress.coordinates.longitude,
-                  }}
-                  radius={1000} // 1km inner circle
-                  fillColor="rgba(255, 152, 0, 0.05)" // Very light fill
-                  strokeColor="rgba(255, 152, 0, 0.4)" // Medium visibility border
-                  strokeWidth={4}
                 />
               </>
             )}

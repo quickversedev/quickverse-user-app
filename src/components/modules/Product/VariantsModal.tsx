@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import {
   Dimensions,
   GestureResponderEvent,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -18,6 +19,7 @@ import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
 import SectionDivider from '../../common/SectionDivider';
 import { ThemeText } from '../../common/theme/ThemeText';
+import VegIcon from '../../common/VegIcon';
 import VariantsModalSkeleton from '../Vendor/VariantsModalSkeleton';
 import AddButton from './AddButton';
 import QuantitySelector from './QuantitySelector';
@@ -115,7 +117,7 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
   const styles = StyleSheet.create({
     modalOverlay: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
       justifyContent: 'flex-end',
     },
     modal: {
@@ -128,8 +130,8 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
 
     closeButton: {
       position: 'absolute',
-      top: 20,
-      right: 20,
+      top: -50,
+      alignSelf: 'center',
       zIndex: 10,
       backgroundColor: getColor('card'),
       borderRadius: 20,
@@ -137,10 +139,10 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       height: 40,
       alignItems: 'center',
       justifyContent: 'center',
-      shadowColor: getColor('shadow').color,
+      shadowColor: theme.colors.shadow.color,
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: getColor('shadow').opacity,
-      shadowRadius: getColor('shadow').radius,
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
       elevation: 3,
     },
     content: {
@@ -149,8 +151,18 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
     productName: {
       color: getColor('text'),
       textAlign: 'left',
-      marginTop: 20,
+      // marginTop: 20,
       // marginBottom: 24,
+    },
+    productNameContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 20,
+    },
+    vegIconContainer: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: 8,
     },
     sectionDivider: {
       marginVertical: 16,
@@ -166,10 +178,10 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
       borderRadius: theme.borderRadius.md,
       padding: 8,
       marginBottom: 12,
-      shadowColor: getColor('shadow').color,
+      shadowColor: theme.colors.shadow.color,
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: getColor('shadow').opacity,
-      shadowRadius: getColor('shadow').radius,
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
       elevation: 2,
     },
     variantImage: {
@@ -273,16 +285,14 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
         </View>
       );
     }
-
     return variants.map((variant, index) => {
       const quantity = getVariantQuantity(variant.sku);
 
       return (
         <View key={variant.sku || `variant-${index}`} style={styles.variantItem}>
-          <View style={styles.variantImage} />
           <View style={styles.variantInfo}>
             <ThemeText variant="body" color={getColor('text')} style={styles.variantName}>
-              {variant.name}
+              {[variant.attributes?.size, variant.attributes?.color].filter(Boolean).join(' | ')}
             </ThemeText>
             <View style={styles.variantPriceContainer}>
               <ThemeText variant="body" color={getColor('text')} style={styles.currentPrice}>
@@ -333,9 +343,19 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
           </TouchableOpacity>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            <ThemeText variant="h2" color={getColor('text')} style={styles.productName}>
-              {product.name}
-            </ThemeText>
+            <View style={styles.productNameContainer}>
+              <Image
+                source={{ uri: product.imageUrl }}
+                style={styles.variantImage}
+                resizeMode="cover"
+              />
+              <ThemeText variant="h2" color={getColor('text')} style={styles.productName}>
+                {product.name}
+              </ThemeText>
+              <View style={styles.vegIconContainer}>
+                <VegIcon veg={product.veg} size="regular" />
+              </View>
+            </View>
 
             <View style={styles.sectionDivider}>
               <SectionDivider text="SELECT UNIT" fontSize={16} />

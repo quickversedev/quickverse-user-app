@@ -1,25 +1,21 @@
-import { useAuth } from '../contexts/login/AuthProvider';
-import { AuthSession } from '../services/localStorage/storage.service';
 import useConfigStore from '../store/configStore';
 import usePagesStore from '../store/pages/pagesStore';
 
 export const usePages = () => {
-  const { authData } = useAuth();
   const { pages, loading, error, fetchPages, setLoading, setError, clearError, getPageById } =
     usePagesStore();
 
   const handleFetchPages = async () => {
     const regionId = useConfigStore.getState().getRegionId();
-
-    if (authData && regionId) {
-      await fetchPages(regionId, authData as AuthSession);
+    if (regionId) {
+      await fetchPages(regionId);
     }
   };
 
   const retryFetch = () => {
     clearError();
     const regionId = useConfigStore.getState().getRegionId();
-    if (authData && regionId) {
+    if (regionId) {
       handleFetchPages();
     }
   };
