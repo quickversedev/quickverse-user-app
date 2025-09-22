@@ -1,7 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import type { RootStackParamList } from '../../../routes/AppStack';
 import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -12,6 +13,7 @@ const VendorList = () => {
   const { loading, error, vendors } = useVendorStore();
   const { getColor } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const { selectedAddress: _selectedAddress } = useAuth();
 
   // const sortedVendors = useMemo(() => {
   //   return [...vendors].sort((a, b) => {
@@ -41,12 +43,21 @@ const VendorList = () => {
     }));
   }, [vendors]);
 
+  // Use shared distance utility
+
+  // no-op placeholder to keep potential future usage aligned with store-based sorting
+
+  // Respect store order; no local sorting
+  const sortedByDistance = vendorsWithStatus;
+
+  const renderSeparator = useCallback(() => <View style={styles.separator} />, [styles.separator]);
+
   if (loading) return null;
   if (error) return null;
   return (
     <View style={styles.container}>
       <FlatList
-        data={vendorsWithStatus}
+        data={sortedByDistance}
         keyExtractor={item => item.shopId}
         renderItem={({ item }) => (
           <VendorCard
@@ -59,7 +70,7 @@ const VendorList = () => {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={renderSeparator}
       />
     </View>
   );
