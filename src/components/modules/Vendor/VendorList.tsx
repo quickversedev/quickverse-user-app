@@ -43,13 +43,6 @@ const VendorList = () => {
     }));
   }, [vendors]);
 
-  // Use shared distance utility
-
-  // no-op placeholder to keep potential future usage aligned with store-based sorting
-
-  // Respect store order; no local sorting
-  const sortedByDistance = vendorsWithStatus;
-
   const renderSeparator = useCallback(() => <View style={styles.separator} />, [styles.separator]);
 
   if (loading) return null;
@@ -57,7 +50,7 @@ const VendorList = () => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={sortedByDistance}
+        data={vendorsWithStatus}
         keyExtractor={item => item.shopId}
         renderItem={({ item }) => (
           <VendorCard
