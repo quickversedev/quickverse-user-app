@@ -11,6 +11,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
 import { getCleanImageUri } from '../../../utils/imageUtils';
+import { formatTimeToAMPM, isStoreOpen } from '../../../utils/storeUtils';
 import { RatingBadge } from '../../common';
 import { ThemeText } from '../../common/theme/ThemeText';
 
@@ -31,13 +32,23 @@ interface VendorCardProps {
 const VendorCard: React.FC<VendorCardProps> = ({
   vendor,
   onPress,
-  onFavoritePress,
+  onFavoritePress: _onFavoritePress,
   isFavorite: _isFavorite = false,
   favoriteColor: _favoriteColor = '#FF6B35',
   size = 'medium',
   disabled = false,
 }) => {
   const { getColor, theme } = useTheme();
+
+  const storeStatus = React.useMemo(
+    () =>
+      isStoreOpen({
+        openingTime: vendor.openingTime,
+        closingTime: vendor.closingTime,
+        storeActive: vendor.storeActive,
+      }),
+    [vendor.openingTime, vendor.closingTime, vendor.storeActive]
+  );
 
   // Calculate card width based on size
   const getCardWidth = (): number => {
@@ -78,10 +89,16 @@ const VendorCard: React.FC<VendorCardProps> = ({
       borderWidth: 1,
       borderColor: 'rgba(255,255,255,0.08)',
     },
+    vendorCardDisabled: {
+      opacity: 0.5,
+    },
     vendorImage: {
       width: '100%',
       height: imageHeight,
       resizeMode: 'cover',
+    },
+    imageWrapper: {
+      position: 'relative',
     },
     vendorInfo: {
       padding: size === 'small' ? 8 : 12,
@@ -129,6 +146,23 @@ const VendorCard: React.FC<VendorCardProps> = ({
       textTransform: 'uppercase',
       fontFamily: 'BricolageGrotesque-Regular',
     },
+    opensAtContainer: {
+      marginTop: 6,
+      backgroundColor: getColor('error'),
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: theme.borderRadius.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    opensAtText: {
+      marginLeft: 6,
+      color: getColor('white'),
+      fontWeight: 'bold',
+    },
+    nameText: {
+      marginBottom: 4,
+    },
   });
 
   const bannerUri = getCleanImageUri(vendor.banner as string);
@@ -141,19 +175,23 @@ const VendorCard: React.FC<VendorCardProps> = ({
     : undefined;
   return (
     <TouchableOpacity
-      style={[styles.vendorCard, disabled && { opacity: 0.4 }]}
+      style={[styles.vendorCard, disabled && styles.vendorCardDisabled]}
       onPress={() => onPress(vendor)}
     >
-      <View style={{ position: 'relative' }}>
+      <View style={styles.imageWrapper}>
         {disabled && (
           <View style={styles.disabledOverlay}>
-            <ThemeText
-              variant="body"
-              color={getColor('white')}
-              style={{ textTransform: 'uppercase' }}
-            >
+            <ThemeText variant="body" color={getColor('white')} style={styles.closedText}>
               Store Closed
             </ThemeText>
+            {!!vendor.openingTime && (
+              <View style={styles.opensAtContainer}>
+                <MaterialCommunityIcons name="clock-outline" size={14} color={getColor('white')} />
+                <ThemeText variant="caption" color={getColor('white')} style={styles.opensAtText}>
+                  Opens at {formatTimeToAMPM(storeStatus.nextOpeningTime || vendor.openingTime)}
+                </ThemeText>
+              </View>
+            )}
           </View>
         )}
         {imageSource && <Image source={imageSource} style={styles.vendorImage} />}
@@ -169,7 +207,7 @@ const VendorCard: React.FC<VendorCardProps> = ({
         <ThemeText
           variant={size === 'small' ? 'caption' : 'body'}
           color={getColor('text')}
-          style={{ marginBottom: 4 }}
+          style={styles.nameText}
           numberOfLines={size === 'small' ? 1 : 2}
         >
           {vendor.name}
@@ -182,7 +220,7 @@ const VendorCard: React.FC<VendorCardProps> = ({
           <ThemeText
             variant={size === 'small' ? 'small' : 'caption'}
             color={getColor('subText')}
-            style={{ marginLeft: 4 }}
+            style={styles.metaText}
             numberOfLines={1}
           >
             {vendor.preparationTime || '30 mins'}

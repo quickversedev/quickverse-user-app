@@ -34,6 +34,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { Address } from '../../types/address';
 import { Product } from '../../types/product';
 import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
+import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
 import PaymentScreen from './PaymentScreen';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
@@ -388,14 +389,28 @@ const CartScreen: React.FC = () => {
         'code' in error &&
         error.code === 'STORE_NOT_ACTIVE_UNSUPPORTED_OPERATION'
       ) {
-        Alert.alert('Store Closed', 'The store is closed at the moment. Please try again later.', [
-          {
-            text: 'OK',
-            onPress: async () => {
-              navigation.navigate('MainApp');
+        const status = vendor
+          ? isStoreOpen({
+              openingTime: vendor.openingTime,
+              closingTime: vendor.closingTime,
+              storeActive: vendor.storeActive,
+            })
+          : null;
+        const opensAt = status?.nextOpeningTime || vendor?.openingTime;
+        const opensAtText = opensAt ? ` Opens at ${formatTimeToAMPM(opensAt)}.` : '';
+
+        Alert.alert(
+          'Store Closed',
+          `The store is closed at the moment.${opensAtText} Please try again later.`,
+          [
+            {
+              text: 'OK',
+              onPress: async () => {
+                navigation.navigate('MainApp');
+              },
             },
-          },
-        ]);
+          ]
+        );
         return;
       }
 

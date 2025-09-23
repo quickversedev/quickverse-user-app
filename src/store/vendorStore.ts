@@ -46,7 +46,7 @@ const sortVendorsByActiveStatus = (vendors: Vendor[]): Vendor[] => {
   });
 };
 
-// Combined sorting function: first by distance, then by active status
+// Combined sorting function: open stores first, then by distance
 const sortVendorsByDistanceAndActiveStatus = (
   vendors: Vendor[],
   location?: LocationFilter
@@ -74,14 +74,10 @@ const sortVendorsByDistanceAndActiveStatus = (
       return { v, distance, isOpen: storeStatus.isOpen };
     })
     .sort((a, b) => {
-      // First sort by distance
-      if (a.distance !== b.distance) {
-        return a.distance - b.distance;
-      }
-      // Then sort by active status (open stores first)
+      // Keep closed stores at the end; sort by distance within each group
       if (a.isOpen && !b.isOpen) return -1;
       if (!a.isOpen && b.isOpen) return 1;
-      return 0;
+      return a.distance - b.distance;
     })
     .map(x => x.v);
 };
