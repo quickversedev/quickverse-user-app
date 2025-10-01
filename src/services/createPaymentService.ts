@@ -1,3 +1,4 @@
+import { AUTHORIZATION_KEY } from '@env';
 import axiosInstance, { apiCall } from '../config/api/axios.config';
 
 export interface PaymentTender {
@@ -43,7 +44,7 @@ class CreatePaymentService {
         axiosInstance.post<CreatePaymentResponse>('/v3/payment/create', requestData, {
           headers: {
             SessionKey: sessionKey,
-            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            Authorization: AUTHORIZATION_KEY,
             phone,
           },
         })

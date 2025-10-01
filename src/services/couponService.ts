@@ -1,3 +1,4 @@
+import { AUTHORIZATION_KEY } from '@env';
 import axiosInstance, { apiCall } from '../config/api/axios.config';
 import { AuthSession } from '../services/localStorage/storage.service';
 import { Coupon } from '../store/cart/couponStore';
@@ -186,7 +187,7 @@ class CouponService {
       const data: VendorOffersResponse = await apiCall(
         axiosInstance.get(`/v3/${vendorId}/Offers`, {
           headers: {
-            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            Authorization: AUTHORIZATION_KEY,
           },
         })
       );
@@ -220,7 +221,7 @@ class CouponService {
             isBuyNow: 'false',
           },
           headers: {
-            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            Authorization: AUTHORIZATION_KEY,
             SessionKey: authData?.jwt || '',
             phone: authData?.phone || '',
           },
@@ -260,7 +261,7 @@ class CouponService {
         axiosInstance.post<CartApiResponse>('/v3/Offers/Apply', null, {
           params: { shopId, offerId: offerIdOrCode, isBuyNow },
           headers: {
-            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            Authorization: AUTHORIZATION_KEY,
             SessionKey: authData?.jwt || '',
             phone: authData?.phone || '',
           },

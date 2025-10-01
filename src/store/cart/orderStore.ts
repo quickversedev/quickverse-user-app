@@ -1,3 +1,4 @@
+import { AUTHORIZATION_KEY } from '@env';
 import { create } from 'zustand';
 import { mockOrders } from '../../assets/mock/orders';
 import axiosInstance, { apiCall } from '../../config/api/axios.config';
@@ -81,7 +82,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         axiosInstance.post<OrderResponse>(`${ORDER_API_URL}?pageSize=${pageSize}`, requestData, {
           headers: {
             SessionKey: jwt,
-            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            Authorization: AUTHORIZATION_KEY,
 
             phone: phone,
           },
@@ -246,7 +247,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
           {
             headers: {
               SessionKey: jwt,
-              Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+              Authorization: AUTHORIZATION_KEY,
 
               phone: phone,
             },

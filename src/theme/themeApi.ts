@@ -1,3 +1,4 @@
+import { AUTHORIZATION_KEY } from '@env';
 import axiosInstance, { withHeaders } from '../config/api/axios.config';
 
 export interface ThemeConfigResponse {
@@ -14,7 +15,7 @@ const THEME_ENDPOINT = '/v3/theme';
  */
 export async function fetchThemeConfig(themeId: string = 'theme1'): Promise<ThemeConfigResponse> {
   const authHeaders = {
-    Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+    Authorization: AUTHORIZATION_KEY,
   };
 
   const response = await axiosInstance.get<ThemeConfigResponse>(

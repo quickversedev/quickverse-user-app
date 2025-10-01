@@ -1,3 +1,4 @@
+import { AUTHORIZATION_KEY } from '@env';
 import { create } from 'zustand';
 import { mockVendors } from '../assets/mock/vendor';
 import axiosInstance, { apiCall } from '../config/api/axios.config';
@@ -130,7 +131,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         axiosInstance.get(VENDOR_API_URL, {
           params,
           headers: {
-            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            Authorization: AUTHORIZATION_KEY,
           },
           signal: abortController.signal,
         })

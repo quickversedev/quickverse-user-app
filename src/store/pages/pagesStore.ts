@@ -1,3 +1,4 @@
+import { AUTHORIZATION_KEY } from '@env';
 import { create } from 'zustand';
 import axiosInstance, { apiCall } from '../../config/api/axios.config';
 import { Page, PagesStore } from '../../types/pages';
@@ -20,7 +21,7 @@ const usePagesStore = create<PagesStore>((set, get) => ({
       const data = await apiCall(
         axiosInstance.get(`/v3/pages?regionId=${regionId}`, {
           headers: {
-            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            Authorization: AUTHORIZATION_KEY,
           },
         })
       );

@@ -1,3 +1,4 @@
+import { AUTHORIZATION_KEY } from '@env';
 import { Product } from '../assets/mock/products';
 import axiosInstance, { apiCall } from '../config/api/axios.config';
 
@@ -121,7 +122,7 @@ class ProductsService {
           },
           {
             headers: {
-              Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+              Authorization: AUTHORIZATION_KEY,
             },
           }
         )
