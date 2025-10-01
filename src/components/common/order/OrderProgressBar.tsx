@@ -38,6 +38,7 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
   const fetchOrders = useOrderStore(state => state.fetchOrders);
   const loading = useOrderStore(state => state.loading);
   const { width: screenWidth } = useWindowDimensions();
+  const setSelectedOrder = useOrderStore(state => state.setSelectedOrder);
 
   // Match CartBar width
   const containerWidth = screenWidth - 30; // Same as CartBar width
@@ -94,7 +95,9 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
         activeOpacity={0.92}
         onPress={() => {
           if (order?.orderId) {
-            navigation.navigate('OrderDetails', { orderId: order.orderId });
+            setSelectedOrder(order);
+            console.log('navigating to order details', order);
+            navigation.navigate('OrderDetails', { orderId: order.orderId, order });
           }
         }}
       >

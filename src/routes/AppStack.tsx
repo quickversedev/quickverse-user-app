@@ -21,6 +21,7 @@ import ProductDetailDemo from '../screens/vendor/ProductDetailDemo';
 import VendorDetails from '../screens/vendor/VendorDetails';
 import VendorProduct from '../screens/vendor/VendorProduct';
 import VendorProfile from '../screens/vendor/VendorProfile';
+import { Order } from '../types/order';
 import { Vendor } from '../types/vendor';
 
 export type RootStackParamList = {
@@ -32,7 +33,7 @@ export type RootStackParamList = {
   ProductDetailDemo: undefined;
   Cart: { cartId: string } | undefined;
   Orders: undefined;
-  OrderDetails: { orderId: string };
+  OrderDetails: { orderId: string; order: Order };
   OrderSuccess: { orderId: string; amount: number; date: string; shopId?: string };
   OrderFailure: { errorMessage?: string };
   Coupons: undefined;

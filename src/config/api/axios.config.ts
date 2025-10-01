@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { Alert, Platform, ToastAndroid } from 'react-native';
 import { ApiError } from './axios.types';
 /**
@@ -77,6 +77,14 @@ const axiosInstance = axios.create({
  *
  * Converts axios errors to a consistent format
  */
+type ErrorResponseBody = {
+  code?: string;
+  message?: string;
+  error?: {
+    code?: string;
+    message?: string;
+  };
+};
 const handleAxiosError = (error: AxiosError | unknown): ApiError => {
   // Type guard to check if it's an AxiosError
   if (!axios.isAxiosError(error)) {
@@ -126,10 +134,7 @@ const handleAxiosError = (error: AxiosError | unknown): ApiError => {
 
   // Handle HTTP errors
   if ((axiosError as AxiosError).response) {
-    const responseData = (axiosError as AxiosError)?.response?.data as {
-      code: string;
-      message: string;
-    };
+    const responseData = (axiosError as AxiosError)?.response?.data as ErrorResponseBody;
 
     // Backend always returns errors in this format:
     // { "error": { "code": "1052", "message": "Tag already exists" } }
@@ -149,7 +154,7 @@ const handleAxiosError = (error: AxiosError | unknown): ApiError => {
       code: errorCode,
       isCancelled: false,
       apiEndpoint: (axiosError as AxiosError).config?.url || 'Unknown',
-      error: responseData || { code: errorCode, message: errorMessage },
+      error: { code: errorCode, message: errorMessage },
     };
   }
 
@@ -173,7 +178,21 @@ export const apiCall = async <T>(promise: Promise<AxiosResponse<T>>): Promise<T>
     const response = await promise;
     return response.data;
   } catch (error) {
-    console.error('error caught in Axios Config', error);
+    const axiosError = error as AxiosError;
+    const method = axiosError?.config?.method?.toUpperCase();
+    const endpoint = axiosError?.config?.url;
+    const baseURL =
+      (axiosError?.config as AxiosRequestConfig | undefined)?.baseURL || API_CONFIG.baseURL;
+    const fullUrl = endpoint
+      ? `${baseURL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`
+      : 'Unknown';
+    console.error('API error', {
+      method: method || 'UNKNOWN',
+      endpoint: endpoint || 'Unknown',
+      fullUrl,
+      status: axiosError?.response?.status,
+      message: axiosError?.message,
+    });
     throw handleAxiosError(error as AxiosError);
   }
 };
