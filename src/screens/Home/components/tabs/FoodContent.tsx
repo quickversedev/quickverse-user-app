@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   Animated,
   Dimensions,
@@ -54,6 +54,14 @@ const FoodContentComponent: React.FC<FoodContentProps> = ({
     },
     [navigation]
   );
+  // Auto-navigate to the only vendor's product screen when there is exactly one store
+  const hasNavigatedToSingleVendor = useRef(false);
+  useEffect(() => {
+    if (!hasNavigatedToSingleVendor.current && foodVendors.length === 1) {
+      hasNavigatedToSingleVendor.current = true;
+      navigation.navigate('VendorProduct', { vendor: foodVendors[0] });
+    }
+  }, [foodVendors, navigation]);
   //console.log('foodVendors', bannerData);
   // Memoize styles to prevent recreation on every render
   const styles = useMemo(

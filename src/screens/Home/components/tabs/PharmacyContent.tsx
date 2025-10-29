@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   Animated,
   Dimensions,
@@ -54,6 +54,15 @@ const PharmacyContentComponent: React.FC<PharmacyContentProps> = ({
     },
     [navigation]
   );
+
+  // Auto-navigate to the only vendor's product screen when there is exactly one store
+  const hasNavigatedToSingleVendor = useRef(false);
+  useEffect(() => {
+    if (!hasNavigatedToSingleVendor.current && pharmacyVendors.length === 1) {
+      hasNavigatedToSingleVendor.current = true;
+      navigation.navigate('VendorProduct', { vendor: pharmacyVendors[0] });
+    }
+  }, [pharmacyVendors, navigation]);
 
   // Memoize styles to prevent recreation on every render
   const styles = useMemo(
