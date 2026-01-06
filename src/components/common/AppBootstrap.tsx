@@ -4,7 +4,7 @@ import { useNotifications } from '../../hooks';
 import { PermissionAndLocation, useLocation } from '../../hooks/Permissions/useLocation';
 import { useDeviceInfo } from '../../hooks/useDeviceInfo';
 import { AppStack } from '../../routes/AppStack';
-import Registration from '../../screens/login/Registration';
+import Registration from '../../screens/Login/Registration';
 import PermissionsScreen from '../../screens/permission/PermissionsScreen';
 import AppInitializer from './AppInitializer';
 import ErrorState from './ErrorState';
