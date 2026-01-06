@@ -17,7 +17,7 @@ import QuantitySelector from './QuantitySelector';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 4;
-const SIDEBAR_WIDTH = 70;
+const SIDEBAR_WIDTH = 85;
 const PRODUCT_LIST_PADDING = 8;
 const AVAILABLE_WIDTH = SCREEN_WIDTH - SIDEBAR_WIDTH - PRODUCT_LIST_PADDING * 2;
 const CARD_WIDTH = ((SCREEN_WIDTH - CARD_MARGIN * 4) / 3) * 0.92;

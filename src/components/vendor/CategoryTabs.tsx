@@ -27,9 +27,9 @@ interface CategoryTabsProps {
 }
 
 const { height } = Dimensions.get('window');
-const CATEGORY_ITEM_HEIGHT = 80;
-const SIDEBAR_WIDTH = 70;
-const ICON_SIZE = 40;
+const CATEGORY_ITEM_HEIGHT = 90;
+const SIDEBAR_WIDTH = 85;
+const ICON_SIZE = 48;
 
 const CategoryTabs: React.FC<CategoryTabsProps> = ({
   categories,
@@ -102,9 +102,9 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({
     },
     label: {
       textAlign: 'center',
-      fontSize: 9,
-      lineHeight: 11,
-      paddingHorizontal: 1,
+      fontSize: 10,
+      lineHeight: 13,
+      paddingHorizontal: 2,
     },
     labelActive: {
       fontWeight: 'bold',

@@ -5,9 +5,10 @@ import SectionDivider from '../common/SectionDivider';
 
 interface CategoryHeaderProps {
   title: string;
+  isFirst?: boolean;
 }
 
-const CategoryHeader: React.FC<CategoryHeaderProps> = ({ title }) => {
+const CategoryHeader: React.FC<CategoryHeaderProps> = ({ title, isFirst = false }) => {
   const { getColor } = useTheme();
 
   const styles = StyleSheet.create({
@@ -15,7 +16,7 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({ title }) => {
       width: '100%',
       backgroundColor: getColor('background'),
       paddingHorizontal: 8,
-      marginTop: 12,
+      marginTop: isFirst ? 0 : 12,
       marginBottom: 4,
       flexDirection: 'row',
       alignItems: 'center',

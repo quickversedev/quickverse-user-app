@@ -1015,9 +1015,9 @@ const VendorProductComponent: React.FC = () => {
   const MemoizedProductCard = useMemo(() => React.memo(ProductCard), []);
   //  Memoize render item for FlatList
   const renderItem = useCallback(
-    ({ item }: { item: RowProductListItem }) => {
+    ({ item, index }: { item: RowProductListItem; index: number }) => {
       if (item.type === 'header') {
-        return <CategoryHeader title={item.category.name} />;
+        return <CategoryHeader title={item.category.name} isFirst={index === 0} />;
       } else if (item.type === 'products') {
         return (
           <View style={styles.productRow}>
