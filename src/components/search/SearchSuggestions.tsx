@@ -29,73 +29,79 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
   const styles = StyleSheet.create({
     container: {
       position: 'absolute',
-      top: 60, // Position below the header
+      top: 72,
       left: 16,
       right: 16,
-      backgroundColor: getColor('background'),
-      borderRadius: 8,
-      marginTop: 4,
+      backgroundColor: getColor('card'),
+      borderRadius: 12,
       elevation: 12,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 8,
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
       zIndex: 9999,
-      maxHeight: 300,
+      maxHeight: 280,
       borderWidth: 1,
       borderColor: getColor('border'),
+      overflow: 'hidden',
     },
     suggestionItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
       borderBottomWidth: 1,
       borderBottomColor: getColor('border'),
-      backgroundColor: getColor('background'),
+      backgroundColor: 'transparent',
     },
     suggestionText: {
       fontSize: getTypography('body'),
       color: getColor('text'),
       flex: 1,
-      marginLeft: 12,
-      fontWeight: '500',
+      marginLeft: 14,
+      fontWeight: '400',
     },
     iconContainer: {
-      width: 20,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: getColor('background'),
       alignItems: 'center',
+      justifyContent: 'center',
     },
     icon: {
-      fontSize: 18,
-      color: getColor('primary'),
+      fontSize: 16,
+      color: getColor('subText'),
     },
     recentIcon: {
-      color: getColor('primary'),
+      color: getColor('subText'),
     },
     smartIcon: {
       color: getColor('primary'),
     },
     loadingContainer: {
-      padding: 16,
+      padding: 20,
       alignItems: 'center',
-      backgroundColor: getColor('background'),
+      backgroundColor: 'transparent',
     },
   });
 
   if (!visible) return null;
 
-  const renderSuggestion = ({ item }: { item: SearchSuggestion }) => (
+  const renderSuggestion = ({ item, index }: { item: SearchSuggestion; index: number }) => (
     <TouchableOpacity
-      style={styles.suggestionItem}
+      style={[
+        styles.suggestionItem,
+        index === suggestions.length - 1 && { borderBottomWidth: 0 },
+      ]}
       onPress={() => onSuggestionPress(item.text)}
-      activeOpacity={0.7}
+      activeOpacity={0.6}
     >
       <View style={styles.iconContainer}>
         <MaterialCommunityIcons
-          name={item.icon as string}
+          name={item.type === 'smart' ? 'map-marker-outline' : 'magnify'}
           style={[
             styles.icon,
-            item.type === 'recent' && styles.recentIcon,
             item.type === 'smart' && styles.smartIcon,
           ]}
         />
@@ -103,6 +109,11 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
       <Text style={styles.suggestionText} numberOfLines={1}>
         {item.text}
       </Text>
+      <MaterialCommunityIcons
+        name="arrow-top-left"
+        size={18}
+        color={getColor('subText')}
+      />
     </TouchableOpacity>
   );
 

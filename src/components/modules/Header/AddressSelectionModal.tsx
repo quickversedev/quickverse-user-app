@@ -34,7 +34,9 @@ import LoginButton from '../../common/LoginButton';
 import SectionDivider from '../../common/SectionDivider';
 
 const { height: screenHeight } = Dimensions.get('window');
-const MODAL_HEIGHT = screenHeight * 0.6;
+const MODAL_HEIGHT = screenHeight * 0.55;
+const CLOSE_BUTTON_SIZE = 36;
+const CLOSE_BUTTON_OFFSET = 12;
 
 interface AddressSelectionModalProps {
   visible: boolean;
@@ -253,8 +255,8 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       height: MODAL_HEIGHT,
       paddingBottom: 26,
       backgroundColor: getColor('background'),
-      borderTopLeftRadius: theme.borderRadius.md,
-      borderTopRightRadius: theme.borderRadius.md,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
       ...Platform.select({
         android: {
           elevation: 20,
@@ -267,30 +269,47 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
         },
       }),
     },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      backgroundColor: 'transparent',
-      alignItems: 'center',
-      paddingHorizontal: 20,
-      borderBottomWidth: 1,
+    handleBar: {
+      width: 40,
+      height: 4,
+      backgroundColor: getColor('border'),
+      borderRadius: 2,
+      alignSelf: 'center',
+      marginTop: 12,
+      marginBottom: 8,
+    },
+    closeButtonContainer: {
+      position: 'absolute',
+      bottom: MODAL_HEIGHT + CLOSE_BUTTON_OFFSET,
+      alignSelf: 'center',
+      zIndex: 100,
     },
     closeButton: {
-      padding: 8,
-      borderRadius: theme.borderRadius.max,
+      width: CLOSE_BUTTON_SIZE,
+      height: CLOSE_BUTTON_SIZE,
+      borderRadius: CLOSE_BUTTON_SIZE / 2,
       backgroundColor: getColor('card'),
-      minHeight: 40,
-      minWidth: 40,
       justifyContent: 'center',
       alignItems: 'center',
+      ...Platform.select({
+        android: {
+          elevation: 8,
+        },
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 4,
+        },
+      }),
     },
     content: {
       flex: 1,
       paddingHorizontal: 20,
     },
     searchContainer: {
-      marginTop: 16,
-      marginBottom: 20,
+      marginTop: 8,
+      marginBottom: 16,
       position: 'relative',
       zIndex: 10,
     },
@@ -298,9 +317,9 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: getColor('card'),
-      borderRadius: theme.borderRadius.sm,
+      borderRadius: 12,
       paddingHorizontal: 16,
-      paddingVertical: 6,
+      paddingVertical: 12,
       borderWidth: 1,
       borderColor: getColor('border'),
     },
@@ -314,15 +333,22 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       includeFontPadding: false,
     },
     searchResultsContainer: {
-      // this container will be used inside the overlay; keep it simple
       backgroundColor: getColor('card'),
-      borderRadius: theme.borderRadius.md,
+      borderRadius: 12,
       maxHeight: 200,
-      elevation: 8,
-      shadowColor: theme.colors.shadow.color,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: theme.colors.shadow.opacity,
-      shadowRadius: theme.colors.shadow.radius,
+      borderWidth: 1,
+      borderColor: getColor('border'),
+      ...Platform.select({
+        android: {
+          elevation: 8,
+        },
+        ios: {
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: theme.colors.shadow.opacity,
+          shadowRadius: theme.colors.shadow.radius,
+        },
+      }),
       zIndex: 9999,
       overflow: 'hidden',
     },
@@ -331,12 +357,13 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 16,
-      paddingTop: 16,
-      borderRadius: theme.borderRadius.md,
-      marginBottom: 16,
+      paddingVertical: 12,
+      borderRadius: 12,
+      marginTop: 12,
+      backgroundColor: getColor('primary'),
     },
     currentLocationButtonText: {
-      color: getColor('white'),
+      color: getColor('background'),
       fontSize: getTypography('body'),
       fontWeight: '600',
       marginLeft: 8,
@@ -360,12 +387,14 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       includeFontPadding: false,
       marginTop: 2,
     },
-    sectionDividerContainer: {},
+    sectionDividerContainer: {
+      marginTop: 8,
+      marginBottom: 12,
+    },
     addressesContainer: {
       flex: 1,
-      borderRadius: theme.borderRadius.md,
-      padding: 20,
-      maxHeight: MODAL_HEIGHT * 0.6,
+      borderRadius: 12,
+      maxHeight: MODAL_HEIGHT * 0.5,
     },
     addressCardContainer: {},
     editButton: {
@@ -387,12 +416,13 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'transparent',
-      borderWidth: 1,
+      borderWidth: 1.5,
       borderColor: getColor('primary'),
+      borderStyle: 'dashed',
       paddingHorizontal: 20,
-      paddingVertical: 6,
-      borderRadius: theme.borderRadius.md,
-      minHeight: 56,
+      paddingVertical: 14,
+      borderRadius: 12,
+      marginTop: 12,
     },
     addButtonText: {
       color: getColor('primary'),
@@ -501,20 +531,24 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
             </View>
           )}
 
+          {/* Close button outside the sheet */}
+          <View style={themedStyles.closeButtonContainer}>
+            <TouchableOpacity
+              style={themedStyles.closeButton}
+              onPress={handleClose}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Close address selection"
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons name="close" size={18} color={getColor('text')} />
+            </TouchableOpacity>
+          </View>
+
           {/* Modal Content (rendered on top) */}
           <View style={themedStyles.modalContainer}>
-            <View style={themedStyles.header}>
-              <TouchableOpacity
-                style={themedStyles.closeButton}
-                onPress={handleClose}
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel="Close address selection"
-                activeOpacity={0.7}
-              >
-                <MaterialCommunityIcons name="close" size={20} color={getColor('text')} />
-              </TouchableOpacity>
-            </View>
+            {/* Handle bar indicator */}
+            <View style={themedStyles.handleBar} />
 
             <View style={themedStyles.content}>
               {/* Search Bar and Current Location Button - Only show if needCompulsoryAddress is false */}
@@ -581,7 +615,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                       <MaterialCommunityIcons
                         name="crosshairs-gps"
                         size={20}
-                        color={getColor('white')}
+                        color={getColor('background')}
                       />
                       <Text style={themedStyles.currentLocationButtonText}>
                         {locationLoading ? 'Getting Location...' : 'Use Current Location'}

@@ -3,7 +3,6 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useRecentSearches } from '../../hooks/useRecentSearches';
 import { useTheme } from '../../theme/ThemeContext';
-import SectionDivider from '../common/SectionDivider';
 import { ThemeText } from '../common/theme/ThemeText';
 
 interface RecentSearchesProps {
@@ -11,50 +10,59 @@ interface RecentSearchesProps {
 }
 
 const RecentSearches: React.FC<RecentSearchesProps> = ({ onSearchPress }) => {
-  const { getColor, theme } = useTheme();
+  const { getColor } = useTheme();
   const { recentSearches, clearRecentSearches } = useRecentSearches();
 
   const styles = StyleSheet.create({
     section: {
       paddingHorizontal: 16,
-      paddingVertical: 16,
-      paddingRight: 0, // Remove right padding since headerContainer has its own
+      paddingTop: 20,
     },
     headerContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginVertical: 16,
+      marginBottom: 16,
     },
-    titleContainer: {
-      flex: 1, // Take available space
+    titleText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: getColor('subText'),
+      letterSpacing: 0.5,
     },
     clearButton: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      marginLeft: 8, // Add margin to separate from title
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+      backgroundColor: getColor('card'),
+    },
+    clearButtonText: {
+      color: getColor('primary'),
+      fontWeight: '500',
     },
     container: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 8,
+      gap: 10,
     },
     searchTag: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: getColor('card'),
-      borderRadius: theme.borderRadius.md,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
       borderWidth: 1,
       borderColor: getColor('border'),
     },
     searchTagText: {
       color: getColor('text'),
-      marginLeft: 6,
+      marginLeft: 8,
+      fontSize: 14,
     },
-    clearButtonText: {
-      color: getColor('primary'),
+    removeButton: {
+      marginLeft: 8,
+      padding: 2,
     },
   });
 
@@ -66,12 +74,10 @@ const RecentSearches: React.FC<RecentSearchesProps> = ({ onSearchPress }) => {
   return (
     <View style={styles.section}>
       <View style={styles.headerContainer}>
-        <View style={styles.titleContainer}>
-          <SectionDivider text="Recent Searches" fontSize={14} />
-        </View>
+        <ThemeText style={styles.titleText}>Recent Searches</ThemeText>
         <TouchableOpacity style={styles.clearButton} onPress={clearRecentSearches}>
-          <ThemeText variant="caption" color={getColor('primary')} style={styles.clearButtonText}>
-            Clear
+          <ThemeText variant="caption" style={styles.clearButtonText}>
+            Clear All
           </ThemeText>
         </TouchableOpacity>
       </View>
@@ -81,10 +87,10 @@ const RecentSearches: React.FC<RecentSearchesProps> = ({ onSearchPress }) => {
             key={item.id}
             style={styles.searchTag}
             onPress={() => onSearchPress(item.text)}
+            activeOpacity={0.7}
           >
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <MaterialCommunityIcons name={item.icon as any} size={16} color={getColor('subText')} />
-            <ThemeText variant="caption" color={getColor('text')} style={styles.searchTagText}>
+            <MaterialCommunityIcons name="history" size={16} color={getColor('subText')} />
+            <ThemeText style={styles.searchTagText}>
               {item.text}
             </ThemeText>
           </TouchableOpacity>
