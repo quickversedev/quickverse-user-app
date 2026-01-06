@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React, { createContext, useEffect, useRef } from 'react';
-import { Animated, Image, StyleSheet } from 'react-native';
+import { Animated, Image, Platform, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icons } from '../assets';
 import ExploreScreen from '../screens/Explore/ExploreScreen';
 import HomeScreen from '../screens/Home/HomeScreen';
@@ -12,7 +13,7 @@ export const TabBarVisibilityContext = createContext<{
 } | null>(null);
 
 const Tab = createBottomTabNavigator();
-const TAB_BAR_HEIGHT = 60;
+const TAB_BAR_HEIGHT = 50;
 const SCROLL_THRESHOLD = 10;
 
 const TabNavigation = () => {
@@ -21,6 +22,8 @@ const TabNavigation = () => {
   const isAnimating = useRef(false);
   const tabBarTranslateY = useRef(new Animated.Value(0)).current;
   const { getColor } = useTheme();
+  const insets = useSafeAreaInsets();
+  const bottomInset = Platform.OS === 'android' ? Math.max(insets.bottom, 16) : insets.bottom;
 
   const showTabBar = () => {
     if (isAnimating.current) return;
@@ -91,11 +94,14 @@ const TabNavigation = () => {
               transform: [{ translateY: tabBarTranslateY }],
               backgroundColor: getColor('tabBackground'),
               borderTopColor: getColor('border'),
+              height: TAB_BAR_HEIGHT + bottomInset,
+              paddingBottom: bottomInset,
             },
           ],
           tabBarActiveTintColor: getColor('primary'),
           tabBarInactiveTintColor: getColor('subText'),
           tabBarLabelStyle: styles.tabLabel,
+          tabBarItemStyle: styles.tabItem,
         }}
       >
         <Tab.Screen
@@ -106,8 +112,8 @@ const TabNavigation = () => {
               <Image
                 source={Icons.home}
                 style={{
-                  width: 24,
-                  height: 24,
+                  width: 22,
+                  height: 22,
                   tintColor: color,
                 }}
               />
@@ -123,8 +129,8 @@ const TabNavigation = () => {
               <Image
                 source={Icons.explore}
                 style={{
-                  width: 24,
-                  height: 24,
+                  width: 22,
+                  height: 22,
                   tintColor: color,
                 }}
               />
@@ -138,18 +144,23 @@ const TabNavigation = () => {
 
 const styles = StyleSheet.create({
   tabBar: {
-    height: TAB_BAR_HEIGHT,
-    paddingBottom: 8,
-    paddingTop: 8,
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
+    borderTopWidth: 0,
+    elevation: 0,
+  },
+  tabItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 8,
   },
   tabLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '500',
-    marginTop: 4,
+    marginTop: 3,
   },
 });
 

@@ -16,9 +16,10 @@ import AddButton from './AddButton';
 import QuantitySelector from './QuantitySelector';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_MARGIN = 6;
+const CARD_MARGIN = 4;
 const SIDEBAR_WIDTH = 70;
-const AVAILABLE_WIDTH = SCREEN_WIDTH - SIDEBAR_WIDTH;
+const PRODUCT_LIST_PADDING = 8;
+const AVAILABLE_WIDTH = SCREEN_WIDTH - SIDEBAR_WIDTH - PRODUCT_LIST_PADDING * 2;
 const CARD_WIDTH = ((SCREEN_WIDTH - CARD_MARGIN * 4) / 3) * 0.92;
 const CARD_WIDTH_SMALL = CARD_WIDTH * 0.8;
 const EXTRA_SMALL_CARD_WIDTH = ((SCREEN_WIDTH - CARD_MARGIN * 6) / 4) * 0.9;
