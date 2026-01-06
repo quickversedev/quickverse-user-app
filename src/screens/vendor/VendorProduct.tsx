@@ -52,7 +52,7 @@ type VendorProductRouteProp = RouteProp<
 const { width } = Dimensions.get('window');
 
 // Constants for better performance
-const NUM_COLUMNS = 3;
+const NUM_COLUMNS = 2;
 const CATEGORY_WIDTH = 120;
 const SCROLL_DELAY = 100;
 const ANIMATION_DURATION = 300;
@@ -873,6 +873,11 @@ const VendorProductComponent: React.FC = () => {
         mainContent: {
           flex: 1,
         },
+        categoryProductContainer: {
+          flex: 1,
+          flexDirection: 'row',
+          marginTop: 8,
+        },
         contentDisabled: {
           // No visual effect - just gray colors
         },
@@ -1029,6 +1034,7 @@ const VendorProductComponent: React.FC = () => {
                 onPress={() => handleProductPress(product)}
                 backgroundColor={getColor('background')}
                 rating={0}
+                size="big"
               />
             ))}
             {/* Fill empty columns if needed */}
@@ -1191,51 +1197,54 @@ const VendorProductComponent: React.FC = () => {
                 />
               </Animated.View>
 
-              <CategoryTabs
-                categories={filteredCategories}
-                selectedCategoryId={selectedCategory}
-                onSelect={handleCategorySelect}
-                iconOpacity={categoryImageOpacity}
-                iconSize={categoryImageHeight}
-                disabled={!isStoreActive}
-              />
-              {/* Product List with headers */}
-              <Animated.View style={[styles.productList, { width: '100%' }]}>
-                <Animated.FlatList
-                  ref={flatListRef}
-                  data={rowProductList}
-                  keyExtractor={keyExtractor}
-                  renderItem={renderItem}
-                  numColumns={1}
-                  key={'row-based'}
-                  showsVerticalScrollIndicator={false}
-                  removeClippedSubviews={true}
-                  maxToRenderPerBatch={rowProductList.length}
-                  updateCellsBatchingPeriod={50}
-                  initialNumToRender={10}
-                  windowSize={10}
-                  onScroll={handleScroll}
-                  scrollEventThrottle={16}
-                  onViewableItemsChanged={onViewableItemsChanged}
-                  viewabilityConfig={viewabilityConfig}
-                  onScrollToIndexFailed={info => {
-                    console.warn('Scroll failed', info);
-
-                    // scroll to the nearest rendered index instead
-                    flatListRef.current?.scrollToOffset({
-                      offset: info.averageItemLength * info.index,
-                      animated: true,
-                    });
-
-                    // retry after a delay
-                    setTimeout(() => {
-                      if (rowProductList.length > 0) {
-                        flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
-                      }
-                    }, 100);
-                  }}
+              {/* Horizontal layout: Categories on left, Products on right */}
+              <View style={styles.categoryProductContainer}>
+                <CategoryTabs
+                  categories={filteredCategories}
+                  selectedCategoryId={selectedCategory}
+                  onSelect={handleCategorySelect}
+                  iconOpacity={categoryImageOpacity}
+                  iconSize={categoryImageHeight}
+                  disabled={!isStoreActive}
                 />
-              </Animated.View>
+                {/* Product List with headers */}
+                <Animated.View style={[styles.productList, { flex: 1 }]}>
+                  <Animated.FlatList
+                    ref={flatListRef}
+                    data={rowProductList}
+                    keyExtractor={keyExtractor}
+                    renderItem={renderItem}
+                    numColumns={1}
+                    key={'row-based'}
+                    showsVerticalScrollIndicator={false}
+                    removeClippedSubviews={true}
+                    maxToRenderPerBatch={rowProductList.length}
+                    updateCellsBatchingPeriod={50}
+                    initialNumToRender={10}
+                    windowSize={10}
+                    onScroll={handleScroll}
+                    scrollEventThrottle={16}
+                    onViewableItemsChanged={onViewableItemsChanged}
+                    viewabilityConfig={viewabilityConfig}
+                    onScrollToIndexFailed={info => {
+                      console.warn('Scroll failed', info);
+
+                      // scroll to the nearest rendered index instead
+                      flatListRef.current?.scrollToOffset({
+                        offset: info.averageItemLength * info.index,
+                        animated: true,
+                      });
+
+                      // retry after a delay
+                      setTimeout(() => {
+                        if (rowProductList.length > 0) {
+                          flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+                        }
+                      }, 100);
+                    }}
+                  />
+                </Animated.View>
+              </View>
             </View>
           )}
           {/* CartBar at the bottom */}

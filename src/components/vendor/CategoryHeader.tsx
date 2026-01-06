@@ -14,8 +14,8 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({ title }) => {
     container: {
       width: '100%',
       backgroundColor: getColor('background'),
-      paddingHorizontal: 16,
-      marginTop: 16,
+      paddingHorizontal: 8,
+      marginTop: 12,
       marginBottom: 4,
       flexDirection: 'row',
       alignItems: 'center',
@@ -32,6 +32,7 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({ title }) => {
           fontWeight: 'bold',
           letterSpacing: 1,
         }}
+        fontSize={18}
       />
     </View>
   );

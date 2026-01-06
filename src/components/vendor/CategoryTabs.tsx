@@ -26,14 +26,15 @@ interface CategoryTabsProps {
   disabled?: boolean;
 }
 
-const { width } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
+const CATEGORY_ITEM_HEIGHT = 80;
+const SIDEBAR_WIDTH = 70;
+const ICON_SIZE = 40;
 
 const CategoryTabs: React.FC<CategoryTabsProps> = ({
   categories,
   selectedCategoryId,
   onSelect,
-  iconOpacity,
-  iconSize,
   disabled = false,
 }) => {
   const { getColor, theme } = useTheme();
@@ -44,86 +45,120 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({
     const index = categories.findIndex(c => c.id === selectedCategoryId);
     if (index === -1) return;
     setTimeout(() => {
-      const categoryWidth = 120;
-      const scrollToX = Math.max(0, index * categoryWidth - width / 2 + categoryWidth / 2);
-      scrollRef.current?.scrollTo({ x: scrollToX, animated: true });
+      const scrollToY = Math.max(0, index * CATEGORY_ITEM_HEIGHT - height / 4);
+      scrollRef.current?.scrollTo({ y: scrollToY, animated: true });
     }, 100);
   }, [categories, selectedCategoryId]);
-
-  const styles = StyleSheet.create({
-    container: {
-      backgroundColor: getColor('background'),
-      paddingHorizontal: 16,
-      borderBottomWidth: 2,
-      borderBottomColor: getColor('border'),
-    },
-    item: {
-      alignItems: 'center',
-      marginRight: 24,
-      paddingVertical: 4,
-      paddingHorizontal: 12,
-      borderBottomWidth: 3,
-      borderBottomColor: 'transparent',
-      minHeight: 40,
-    },
-    itemActive: {
-      borderBottomColor: getColor('primary'),
-      backgroundColor: getColor('card'),
-      borderRadius: theme.borderRadius.sm,
-      shadowColor: getColor('primary'),
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    icon: {
-      width: 32,
-      height: 32,
-      marginBottom: 4,
-      borderRadius: theme.borderRadius.sm,
-      overflow: 'hidden',
-    },
-  });
 
   const getIconSource = (icon: string | ImageSourcePropType): ImageSourcePropType => {
     return typeof icon === 'string' ? { uri: icon } : icon;
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      backgroundColor: getColor('card'),
+      width: SIDEBAR_WIDTH,
+      borderTopRightRadius: theme.borderRadius.md,
+      borderTopLeftRadius: theme.borderRadius.md,
+    },
+    scrollContent: {
+      paddingVertical: 8,
+    },
+    item: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 8,
+      paddingHorizontal: 4,
+      marginHorizontal: 2,
+      marginVertical: 2,
+      borderRadius: theme.borderRadius.sm,
+      minHeight: CATEGORY_ITEM_HEIGHT,
+    },
+    itemActive: {
+      backgroundColor: getColor('background'),
+    },
+    iconWrapper: {
+      width: ICON_SIZE + 4,
+      height: ICON_SIZE + 4,
+      borderRadius: (ICON_SIZE + 4) / 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 4,
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    iconWrapperActive: {
+      borderColor: getColor('primary'),
+      shadowColor: getColor('primary'),
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.5,
+      shadowRadius: 6,
+      elevation: 3,
+    },
+    icon: {
+      width: ICON_SIZE,
+      height: ICON_SIZE,
+      borderRadius: ICON_SIZE / 2,
+    },
+    label: {
+      textAlign: 'center',
+      fontSize: 9,
+      lineHeight: 11,
+      paddingHorizontal: 1,
+    },
+    labelActive: {
+      fontWeight: 'bold',
+    },
+    activeIndicator: {
+      position: 'absolute',
+      left: 0,
+      top: '25%',
+      bottom: '25%',
+      width: 3,
+      backgroundColor: getColor('primary'),
+      borderTopRightRadius: 3,
+      borderBottomRightRadius: 3,
+    },
+  });
+
   return (
     <View style={styles.container}>
       <ScrollView
         ref={scrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 8 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
-        {categories.map(cat => (
-          <View
-            key={cat.id}
-            style={[
-              styles.item,
-              selectedCategoryId === cat.id && styles.itemActive,
-              disabled && { opacity: 0.6 },
-            ]}
-          >
-            <TouchableOpacity style={{ alignItems: 'center' }} onPress={() => onSelect(cat.id)}>
-              <Animated.Image
-                source={getIconSource(cat.icon)}
-                style={[
-                  styles.icon,
-                  iconOpacity ? { opacity: iconOpacity } : null,
-                  iconSize ? { height: iconSize, width: iconSize } : null,
-                ]}
-              />
+        {categories.map(cat => {
+          const isActive = selectedCategoryId === cat.id;
+          return (
+            <TouchableOpacity
+              key={cat.id}
+              style={[
+                styles.item,
+                isActive && styles.itemActive,
+                disabled && { opacity: 0.5 },
+              ]}
+              onPress={() => onSelect(cat.id)}
+              activeOpacity={0.7}
+            >
+              {isActive && <View style={styles.activeIndicator} />}
+              <View style={[styles.iconWrapper, isActive && styles.iconWrapperActive]}>
+                <Animated.Image
+                  source={getIconSource(cat.icon)}
+                  style={styles.icon}
+                />
+              </View>
               <ThemeText
-                variant="caption"
-                color={selectedCategoryId === cat.id ? getColor('primary') : getColor('subText')}
-                style={selectedCategoryId === cat.id ? { fontWeight: 'bold' } : {}}
+                variant="small"
+                color={isActive ? getColor('primary') : getColor('subText')}
+                style={[styles.label, isActive && styles.labelActive]}
+                numberOfLines={2}
               >
                 {cat.name}
               </ThemeText>
             </TouchableOpacity>
-          </View>
-        ))}
+          );
+        })}
       </ScrollView>
     </View>
   );

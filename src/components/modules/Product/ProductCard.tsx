@@ -16,10 +16,13 @@ import AddButton from './AddButton';
 import QuantitySelector from './QuantitySelector';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_MARGIN = 8;
+const CARD_MARGIN = 6;
+const SIDEBAR_WIDTH = 70;
+const AVAILABLE_WIDTH = SCREEN_WIDTH - SIDEBAR_WIDTH;
 const CARD_WIDTH = ((SCREEN_WIDTH - CARD_MARGIN * 4) / 3) * 0.92;
 const CARD_WIDTH_SMALL = CARD_WIDTH * 0.8;
 const EXTRA_SMALL_CARD_WIDTH = ((SCREEN_WIDTH - CARD_MARGIN * 6) / 4) * 0.9;
+const CARD_WIDTH_BIG = (AVAILABLE_WIDTH - CARD_MARGIN * 3) / 2; // 2 cards per row with sidebar
 
 interface ProductCardProps {
   product: Product;
@@ -27,7 +30,7 @@ interface ProductCardProps {
   onAdd: () => void;
   onIncrement: () => void;
   onDecrement: () => void;
-  size?: 'xs' | 'small' | 'regular';
+  size?: 'xs' | 'small' | 'regular' | 'big';
   disabled?: boolean;
   showVariantsCount?: boolean;
   onPress?: () => void;
@@ -36,9 +39,23 @@ interface ProductCardProps {
   isStoreClosed?: boolean;
 }
 
+// Helper to get card width based on size
+const getCardWidth = (size: 'xs' | 'small' | 'regular' | 'big') => {
+  switch (size) {
+    case 'xs':
+      return EXTRA_SMALL_CARD_WIDTH;
+    case 'small':
+      return CARD_WIDTH_SMALL;
+    case 'big':
+      return CARD_WIDTH_BIG;
+    default:
+      return CARD_WIDTH;
+  }
+};
+
 // Extract styles outside component to prevent recreation on every render
 const createStyles = (
-  size: 'xs' | 'small' | 'regular',
+  size: 'xs' | 'small' | 'regular' | 'big',
   getColor: (color: any) => string,
   getTypography: (type: 'small' | 'caption' | 'h1' | 'h2' | 'subtitle' | 'body') => number,
   theme: { borderRadius: { sm: number } },
@@ -50,15 +67,14 @@ const createStyles = (
       backgroundColor: backgroundColor || getColor('background'),
       borderRadius: theme.borderRadius.sm,
       margin: CARD_MARGIN,
-      width:
-        size === 'xs' ? EXTRA_SMALL_CARD_WIDTH : size === 'small' ? CARD_WIDTH_SMALL : CARD_WIDTH,
+      width: getCardWidth(size),
       alignItems: 'center',
       position: 'relative',
       overflow: 'hidden',
     },
     imageContainer: {
       width: '100%',
-      aspectRatio: size === 'small' ? 4.8 / 5 : 7 / 5,
+      aspectRatio: size === 'small' ? 4.8 / 5 : size === 'big' ? 1 : 7 / 5,
       borderRadius: theme.borderRadius.sm,
       overflow: 'hidden',
       marginBottom: size === 'xs' ? 4 : 8,
@@ -100,14 +116,29 @@ const createStyles = (
     name: {
       color: getColor('text'),
       // Keep a consistent two-line block height
-      fontSize: size === 'xs' ? getTypography('caption') - 3 : getTypography('caption') - 2,
+      fontSize:
+        size === 'xs'
+          ? getTypography('caption') - 3
+          : size === 'big'
+            ? getTypography('body')
+            : getTypography('caption') - 2,
       lineHeight:
-        (size === 'xs' ? getTypography('caption') - 3 : getTypography('caption') - 2) * 1.2,
+        (size === 'xs'
+          ? getTypography('caption') - 3
+          : size === 'big'
+            ? getTypography('body')
+            : getTypography('caption') - 2) * 1.2,
       minHeight:
-        (size === 'xs' ? getTypography('caption') - 3 : getTypography('caption') - 2) * 1.2 * 2,
+        (size === 'xs'
+          ? getTypography('caption') - 3
+          : size === 'big'
+            ? getTypography('body')
+            : getTypography('caption') - 2) *
+        1.2 *
+        2,
       fontWeight: 'bold',
       flex: 1,
-      maxWidth: size === 'xs' ? 90 : size === 'small' ? 110 : 130,
+      maxWidth: size === 'xs' ? 90 : size === 'small' ? 110 : size === 'big' ? 180 : 130,
     },
     priceRow: {
       flexDirection: 'row',
@@ -124,13 +155,23 @@ const createStyles = (
     },
     mrp: {
       color: getColor('subText'),
-      fontSize: size === 'xs' ? getTypography('caption') - 2 : getTypography('caption'),
+      fontSize:
+        size === 'xs'
+          ? getTypography('caption') - 2
+          : size === 'big'
+            ? getTypography('body')
+            : getTypography('caption'),
       textDecorationLine: 'line-through',
       marginRight: size === 'xs' ? 4 : 6,
     },
     price: {
       color: getColor('text'),
-      fontSize: size === 'xs' ? getTypography('caption') - 2 : getTypography('caption'),
+      fontSize:
+        size === 'xs'
+          ? getTypography('caption') - 2
+          : size === 'big'
+            ? getTypography('body')
+            : getTypography('caption'),
       fontWeight: 'bold',
     },
     disabledOverlay: {
