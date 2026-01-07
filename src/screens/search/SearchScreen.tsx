@@ -139,6 +139,7 @@ const SearchScreen: React.FC = () => {
                 onVendorPress={handleVendorPress}
                 onProductPress={handleProductPress}
                 onFavoritePress={handleFavoritePress}
+                onRecentSearchPress={handleSearchPress}
               />
             )}
           </>

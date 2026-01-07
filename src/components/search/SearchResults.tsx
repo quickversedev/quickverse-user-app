@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Product } from '../../types/product';
@@ -8,6 +9,7 @@ import ProductItemOnSearch from '../common/search/ProductItemOnSearch';
 import SectionDivider from '../common/SectionDivider';
 import { ThemeText } from '../common/theme/ThemeText';
 import VendorCard from '../modules/Vendor/VendorCard';
+import RecentSearches from './RecentSearches';
 
 interface SearchResultsProps {
   vendors: Vendor[];
@@ -16,6 +18,7 @@ interface SearchResultsProps {
   onVendorPress: (vendor: Vendor) => void;
   onProductPress: (product: Product) => void;
   onFavoritePress: (vendor: Vendor) => void;
+  onRecentSearchPress?: (searchText: string) => void;
 }
 
 const SearchResults: React.FC<SearchResultsProps> = ({
@@ -25,6 +28,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   onVendorPress,
   onProductPress,
   onFavoritePress,
+  onRecentSearchPress,
 }) => {
   const { getColor } = useTheme();
   const { vendors: storeVendors } = useVendorStore();
@@ -124,14 +128,24 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       marginBottom: 8,
     },
     noResultsContainer: {
-      flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: 40,
+      paddingVertical: 32,
+    },
+    noResultsIcon: {
+      marginBottom: 12,
     },
     noResultsText: {
       color: getColor('subText'),
       textAlign: 'center',
+      fontSize: 15,
+    },
+    noResultsSubText: {
+      color: getColor('subText'),
+      textAlign: 'center',
+      fontSize: 13,
+      marginTop: 4,
+      opacity: 0.7,
     },
   });
 
@@ -139,12 +153,22 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
   if (!hasResults) {
     return (
-      <View style={styles.section}>
+      <View>
         <View style={styles.noResultsContainer}>
-          <ThemeText variant="body" color={getColor('subText')} style={styles.noResultsText}>
+          <MaterialCommunityIcons
+            name="magnify-close"
+            size={48}
+            color={getColor('subText')}
+            style={styles.noResultsIcon}
+          />
+          <ThemeText variant="body" style={styles.noResultsText}>
             No results found
           </ThemeText>
+          <ThemeText style={styles.noResultsSubText}>
+            Try a different search term
+          </ThemeText>
         </View>
+        {onRecentSearchPress && <RecentSearches onSearchPress={onRecentSearchPress} />}
       </View>
     );
   }

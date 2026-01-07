@@ -24,6 +24,7 @@ const TabNavigation = () => {
   const { getColor } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomInset = Platform.OS === 'android' ? Math.max(insets.bottom, 16) : insets.bottom;
+  const fullTabBarHeight = TAB_BAR_HEIGHT + bottomInset;
 
   const showTabBar = () => {
     if (isAnimating.current) return;
@@ -44,7 +45,7 @@ const TabNavigation = () => {
     isAnimating.current = true;
 
     Animated.spring(tabBarTranslateY, {
-      toValue: TAB_BAR_HEIGHT,
+      toValue: fullTabBarHeight,
       useNativeDriver: true,
       tension: 120,
       friction: 14,
