@@ -36,11 +36,14 @@ const VendorList = () => {
     },
   });
 
+  // Filter out closed stores and add status
   const vendorsWithStatus = useMemo(() => {
-    return vendors.map(vendor => ({
-      ...vendor,
-      storeStatus: getStoreStatus(vendor),
-    }));
+    return vendors
+      .filter(vendor => getStoreStatus(vendor).isOpen)
+      .map(vendor => ({
+        ...vendor,
+        storeStatus: getStoreStatus(vendor),
+      }));
   }, [vendors]);
 
   const renderSeparator = useCallback(() => <View style={styles.separator} />, [styles.separator]);

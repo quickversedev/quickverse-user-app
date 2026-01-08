@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { Animated, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 import AutoScrollBanner from '../../../../components/common/promo/AutoScrollBanner';
@@ -11,6 +11,7 @@ import useVendorStore from '../../../../store/vendorStore';
 import { AppNavigationProp } from '../../../../types/navigation';
 import { Product } from '../../../../types/product';
 import { Vendor } from '../../../../types/vendor';
+import { getStoreStatus } from '../../../../utils/storeUtils';
 
 interface ForYouContentProps {
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -26,8 +27,14 @@ const ForYouContentComponent: React.FC<ForYouContentProps> = ({
   showsVerticalScrollIndicator,
 }) => {
   const navigation = useNavigation<AppNavigationProp>();
-  const { vendors } = useVendorStore();
+  const { vendors: allVendors } = useVendorStore();
   const { promotions: bannerData, hasPromotions } = usePromotions('ForYou');
+
+  // Filter out closed stores for home screen
+  const vendors = useMemo(() =>
+    allVendors.filter(vendor => getStoreStatus(vendor).isOpen),
+    [allVendors]
+  );
 
   // Memoize vendor press handler
   const handleVendorPress = useCallback(

@@ -40,9 +40,13 @@ const GroceryContentComponent: React.FC<GroceryContentProps> = ({
   const { theme } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  // Directly use vendor store - vendors are pre-sorted
+  // Directly use vendor store - filter out closed stores
   const { getVendorsByCategory } = useVendorStore();
-  const groceryVendors = getVendorsByCategory('Grocery');
+  const allGroceryVendors = getVendorsByCategory('Grocery');
+  const groceryVendors = useMemo(() =>
+    allGroceryVendors.filter(vendor => getStoreStatus(vendor).isOpen),
+    [allGroceryVendors]
+  );
   const hasVendors = groceryVendors.length > 0;
 
   const { promotions: bannerData, hasPromotions } = usePromotions('Grocery');

@@ -40,9 +40,13 @@ const FoodContentComponent: React.FC<FoodContentProps> = ({
   const { theme } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  // Subscribe to vendor store changes
+  // Subscribe to vendor store changes - filter out closed stores
   const { getVendorsByCategory } = useVendorStore();
-  const foodVendors = getVendorsByCategory('Food');
+  const allFoodVendors = getVendorsByCategory('Food');
+  const foodVendors = useMemo(() =>
+    allFoodVendors.filter(vendor => getStoreStatus(vendor).isOpen),
+    [allFoodVendors]
+  );
   const hasVendors = foodVendors.length > 0;
 
   const { promotions: bannerData, hasPromotions } = usePromotions('Food');
