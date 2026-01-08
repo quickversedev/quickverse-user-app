@@ -1,8 +1,8 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React, { createContext, useEffect, useRef } from 'react';
-import { Animated, Image, Platform, StyleSheet } from 'react-native';
+import { Animated, Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Icons } from '../assets';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ExploreScreen from '../screens/Explore/ExploreScreen';
 import HomeScreen from '../screens/Home/HomeScreen';
 import { useTheme } from '../theme/ThemeContext';
@@ -110,14 +110,7 @@ const TabNavigation = () => {
           component={HomeScreen}
           options={{
             tabBarIcon: ({ color }) => (
-              <Image
-                source={Icons.home}
-                style={{
-                  width: 22,
-                  height: 22,
-                  tintColor: color,
-                }}
-              />
+              <MaterialCommunityIcons name="home-variant" size={24} color={color} />
             ),
           }}
         />
@@ -127,14 +120,7 @@ const TabNavigation = () => {
           component={ExploreScreen}
           options={{
             tabBarIcon: ({ color }) => (
-              <Image
-                source={Icons.explore}
-                style={{
-                  width: 22,
-                  height: 22,
-                  tintColor: color,
-                }}
-              />
+              <MaterialCommunityIcons name="earth" size={24} color={color} />
             ),
           }}
         />

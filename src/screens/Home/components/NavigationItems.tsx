@@ -16,7 +16,7 @@ const navigationItems: NavigationItem[] = [
   { id: 'for-you', label: 'For You', icon: Icons.forYouIcon, screen: 'ForYou' },
   { id: 'food', label: 'Food', icon: Icons.foodIcon, screen: 'food' },
   { id: 'grocery', label: 'Grocery', icon: Icons.bottle, screen: 'Grocery' },
-  { id: 'pharmacy', label: 'Pharmacy', icon: Icons.pharmacyIcon, screen: 'Pharmacy' },
+  // { id: 'pharmacy', label: 'Pharmacy', icon: Icons.pharmacyIcon, screen: 'Pharmacy' },
 ];
 
 const ACTIVE_COLOR = '#FFD700'; // Brighter gold for active state

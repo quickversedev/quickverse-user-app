@@ -12,9 +12,10 @@ interface VendorHeaderCardProps {
   vendor: Vendor;
   onPress?: () => void;
   style?: ViewStyle;
+  containerStyle?: ViewStyle;
 }
 
-const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, style }) => {
+const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, style, containerStyle }) => {
   const { getColor, theme } = useTheme();
   const navigation = useNavigation();
   const scale = useRef(new Animated.Value(1)).current;
@@ -30,23 +31,19 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, st
   const styles = StyleSheet.create({
     container: {
       backgroundColor: getColor('card'),
-      borderRadius: theme.borderRadius.md,
-      paddingVertical: 16,
-      // marginTop: 16,
-      marginTop: 16,
-      // marginBottom: 16,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
       marginHorizontal: 16,
-      overflow: 'hidden',
+      marginTop: 12,
+      borderRadius: theme.borderRadius.md,
       position: 'relative',
       zIndex: 2,
     },
     mainContent: {
       flexDirection: 'row',
       alignItems: 'center',
-      // paddingTop: 12,
-      // paddingBottom: 12,
-      paddingLeft: 12,
-      paddingRight: 12,
+      paddingLeft: 0,
+      paddingRight: 0,
     },
     logo: {
       width: 48,
@@ -55,8 +52,8 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, st
       marginRight: 12,
       backgroundColor: getColor('border'),
     },
-    info: { flex: 1 },
-    meta: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+    info: { flex: 1, justifyContent: 'center' },
+    meta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
     metaText: { color: getColor('subText'), marginRight: 8 },
     ratingBox: {
       flexDirection: 'row',
@@ -73,22 +70,15 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, st
     },
 
     closedBanner: {
-      marginTop: -12,
-      marginHorizontal: 17,
-      paddingTop: 16,
-      paddingBottom: 6,
-      // paddingVertical:,
-      borderLeftWidth: 2,
-      borderRightWidth: 2,
-      borderBottomWidth: 2,
+      marginTop: 4,
+      marginHorizontal: 16,
+      paddingVertical: 6,
+      borderWidth: 1,
       borderColor: getColor('error'),
-      borderBottomLeftRadius: 16,
-      borderBottomRightRadius: 16,
+      borderRadius: 8,
       backgroundColor: 'rgba(255, 0, 0, 0.08)',
       alignItems: 'center',
       justifyContent: 'center',
-      position: 'relative',
-      zIndex: 1,
     },
     closedText: {
       color: getColor('error'),
@@ -149,9 +139,6 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, st
             onError={() => setLogoError(true)}
           />
           <View style={styles.info}>
-            <ThemeText variant="h2" color={getColor('text')}>
-              {vendor.name}
-            </ThemeText>
             <View style={styles.meta}>
               <MaterialCommunityIcons name="flash" size={16} color={getColor('primary')} />
               <ThemeText

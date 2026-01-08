@@ -18,7 +18,7 @@ import {
 import { Images } from '../../assets';
 import CartBar from '../../components/common/Cart/CartBar';
 import SectionDivider from '../../components/common/SectionDivider';
-import ProductCard from '../../components/modules/Product/ProductCard';
+import HorizontalProductCard from '../../components/modules/Product/HorizontalProductCard';
 import ProductDetailModal from '../../components/modules/Product/ProductDetailModal';
 import VariantsModal from '../../components/modules/Product/VariantsModal';
 import VendorProductSkeleton from '../../components/modules/Vendor/VendorProductSkeleton';
@@ -52,7 +52,7 @@ type VendorProductRouteProp = RouteProp<
 const { width } = Dimensions.get('window');
 
 // Constants for better performance
-const NUM_COLUMNS = 2;
+const NUM_COLUMNS = 1;
 const CATEGORY_WIDTH = 120;
 const SCROLL_DELAY = 100;
 const ANIMATION_DURATION = 300;
@@ -1011,8 +1011,8 @@ const VendorProductComponent: React.FC = () => {
     return `row-${idx}`;
   }, []);
 
-  // Memoized ProductCard component for better performance
-  const MemoizedProductCard = useMemo(() => React.memo(ProductCard), []);
+  // Memoized HorizontalProductCard component for better performance
+  const MemoizedHorizontalProductCard = useMemo(() => React.memo(HorizontalProductCard), []);
   //  Memoize render item for FlatList
   const renderItem = useCallback(
     ({ item, index }: { item: RowProductListItem; index: number }) => {
@@ -1020,9 +1020,9 @@ const VendorProductComponent: React.FC = () => {
         return <CategoryHeader title={item.category.name} isFirst={index === 0} />;
       } else if (item.type === 'products') {
         return (
-          <View style={styles.productRow}>
+          <View>
             {item.products.map((product: Product) => (
-              <MemoizedProductCard
+              <MemoizedHorizontalProductCard
                 key={product.sku}
                 product={product}
                 quantity={getProductQuantity(product.sku)}
@@ -1032,32 +1032,21 @@ const VendorProductComponent: React.FC = () => {
                 disabled={!isStoreActive || !product.inStock}
                 showVariantsCount={true}
                 onPress={() => handleProductPress(product)}
-                backgroundColor={getColor('background')}
-                rating={0}
-                size="big"
               />
             ))}
-            {/* Fill empty columns if needed */}
-            {item.products.length < NUM_COLUMNS &&
-              Array.from({ length: NUM_COLUMNS - item.products.length }).map((_, idx) => (
-                <View key={`empty-${idx}`} style={styles.emptyProductCell} />
-              ))}
           </View>
         );
       }
       return null;
     },
     [
-      styles.productRow,
-      styles.emptyProductCell,
       handleAddToCart,
       handleIncrement,
       handleDecrement,
       getProductQuantity,
       isStoreActive,
       handleProductPress,
-      getColor,
-      MemoizedProductCard,
+      MemoizedHorizontalProductCard,
     ]
   );
 
