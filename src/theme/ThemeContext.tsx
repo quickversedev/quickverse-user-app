@@ -2,7 +2,7 @@
 // NOTE: ThemeProvider will always use DefaultTheme if useDefaultTheme is true in the config or if the API fails, as handled by the store.
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { DefaultTheme } from '../assets/theme/defaultTheme';
-import useThemeStore from '../store/themeStore';
+import useThemeStore, { ThemeMode } from '../store/themeStore';
 
 type ButtonColors = {
   default_background: string;
@@ -65,6 +65,7 @@ export type Theme = {
 
 type ThemeContextType = {
   theme: Theme;
+  themeMode: ThemeMode;
   isLoading: boolean;
   error: Error | null;
   getColor: (colorKey: keyof Colors | 'primary' | 'primaryLight' | 'success') => string;
@@ -73,29 +74,19 @@ type ThemeContextType = {
     element: 'background' | 'text'
   ) => string;
   getTypography: (type: keyof Omit<Typography, 'fontFamily' | 'lineHeightMultiplier'>) => number;
+  toggleTheme: () => void;
+  isDarkMode: boolean;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState(DefaultTheme);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const themeStore = useThemeStore();
+  const { theme, themeMode, toggleTheme } = useThemeStore();
 
   useEffect(() => {
-    const loadTheme = async () => {
-      try {
-        setTheme(themeStore.getTheme());
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Unknown error'));
-        setTheme(DefaultTheme);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadTheme();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setIsLoading(false);
   }, []);
 
   const _validateTheme = (apiTheme: unknown): Theme => {
@@ -141,11 +132,14 @@ const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     <ThemeContext.Provider
       value={{
         theme,
+        themeMode,
         isLoading,
         error,
         getColor,
         getTypography,
         getButtonColor,
+        toggleTheme,
+        isDarkMode: themeMode === 'dark',
       }}
     >
       {children}

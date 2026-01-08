@@ -5,6 +5,7 @@ import {
   Platform,
   SafeAreaView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -20,7 +21,7 @@ import ProfileHeader from './components/ProfileHeader';
 
 const ProfileScreen = () => {
   const { signOut, authData } = useAuth();
-  const { getColor } = useTheme();
+  const { getColor, toggleTheme, isDarkMode } = useTheme();
   const navigation = useNavigation<AppNavigationProp>();
   const [isDangerZoneExpanded, setIsDangerZoneExpanded] = React.useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = React.useState(false);
@@ -144,6 +145,27 @@ const ProfileScreen = () => {
           {features.map(item => (
             <FeatureButton key={item.id} item={item} />
           ))}
+        </View>
+
+        {/* Theme Toggle Section */}
+        <View style={[styles.themeToggleContainer, { backgroundColor: getColor('card') }]}>
+          <View style={styles.themeToggleContent}>
+            <Icon
+              name={isDarkMode ? 'weather-night' : 'weather-sunny'}
+              size={24}
+              color={getColor('primary')}
+            />
+            <Text style={[styles.themeToggleText, { color: getColor('text') }]}>
+              {isDarkMode ? 'Dark Mode' : 'Light Mode'}
+            </Text>
+          </View>
+          <Switch
+            value={isDarkMode}
+            onValueChange={toggleTheme}
+            trackColor={{ false: '#E0E0E0', true: getColor('primary') }}
+            thumbColor={isDarkMode ? '#FFF' : '#FFF'}
+            ios_backgroundColor="#E0E0E0"
+          />
         </View>
 
         {/* Delete Account Section */}
@@ -275,6 +297,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 16,
+  },
+  themeToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  themeToggleContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  themeToggleText: {
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: '500',
   },
   featureContent: {
     flexDirection: 'row',
