@@ -2,13 +2,13 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useMemo, useRef } from 'react';
 import {
-    Animated,
-    Dimensions,
-    PanResponder,
-    StyleSheet,
-    TouchableOpacity,
-    View,
-    ViewStyle,
+  Animated,
+  Dimensions,
+  PanResponder,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  ViewStyle,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
@@ -22,10 +22,6 @@ const { width } = Dimensions.get('window');
 
 interface CartBarProps {
   itemCount: number;
-  /**
-   * Pass custom styles for the CartBar container, including position, top, left, right, etc.
-   * This will override the default sticky positioning.
-   */
   style?: ViewStyle;
   shopId: string;
   cartId: string;
@@ -41,7 +37,7 @@ const CartBar: React.FC<CartBarProps> = ({
   onExpand,
   isExpanded = true,
 }) => {
-  const { getColor } = useTheme();
+  const { getColor, isDarkMode } = useTheme();
   const translateX = useRef(new Animated.Value(0)).current;
   const [isRevealed, setIsRevealed] = React.useState(false);
   const getVendorById = useVendorStore(state => state.getVendorById);
@@ -51,17 +47,16 @@ const CartBar: React.FC<CartBarProps> = ({
   const clearCart = useCartStore(state => state.clearCart);
   const { authData } = useAuth();
 
-  // Dynamic styles using theme values
   const dynamicStyles = useMemo(
     () =>
       StyleSheet.create({
         cartBar: {
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingVertical: 12,
-          paddingHorizontal: 18,
-          width: width - 30,
+          paddingVertical: 10,
+          paddingLeft: 12,
+          paddingRight: 6,
+          width: width - 32,
           minHeight: 56,
           alignSelf: 'center',
           backgroundColor: getColor('primary'),
@@ -73,17 +68,17 @@ const CartBar: React.FC<CartBarProps> = ({
           height: 28,
           marginHorizontal: 10,
           borderRadius: 1,
-          backgroundColor: getColor('border'),
+          backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)',
         },
-        removeButton: {
-          width: 30,
-          height: 30,
-          borderRadius: 20,
+        deleteButton: {
+          width: 36,
+          height: 36,
+          borderRadius: 18,
           justifyContent: 'center',
           alignItems: 'center',
           backgroundColor: getColor('error'),
         },
-        removeButtonPositioned: {
+        deleteButtonPositioned: {
           position: 'absolute',
           left: 50,
           top: 0,
@@ -93,24 +88,46 @@ const CartBar: React.FC<CartBarProps> = ({
         cartContainer: {
           zIndex: 2,
         },
-        // UPDATED: Better spacing for vendor name and item count
         contentContainer: {
           flex: 1,
           flexDirection: 'row',
           alignItems: 'center',
-          minWidth: 0, // Important for text truncation
+          minWidth: 0,
         },
         vendorNameContainer: {
           flex: 1,
-          minWidth: 0, // Important for text truncation
-          marginRight: 12, // CHANGED: Add consistent spacing
+          minWidth: 0,
         },
         itemCountContainer: {
-          flexShrink: 0, // Prevent shrinking
-          marginRight: 8, // CHANGED: Add spacing before chevron
+          flexShrink: 0,
+          marginLeft: 8,
+        },
+        // Close icon with visible background
+        closeIconContainer: {
+          width: 24,
+          height: 24,
+          borderRadius: 12,
+          backgroundColor: getColor('error'),
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginRight: 10,
+        },
+        // View Cart button styles
+        viewCartButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: getColor('background'),
+          paddingHorizontal: 14,
+          paddingVertical: 8,
+          borderRadius: 20,
+          marginLeft: 10,
+        },
+        viewCartText: {
+          fontWeight: '600',
+          fontSize: 13,
         },
       }),
-    [getColor]
+    [getColor, isDarkMode]
   );
 
   const panResponder = useRef(
@@ -119,7 +136,6 @@ const CartBar: React.FC<CartBarProps> = ({
         return Math.abs(gestureState.dx) > 10;
       },
       onPanResponderMove: (_, gestureState) => {
-        // Only allow right swipe (positive dx)
         if (gestureState.dx >= 0) {
           translateX.setValue(Math.min(gestureState.dx, 80));
         }
@@ -146,7 +162,6 @@ const CartBar: React.FC<CartBarProps> = ({
     const phone = authData?.phone || '';
     const jwt = authData?.jwt || '';
     clearCart(cartId, jwt, phone);
-    // Reset position
     Animated.spring(translateX, {
       toValue: 0,
       useNativeDriver: true,
@@ -154,8 +169,19 @@ const CartBar: React.FC<CartBarProps> = ({
     setIsRevealed(false);
   };
 
-  const handleCartPress = () => {
-    // If cart is in revealed position, snap back. Otherwise, view cart
+  const handleBarPress = () => {
+    if (isRevealed) {
+      Animated.spring(translateX, {
+        toValue: 0,
+        useNativeDriver: true,
+      }).start();
+      setIsRevealed(false);
+    } else if (!isExpanded && onExpand) {
+      onExpand();
+    }
+  };
+
+  const handleViewCartPress = () => {
     if (isRevealed) {
       Animated.spring(translateX, {
         toValue: 0,
@@ -163,26 +189,37 @@ const CartBar: React.FC<CartBarProps> = ({
       }).start();
       setIsRevealed(false);
     } else {
-      if (isExpanded) {
-        navigate('Cart', { cartId });
-      } else if (onExpand) {
-        onExpand();
-      }
+      navigate('Cart', { cartId });
     }
   };
 
-  // Don't render CartBar if vendor doesn't exist
+  const toggleDeleteReveal = () => {
+    if (!isRevealed) {
+      Animated.spring(translateX, {
+        toValue: 80,
+        useNativeDriver: true,
+      }).start();
+      setIsRevealed(true);
+    } else {
+      Animated.spring(translateX, {
+        toValue: 0,
+        useNativeDriver: true,
+      }).start();
+      setIsRevealed(false);
+    }
+  };
+
   if (!vendor) {
     return null;
   }
 
   return (
     <View style={[styles.stickyContainer, style]}>
-      {/* Remove button (hidden behind cart) */}
+      {/* Delete button (hidden behind cart) */}
       <Animated.View
         style={[
-          dynamicStyles.removeButton,
-          dynamicStyles.removeButtonPositioned,
+          dynamicStyles.deleteButton,
+          dynamicStyles.deleteButtonPositioned,
           {
             opacity: translateX.interpolate({
               inputRange: [0, 40, 80],
@@ -202,12 +239,12 @@ const CartBar: React.FC<CartBarProps> = ({
         ]}
       >
         <TouchableOpacity
-          style={styles.removeButtonContent}
+          style={styles.deleteButtonContent}
           onPress={handleRemovePress}
           activeOpacity={0.8}
           hitSlop={{ left: 10, right: 10, top: 10, bottom: 10 }}
         >
-          <MaterialCommunityIcons name="close" size={24} color={getColor('white')} />
+          <MaterialCommunityIcons name="delete-outline" size={22} color={getColor('white')} />
         </TouchableOpacity>
       </Animated.View>
 
@@ -219,48 +256,37 @@ const CartBar: React.FC<CartBarProps> = ({
         <Animated.View style={{ transform: [{ translateX }] }}>
           <TouchableOpacity
             style={dynamicStyles.cartBar}
-            activeOpacity={0.92}
-            onPress={handleCartPress}
+            activeOpacity={0.95}
+            onPress={handleBarPress}
           >
-            {/* Cross icon to trigger swipe reveal */}
+            {/* Close icon */}
             <TouchableOpacity
-              onPress={() => {
-                if (!isRevealed) {
-                  Animated.spring(translateX, {
-                    toValue: 80,
-                    useNativeDriver: true,
-                  }).start();
-                  setIsRevealed(true);
-                } else {
-                  Animated.spring(translateX, {
-                    toValue: 0,
-                    useNativeDriver: true,
-                  }).start();
-                  setIsRevealed(false);
-                }
-              }}
-              style={styles.crossIconBtn}
-              hitSlop={{ left: 8, right: 8, top: 8, bottom: 8 }}
+              onPress={toggleDeleteReveal}
+              style={dynamicStyles.closeIconContainer}
+              hitSlop={{ left: 6, right: 6, top: 6, bottom: 6 }}
             >
-              <MaterialCommunityIcons name="close-circle" size={18} color={getColor('error')} />
+              <MaterialCommunityIcons
+                name="close"
+                size={14}
+                color={getColor('white')}
+              />
             </TouchableOpacity>
 
-            {/* UPDATED: Cart icon color changed to green */}
+            {/* Cart icon */}
             <MaterialCommunityIcons
               name="cart-outline"
-              size={26}
-              color="#22C55E" // CHANGED: Green color instead of getColor('background')
-              style={styles.cartIcon}
+              size={24}
+              color={isDarkMode ? '#22C55E' : '#16A34A'}
             />
 
             <View style={dynamicStyles.divider} />
 
-            {/* UPDATED: Better responsive layout for vendor name and item count */}
+            {/* Vendor name and item count */}
             <View style={dynamicStyles.contentContainer}>
               <View style={dynamicStyles.vendorNameContainer}>
                 <ThemeText
-                  variant="subtitle"
-                  style={[styles.cartText]}
+                  variant="body"
+                  style={styles.vendorName}
                   color={getColor('background')}
                   numberOfLines={1}
                   ellipsizeMode="tail"
@@ -271,23 +297,36 @@ const CartBar: React.FC<CartBarProps> = ({
 
               <View style={dynamicStyles.itemCountContainer}>
                 <ThemeText
-                  variant="body"
-                  style={[styles.itemCount]}
+                  variant="caption"
+                  style={styles.itemCount}
                   color={getColor('background')}
                   numberOfLines={1}
-                  ellipsizeMode="tail"
                 >
                   {itemCount} Item{itemCount > 1 ? 's' : ''}
                 </ThemeText>
               </View>
+            </View>
 
+            {/* View Cart button */}
+            <TouchableOpacity
+              style={dynamicStyles.viewCartButton}
+              onPress={handleViewCartPress}
+              activeOpacity={0.8}
+            >
+              <ThemeText
+                variant="caption"
+                style={dynamicStyles.viewCartText}
+                color={getColor('text')}
+              >
+                View Cart
+              </ThemeText>
               <MaterialCommunityIcons
                 name="chevron-right"
-                size={22}
-                color={getColor('background')}
-                style={styles.chevronIcon}
+                size={18}
+                color={getColor('text')}
+                style={styles.viewCartChevron}
               />
-            </View>
+            </TouchableOpacity>
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
@@ -302,33 +341,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'visible',
   },
-  cartText: {
-    // fontWeight: 'bold',
+  vendorName: {
+    fontWeight: '500',
     letterSpacing: 0.1,
   },
   itemCount: {
-    // fontWeight: 'bold',
-    flexShrink: 0,
+    opacity: 0.85,
   },
-  removeButtonContent: {
+  deleteButtonContent: {
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
     height: '100%',
   },
-  crossIconBtn: {
-    marginRight: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cartIcon: {
-    // marginRight: 4,
-  },
-  chevronIcon: {
-    // marginLeft: 2,
-  },
-  flexSpacer: {
-    flex: 1,
+  viewCartChevron: {
+    marginLeft: 2,
   },
 });
 

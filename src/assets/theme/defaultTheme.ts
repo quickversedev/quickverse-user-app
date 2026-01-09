@@ -16,6 +16,8 @@ export const DefaultTheme: Theme = {
     text: '#F3F4F6', // title text
     subText: '#9CA3AF', // subtitle + phoneLabel
     placeholder: '#9CA3AF',
+    dividerText: '#AEB2BC', // section divider text
+    dividerLine: '#888C99', // section divider line
 
     button: {
       default_background: '#FFE885',

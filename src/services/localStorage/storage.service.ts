@@ -4,6 +4,23 @@ import { PermissionStatus } from 'react-native-permissions';
 
 // Initialize MMKV
 export const storage = new MMKV();
+
+/**
+ * Zustand-compatible storage adapter for MMKV
+ * Used with createJSONStorage(() => mmkvStorage) in Zustand persist middleware
+ */
+export const mmkvStorage = {
+  getItem: (name: string): string | null => {
+    const value = storage.getString(name);
+    return value ?? null;
+  },
+  setItem: (name: string, value: string): void => {
+    storage.set(name, value);
+  },
+  removeItem: (name: string): void => {
+    storage.delete(name);
+  },
+};
 const AUTH_DATA_KEY = '@AuthData';
 const NEW_USER_key = '@NewUser';
 const SKIP_PERMISSIONS = '@SkipPermission';

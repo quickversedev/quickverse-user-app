@@ -35,30 +35,32 @@ const AddButton: React.FC<AddButtonProps> = ({
       return;
     }
     if (authData?.jwt) {
-      // Haptic feedback for successful add intent
       triggerAddToCartHaptic();
       onPress();
     } else {
-      // Haptic feedback for blocked action
       triggerErrorHaptic();
       setShowLoginModal(true);
     }
   };
+
+  // Unified dimensions matching QuantitySelector
+  const buttonWidth = size === 'xs' ? 60 : size === 'small' ? 70 : 80;
+  const buttonHeight = size === 'xs' ? 28 : size === 'small' ? 32 : 36;
 
   const styles = StyleSheet.create({
     addButton: {
       position: 'absolute',
       right: 2,
       bottom: 2,
-      borderWidth: 1,
-      borderColor: getColor('card'),
+      borderWidth: 1.5,
+      borderColor: getColor('primary'),
       borderRadius: theme.borderRadius.sm,
-      minWidth: size === 'xs' ? 45 : size === 'small' ? 40 : 60,
-      height: size === 'xs' ? 28 : size === 'small' ? 32 : 36,
+      minWidth: buttonWidth,
+      height: buttonHeight,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: getColor('primary'),
+      backgroundColor: getColor('card'),
       zIndex: 3,
       shadowColor: theme.colors.shadow.color,
       shadowOffset: { width: 0, height: 2 },
@@ -68,14 +70,16 @@ const AddButton: React.FC<AddButtonProps> = ({
     },
     addButtonWithVariants: {
       flexDirection: 'column',
+      minHeight: size === 'xs' ? 36 : size === 'small' ? 40 : 44,
+      height: 'auto',
     },
     addButtonText: {
-      color: getColor('card'),
-      marginLeft: 4,
+      color: getColor('primary'),
+      fontWeight: '600',
+      marginLeft: 2,
     },
     addButtonTextWithVariants: {
       marginLeft: 0,
-      // marginBottom: 2,
     },
     variantsText: {
       color: getColor('subText'),
@@ -92,7 +96,7 @@ const AddButton: React.FC<AddButtonProps> = ({
     divider: {
       width: '80%',
       height: 1,
-      backgroundColor: getColor('primary'),
+      backgroundColor: getColor('border'),
       marginVertical: 2,
     },
     badge: {
@@ -128,7 +132,7 @@ const AddButton: React.FC<AddButtonProps> = ({
     return (
       <>
         <TouchableOpacity style={styles.addButton} onPress={handleSafePress}>
-          <MaterialCommunityIcons name="plus" size={20} color={getColor('card')} />
+          <MaterialCommunityIcons name="plus" size={18} color={getColor('primary')} />
           <View style={styles.badge}>
             <ThemeText variant="small" color={getColor('white')} style={styles.badgeText}>
               {numberOfVariants}
@@ -151,7 +155,7 @@ const AddButton: React.FC<AddButtonProps> = ({
         >
           <ThemeText
             variant="caption"
-            color={getColor('card')}
+            color={getColor('primary')}
             style={[styles.addButtonText, styles.addButtonTextWithVariants]}
           >
             ADD
@@ -169,11 +173,14 @@ const AddButton: React.FC<AddButtonProps> = ({
     <>
       <TouchableOpacity style={styles.addButton} onPress={handleSafePress}>
         {size === 'xs' || size === 'small' ? (
-          <MaterialCommunityIcons name="plus" size={20} color={getColor('card')} />
+          <MaterialCommunityIcons name="plus" size={18} color={getColor('primary')} />
         ) : (
-          <ThemeText variant="caption" color={getColor('card')} style={styles.addButtonText}>
-            ADD
-          </ThemeText>
+          <>
+            <ThemeText variant="caption" color={getColor('primary')} style={styles.addButtonText}>
+              ADD
+            </ThemeText>
+            <MaterialCommunityIcons name="plus" size={16} color={getColor('primary')} />
+          </>
         )}
       </TouchableOpacity>
 

@@ -139,6 +139,7 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
       buttonContainer: {
         marginLeft: 12,
       },
+      // Unified button styles - same dimensions for ADD and quantity selector
       addButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -146,16 +147,17 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
         borderWidth: 1.5,
         borderColor: getColor('primary'),
         borderRadius: 8,
-        paddingHorizontal: 12,
+        paddingHorizontal: 14,
         paddingVertical: 8,
-        minWidth: 70,
-        backgroundColor: 'transparent',
+        minWidth: 80,
+        height: 36,
+        backgroundColor: getColor('card'),
       },
       addButtonText: {
         fontSize: 13,
         fontWeight: '600',
         color: getColor('primary'),
-        marginLeft: 4,
+        marginRight: 2,
       },
       quantitySelector: {
         flexDirection: 'row',
@@ -164,22 +166,23 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
         borderWidth: 1.5,
         borderColor: getColor('primary'),
         borderRadius: 8,
-        backgroundColor: getColor('primary'),
-        minWidth: 90,
+        backgroundColor: getColor('card'),
+        minWidth: 80,
+        height: 36,
       },
       qtyButton: {
-        paddingHorizontal: 10,
+        paddingHorizontal: 12,
         paddingVertical: 8,
       },
       qtyText: {
         fontSize: 16,
         fontWeight: '600',
-        color: getColor('background'),
+        color: getColor('primary'),
       },
       qtyNumber: {
         fontSize: 14,
         fontWeight: '600',
-        color: getColor('background'),
+        color: getColor('text'),
         minWidth: 20,
         textAlign: 'center',
       },

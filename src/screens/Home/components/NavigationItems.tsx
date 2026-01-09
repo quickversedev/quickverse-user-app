@@ -19,11 +19,10 @@ const navigationItems: NavigationItem[] = [
   // { id: 'pharmacy', label: 'Pharmacy', icon: Icons.pharmacyIcon, screen: 'Pharmacy' },
 ];
 
-const ACTIVE_COLOR = '#FFD700'; // Brighter gold for active state
-
 export const NavigationItems = () => {
-  const { theme } = useTheme();
+  const { theme, getColor } = useTheme();
   const { selectedTab, setSelectedTab } = useTab();
+  const activeColor = getColor('main');
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -39,19 +38,19 @@ export const NavigationItems = () => {
               style={{
                 width: 24,
                 height: 24,
-                tintColor: selectedTab === item.screen ? ACTIVE_COLOR : theme.colors.subText,
+                tintColor: selectedTab === item.screen ? activeColor : theme.colors.subText,
               }}
             />
             <ThemeText
               variant="caption"
-              color={selectedTab === item.screen ? ACTIVE_COLOR : theme.colors.subText}
+              color={selectedTab === item.screen ? activeColor : theme.colors.subText}
               style={styles.label}
             >
               {item.label}
             </ThemeText>
           </View>
           {selectedTab === item.screen && (
-            <View style={[styles.selectedIndicator, { backgroundColor: ACTIVE_COLOR }]} />
+            <View style={[styles.selectedIndicator, { backgroundColor: activeColor }]} />
           )}
         </TouchableOpacity>
       ))}

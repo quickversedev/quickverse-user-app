@@ -35,6 +35,8 @@ export type Colors = {
   text: string;
   subText: string;
   placeholder: string;
+  dividerText: string;
+  dividerLine: string;
   button: ButtonColors;
   shadow: Shadow;
   borderHighlight: string;

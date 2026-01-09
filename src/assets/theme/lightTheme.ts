@@ -3,19 +3,21 @@ import { Theme } from '../../theme/ThemeContext';
 
 export const LightTheme: Theme = {
   colors: {
-    main: '#D97706', // Amber/Orange - much better contrast on white
+    main: '#D97706', // Amber/Orange - good contrast on white
     secondary: '#F59E0B',
-    background: '#F9FAFB', // Slightly off-white background
+    background: '#F5F5F5', // Soft warm gray background
     tabBackground: '#FFFFFF',
     card: '#FFFFFF',
-    border: '#E5E7EB',
-    overlay: '#F3F4F6',
+    border: '#E0E0E0', // Slightly darker border for definition
+    overlay: '#EEEEEE',
     white: '#FFFFFF',
     black: '#000000',
     error: '#DC2626',
-    text: '#111827', // Very dark text for readability
-    subText: '#6B7280',
+    text: '#1F2937', // Dark gray text for readability
+    subText: '#4B5563', // Darker subtext for better contrast
     placeholder: '#9CA3AF',
+    dividerText: '#6B7280', // Darker divider text for light mode
+    dividerLine: '#9CA3AF', // Visible divider line
 
     button: {
       default_background: '#D97706',
@@ -23,12 +25,12 @@ export const LightTheme: Theme = {
       pressed_background: '#B45309',
       pressed_text: '#FFFFFF',
       disabled_background: '#E5E5E5',
-      disabled_text: '#999999',
+      disabled_text: '#9CA3AF',
     },
 
     shadow: {
       color: '#000000',
-      opacity: 0.1,
+      opacity: 0.08,
       offset_width: 0,
       offset_height: 2,
       radius: 8,
