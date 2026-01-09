@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
+import { TabBarVisibilityContext } from '../../../navigation/TabNavigation';
 import useCartStore from '../../../store/cart/cartStore';
 import useOrderStore from '../../../store/cart/orderStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -18,6 +19,7 @@ const FloatingCartsStack: React.FC = () => {
   const activeCartId = useCartStore(state => state.activeCartId);
   const [expanded, setExpanded] = useState(false);
   const { getColor, theme } = useTheme();
+  const tabBarContext = useContext(TabBarVisibilityContext);
   const hasInProgressOrder = useOrderStore(state =>
     state.orders.some(o => o.status !== 'delivered' && o.status !== 'cancelled')
   );
@@ -117,6 +119,9 @@ const FloatingCartsStack: React.FC = () => {
   // Show a hint of the next cart behind the first when collapsed
   const showSecondCartBehind = !expanded && sortedCarts.length > 1;
 
+  // Calculate the bottom position based on tab bar height
+  const baseBottom = tabBarContext?.fullTabBarHeight ? tabBarContext.fullTabBarHeight + 10 : 75;
+
   return (
     <>
       {/* Backdrop for collapse on outside press */}
@@ -127,7 +132,18 @@ const FloatingCartsStack: React.FC = () => {
           onPress={() => setExpanded(false)}
         />
       )}
-      <View style={styles.container} pointerEvents="box-none">
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            bottom: baseBottom,
+            transform: tabBarContext?.tabBarTranslateY
+              ? [{ translateY: tabBarContext.tabBarTranslateY }]
+              : [],
+          },
+        ]}
+        pointerEvents="box-none"
+      >
         {/* Always show the in-progress order bar above cart bars */}
         <View>
           <OrderProgressBar />
@@ -212,7 +228,7 @@ const FloatingCartsStack: React.FC = () => {
             return CartContent;
           })}
         </View>
-      </View>
+      </Animated.View>
     </>
   );
 };
@@ -222,7 +238,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 55,
+    bottom: 75,
     zIndex: 99999,
     alignItems: 'center',
     paddingHorizontal: 8,

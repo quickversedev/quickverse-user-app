@@ -51,18 +51,21 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       paddingHorizontal: size === 'xs' ? 2 : size === 'small' ? 4 : 6,
     },
     qtyText: {
-      fontSize: size === 'xs' ? 14 : size === 'small' ? 16 : 18,
+      fontSize: size === 'xs' ? 16 : size === 'small' ? 18 : 20,
       color: getColor('primary'),
       fontWeight: '600',
-      minWidth: size === 'xs' ? 10 : size === 'small' ? 16 : 15,
       textAlign: 'center',
+      includeFontPadding: false,
+      textAlignVertical: 'center',
     },
     qtyNum: {
       color: getColor('text'),
       fontWeight: '600',
-      marginHorizontal: size === 'xs' ? 1 : size === 'small' ? 2 : 3,
-      minWidth: size === 'xs' ? 12 : size === 'small' ? 14 : 18,
+      marginHorizontal: size === 'xs' ? 2 : size === 'small' ? 4 : 6,
+      minWidth: size === 'xs' ? 14 : size === 'small' ? 16 : 20,
       textAlign: 'center',
+      includeFontPadding: false,
+      textAlignVertical: 'center',
     },
   });
 

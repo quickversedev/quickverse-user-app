@@ -171,13 +171,18 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
         height: 36,
       },
       qtyButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+        width: 32,
+        height: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
       },
       qtyText: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '600',
         color: getColor('primary'),
+        textAlign: 'center',
+        includeFontPadding: false,
+        textAlignVertical: 'center',
       },
       qtyNumber: {
         fontSize: 14,
@@ -185,6 +190,8 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
         color: getColor('text'),
         minWidth: 20,
         textAlign: 'center',
+        includeFontPadding: false,
+        textAlignVertical: 'center',
       },
       variantsText: {
         fontSize: 9,
