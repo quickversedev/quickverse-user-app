@@ -10,6 +10,8 @@ import { useTheme } from '../theme/ThemeContext';
 export const TabBarVisibilityContext = createContext<{
   scrollY: Animated.Value;
   tabBarHeight: number;
+  tabBarTranslateY: Animated.Value;
+  fullTabBarHeight: number;
 } | null>(null);
 
 const Tab = createBottomTabNavigator();
@@ -85,7 +87,7 @@ const TabNavigation = () => {
   }, []);
 
   return (
-    <TabBarVisibilityContext.Provider value={{ scrollY, tabBarHeight: TAB_BAR_HEIGHT }}>
+    <TabBarVisibilityContext.Provider value={{ scrollY, tabBarHeight: TAB_BAR_HEIGHT, tabBarTranslateY, fullTabBarHeight }}>
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
@@ -136,7 +138,11 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderTopWidth: 0,
-    elevation: 0,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
   tabItem: {
     flex: 1,
