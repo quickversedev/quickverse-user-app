@@ -12,7 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { RESULTS } from 'react-native-permissions';
 import { Images } from '../../assets';
 import { useNotifications } from '../../hooks';
 import { useLocation } from '../../hooks/Permissions/useLocation';
@@ -243,40 +242,10 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
     }
   };
 
-  const handleSkip = async () => {
-    try {
-      // Request both permissions first to ensure they appear in device settings
-      // This will show the system permission dialogs, but we'll handle the user's choice
-      const locationResult = await requestLocationPermission();
-      const notificationResult = await requestPermissions();
-
-      // Setup notifications if notification permission was granted (regardless of location)
-      if (notificationResult) {
-        try {
-          const cleanup = await setupNotifications();
-          if (cleanup) {
-            cleanupRef.current = cleanup;
-          }
-        } catch (notificationError) {
-          console.warn('Notification setup failed:', notificationError);
-          // Continue without notifications
-        }
-      }
-
-      // Handle location permission result
-      if (locationResult !== RESULTS.GRANTED) {
-        // User denied location permission, mark as skipped
-        skipLocationPermission();
-      }
-
-      // Complete permissions
-      onPermissionsComplete();
-    } catch (error) {
-      console.warn('Skip permission request failed:', error);
-      // Still complete permissions even if permission request fails
-      skipLocationPermission();
-      onPermissionsComplete();
-    }
+  const handleSkip = () => {
+    // Skip without requesting any permissions - just mark as skipped and proceed
+    skipLocationPermission();
+    onPermissionsComplete();
   };
 
   return (

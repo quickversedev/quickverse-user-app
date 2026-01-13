@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/login/AuthProvider';
-import { useNotifications } from '../../hooks';
 import { PermissionAndLocation, useLocation } from '../../hooks/Permissions/useLocation';
 import { useDeviceInfo } from '../../hooks/useDeviceInfo';
 import { AppStack } from '../../routes/AppStack';
@@ -32,7 +31,6 @@ const AppBootstrap: React.FC = () => {
   const { setPermissionDataInAuth } = useAuth();
   const [bootError, setBootError] = useState<string | null>(null);
   const { updateDeviceInfo } = useDeviceInfo();
-  const { setupNotifications } = useNotifications();
   // eslint-disable-next-line no-console
   //console.log('auth jwt :', authData?.jwt);
   const bootstrap = async () => {
@@ -62,12 +60,8 @@ const AppBootstrap: React.FC = () => {
     bootstrap();
   }, []);
 
-  // Initialize notifications once after permissions are completed
-  useEffect(() => {
-    if (permissionsCompleted) {
-      setupNotifications();
-    }
-  }, [permissionsCompleted, setupNotifications]);
+  // Note: Notifications are set up in PermissionsScreen.handlePermission when user grants permissions
+  // If user skips, notifications are not set up
 
   // CASE 1: Permissions not completed - show permissions screen first (for all users)
   if (!permissionsCompleted) {

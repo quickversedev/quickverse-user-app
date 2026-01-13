@@ -23,6 +23,11 @@ import {
   useBlurOnFulfill,
   useClearByFocusCell,
 } from 'react-native-confirmation-code-field';
+import {
+  startOtpListener,
+  removeListener,
+  getHash,
+} from 'react-native-otp-verify';
 import { Images } from '../../assets';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
@@ -73,6 +78,31 @@ const OTPScreen: React.FC = () => {
       }
     };
   }, [canResend, resendTimeout]);
+
+  // OTP Auto-fill for Android
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      // Get app hash for SMS format (log once for backend setup)
+      getHash()
+        .then(hash => console.log('App Hash for SMS:', hash))
+        .catch(() => {});
+
+      // Start listening for SMS
+      startOtpListener(message => {
+        // Extract 4-digit OTP from SMS
+        const otpMatch = message.match(/(\d{4})/);
+        if (otpMatch && otpMatch[1]) {
+          setValue(otpMatch[1]);
+        }
+      });
+    }
+
+    return () => {
+      if (Platform.OS === 'android') {
+        removeListener();
+      }
+    };
+  }, []);
 
   const verifyOTP = async () => {
     if (value.length !== CELL_COUNT) {

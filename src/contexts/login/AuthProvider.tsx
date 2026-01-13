@@ -46,7 +46,7 @@ type AuthContextData = {
   sendOtp(phoneNumber: string): Promise<string>;
   verifyOtp(phoneNumber: string, otp: string, verificationId: string): Promise<void>;
   signOut(): void;
-  signUp(fullName: string, campusId: string, email: string, dob: string): Promise<void>;
+  signUp(fullName: string): Promise<void>;
   setAuthData(data: AuthSession): void;
   resetAuthState(): void;
 };
@@ -272,15 +272,10 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (newUser) setNewUserstate(newUser);
   };
 
-  const signUp = async (
-    fullName: string,
-    gender: string,
-    email: string,
-    dob: string
-  ): Promise<void> => {
+  const signUp = async (fullName: string): Promise<void> => {
     try {
       if (authData) {
-        await authService.signUp(fullName, dob, gender, email, authData.jwt, authData.phone);
+        await authService.signUp(fullName, authData.jwt, authData.phone);
         setAuth({ ...authData, username: fullName });
       }
       setNewUserstate(false);

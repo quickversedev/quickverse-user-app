@@ -231,43 +231,14 @@ const verifyOtp = async (
 
 const signUp = async (
   fullName: string,
-  dob: string,
-  gender: string,
-  email: string,
   jwt: string,
   phoneNumber: string
 ): Promise<SignUpResponse> => {
   // Validate inputs
-  if (!fullName || fullName.trim().length === 0) {
+  if (!fullName || fullName.trim().length < 3) {
     throw {
       status: 400,
-      message: 'Full name is required',
-      isCancelled: false,
-    } as AuthError;
-  }
-
-  if (!dob || dob.trim().length === 0) {
-    throw {
-      status: 400,
-      message: 'Date of birth is required',
-      isCancelled: false,
-    } as AuthError;
-  }
-
-  if (!gender || gender.trim().length === 0) {
-    throw {
-      status: 400,
-      message: 'Gender is required',
-      isCancelled: false,
-    } as AuthError;
-  }
-
-  // Validate gender value
-  const validGenders = ['MALE', 'FEMALE', 'OTHER'];
-  if (!validGenders.includes(gender.toUpperCase())) {
-    throw {
-      status: 400,
-      message: 'Gender must be MALE, FEMALE, or OTHER',
+      message: 'Full name must be at least 3 characters',
       isCancelled: false,
     } as AuthError;
   }
@@ -277,9 +248,6 @@ const signUp = async (
       axiosInstance.post(
         '/v1/register/customer',
         {
-          dob: dob,
-          gender: gender.toUpperCase(),
-          email: email,
           fullName: fullName,
           phone: phoneNumber,
         },

@@ -18,7 +18,6 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Icons, Images } from '../../assets';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
@@ -35,87 +34,23 @@ interface RegistrationProps {
 const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) => {
   const _navigation = useNavigation<LoginScreenNavigationProp>();
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [gender, setGender] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState<Date>();
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({
-    fullName: '',
-    email: '',
-    gender: '',
-    dateOfBirth: '',
-  });
+  const [error, setError] = useState('');
 
   const auth = useAuth();
   const { theme } = useTheme();
 
-  const handleConfirmDate = (selectedDate: Date) => {
-    setDateOfBirth(selectedDate);
-    setErrors(prev => ({ ...prev, dateOfBirth: '' }));
-    setShowDatePicker(false);
-  };
-
-  const handleCancelDate = () => {
-    setShowDatePicker(false);
-  };
-
-  const formatDate = (date: Date | null) => {
-    if (!date) return '';
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  };
-
-  const formatDateForAPI = (date: Date): string => {
-    return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
-  };
-
   const validateFields = () => {
-    let valid = true;
-    const newErrors = {
-      fullName: '',
-      email: '',
-      gender: '',
-      dateOfBirth: '',
-    };
-
     if (!fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
-      valid = false;
-    } else if (fullName.length < 3) {
-      newErrors.fullName = 'Full name must be at least 3 characters';
-      valid = false;
+      setError('Full name is required');
+      return false;
     }
-
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-      valid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Please enter a valid email address';
-      valid = false;
+    if (fullName.trim().length < 3) {
+      setError('Full name must be at least 3 characters');
+      return false;
     }
-
-    if (!gender) {
-      newErrors.gender = 'Please select your gender';
-      valid = false;
-    }
-
-    if (!dateOfBirth) {
-      newErrors.dateOfBirth = 'Date of birth is required';
-      valid = false;
-    } else {
-      const dateError = validateDate(dateOfBirth);
-      if (dateError) {
-        newErrors.dateOfBirth = dateError;
-        valid = false;
-      }
-    }
-
-    setErrors(newErrors);
-    return valid;
+    setError('');
+    return true;
   };
 
   const handleRegister = async () => {
@@ -126,38 +61,32 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
     setLoading(true);
 
     try {
-      if (fullName && email && gender && dateOfBirth) {
-        // Format date as YYYY-MM-DD
-        const formattedDate = formatDateForAPI(dateOfBirth);
-        await auth.signUp(fullName, gender, email, formattedDate);
-        // Call onRegistrationSuccess if provided
-        if (onRegistrationSuccess) {
-          await onRegistrationSuccess();
-        }
+      await auth.signUp(fullName.trim());
+      if (onRegistrationSuccess) {
+        await onRegistrationSuccess();
       }
-    } catch (error: unknown) {
-      // Map to friendly error
-      const err = error as { status?: number; message?: string; code?: string };
+    } catch (err: unknown) {
+      const apiError = err as { status?: number; message?: string; code?: string };
       let title = 'Registration Failed';
       let message = 'Failed to create account. Please try again.';
 
-      if (err?.code === 'ERR_NETWORK' || err?.status === 0) {
+      if (apiError?.code === 'ERR_NETWORK' || apiError?.status === 0) {
         title = 'Network Error';
         message = 'Please check your internet connection and try again.';
-      } else if (err?.status === 400) {
+      } else if (apiError?.status === 400) {
         title = 'Invalid Information';
-        message = err.message || 'Please check your information and try again.';
-      } else if (err?.status === 409) {
+        message = apiError.message || 'Please check your information and try again.';
+      } else if (apiError?.status === 409) {
         title = 'Account Already Exists';
         message = 'An account with this information already exists.';
-      } else if (err?.status === 422) {
+      } else if (apiError?.status === 422) {
         title = 'Invalid Data';
-        message = err.message || 'Please check your information and try again.';
-      } else if (err?.status && err.status >= 500) {
+        message = apiError.message || 'Please check your information and try again.';
+      } else if (apiError?.status && apiError.status >= 500) {
         title = 'Server Error';
         message = 'Our servers are experiencing issues. Please try again later.';
-      } else if (err?.message) {
-        message = err.message;
+      } else if (apiError?.message) {
+        message = apiError.message;
       }
 
       Alert.alert(title, message, [{ text: 'OK' }]);
@@ -172,29 +101,6 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
 
   const dismissKeyboard = () => {
     Keyboard.dismiss();
-  };
-
-  const calculateAge = (birthDate: Date) => {
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-
-    return age;
-  };
-
-  const validateDate = (date: Date) => {
-    const age = calculateAge(date);
-    if (age < 13) {
-      return 'You must be at least 13 years old';
-    }
-    if (age > 120) {
-      return 'Please enter a valid date of birth';
-    }
-    return '';
   };
 
   const styles = StyleSheet.create({
@@ -245,7 +151,6 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
     },
     card: {
       width: '90%',
-      minHeight: height * 0.6,
       backgroundColor: theme.colors.card,
       borderRadius: 16,
       padding: 24,
@@ -288,45 +193,8 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
       fontSize: theme.typography.body,
       fontFamily: theme.typography.fontFamily,
     },
-    inputFocused: {
-      borderColor: theme.colors.main,
-      borderWidth: 2,
-    },
     errorText: {
       marginTop: 4,
-    },
-    datePickerButton: {
-      backgroundColor: theme.colors.card,
-      borderColor: theme.colors.border,
-      borderWidth: 1,
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    dateText: {
-      flex: 1,
-    },
-    genderContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginTop: 8,
-    },
-    genderButton: {
-      flex: 1,
-      backgroundColor: theme.colors.card,
-      borderColor: theme.colors.border,
-      borderWidth: 1,
-      borderRadius: 8,
-      paddingVertical: 10,
-      marginHorizontal: 4,
-      alignItems: 'center',
-    },
-    genderButtonSelected: {
-      backgroundColor: theme.colors.main,
-      borderColor: theme.colors.main,
     },
     registerButton: {
       backgroundColor: theme.colors.secondary,
@@ -366,10 +234,10 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
 
               <View style={styles.card}>
                 <ThemeText variant="h2" style={styles.title}>
-                  Create Account
+                  What's your name?
                 </ThemeText>
                 <ThemeText variant="subtitle" color={theme.colors.subText} style={styles.subtitle}>
-                  Fill in your details to create an account
+                  Let us know what to call you
                 </ThemeText>
 
                 <View style={styles.inputContainer}>
@@ -380,166 +248,26 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
                     value={fullName}
                     onChangeText={text => {
                       setFullName(text);
-                      setErrors(prev => ({ ...prev, fullName: '' }));
+                      setError('');
                     }}
                     placeholder="Enter your full name"
                     placeholderTextColor={theme.colors.placeholder}
+                    autoFocus
                     style={[
                       styles.input,
-                      errors.fullName ? { borderColor: theme.colors.error } : null,
+                      error ? { borderColor: theme.colors.error } : null,
                     ]}
                   />
-                  {errors.fullName ? (
+                  {error ? (
                     <ThemeText
                       variant="caption"
                       color={theme.colors.error}
                       style={styles.errorText}
                     >
-                      {errors.fullName}
+                      {error}
                     </ThemeText>
                   ) : null}
                 </View>
-
-                <View style={styles.inputContainer}>
-                  <ThemeText variant="caption" color={theme.colors.subText} style={styles.label}>
-                    Email
-                  </ThemeText>
-                  <TextInput
-                    value={email}
-                    onChangeText={text => {
-                      setEmail(text);
-                      setErrors(prev => ({ ...prev, email: '' }));
-                    }}
-                    placeholder="Enter your email"
-                    placeholderTextColor={theme.colors.placeholder}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    style={[
-                      styles.input,
-                      errors.email ? { borderColor: theme.colors.error } : null,
-                    ]}
-                  />
-                  {errors.email ? (
-                    <ThemeText
-                      variant="caption"
-                      color={theme.colors.error}
-                      style={styles.errorText}
-                    >
-                      {errors.email}
-                    </ThemeText>
-                  ) : null}
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <ThemeText variant="caption" color={theme.colors.subText} style={styles.label}>
-                    Gender
-                  </ThemeText>
-                  <View style={styles.genderContainer}>
-                    <TouchableOpacity
-                      style={[
-                        styles.genderButton,
-                        gender === 'MALE' && styles.genderButtonSelected,
-                      ]}
-                      onPress={() => {
-                        setGender('MALE');
-                        setErrors(prev => ({ ...prev, gender: '' }));
-                      }}
-                    >
-                      <ThemeText
-                        variant="body"
-                        color={gender === 'MALE' ? theme.colors.background : theme.colors.text}
-                      >
-                        Male
-                      </ThemeText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.genderButton,
-                        gender === 'FEMALE' && styles.genderButtonSelected,
-                      ]}
-                      onPress={() => {
-                        setGender('FEMALE');
-                        setErrors(prev => ({ ...prev, gender: '' }));
-                      }}
-                    >
-                      <ThemeText
-                        variant="body"
-                        color={gender === 'FEMALE' ? theme.colors.background : theme.colors.text}
-                      >
-                        Female
-                      </ThemeText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.genderButton,
-                        gender === 'OTHER' && styles.genderButtonSelected,
-                      ]}
-                      onPress={() => {
-                        setGender('OTHER');
-                        setErrors(prev => ({ ...prev, gender: '' }));
-                      }}
-                    >
-                      <ThemeText
-                        variant="body"
-                        color={gender === 'OTHER' ? theme.colors.background : theme.colors.text}
-                      >
-                        Other
-                      </ThemeText>
-                    </TouchableOpacity>
-                  </View>
-                  {errors.gender ? (
-                    <ThemeText
-                      variant="caption"
-                      color={theme.colors.error}
-                      style={styles.errorText}
-                    >
-                      {errors.gender}
-                    </ThemeText>
-                  ) : null}
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <ThemeText variant="caption" color={theme.colors.subText} style={styles.label}>
-                    Date of Birth
-                  </ThemeText>
-                  <TouchableOpacity
-                    style={[
-                      styles.datePickerButton,
-                      errors.dateOfBirth ? { borderColor: theme.colors.error } : null,
-                    ]}
-                    onPress={() => setShowDatePicker(true)}
-                  >
-                    <ThemeText
-                      variant="body"
-                      color={dateOfBirth ? theme.colors.text : theme.colors.placeholder}
-                      style={styles.dateText}
-                    >
-                      {dateOfBirth ? formatDate(dateOfBirth) : 'Select your date of birth'}
-                    </ThemeText>
-                  </TouchableOpacity>
-                  {errors.dateOfBirth ? (
-                    <ThemeText
-                      variant="caption"
-                      color={theme.colors.error}
-                      style={styles.errorText}
-                    >
-                      {errors.dateOfBirth}
-                    </ThemeText>
-                  ) : null}
-                </View>
-
-                {showDatePicker && (
-                  <DateTimePickerModal
-                    isVisible={showDatePicker}
-                    mode="date"
-                    date={dateOfBirth || new Date(2000, 0, 1)}
-                    onConfirm={handleConfirmDate}
-                    onCancel={handleCancelDate}
-                    maximumDate={new Date()}
-                    minimumDate={new Date(1900, 0, 1)}
-                    display={Platform.OS === 'android' ? 'spinner' : 'inline'}
-                  />
-                )}
 
                 <TouchableOpacity
                   style={[styles.registerButton, loading && styles.registerButtonLoading]}
@@ -554,7 +282,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
                       color={theme.colors.background}
                       style={styles.registerText}
                     >
-                      Create Account
+                      Continue
                     </ThemeText>
                   )}
                 </TouchableOpacity>
