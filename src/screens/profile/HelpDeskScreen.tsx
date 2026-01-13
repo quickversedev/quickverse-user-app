@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Platform,
@@ -45,11 +45,16 @@ const HelpDeskScreen: React.FC = () => {
   // Get recent 3 orders initially, or more if showMoreOrders is true
   const displayedOrders = showMoreOrders ? orders : orders.slice(0, 3);
 
+  // Guard to prevent fetching on every screen mount
+  const hasFetchedRef = useRef(false);
+
   useEffect(() => {
-    if (authData?.jwt && authData?.phone) {
+    if (!hasFetchedRef.current && authData?.jwt && authData?.phone && !loading && orders.length === 0) {
+      hasFetchedRef.current = true;
       // Always fetch 6 orders initially, but display only 3 until "Show More" is clicked
       fetchOrders(authData.jwt, authData.phone, null, 6);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authData?.jwt, authData?.phone]);
 
   const toggleFAQ = (faqId: string) => {

@@ -43,16 +43,22 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
   // Match CartBar width
   const containerWidth = screenWidth - 30; // Same as CartBar width
 
+  // Guard to prevent multiple fetches
+  const hasFetchedRef = useRef(false);
+
   useEffect(() => {
     const jwt = authData?.jwt || '';
     const phone = authData?.phone || '';
-    if (!loading && orders.length === 0 && jwt && phone) {
+    // Only fetch once per component mount, and only if orders are empty
+    if (!hasFetchedRef.current && !loading && orders.length === 0 && jwt && phone) {
+      hasFetchedRef.current = true;
       // Fetch a small page to keep it lightweight
       fetchOrders(jwt, phone, null, 5).catch(() => {
         // no-op; UI stays quiet on failure
       });
     }
-  }, [authData?.jwt, authData?.phone, orders.length, loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authData?.jwt, authData?.phone]);
 
   const inProgressOrders = useMemo(() => {
     return orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');

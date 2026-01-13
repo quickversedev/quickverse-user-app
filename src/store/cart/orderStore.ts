@@ -52,6 +52,11 @@ const useOrderStore = create<OrderStore>((set, get) => ({
     cursor: OrderCursor | null,
     pageSize: number = 10
   ) => {
+    // Prevent duplicate API calls if already loading
+    if (get().loading) {
+      return;
+    }
+
     set({ loading: true, error: null });
 
     if (USE_ORDER_MOCKS) {

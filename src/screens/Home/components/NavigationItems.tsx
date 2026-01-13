@@ -1,6 +1,6 @@
 import React from 'react';
-import { Image, ImageSourcePropType, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Icons } from '../../../assets';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ThemeText } from '../../../components/common/theme/ThemeText';
 import { useTab } from '../../../contexts/TabContext';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -8,15 +8,15 @@ import { useTheme } from '../../../theme/ThemeContext';
 type NavigationItem = {
   id: string;
   label: string;
-  icon: ImageSourcePropType;
+  icon: string;
   screen: 'HomeMain' | 'ForYou' | 'food' | 'Grocery' | 'Pharmacy';
 };
 
 const navigationItems: NavigationItem[] = [
-  { id: 'for-you', label: 'For You', icon: Icons.forYouIcon, screen: 'ForYou' },
-  { id: 'food', label: 'Food', icon: Icons.foodIcon, screen: 'food' },
-  { id: 'grocery', label: 'Grocery', icon: Icons.bottle, screen: 'Grocery' },
-  // { id: 'pharmacy', label: 'Pharmacy', icon: Icons.pharmacyIcon, screen: 'Pharmacy' },
+  { id: 'for-you', label: 'For You', icon: 'star-four-points', screen: 'ForYou' },
+  { id: 'food', label: 'Food', icon: 'food-turkey', screen: 'food' },
+  { id: 'grocery', label: 'Grocery', icon: 'shopping-outline', screen: 'Grocery' },
+  // { id: 'pharmacy', label: 'Pharmacy', icon: 'pharmacy', screen: 'Pharmacy' },
 ];
 
 export const NavigationItems = () => {
@@ -33,13 +33,10 @@ export const NavigationItems = () => {
           onPress={() => setSelectedTab(item.screen)}
         >
           <View style={styles.tabContent}>
-            <Image
-              source={item.icon}
-              style={{
-                width: 24,
-                height: 24,
-                tintColor: selectedTab === item.screen ? activeColor : theme.colors.subText,
-              }}
+            <MaterialCommunityIcons
+              name={item.icon}
+              size={24}
+              color={selectedTab === item.screen ? activeColor : theme.colors.subText}
             />
             <ThemeText
               variant="caption"
@@ -64,6 +61,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'stretch',
     paddingTop: 12,
+    // Shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    // Elevation for Android
+    elevation: 8,
   },
   item: {
     flex: 1,

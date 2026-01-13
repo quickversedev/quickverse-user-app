@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/login/AuthProvider';
 import useOrderStore from '../store/cart/orderStore';
 import { Order, OrderCursor, OrderFilters } from '../types/order';
@@ -26,10 +26,12 @@ export const useOrders = () => {
     getRecentOrders,
   } = useOrderStore();
   const { authData } = useAuth();
+  const hasFetchedRef = useRef(false);
 
-  // Load orders on mount (requires auth)
+  // Load orders on mount (requires auth) - only once per session
   useEffect(() => {
-    if (authData?.jwt && authData?.phone) {
+    if (authData?.jwt && authData?.phone && !hasFetchedRef.current && !loading) {
+      hasFetchedRef.current = true;
       fetchOrders(authData.jwt, authData.phone, null, 10);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
