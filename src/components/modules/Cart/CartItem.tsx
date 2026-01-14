@@ -19,15 +19,16 @@ const CartItem: React.FC<CartItemProps> = React.memo(
     const styles = StyleSheet.create({
       cartItemRow: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         marginBottom: 18,
       },
       cartItemImg: {
-        width: 64,
-        height: 64,
+        width: 56,
+        height: 56,
         borderRadius: theme.borderRadius.md,
         backgroundColor: getButtonColor('default', 'background'),
-        marginRight: 14,
+        marginRight: 12,
+        alignSelf: 'center',
       },
       cartItemName: {
         color: getColor('text'),
@@ -45,9 +46,9 @@ const CartItem: React.FC<CartItemProps> = React.memo(
       qtyCol: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 45,
         justifyContent: 'center',
         minWidth: 70,
+        alignSelf: 'center',
       },
       cartItemTag: {
         backgroundColor: getColor('card'),
@@ -70,6 +71,7 @@ const CartItem: React.FC<CartItemProps> = React.memo(
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 6,
+        marginTop: 3,
       },
       vegDot: {
         width: 6,
@@ -100,8 +102,8 @@ const CartItem: React.FC<CartItemProps> = React.memo(
     return (
       <View style={styles.cartItemRow}>
         <Image source={imageSource} style={styles.cartItemImg} />
-        <View style={{ flex: 1, minWidth: 120 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+        <View style={{ flex: 1, minWidth: 120, justifyContent: 'center' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}>
             <View
               style={[
                 styles.vegIndicator,
@@ -123,7 +125,8 @@ const CartItem: React.FC<CartItemProps> = React.memo(
               variant="body"
               color={getColor('text')}
               style={[styles.cartItemName, { width: undefined, flex: 1 }]}
-              numberOfLines={2}
+              numberOfLines={1}
+              ellipsizeMode="tail"
             >
               {name}
             </ThemeText>

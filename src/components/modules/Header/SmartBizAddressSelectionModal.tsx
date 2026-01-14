@@ -22,7 +22,7 @@ import {
 import { useTheme } from '../../../theme/ThemeContext';
 
 const { height: screenHeight } = Dimensions.get('window');
-const MODAL_HEIGHT = screenHeight * 0.65;
+const MAX_MODAL_HEIGHT = screenHeight * 0.75;
 
 interface SmartBizAddressSelectionModalProps {
   visible: boolean;
@@ -52,7 +52,11 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
   const [showAddModal, setShowAddModal] = useState(false);
 
   const fetchAddresses = async () => {
-    if (!isLoggedIn || !vendorId || !authData?.jwt || !authData?.phone) return;
+    console.log('[SmartBizModal] fetchAddresses called, vendorId:', vendorId);
+    if (!isLoggedIn || !vendorId || !authData?.jwt || !authData?.phone) {
+      console.log('[SmartBizModal] fetchAddresses - missing required data');
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -63,9 +67,11 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
         authData.jwt,
         authData.phone
       );
+      console.log('[SmartBizModal] fetchAddresses - got', fetchedAddresses.length, 'addresses');
       setAddresses(fetchedAddresses);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch addresses';
+      console.log('[SmartBizModal] fetchAddresses - error:', errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -89,6 +95,8 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
 
   const handleRetry = () => {
     if (isLoggedIn && vendorId && authData?.jwt && authData?.phone) {
+      // Clear cache before refetching to get fresh data
+      smartBizAddressService.clearCache(vendorId);
       fetchAddresses();
     }
   };
@@ -97,10 +105,15 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
     setShowAddModal(true);
   };
 
-  const handleAddAddressSuccess = () => {
+  const handleAddAddressSuccess = async () => {
+    console.log('[SmartBizModal] handleAddAddressSuccess called');
     setShowAddModal(false);
-    // Refresh addresses after adding new one
-    fetchAddresses();
+    // Clear cache and refresh addresses after adding new one
+    console.log('[SmartBizModal] Clearing cache for vendorId:', vendorId);
+    smartBizAddressService.clearCache(vendorId);
+    console.log('[SmartBizModal] Fetching addresses...');
+    await fetchAddresses();
+    console.log('[SmartBizModal] Fetch complete, addresses count:', addresses.length);
   };
 
   const defaultAddress = smartBizAddressService.getDefaultAddress(vendorId);
@@ -119,7 +132,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       bottom: 0,
       left: 0,
       right: 0,
-      height: MODAL_HEIGHT,
+      maxHeight: MAX_MODAL_HEIGHT,
       paddingBottom: Math.max(insets.bottom, 16) + 8,
       backgroundColor: getColor('background'),
       borderTopLeftRadius: 24,
@@ -172,7 +185,6 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       borderColor: getColor('border'),
     },
     content: {
-      flex: 1,
       paddingHorizontal: 16,
     },
     sectionHeader: {
@@ -194,7 +206,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       letterSpacing: 1,
     },
     addressesContainer: {
-      flex: 1,
+      maxHeight: MAX_MODAL_HEIGHT * 0.55,
     },
     addressCard: {
       backgroundColor: getColor('card'),
@@ -300,6 +312,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       justifyContent: 'center',
       alignItems: 'center',
       paddingVertical: 40,
+      borderRadius: 4,
     },
     emptyIconBadge: {
       width: 80,
@@ -372,7 +385,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       paddingHorizontal: 20,
       paddingVertical: 14,
       borderRadius: theme.borderRadius.md,
-      marginTop: 8,
+      marginTop: 16,
       ...Platform.select({
         ios: {
           shadowColor: getButtonColor('default', 'background'),
@@ -409,9 +422,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
           style={[
             themedStyles.addressIconBadge,
             {
-              backgroundColor: isSelected
-                ? `${getColor('primary')}20`
-                : `${getColor('subText')}15`,
+              backgroundColor: isSelected ? `${getColor('primary')}20` : `${getColor('subText')}15`,
             },
           ]}
         >
@@ -530,7 +541,6 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 12 }}
-        style={{ flex: 1 }}
       >
         {addresses.map(renderAddressCard)}
       </ScrollView>

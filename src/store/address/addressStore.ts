@@ -27,8 +27,10 @@ const useAddressStore = create<AddressStore>((set, get) => ({
 
   fetchAddresses: async (authSession?: AuthSession) => {
     try {
+      console.log('[AddressStore] fetchAddresses called');
       set({ loading: true, fetchError: null });
       if (!authSession?.jwt) {
+        console.error('[AddressStore] fetchAddresses - No auth session');
         throw new Error('Authentication required. Please login again.');
       }
       const response = await axiosInstance.get('/v2/addresses', {
@@ -38,6 +40,8 @@ const useAddressStore = create<AddressStore>((set, get) => ({
         },
       });
       const addresses = response.data || [];
+
+      console.log('[AddressStore] fetchAddresses - API returned:', addresses.length, 'addresses');
 
       // Add isSavedAddress: true to each address
       const addressesWithSavedFlag = addresses.map((address: Address) => ({
@@ -53,8 +57,10 @@ const useAddressStore = create<AddressStore>((set, get) => ({
         loading: false,
         fetchError: null,
       });
+
+      console.log('[AddressStore] fetchAddresses - Store updated with', addressesWithSavedFlag.length, 'addresses');
     } catch (err) {
-      console.error('Error fetching addresses:', err);
+      console.error('[AddressStore] Error fetching addresses:', err);
       set({
         fetchError: 'Failed to fetch addresses. Please try again.',
         loading: false,
@@ -92,6 +98,7 @@ const useAddressStore = create<AddressStore>((set, get) => ({
       set({ addingLoading: true, addError: null });
 
       if (!authSession?.jwt) {
+        console.error('[AddressStore] No auth session');
         throw new Error('Authentication required. Please login again.');
       }
 
@@ -111,8 +118,10 @@ const useAddressStore = create<AddressStore>((set, get) => ({
         isDefaultAddress: !!newAddress.isDefaultAddress,
       };
 
+      console.log('[AddressStore] Saving address:', addressData);
+
       // Use apiCall wrapper for proper error handling
-      await apiCall(
+      const response = await apiCall(
         axiosInstance.post('/v2/addresses', addressData, {
           headers: {
             SessionKey: authSession.jwt,
@@ -121,8 +130,13 @@ const useAddressStore = create<AddressStore>((set, get) => ({
         })
       );
 
+      console.log('[AddressStore] Address saved, response:', response);
+
       // Refresh addresses after adding
+      console.log('[AddressStore] Fetching addresses after save...');
       await get().fetchAddresses(authSession);
+
+      console.log('[AddressStore] Addresses after refresh:', get().addresses.length);
       set({ addingLoading: false });
 
       return { success: true };

@@ -54,7 +54,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   needCompulsoryAddress = false,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
-  const { addresses, loading } = useAddress();
+  const { addresses, loading, fetchAddresses } = useAddress();
   const { setSelectedAddress, authData } = useAuth();
   const { getCurrentLocation, isLoading: locationLoading } = useLocation();
   const isLoggedIn = Boolean(authData?.jwt);
@@ -86,8 +86,10 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     setShowAddModal(true);
   };
 
-  const handleAddAddressSuccess = () => {
+  const handleAddAddressSuccess = async () => {
     setShowAddModal(false);
+    // Refresh addresses after adding new one
+    await fetchAddresses();
   };
 
   // Debounced search function

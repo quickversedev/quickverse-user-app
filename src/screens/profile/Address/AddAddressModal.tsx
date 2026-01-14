@@ -39,7 +39,7 @@ interface AddressDetails {
 interface AddAddressModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (address: AddressDetails) => void;
+  onSave: (address: AddressDetails) => void | Promise<void>;
 }
 
 const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => {
@@ -83,8 +83,13 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
     // This function is kept for any additional logic if needed
   };
 
-  const handleAddressSaveSuccess = () => {
+  const handleAddressSaveSuccess = async () => {
+    console.log('[AddAddressModal] handleAddressSaveSuccess called');
+    // Call parent's onSave callback to trigger refresh (before reset)
+    console.log('[AddAddressModal] Calling onSave...');
+    await onSave(addressDetails);
     // Close the modal when address is successfully saved
+    console.log('[AddAddressModal] Calling resetForm and onClose...');
     resetForm();
     onClose();
   };
@@ -151,6 +156,19 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
         },
       }),
     },
+    headerTransparent: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Math.max(16, width * 0.04),
+      paddingTop: Platform.OS === 'ios' ? Math.max(insets.top + 4, 8) : Math.max(16, width * 0.04),
+      paddingBottom: Math.max(8, width * 0.02),
+      backgroundColor: 'transparent',
+    },
     backButton: {
       fontSize: getTypography('body'),
       fontWeight: 'bold',
@@ -160,6 +178,25 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       paddingHorizontal: 8,
       includeFontPadding: false,
       textAlignVertical: 'center',
+    },
+    backButtonRound: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: getColor('card'),
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...Platform.select({
+        android: {
+          elevation: 4,
+        },
+        ios: {
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.15,
+          shadowRadius: 4,
+        },
+      }),
     },
     title: {
       fontWeight: 'bold',
@@ -190,16 +227,26 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
           paddingBottom: insets.bottom, // ✅ handles iPhone home indicator
         }}
       >
-        {/* Header */}
-        <View style={themedStyles.header}>
-          <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
-            <MaterialCommunityIcons name="arrow-left-thick" size={25} color={getColor('primary')} />
-          </TouchableOpacity>
-          <Text style={themedStyles.title}>
-            {step === 1 ? 'Select Location' : 'Add Address Details'}
-          </Text>
-          <View style={themedStyles.placeholder} />
-        </View>
+        {/* Header - Transparent for step 1, regular for step 2 */}
+        {step === 1 ? (
+          <View style={themedStyles.headerTransparent}>
+            <TouchableOpacity
+              onPress={handleBack}
+              activeOpacity={0.7}
+              style={themedStyles.backButtonRound}
+            >
+              <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={themedStyles.header}>
+            <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
+              <MaterialCommunityIcons name="arrow-left-thick" size={25} color={getColor('primary')} />
+            </TouchableOpacity>
+            <Text style={themedStyles.title}>Add Address Details</Text>
+            <View style={themedStyles.placeholder} />
+          </View>
+        )}
 
         {/* Body */}
         {step === 1 ? (

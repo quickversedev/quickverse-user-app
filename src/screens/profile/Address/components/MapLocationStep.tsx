@@ -16,7 +16,7 @@ import {
   View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Images } from '../../../../assets';
 import SectionDivider from '../../../../components/common/SectionDivider';
@@ -43,6 +43,7 @@ const MAP_HEIGHT = height * 0.54;
 
 const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const { getColor, getTypography, theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const {
     checkLocationPermission,
@@ -270,33 +271,35 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     },
     searchBarContainer: {
       position: 'absolute',
-      top: Platform.OS === 'ios' ? 16 : 20,
-      left: 0,
-      right: 0,
-      alignItems: 'center',
+      top: Platform.OS === 'ios' ? Math.max(insets.top + 4, 8) : Math.max(16, width * 0.04),
+      left: 64,
+      right: 16,
       zIndex: 10,
     },
     searchBar: {
       flexDirection: 'row',
       alignItems: 'center',
-      width: '92%',
-      borderRadius: theme.borderRadius.md,
-      borderWidth: 1,
+      width: '100%',
+      height: 40,
+      borderRadius: 20,
       paddingHorizontal: 14,
-      paddingVertical: 10,
-      elevation: 8,
-      shadowColor: theme.colors.shadow.color,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
+      backgroundColor: getColor('card'),
+      ...Platform.select({
+        android: {
+          elevation: 4,
+        },
+        ios: {
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.15,
+          shadowRadius: 4,
+        },
+      }),
     },
     searchIconBadge: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 10,
+      marginRight: 8,
     },
     searchInput: {
       flex: 1,
@@ -305,12 +308,11 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       fontSize: getTypography('body'),
     },
     resultsContainer: {
-      width: '92%',
+      width: '100%',
       borderRadius: theme.borderRadius.md,
       maxHeight: 220,
       overflow: 'hidden',
       backgroundColor: getColor('card'),
-      alignSelf: 'center',
       elevation: 8,
       shadowColor: theme.colors.shadow.color,
       shadowOffset: { width: 0, height: 4 },
@@ -506,7 +508,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     >
       <SafeAreaView
         style={[themedStyles.outerContainer]}
-        edges={['top', 'bottom']}
+        edges={['bottom']}
         accessible={true}
         accessibilityLabel="Map location selection screen"
       >
@@ -560,19 +562,9 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={themedStyles.searchBarContainer}
           >
-            <View
-              style={[
-                themedStyles.searchBar,
-                { backgroundColor: getColor('card'), borderColor: getColor('border') },
-              ]}
-            >
-              <View
-                style={[
-                  themedStyles.searchIconBadge,
-                  { backgroundColor: `${getColor('primary')}15` },
-                ]}
-              >
-                <MaterialCommunityIcons name="magnify" size={20} color={getColor('primary')} />
+            <View style={themedStyles.searchBar}>
+              <View style={themedStyles.searchIconBadge}>
+                <MaterialCommunityIcons name="magnify" size={20} color={getColor('subText')} />
               </View>
               <TextInput
                 style={themedStyles.searchInput}
