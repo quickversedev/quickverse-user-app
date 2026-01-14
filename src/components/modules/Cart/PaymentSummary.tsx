@@ -112,7 +112,8 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
       marginHorizontal: 16,
       marginTop: 20,
       marginBottom: 0,
-      padding: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
       borderWidth: 1,
       borderColor: getColor('border'),
       ...Platform.select({
@@ -175,7 +176,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     paymentSummaryHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 4,
+      minHeight: 40,
     },
     iconBadge: {
       width: 40,
@@ -183,11 +184,10 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
       borderRadius: 20,
       alignItems: 'center',
       justifyContent: 'center',
+      marginRight: 12,
     },
     paymentSummaryContent: {
       flex: 1,
-      marginLeft: 10,
-      justifyContent: 'center',
     },
     paymentSummaryTitle: {
       color: getButtonColor('default', 'background'),

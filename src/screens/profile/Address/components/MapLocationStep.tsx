@@ -18,7 +18,7 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Icons, Images } from '../../../../assets';
+import { Images } from '../../../../assets';
 import SectionDivider from '../../../../components/common/SectionDivider';
 import { useLocation } from '../../../../hooks/Permissions/useLocation';
 import {
@@ -282,13 +282,21 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       width: '92%',
       borderRadius: theme.borderRadius.md,
       borderWidth: 1,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      elevation: 6,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      elevation: 8,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: theme.colors.shadow.opacity,
-      shadowRadius: theme.colors.shadow.radius,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+    },
+    searchIconBadge: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 10,
     },
     searchInput: {
       flex: 1,
@@ -299,62 +307,82 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     resultsContainer: {
       width: '92%',
       borderRadius: theme.borderRadius.md,
-      maxHeight: 200,
-      overflow: 'hidden', // Ensures children don't overflow the border
+      maxHeight: 220,
+      overflow: 'hidden',
       backgroundColor: getColor('card'),
       alignSelf: 'center',
-      elevation: 4,
+      elevation: 8,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: theme.colors.shadow.opacity,
-      shadowRadius: theme.colors.shadow.radius,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
       zIndex: 100,
+      marginTop: 8,
+      borderWidth: 1,
+      borderColor: getColor('border'),
     },
     resultItem: {
-      padding: 12,
+      padding: 14,
       borderBottomWidth: 1,
       borderBottomColor: getColor('border'),
       backgroundColor: 'transparent',
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    resultIconBadge: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    resultTextContainer: {
+      flex: 1,
     },
     currentLocationButtonContainer: {
       position: 'absolute',
       bottom: 40,
-      left: 0,
-      right: 0,
-      alignItems: 'center',
+      right: 16,
       zIndex: 10,
     },
     currentLocationButton: {
-      flexDirection: 'row',
+      width: 48,
+      height: 48,
+      borderRadius: 24,
       alignItems: 'center',
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: theme.borderRadius.md,
-      elevation: 6,
+      justifyContent: 'center',
+      elevation: 8,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: theme.colors.shadow.opacity,
-      shadowRadius: theme.colors.shadow.radius,
-    },
-    currentLocationText: {
-      fontSize: getTypography('body'),
-      fontWeight: '500',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      borderWidth: 1,
+      borderColor: getColor('border'),
     },
     bottomSheet: {
       flex: 1,
       backgroundColor: getColor('card'),
-      borderTopLeftRadius: theme.borderRadius.md,
-      borderTopRightRadius: theme.borderRadius.md,
-      paddingTop: 10,
-      paddingBottom: 50,
-      paddingHorizontal: 24,
-      alignItems: 'center',
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      paddingTop: 16,
+      paddingBottom: 24,
+      paddingHorizontal: 20,
       shadowColor: theme.colors.shadow.color,
-      shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: theme.colors.shadow.opacity,
-      shadowRadius: theme.colors.shadow.radius,
-      elevation: 12,
-      marginTop: -14,
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      elevation: 16,
+      marginTop: -20,
+    },
+    bottomSheetContent: {
+      width: '100%',
+      alignItems: 'center',
+      flex: 1,
+    },
+    buttonContainer: {
+      width: '100%',
+      paddingTop: 16,
     },
     bottomSheetTitle: {
       color: getColor('subText'),
@@ -370,48 +398,79 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       paddingBottom: 8,
     },
     selectedLocationContainer: {
-      // alignItems: 'flex-start',
       width: '100%',
       backgroundColor: getColor('background'),
       borderRadius: theme.borderRadius.md,
-      padding: 16,
-      marginBottom: 16,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: getColor('border'),
+    },
+    addressIconBadge: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
     },
     selectedLocationText: {
       color: getColor('text'),
       fontSize: getTypography('body'),
-      lineHeight: 20,
+      lineHeight: 22,
+      fontWeight: '500',
     },
     loadingContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 8,
+      paddingVertical: 12,
     },
     loadingText: {
       color: getColor('subText'),
-      fontSize: getTypography('caption'),
-      marginLeft: 8,
+      fontSize: getTypography('body'),
+      marginLeft: 12,
+      fontWeight: '500',
     },
-    outlinedButton: {
+    primaryButton: {
       flexDirection: 'row',
       alignItems: 'center',
       width: '100%',
       justifyContent: 'center',
-      borderWidth: 2,
-      borderColor: getColor('primary'),
       borderRadius: theme.borderRadius.md,
-      paddingVertical: 12,
+      paddingVertical: 16,
       paddingHorizontal: 32,
-      marginTop: 8,
-      marginBottom: 8,
-      backgroundColor: 'transparent',
+      backgroundColor: getColor('primary'),
+      ...Platform.select({
+        ios: {
+          shadowColor: getColor('primary'),
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 6,
+        },
+      }),
     },
-    outlinedButtonText: {
-      color: getColor('primary'),
-      fontWeight: '600',
+    primaryButtonDisabled: {
+      backgroundColor: getColor('border'),
+      ...Platform.select({
+        ios: {
+          shadowOpacity: 0,
+        },
+        android: {
+          elevation: 0,
+        },
+      }),
+    },
+    primaryButtonText: {
+      color: '#1F2937',
+      fontWeight: '700',
       fontSize: getTypography('body'),
       letterSpacing: 0.5,
+    },
+    primaryButtonTextDisabled: {
+      color: getColor('subText'),
     },
     currentLocationDot: {
       width: 24,
@@ -507,6 +566,14 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                 { backgroundColor: getColor('card'), borderColor: getColor('border') },
               ]}
             >
+              <View
+                style={[
+                  themedStyles.searchIconBadge,
+                  { backgroundColor: `${getColor('primary')}15` },
+                ]}
+              >
+                <MaterialCommunityIcons name="magnify" size={20} color={getColor('primary')} />
+              </View>
               <TextInput
                 style={themedStyles.searchInput}
                 placeholder="Search Location"
@@ -582,12 +649,29 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                       accessibilityHint={`Selects ${result.structured_formatting.main_text} as the location`}
                       activeOpacity={0.7}
                     >
-                      <Text style={{ color: getColor('text'), fontWeight: 'bold' }}>
-                        {result.structured_formatting.main_text}
-                      </Text>
-                      <Text style={{ color: getColor('subText'), fontSize: 12 }}>
-                        {result.structured_formatting.secondary_text}
-                      </Text>
+                      <View
+                        style={[
+                          themedStyles.resultIconBadge,
+                          { backgroundColor: `${getColor('subText')}15` },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="map-marker-outline"
+                          size={18}
+                          color={getColor('subText')}
+                        />
+                      </View>
+                      <View style={themedStyles.resultTextContainer}>
+                        <Text style={{ color: getColor('text'), fontWeight: '600', fontSize: 14 }}>
+                          {result.structured_formatting.main_text}
+                        </Text>
+                        <Text
+                          style={{ color: getColor('subText'), fontSize: 12, marginTop: 2 }}
+                          numberOfLines={1}
+                        >
+                          {result.structured_formatting.secondary_text}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -605,67 +689,83 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
               accessibilityHint="Centers the map on your current location"
               activeOpacity={0.85}
             >
-              <MaterialCommunityIcons
-                name="crosshairs-gps"
-                size={20}
-                color={getColor('primary')}
-                style={{ marginRight: 8 }}
-              />
-              <Text style={[themedStyles.currentLocationText, { color: getColor('text') }]}>
-                Use Current Location
-              </Text>
+              <MaterialCommunityIcons name="crosshairs-gps" size={22} color={getColor('primary')} />
             </TouchableOpacity>
           </View>
         </View>
         {/* Bottom Sheet Section */}
         <View style={themedStyles.bottomSheet}>
-          <SectionDivider text="DELIVERY ADDRESS" style={{ marginBottom: 8 }} fontSize={14} />
+          <View style={themedStyles.bottomSheetContent}>
+            <SectionDivider text="DELIVERY ADDRESS" style={{ marginBottom: 8 }} fontSize={14} />
 
-          {selectedLocation && (
-            <View style={themedStyles.selectedLocationContainer}>
-              {addressLoading ? (
-                <View style={themedStyles.loadingContainer}>
-                  <ActivityIndicator size="small" color={getColor('primary')} />
-                  <Text style={themedStyles.loadingText}>Getting address...</Text>
-                </View>
-              ) : (
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                  <Image
-                    source={Icons.selectedAddress}
-                    style={{ width: 25, height: 25, marginRight: 5 }}
-                  />
+            {selectedLocation && (
+              <View style={themedStyles.selectedLocationContainer}>
+                {addressLoading ? (
+                  <View style={themedStyles.loadingContainer}>
+                    <ActivityIndicator size="small" color={getColor('primary')} />
+                    <Text style={themedStyles.loadingText}>Getting address...</Text>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', flex: 1 }}>
+                    <View
+                      style={[
+                        themedStyles.addressIconBadge,
+                        { backgroundColor: `${getColor('primary')}15` },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        name="map-marker"
+                        size={22}
+                        color={getColor('primary')}
+                      />
+                    </View>
+                    <Text
+                      style={[themedStyles.selectedLocationText, { flex: 1 }]}
+                      numberOfLines={5}
+                    >
+                      {selectedAddressDescription.formatted_address ||
+                        selectedAddressDescription.city ||
+                        selectedAddressDescription.state ||
+                        selectedAddressDescription.country ||
+                        'Location selected'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
 
-                  <Text style={[themedStyles.selectedLocationText, { flex: 1 }]} numberOfLines={3}>
-                    {selectedAddressDescription.formatted_address ||
-                      selectedAddressDescription.city ||
-                      selectedAddressDescription.state ||
-                      selectedAddressDescription.country ||
-                      'Location selected'}
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          <TouchableOpacity
-            style={themedStyles.outlinedButton}
-            onPress={handleLocationConfirm}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel="Add address details"
-            accessibilityHint="Opens form to add more address details"
-            accessibilityState={{ disabled: !selectedLocation }}
-            activeOpacity={0.85}
-            disabled={!selectedLocation}
-          >
-            <MaterialCommunityIcons
-              name="plus"
-              size={20}
-              color={getColor('primary')}
-              style={{ marginRight: 8 }}
-            />
-            <Text style={themedStyles.outlinedButtonText}>Add Address Details</Text>
-          </TouchableOpacity>
+          <View style={themedStyles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                themedStyles.primaryButton,
+                !selectedLocation && themedStyles.primaryButtonDisabled,
+              ]}
+              onPress={handleLocationConfirm}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Add address details"
+              accessibilityHint="Opens form to add more address details"
+              accessibilityState={{ disabled: !selectedLocation }}
+              activeOpacity={0.85}
+              disabled={!selectedLocation}
+            >
+              <MaterialCommunityIcons
+                name="arrow-right"
+                size={20}
+                color={!selectedLocation ? getColor('subText') : '#1F2937'}
+                style={{ marginRight: 8 }}
+              />
+              <Text
+                style={[
+                  themedStyles.primaryButtonText,
+                  !selectedLocation && themedStyles.primaryButtonTextDisabled,
+                ]}
+              >
+                Add Address Details
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     </TouchableWithoutFeedback>

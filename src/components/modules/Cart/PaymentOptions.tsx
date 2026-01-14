@@ -27,7 +27,8 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
       marginHorizontal: 16,
       marginTop: 20,
       marginBottom: 0,
-      padding: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
       borderWidth: 1,
       borderColor: getColor('border'),
       ...Platform.select({

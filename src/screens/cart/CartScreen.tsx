@@ -517,14 +517,28 @@ const CartScreen: React.FC = () => {
       if (vendor?.shopId && authData?.jwt && authData?.phone) {
         // Fetch addresses first
         await smartBizAddressService.fetchAddresses(vendor.shopId, authData.jwt, authData.phone);
-        // console.log('smartBizAddressService.fetchAddresses', smartBizAddressService.getAddresses());
+
+        // Auto-select default address if none selected
+        if (!selectedSmartBizAddress) {
+          const defaultAddress = smartBizAddressService.getDefaultAddress(vendor.shopId);
+          if (defaultAddress) {
+            setSelectedSmartBizAddress(defaultAddress);
+          } else {
+            // If no default, select first available address
+            const addresses = smartBizAddressService.getAddresses(vendor.shopId);
+            if (addresses.length > 0) {
+              setSelectedSmartBizAddress(addresses[0]);
+            }
+          }
+        }
+
         // Then fetch coupons after addresses are loaded
         await checkAndFetchOffers(vendor.shopId, authData);
       }
     };
 
     initializeCart();
-  }, [vendor?.shopId, authData?.jwt, authData?.phone, checkAndFetchOffers]);
+  }, [vendor?.shopId, authData?.jwt, authData?.phone, checkAndFetchOffers, selectedSmartBizAddress]);
 
   // Revalidate coupons when cart contents change
   React.useEffect(() => {
@@ -641,7 +655,7 @@ const CartScreen: React.FC = () => {
         onClearCart={handleClearCart}
       />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 160 }}>
         <AnimatedCard delay={0}>
           {vendor && <VendorPill vendor={vendor} />}
 

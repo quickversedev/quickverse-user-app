@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useAuth } from '../../../contexts/login/AuthProvider';
@@ -19,10 +20,9 @@ import {
   smartBizAddressService,
 } from '../../../store/address/smartBizAddressStore';
 import { useTheme } from '../../../theme/ThemeContext';
-import SectionDivider from '../../common/SectionDivider';
 
 const { height: screenHeight } = Dimensions.get('window');
-const MODAL_HEIGHT = screenHeight * 0.6;
+const MODAL_HEIGHT = screenHeight * 0.65;
 
 interface SmartBizAddressSelectionModalProps {
   visible: boolean;
@@ -39,8 +39,9 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
   selectedAddress,
   vendorId,
 }) => {
-  const { getColor, getTypography, theme } = useTheme();
+  const { getColor, getTypography, theme, getButtonColor } = useTheme();
   const { authData } = useAuth();
+  const insets = useSafeAreaInsets();
 
   // Local state for addresses
   const [addresses, setAddresses] = useState<SmartBizAddress[]>([]);
@@ -111,7 +112,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
     modalContainer: {
       position: 'absolute',
@@ -119,124 +120,180 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       left: 0,
       right: 0,
       height: MODAL_HEIGHT,
-      paddingBottom: 26,
+      paddingBottom: Math.max(insets.bottom, 16) + 8,
       backgroundColor: getColor('background'),
-      borderTopLeftRadius: theme.borderRadius.md,
-      borderTopRightRadius: theme.borderRadius.md,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
       ...Platform.select({
         android: {
-          elevation: 20,
+          elevation: 24,
         },
         ios: {
-          shadowColor: theme.colors.shadow.color,
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: theme.colors.shadow.opacity,
-          shadowRadius: theme.colors.shadow.radius,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -8 },
+          shadowOpacity: 0.25,
+          shadowRadius: 16,
         },
       }),
     },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      backgroundColor: 'transparent',
       alignItems: 'center',
-      paddingHorizontal: 20,
-      borderBottomWidth: 1,
-      borderBottomColor: getColor('border'),
-      paddingVertical: 16,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 12,
+    },
+    headerTitle: {
+      fontSize: getTypography('subtitle'),
+      fontWeight: '700',
+      color: getColor('text'),
+      flex: 1,
+      textAlign: 'center',
     },
     closeButton: {
-      padding: 8,
-      borderRadius: theme.borderRadius.max,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
       backgroundColor: getColor('card'),
-      minHeight: 40,
-      minWidth: 40,
       justifyContent: 'center',
       alignItems: 'center',
+      borderWidth: 1,
+      borderColor: getColor('border'),
     },
     refreshButton: {
-      padding: 8,
-      borderRadius: theme.borderRadius.max,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
       backgroundColor: getColor('card'),
-      minHeight: 40,
-      minWidth: 40,
       justifyContent: 'center',
       alignItems: 'center',
-      marginLeft: 8,
+      borderWidth: 1,
+      borderColor: getColor('border'),
     },
     content: {
       flex: 1,
-      paddingHorizontal: 20,
+      paddingHorizontal: 16,
     },
-    sectionDividerContainer: {
-      marginTop: 16,
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingHorizontal: 4,
+    },
+    sectionLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: getColor('border'),
+    },
+    sectionTitle: {
+      fontSize: getTypography('caption'),
+      fontWeight: '600',
+      color: getColor('subText'),
+      marginHorizontal: 12,
+      letterSpacing: 1,
     },
     addressesContainer: {
       flex: 1,
-      borderRadius: theme.borderRadius.md,
-      padding: 20,
-      maxHeight: MODAL_HEIGHT * 0.6,
     },
     addressCard: {
       backgroundColor: getColor('card'),
       borderRadius: theme.borderRadius.md,
-      padding: 16,
+      paddingVertical: 18,
+      paddingHorizontal: 16,
       marginBottom: 12,
-      borderWidth: 2,
-      borderColor: 'transparent',
+      borderWidth: 1.5,
+      borderColor: getColor('border'),
+      flexDirection: 'row',
+      alignItems: 'center',
+      ...Platform.select({
+        ios: {
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
     },
     selectedAddressCard: {
-      borderColor: getColor('main'),
-      backgroundColor: getColor('overlay'),
+      borderColor: getColor('primary'),
+      backgroundColor: `${getColor('primary')}10`,
+    },
+    addressIconBadge: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    addressContent: {
+      flex: 1,
     },
     addressHeader: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 8,
+      marginBottom: 4,
     },
     addressName: {
       fontSize: getTypography('body'),
-      fontWeight: '600',
+      fontWeight: '700',
       color: getColor('text'),
       includeFontPadding: false,
     },
-    addressTag: {
-      fontSize: getTypography('caption'),
-      color: getColor('main'),
-      fontWeight: '500',
-      backgroundColor: getColor('overlay'),
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: theme.borderRadius.sm,
-      includeFontPadding: false,
-    },
-    addressDetails: {
-      marginBottom: 4,
-    },
-    addressLine: {
-      fontSize: getTypography('body'),
-      color: getColor('text'),
-      includeFontPadding: false,
-    },
-    addressLocation: {
-      fontSize: getTypography('caption'),
-      color: getColor('subText'),
-      includeFontPadding: false,
-      marginTop: 4,
-    },
-    defaultBadge: {
-      backgroundColor: getColor('secondary'),
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: theme.borderRadius.sm,
+    addressTagsContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
       marginLeft: 8,
     },
-    defaultBadgeText: {
-      fontSize: getTypography('caption'),
-      color: getColor('white'),
+    addressTag: {
+      fontSize: 10,
+      color: getColor('subText'),
       fontWeight: '500',
+      backgroundColor: getColor('background'),
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
       includeFontPadding: false,
+      marginRight: 4,
+      overflow: 'hidden',
+    },
+    addressDetails: {},
+    addressLine: {
+      fontSize: getTypography('caption'),
+      color: getColor('text'),
+      includeFontPadding: false,
+      lineHeight: 18,
+    },
+    addressLocation: {
+      fontSize: getTypography('small'),
+      color: getColor('subText'),
+      includeFontPadding: false,
+      marginTop: 2,
+    },
+    defaultBadge: {
+      backgroundColor: getButtonColor('default', 'background'),
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    defaultBadgeText: {
+      fontSize: 10,
+      color: getButtonColor('default', 'text'),
+      fontWeight: '600',
+      includeFontPadding: false,
+    },
+    checkIcon: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: getColor('primary'),
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginLeft: 12,
     },
     emptyContainer: {
       flex: 1,
@@ -244,22 +301,46 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       alignItems: 'center',
       paddingVertical: 40,
     },
+    emptyIconBadge: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: `${getColor('subText')}15`,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
     emptyText: {
       fontSize: getTypography('body'),
       color: getColor('subText'),
       textAlign: 'center',
       includeFontPadding: false,
+      lineHeight: 22,
     },
     loadingContainer: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
     },
+    loadingText: {
+      fontSize: getTypography('caption'),
+      color: getColor('subText'),
+      marginTop: 12,
+    },
     errorContainer: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: 20,
+    },
+    errorIconBadge: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: `${getColor('error')}15`,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
     },
     errorText: {
       fontSize: getTypography('body'),
@@ -269,33 +350,45 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       includeFontPadding: false,
     },
     retryButton: {
-      backgroundColor: getColor('main'),
-      paddingHorizontal: 20,
+      backgroundColor: getColor('primary'),
+      paddingHorizontal: 24,
       paddingVertical: 12,
       borderRadius: theme.borderRadius.md,
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     retryButtonText: {
       color: getColor('white'),
       fontSize: getTypography('body'),
       fontWeight: '600',
       includeFontPadding: false,
+      marginLeft: 8,
     },
     addButton: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'transparent',
-      borderWidth: 1,
-      borderColor: getColor('main'),
+      backgroundColor: getButtonColor('default', 'background'),
       paddingHorizontal: 20,
-      paddingVertical: 6,
+      paddingVertical: 14,
       borderRadius: theme.borderRadius.md,
-      minHeight: 56,
+      marginTop: 8,
+      ...Platform.select({
+        ios: {
+          shadowColor: getButtonColor('default', 'background'),
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 6,
+        },
+      }),
     },
     addButtonText: {
-      color: getColor('main'),
+      color: getButtonColor('default', 'text'),
       fontSize: getTypography('body'),
-      fontWeight: '600',
+      fontWeight: '700',
       marginLeft: 8,
       includeFontPadding: false,
     },
@@ -310,35 +403,71 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
         key={address.id}
         style={[themedStyles.addressCard, isSelected && themedStyles.selectedAddressCard]}
         onPress={() => handleAddressSelect(address)}
-        activeOpacity={0.8}
+        activeOpacity={0.7}
       >
-        <View style={themedStyles.addressHeader}>
-          <Text style={themedStyles.addressName}>{address.address.name}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            {address.address.tag && (
-              <Text style={themedStyles.addressTag}>{address.address.tag}</Text>
-            )}
-            {isDefault && (
-              <View style={themedStyles.defaultBadge}>
-                <Text style={themedStyles.defaultBadgeText}>Default</Text>
-              </View>
-            )}
+        <View
+          style={[
+            themedStyles.addressIconBadge,
+            {
+              backgroundColor: isSelected
+                ? `${getColor('primary')}20`
+                : `${getColor('subText')}15`,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="map-marker"
+            size={20}
+            color={isSelected ? getColor('primary') : getColor('subText')}
+          />
+        </View>
+
+        <View style={themedStyles.addressContent}>
+          <View style={themedStyles.addressHeader}>
+            <Text style={themedStyles.addressName} numberOfLines={1}>
+              {address.address.name}
+            </Text>
+            <View style={themedStyles.addressTagsContainer}>
+              {address.address.tag && (
+                <Text style={themedStyles.addressTag}>{address.address.tag}</Text>
+              )}
+              {isDefault && (
+                <View style={themedStyles.defaultBadge}>
+                  <Text style={themedStyles.defaultBadgeText}>Default</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={themedStyles.addressDetails}>
+            <Text style={themedStyles.addressLine} numberOfLines={1}>
+              {[
+                address.address.addressLine1,
+                address.address.addressLine2,
+                address.address.addressLine3,
+              ]
+                .filter(Boolean)
+                .join(', ')}
+            </Text>
+            <Text style={themedStyles.addressLocation} numberOfLines={1}>
+              {address.address.city}, {address.address.state} - {address.address.pincode}
+            </Text>
           </View>
         </View>
 
-        <View style={themedStyles.addressDetails}>
-          <Text style={themedStyles.addressLine} numberOfLines={3}>
-            {[
-              address.address.addressLine1,
-              address.address.addressLine2,
-              address.address.addressLine3,
-            ]
-              .filter(Boolean)
-              .join(', ')}
-          </Text>
-          <Text style={themedStyles.addressLocation}>
-            {address.address.city}, {address.address.state} - {address.address.pincode}
-          </Text>
+        <View
+          style={[
+            themedStyles.checkIcon,
+            {
+              backgroundColor: isSelected ? getColor('primary') : 'transparent',
+              borderWidth: isSelected ? 0 : 2,
+              borderColor: getColor('border'),
+            },
+          ]}
+        >
+          {isSelected && (
+            <MaterialCommunityIcons name="check" size={16} color={getColor('white')} />
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -348,13 +477,10 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
     if (!isLoggedIn) {
       return (
         <View style={themedStyles.emptyContainer}>
-          <MaterialCommunityIcons
-            name="account-lock"
-            size={48}
-            color={getColor('subText')}
-            style={{ marginBottom: 16 }}
-          />
-          <Text style={themedStyles.emptyText}>Please log in to view SmartBiz addresses.</Text>
+          <View style={themedStyles.emptyIconBadge}>
+            <MaterialCommunityIcons name="account-lock" size={36} color={getColor('subText')} />
+          </View>
+          <Text style={themedStyles.emptyText}>Please log in to view{'\n'}delivery addresses</Text>
         </View>
       );
     }
@@ -362,8 +488,8 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
     if (loading) {
       return (
         <View style={themedStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={getColor('main')} />
-          <Text style={themedStyles.emptyText}>Loading addresses...</Text>
+          <ActivityIndicator size="large" color={getColor('primary')} />
+          <Text style={themedStyles.loadingText}>Loading addresses...</Text>
         </View>
       );
     }
@@ -371,19 +497,17 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
     if (error) {
       return (
         <View style={themedStyles.errorContainer}>
-          <MaterialCommunityIcons
-            name="alert-circle"
-            size={48}
-            color={getColor('error')}
-            style={{ marginBottom: 16 }}
-          />
+          <View style={themedStyles.errorIconBadge}>
+            <MaterialCommunityIcons name="alert-circle" size={36} color={getColor('error')} />
+          </View>
           <Text style={themedStyles.errorText}>{error}</Text>
           <TouchableOpacity
             style={themedStyles.retryButton}
             onPress={handleRetry}
             activeOpacity={0.8}
           >
-            <Text style={themedStyles.retryButtonText}>Retry</Text>
+            <MaterialCommunityIcons name="refresh" size={18} color={getColor('white')} />
+            <Text style={themedStyles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>
         </View>
       );
@@ -392,14 +516,11 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
     if (addresses.length === 0) {
       return (
         <View style={themedStyles.emptyContainer}>
-          <MaterialCommunityIcons
-            name="map-marker-off"
-            size={48}
-            color={getColor('subText')}
-            style={{ marginBottom: 16 }}
-          />
+          <View style={themedStyles.emptyIconBadge}>
+            <MaterialCommunityIcons name="map-marker-off" size={36} color={getColor('subText')} />
+          </View>
           <Text style={themedStyles.emptyText}>
-            No addresses found.{'\n'}Please add addresses through the vendor portal.
+            No addresses found{'\n'}Add a new address to continue
           </Text>
         </View>
       );
@@ -408,7 +529,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
     return (
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{ paddingBottom: 12 }}
         style={{ flex: 1 }}
       >
         {addresses.map(renderAddressCard)}
@@ -443,11 +564,13 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
               onPress={handleClose}
               accessible={true}
               accessibilityRole="button"
-              accessibilityLabel="Close SmartBiz address selection"
+              accessibilityLabel="Close address selection"
               activeOpacity={0.7}
             >
               <MaterialCommunityIcons name="close" size={20} color={getColor('text')} />
             </TouchableOpacity>
+
+            <Text style={themedStyles.headerTitle}>Select Address</Text>
 
             <TouchableOpacity
               style={themedStyles.refreshButton}
@@ -455,22 +578,23 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
               disabled={loading}
               accessible={true}
               accessibilityRole="button"
-              accessibilityLabel="Refresh SmartBiz addresses"
-              accessibilityHint="Refreshes the list of SmartBiz addresses"
+              accessibilityLabel="Refresh addresses"
               activeOpacity={0.7}
             >
               <MaterialCommunityIcons
                 name="refresh"
                 size={20}
-                color={loading ? getColor('subText') : getColor('main')}
+                color={loading ? getColor('subText') : getColor('primary')}
               />
             </TouchableOpacity>
           </View>
 
           <View style={themedStyles.content}>
-            {/* Section Divider */}
-            <View style={themedStyles.sectionDividerContainer}>
-              <SectionDivider text="DELIVERY ADDRESSES" fontSize={16} />
+            {/* Section Header */}
+            <View style={themedStyles.sectionHeader}>
+              <View style={themedStyles.sectionLine} />
+              <Text style={themedStyles.sectionTitle}>SAVED ADDRESSES</Text>
+              <View style={themedStyles.sectionLine} />
             </View>
 
             {/* Addresses Container */}
@@ -483,11 +607,14 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
               accessible={true}
               accessibilityRole="button"
               accessibilityLabel="Add new address"
-              accessibilityHint="Opens the add address form"
               activeOpacity={0.8}
             >
-              <MaterialCommunityIcons name="plus" size={20} color={getColor('main')} />
-              <Text style={themedStyles.addButtonText}>Add Address Details</Text>
+              <MaterialCommunityIcons
+                name="plus"
+                size={20}
+                color={getButtonColor('default', 'text')}
+              />
+              <Text style={themedStyles.addButtonText}>Add New Address</Text>
             </TouchableOpacity>
           </View>
         </View>

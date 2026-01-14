@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Icons } from '../../../assets';
 import { useTheme } from '../../../theme/ThemeContext';
 
 interface CartFooterProps {
@@ -20,6 +20,9 @@ const CartFooter: React.FC<CartFooterProps> = ({
   loading = false,
 }) => {
   const { getColor, getTypography, theme, getButtonColor } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  const isAddressSelected = address !== 'Select delivery address';
 
   const styles = StyleSheet.create({
     footerBar: {
@@ -28,57 +31,98 @@ const CartFooter: React.FC<CartFooterProps> = ({
       right: 0,
       bottom: 0,
       backgroundColor: getColor('card'),
-      padding: 16,
-      borderTopLeftRadius: theme.borderRadius.sm,
-      borderTopRightRadius: theme.borderRadius.sm,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: Math.max(insets.bottom, 16) + 8,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
       flexDirection: 'column',
       alignItems: 'stretch',
-      shadowColor: theme.colors.shadow.color,
-      shadowOffset: {
-        width: theme.colors.shadow.offset_width,
-        height: theme.colors.shadow.offset_height,
-      },
-      shadowOpacity: theme.colors.shadow.opacity,
-      shadowRadius: theme.colors.shadow.radius,
-      elevation: 12,
+      borderTopWidth: 1,
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      borderColor: getColor('border'),
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 12,
+        },
+        android: {
+          elevation: 16,
+        },
+      }),
     },
     addressBox: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: getColor('card'),
+      backgroundColor: getColor('background'),
       borderRadius: theme.borderRadius.md,
-      paddingHorizontal: 16,
-      marginBottom: 16,
-      alignSelf: 'stretch',
+      padding: 12,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: isAddressSelected ? getColor('primary') : getColor('border'),
+    },
+    iconBadge: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 10,
+    },
+    addressContent: {
+      flex: 1,
+    },
+    addressLabel: {
+      color: getColor('subText'),
+      fontSize: getTypography('small'),
+      marginBottom: 2,
     },
     addressText: {
       color: getColor('text'),
-      marginHorizontal: 6,
-      fontSize: getTypography('subtitle'),
-      flex: 1,
-    },
-    addressIcon: {
-      width: 22,
-      height: 22,
-      marginRight: 8,
-      resizeMode: 'contain',
+      fontSize: getTypography('body'),
+      fontWeight: '500',
     },
     checkoutBtn: {
       backgroundColor: getButtonColor('default', 'background'),
-      borderRadius: theme.borderRadius.sm,
-      paddingVertical: 18,
+      borderRadius: theme.borderRadius.md,
+      paddingVertical: 16,
+      flexDirection: 'row',
       alignItems: 'center',
-      alignSelf: 'stretch',
-      shadowColor: getButtonColor('default', 'background'),
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.18,
-      shadowRadius: 8,
-      elevation: 6,
+      justifyContent: 'center',
+      ...Platform.select({
+        ios: {
+          shadowColor: getButtonColor('default', 'background'),
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 8,
+        },
+      }),
+    },
+    checkoutBtnDisabled: {
+      backgroundColor: getColor('border'),
+      ...Platform.select({
+        ios: {
+          shadowOpacity: 0,
+        },
+        android: {
+          elevation: 0,
+        },
+      }),
     },
     checkoutText: {
       color: getButtonColor('default', 'text'),
-      fontWeight: 'bold',
+      fontWeight: '700',
       fontSize: getTypography('body'),
+      letterSpacing: 0.5,
+    },
+    checkoutIcon: {
+      marginLeft: 8,
     },
   });
 
@@ -90,31 +134,72 @@ const CartFooter: React.FC<CartFooterProps> = ({
     onCheckout();
   }, [onCheckout]);
 
+  const getButtonText = () => {
+    if (loading) return 'Processing...';
+    if (!isAddressSelected) return 'Select Address to Continue';
+    if (disabled) return 'Select Payment Method';
+    return 'Place Order';
+  };
+
   return (
     <View style={styles.footerBar}>
-      <TouchableOpacity style={styles.addressBox} onPress={handleAddressPress}>
-        <Image source={Icons.selectedAddress} style={styles.addressIcon} />
-        <Text style={styles.addressText} numberOfLines={2} ellipsizeMode="tail">
-          {address}
-        </Text>
+      <TouchableOpacity
+        style={styles.addressBox}
+        onPress={handleAddressPress}
+        activeOpacity={0.7}
+      >
+        <View
+          style={[
+            styles.iconBadge,
+            {
+              backgroundColor: isAddressSelected
+                ? `${getColor('primary')}15`
+                : `${getColor('subText')}15`,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="map-marker"
+            size={20}
+            color={isAddressSelected ? getColor('primary') : getColor('subText')}
+          />
+        </View>
+        <View style={styles.addressContent}>
+          <Text style={styles.addressLabel}>Deliver to</Text>
+          <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="tail">
+            {address}
+          </Text>
+        </View>
         <MaterialCommunityIcons
           name="chevron-right"
-          size={22}
-          color={getButtonColor('default', 'background')}
+          size={24}
+          color={getColor('primary')}
         />
       </TouchableOpacity>
+
       <TouchableOpacity
-        style={[
-          styles.checkoutBtn,
-          disabled && { opacity: 0.5, backgroundColor: getColor('border') },
-        ]}
+        style={[styles.checkoutBtn, disabled && styles.checkoutBtnDisabled]}
         onPress={handleCheckoutPress}
-        disabled={disabled}
-        activeOpacity={disabled ? 1 : 0.8}
+        disabled={disabled || loading}
+        activeOpacity={0.8}
       >
-        <Text style={[styles.checkoutText, disabled && { color: getColor('subText') }]}>
-          {loading ? 'Processing Order...' : disabled ? 'Select Payment Method' : 'Place Order..'}
-        </Text>
+        {loading ? (
+          <ActivityIndicator size="small" color={getButtonColor('default', 'text')} />
+        ) : (
+          <>
+            <Text style={[styles.checkoutText, disabled && { color: getColor('subText') }]}>
+              {getButtonText()}
+            </Text>
+            {!disabled && !loading && (
+              <MaterialCommunityIcons
+                name="arrow-right"
+                size={20}
+                color={getButtonColor('default', 'text')}
+                style={styles.checkoutIcon}
+              />
+            )}
+          </>
+        )}
       </TouchableOpacity>
     </View>
   );
