@@ -4,6 +4,7 @@ import React, { useCallback, useMemo } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AnimatedCard from '../../components/common/AnimatedCard';
 import {
   CartFooter,
   CartHeader,
@@ -641,48 +642,58 @@ const CartScreen: React.FC = () => {
       />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        {vendor && <VendorPill vendor={vendor} />}
+        <AnimatedCard delay={0}>
+          {vendor && <VendorPill vendor={vendor} />}
 
-        <CartItemList
-          items={cartItems}
-          onInc={handleInc}
-          onDec={handleDec}
-          vendor={vendor}
-          navigation={navigation}
-        />
+          <CartItemList
+            items={cartItems}
+            onInc={handleInc}
+            onDec={handleDec}
+            vendor={vendor}
+            navigation={navigation}
+          />
+        </AnimatedCard>
 
-        <CouponSection
-          appliedCoupon={appliedCoupon}
-          couponLoading={vendorOffersLoading || customerOffersLoading}
-          couponError={Boolean(vendorOffersError || customerOffersError)}
-          availableCoupons={availableCoupons}
-          onCouponNavigation={handleCouponNavigation}
-          onEditCoupon={handleEditCoupon}
-        />
+        <AnimatedCard delay={100}>
+          <CouponSection
+            appliedCoupon={appliedCoupon}
+            couponLoading={vendorOffersLoading || customerOffersLoading}
+            couponError={Boolean(vendorOffersError || customerOffersError)}
+            availableCoupons={availableCoupons}
+            onCouponNavigation={handleCouponNavigation}
+            onEditCoupon={handleEditCoupon}
+          />
+        </AnimatedCard>
 
-        <PaymentOptions
-          onPress={handlePaymentOptionsPress}
-          selectedOption={selectedPaymentOption}
-          loading={paymentMethodsLoading}
-          error={paymentMethodsError}
-          onRetry={refetchPaymentMethods}
-        />
+        <AnimatedCard delay={200}>
+          <PaymentOptions
+            onPress={handlePaymentOptionsPress}
+            selectedOption={selectedPaymentOption}
+            loading={paymentMethodsLoading}
+            error={paymentMethodsError}
+            onRetry={refetchPaymentMethods}
+          />
+        </AnimatedCard>
 
-        <PaymentSummary
-          expanded={paymentExpanded}
-          onToggle={() => setPaymentExpanded(e => !e)}
-          cart={cart}
-          codCharges={codCharges}
-          selectedPaymentOption={selectedPaymentOption}
-        />
+        <AnimatedCard delay={300}>
+          <PaymentSummary
+            expanded={paymentExpanded}
+            onToggle={() => setPaymentExpanded(e => !e)}
+            cart={cart}
+            codCharges={codCharges}
+            selectedPaymentOption={selectedPaymentOption}
+          />
+        </AnimatedCard>
 
-        <SuggestedItems
-          products={featuredProducts}
-          onItemPress={handleAddSuggested}
-          onAdd={handleAddSuggested}
-          onIncrement={handleIncrementSuggested}
-          onDecrement={handleDecrementSuggested}
-        />
+        <AnimatedCard delay={400}>
+          <SuggestedItems
+            products={featuredProducts}
+            onItemPress={handleAddSuggested}
+            onAdd={handleAddSuggested}
+            onIncrement={handleIncrementSuggested}
+            onDecrement={handleDecrementSuggested}
+          />
+        </AnimatedCard>
       </ScrollView>
 
       <CartFooter

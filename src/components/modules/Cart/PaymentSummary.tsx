@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, Easing, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Cart } from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -21,6 +21,40 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   selectedPaymentOption,
 }) => {
   const { getColor, theme, getButtonColor } = useTheme();
+
+  // Animation values
+  const animatedHeight = useRef(new Animated.Value(0)).current;
+  const animatedOpacity = useRef(new Animated.Value(0)).current;
+  const animatedRotation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(animatedHeight, {
+        toValue: expanded ? 1 : 0,
+        duration: 300,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }),
+      Animated.timing(animatedOpacity, {
+        toValue: expanded ? 1 : 0,
+        duration: 250,
+        delay: expanded ? 100 : 0,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }),
+      Animated.timing(animatedRotation, {
+        toValue: expanded ? 1 : 0,
+        duration: 300,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [expanded, animatedHeight, animatedOpacity, animatedRotation]);
+
+  const rotateInterpolate = animatedRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
 
   const { subtotal, deliveryFee, total, totalDiscountOnItems, couponDiscount, finalTotal } =
     useMemo(() => {
@@ -209,90 +243,102 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
             ₹{finalTotal}
           </ThemeText>
         </View>
-        <MaterialCommunityIcons
-          name={expanded ? 'chevron-up' : 'chevron-down'}
-          size={24}
-          color={getButtonColor('default', 'background')}
-        />
+        <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+          <MaterialCommunityIcons
+            name="chevron-down"
+            size={24}
+            color={getButtonColor('default', 'background')}
+          />
+        </Animated.View>
       </TouchableOpacity>
-      {expanded && (
-        <View style={styles.paymentSummaryDetails}>
-          <View style={styles.billDetailsTitle}>
-            <View style={styles.titleLine} />
-            <ThemeText variant="subtitle" color={getColor('text')} style={styles.titleText}>
-              Bill Details
+      <Animated.View
+        style={[
+          styles.paymentSummaryDetails,
+          {
+            maxHeight: animatedHeight.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 500],
+            }),
+            opacity: animatedOpacity,
+            overflow: 'hidden',
+          },
+        ]}
+      >
+        <View style={styles.billDetailsTitle}>
+          <View style={styles.titleLine} />
+          <ThemeText variant="subtitle" color={getColor('text')} style={styles.titleText}>
+            Bill Details
+          </ThemeText>
+          <View style={styles.titleLine} />
+        </View>
+        <View style={styles.billBreakdown}>
+          <View style={styles.billRow}>
+            <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+              Sub Total
             </ThemeText>
-            <View style={styles.titleLine} />
+            <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
+              ₹{subtotal}
+            </ThemeText>
           </View>
-          <View style={styles.billBreakdown}>
-            <View style={styles.billRow}>
-              <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
-                Sub Total
-              </ThemeText>
-              <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-                ₹{subtotal}
-              </ThemeText>
-            </View>
-            {totalDiscountOnItems > 0 && (
-              <>
-                <View style={styles.dottedLine} />
-                <View style={styles.billRow}>
-                  <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
-                    Item Discount
-                  </ThemeText>
-                  <ThemeText variant="body" color={getColor('primary')} style={styles.billAmount}>
-                    -₹{totalDiscountOnItems}
-                  </ThemeText>
-                </View>
-              </>
-            )}
-            {couponDiscount > 0 && (
-              <>
-                <View style={styles.dottedLine} />
-                <View style={styles.billRow}>
-                  <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
-                    Coupon Discount
-                  </ThemeText>
-                  <ThemeText variant="body" color={getColor('primary')} style={styles.billAmount}>
-                    -₹{couponDiscount}
-                  </ThemeText>
-                </View>
-              </>
-            )}
-            <View style={styles.dottedLine} />
-            <View style={styles.billRow}>
-              <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
-                Delivery Fee
-              </ThemeText>
-              <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-                ₹{deliveryFee}
-              </ThemeText>
-            </View>
-            {selectedPaymentOption === 'cod' && codCharges > 0 && (
-              <>
-                <View style={styles.dottedLine} />
-                <View style={styles.billRow}>
-                  <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
-                    COD Charges
-                  </ThemeText>
-                  <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-                    ₹{codCharges}
-                  </ThemeText>
-                </View>
-              </>
-            )}
-            <View style={styles.dottedLine} />
-            <View style={styles.billRowLast}>
-              <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
-                Total Pay
-              </ThemeText>
-              <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-                ₹{finalTotal}
-              </ThemeText>
-            </View>
+          {totalDiscountOnItems > 0 && (
+            <>
+              <View style={styles.dottedLine} />
+              <View style={styles.billRow}>
+                <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+                  Item Discount
+                </ThemeText>
+                <ThemeText variant="body" color={getColor('primary')} style={styles.billAmount}>
+                  -₹{totalDiscountOnItems}
+                </ThemeText>
+              </View>
+            </>
+          )}
+          {couponDiscount > 0 && (
+            <>
+              <View style={styles.dottedLine} />
+              <View style={styles.billRow}>
+                <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+                  Coupon Discount
+                </ThemeText>
+                <ThemeText variant="body" color={getColor('primary')} style={styles.billAmount}>
+                  -₹{couponDiscount}
+                </ThemeText>
+              </View>
+            </>
+          )}
+          <View style={styles.dottedLine} />
+          <View style={styles.billRow}>
+            <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+              Delivery Fee
+            </ThemeText>
+            <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
+              ₹{deliveryFee}
+            </ThemeText>
+          </View>
+          {selectedPaymentOption === 'cod' && codCharges > 0 && (
+            <>
+              <View style={styles.dottedLine} />
+              <View style={styles.billRow}>
+                <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+                  COD Charges
+                </ThemeText>
+                <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
+                  ₹{codCharges}
+                </ThemeText>
+              </View>
+            </>
+          )}
+          <View style={styles.dottedLine} />
+          <View style={styles.billRowLast}>
+            <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+              Total Pay
+            </ThemeText>
+            <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
+              ₹{finalTotal}
+            </ThemeText>
           </View>
         </View>
-      )}
+      </Animated.View>
     </View>
   );
 };
