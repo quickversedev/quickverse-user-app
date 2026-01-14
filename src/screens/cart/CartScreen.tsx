@@ -196,7 +196,11 @@ const CartScreen: React.FC = () => {
   const handleClearCart = useCallback(() => {
     if (cart && authData?.jwt) {
       clearCart(cart.cartId, authData.jwt, authData.phone || '');
-      navigation.goBack();
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate('Home');
+      }
     }
   }, [cart, authData?.jwt, authData?.phone, clearCart, navigation]);
 
@@ -563,7 +567,11 @@ const CartScreen: React.FC = () => {
 
   React.useEffect(() => {
     if (!cart || cartItems.length === 0) {
-      navigation.goBack();
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate('Home');
+      }
     }
   }, [cart, cartItems.length, navigation]);
 
@@ -627,7 +635,10 @@ const CartScreen: React.FC = () => {
       style={{ flex: 1, backgroundColor: getColor('background') }}
       edges={['top', 'bottom']}
     >
-      <CartHeader onBack={() => navigation.goBack()} onClearCart={handleClearCart} />
+      <CartHeader
+        onBack={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home'))}
+        onClearCart={handleClearCart}
+      />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         {vendor && <VendorPill vendor={vendor} />}

@@ -30,31 +30,42 @@ const CouponSection: React.FC<CouponSectionProps> = ({
     couponBox: {
       backgroundColor: getColor('card'),
       borderRadius: theme.borderRadius.md,
-      margin: 16,
+      marginHorizontal: 16,
+      marginTop: 20,
+      marginBottom: 0,
       padding: 16,
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       justifyContent: 'space-between',
+      borderWidth: 1,
+      borderColor: getColor('border'),
       ...Platform.select({
         ios: {
           shadowColor: theme.colors.shadow.color,
-          shadowOffset: theme.colors.shadow.offset,
-          shadowOpacity: theme.colors.shadow.opacity,
-          shadowRadius: theme.colors.shadow.radius,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.12,
+          shadowRadius: 8,
         },
         android: {
-          elevation: 3,
+          elevation: 4,
         },
       }),
     },
+    iconBadge: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     couponLeft: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       flex: 1,
       marginRight: 12,
     },
     appliedCouponContainer: {
-      marginLeft: 12,
+      marginLeft: 10,
       flex: 1,
     },
     couponText: {
@@ -84,7 +95,6 @@ const CouponSection: React.FC<CouponSectionProps> = ({
     couponRight: {
       flexDirection: 'row',
       alignItems: 'center',
-      alignSelf: 'flex-start',
     },
     couponAvailable: {
       color: getColor('primary'),
@@ -133,13 +143,20 @@ const CouponSection: React.FC<CouponSectionProps> = ({
   }, [onEditCoupon]);
 
   return (
-    <TouchableOpacity style={styles.couponBox} onPress={handleCouponPress} disabled={couponLoading}>
+    <TouchableOpacity
+      style={styles.couponBox}
+      onPress={handleCouponPress}
+      disabled={couponLoading}
+      activeOpacity={0.7}
+    >
       <View style={styles.couponLeft}>
-        <MaterialCommunityIcons
-          name="ticket-percent-outline"
-          size={24}
-          color={getColor('primary')}
-        />
+        <View style={[styles.iconBadge, { backgroundColor: `${getColor('primary')}15` }]}>
+          <MaterialCommunityIcons
+            name="ticket-percent-outline"
+            size={22}
+            color={getColor('primary')}
+          />
+        </View>
         {appliedCoupon ? (
           <View style={styles.appliedCouponContainer}>
             <View>
@@ -153,7 +170,7 @@ const CouponSection: React.FC<CouponSectionProps> = ({
             {/* <Text style={styles.minOrderText}>Min order: ₹{appliedCoupon.minOrder}</Text> */}
           </View>
         ) : (
-          <View style={styles.couponLeft}>
+          <View style={{ marginLeft: 10, flex: 1 }}>
             <Text style={styles.couponText}>Apply Coupon</Text>
             {couponLoading && <Text style={styles.couponLoadingText}>Loading offers...</Text>}
             {couponError && <Text style={styles.couponErrorText}>Failed to load offers</Text>}

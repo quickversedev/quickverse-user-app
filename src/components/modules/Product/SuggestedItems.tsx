@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, Platform, StyleSheet, View } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import useCartStore from '../../../store/cart/cartStore';
 import { useProductsStore } from '../../../store/products/productsStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -36,7 +37,7 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
   onDecrement,
   isStoreClosed,
 }) => {
-  const { getColor } = useTheme();
+  const { getColor, theme } = useTheme();
   const { getProductsByCategories } = useProductsStore();
   const { carts, activeCartId } = useCartStore();
   const [suggestedProducts, setSuggestedProducts] = useState<SuggestedItem[]>([]);
@@ -85,17 +86,38 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
       backgroundColor: getColor('card'),
       margin: 16,
       marginBottom: 100,
-      borderRadius: 16,
+      borderRadius: theme.borderRadius.md,
+      borderWidth: 1,
+      borderColor: getColor('border'),
+      ...Platform.select({
+        ios: {
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.12,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 4,
+        },
+      }),
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
       paddingHorizontal: 20,
       marginBottom: 16,
     },
+    iconBadge: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 10,
+    },
     title: {
       color: getColor('text'),
+      flex: 1,
     },
     viewAllButton: {
       flexDirection: 'row',
@@ -166,6 +188,9 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <View style={[styles.iconBadge, { backgroundColor: `${getColor('primary')}15` }]}>
+          <MaterialCommunityIcons name="gift-outline" size={22} color={getColor('primary')} />
+        </View>
         <ThemeText variant="h2" color={getColor('text')} style={styles.title}>
           Add a little somethin&apos;
         </ThemeText>

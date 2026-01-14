@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Cart } from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -75,8 +75,23 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     paymentSummaryBox: {
       backgroundColor: getColor('card'),
       borderRadius: theme.borderRadius.md,
-      margin: 16,
+      marginHorizontal: 16,
+      marginTop: 20,
+      marginBottom: 0,
       padding: 16,
+      borderWidth: 1,
+      borderColor: getColor('border'),
+      ...Platform.select({
+        ios: {
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.12,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 4,
+        },
+      }),
     },
     billDetailsTitle: {
       flexDirection: 'row',
@@ -128,43 +143,75 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
       alignItems: 'center',
       marginBottom: 4,
     },
+    iconBadge: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    paymentSummaryContent: {
+      flex: 1,
+      marginLeft: 10,
+      justifyContent: 'center',
+    },
     paymentSummaryTitle: {
       color: getButtonColor('default', 'background'),
-      marginLeft: 8,
+      fontWeight: '600',
     },
     paymentSummaryAmount: {
       color: getButtonColor('default', 'background'),
-      marginHorizontal: 8,
+      marginTop: 2,
+      opacity: 0.8,
     },
-    paymentSummaryDetails: { marginTop: 8 },
+    expandIcon: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    paymentSummaryDetails: { marginTop: 12 },
   });
 
   return (
     <View style={styles.paymentSummaryBox}>
-      <TouchableOpacity style={styles.paymentSummaryHeader} onPress={onToggle}>
-        <MaterialCommunityIcons
-          name="file-document-outline"
-          size={20}
-          color={getButtonColor('default', 'background')}
-        />
-        <ThemeText
-          variant="caption"
-          color={getButtonColor('default', 'background')}
-          style={styles.paymentSummaryTitle}
+      <TouchableOpacity
+        style={styles.paymentSummaryHeader}
+        onPress={onToggle}
+        activeOpacity={0.7}
+      >
+        <View
+          style={[
+            styles.iconBadge,
+            { backgroundColor: `${getButtonColor('default', 'background')}15` },
+          ]}
         >
-          Total Bill (Inc. Taxes and Charges)
-        </ThemeText>
-        <View style={{ flex: 1 }} />
-        <ThemeText
-          variant="body"
-          color={getButtonColor('default', 'background')}
-          style={styles.paymentSummaryAmount}
-        >
-          ₹{finalTotal}
-        </ThemeText>
+          <MaterialCommunityIcons
+            name="file-document-outline"
+            size={22}
+            color={getButtonColor('default', 'background')}
+          />
+        </View>
+        <View style={styles.paymentSummaryContent}>
+          <ThemeText
+            variant="body"
+            color={getButtonColor('default', 'background')}
+            style={styles.paymentSummaryTitle}
+          >
+            Total Bill (Inc. Taxes and Charges)
+          </ThemeText>
+          <ThemeText
+            variant="caption"
+            color={getButtonColor('default', 'background')}
+            style={styles.paymentSummaryAmount}
+          >
+            ₹{finalTotal}
+          </ThemeText>
+        </View>
         <MaterialCommunityIcons
           name={expanded ? 'chevron-up' : 'chevron-down'}
-          size={22}
+          size={24}
           color={getButtonColor('default', 'background')}
         />
       </TouchableOpacity>

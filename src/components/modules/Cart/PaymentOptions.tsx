@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
 
@@ -24,8 +24,23 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
     paymentOptionsBox: {
       backgroundColor: getColor('card'),
       borderRadius: theme.borderRadius.md,
-      margin: 16,
+      marginHorizontal: 16,
+      marginTop: 20,
+      marginBottom: 0,
       padding: 16,
+      borderWidth: 1,
+      borderColor: getColor('border'),
+      ...Platform.select({
+        ios: {
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.12,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 4,
+        },
+      }),
     },
     paymentOptionsHeader: {
       flexDirection: 'row',
@@ -37,7 +52,12 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
       alignItems: 'center',
       flex: 1,
     },
-    paymentOptionsIcon: {
+    iconBadge: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
       marginRight: 12,
     },
     paymentOptionsText: {
@@ -53,7 +73,12 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
       fontSize: getTypography('caption'),
       marginTop: 2,
     },
-    paymentOptionsArrow: {
+    arrowBadge: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
       marginLeft: 8,
     },
     retryButton: {
@@ -102,15 +127,24 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
     <View style={styles.paymentOptionsBox}>
       <TouchableOpacity
         onPress={onPress}
-        activeOpacity={loading || Boolean(error) ? 1 : 0.8}
+        activeOpacity={loading || Boolean(error) ? 1 : 0.7}
         disabled={loading || Boolean(error)}
       >
         <View style={styles.paymentOptionsHeader}>
           <View style={styles.paymentOptionsContent}>
-            <View style={styles.paymentOptionsIcon}>
+            <View
+              style={[
+                styles.iconBadge,
+                {
+                  backgroundColor: error
+                    ? `${getColor('error')}15`
+                    : `${getButtonColor('default', 'background')}15`,
+                },
+              ]}
+            >
               <MaterialCommunityIcons
                 name={error ? 'alert-circle-outline' : 'credit-card-outline'}
-                size={20}
+                size={22}
                 color={error ? getColor('error') : getButtonColor('default', 'background')}
               />
             </View>
@@ -123,9 +157,7 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
               </Text>
             </View>
           </View>
-          <View style={styles.paymentOptionsArrow}>
-            <MaterialCommunityIcons name="chevron-right" size={22} color={getColor('subText')} />
-          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={getColor('primary')} />
         </View>
       </TouchableOpacity>
 

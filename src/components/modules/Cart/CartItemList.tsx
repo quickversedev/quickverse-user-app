@@ -1,6 +1,7 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { RootStackParamList } from '../../../routes/AppStack';
 import { CartProduct } from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -22,7 +23,8 @@ const CartItemList: React.FC<CartItemListProps> = ({ items, onInc, onDec, vendor
 
   const styles = StyleSheet.create({
     cartItemListBox: {
-      borderColor: getColor('primary'),
+      borderColor: getColor('border'),
+      borderWidth: 1,
       borderTopLeftRadius: 0,
       borderTopRightRadius: theme.borderRadius.md,
       borderBottomLeftRadius: theme.borderRadius.md,
@@ -32,18 +34,39 @@ const CartItemList: React.FC<CartItemListProps> = ({ items, onInc, onDec, vendor
       padding: 16,
       backgroundColor: getColor('card'),
       overflow: 'visible',
+      ...Platform.select({
+        ios: {
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.12,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 4,
+        },
+      }),
     },
-    addMoreInputRow: { marginTop: 8, marginHorizontal: 4 },
-    addMoreInput: {
-      borderWidth: 1,
-      borderColor: getColor('subText'),
+    addMoreButton: {
+      marginTop: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: getColor('background'),
       borderRadius: theme.borderRadius.sm,
-      padding: 6,
-      color: getColor('subText'),
-      backgroundColor: getColor('card'),
-      textAlign: 'center',
-      fontWeight: 'bold',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderWidth: 1.5,
+      borderColor: getColor('primary'),
+      borderStyle: 'dashed',
+    },
+    addMoreIcon: {
+      marginRight: 8,
+    },
+    addMoreText: {
+      color: getColor('primary'),
+      fontWeight: '600',
       fontSize: getTypography('body'),
+      fontFamily: theme.typography.fontFamily,
     },
   });
 
@@ -69,10 +92,14 @@ const CartItemList: React.FC<CartItemListProps> = ({ items, onInc, onDec, vendor
   return (
     <View style={styles.cartItemListBox}>
       {items.map(renderCartItem)}
-      <TouchableOpacity style={styles.addMoreInputRow} onPress={handleAddMore}>
-        <View style={styles.addMoreInput}>
-          <Text style={[styles.addMoreInput, { borderWidth: 0 }]}>+ Add More Items</Text>
-        </View>
+      <TouchableOpacity style={styles.addMoreButton} onPress={handleAddMore} activeOpacity={0.7}>
+        <MaterialCommunityIcons
+          name="plus"
+          size={18}
+          color={getColor('primary')}
+          style={styles.addMoreIcon}
+        />
+        <Text style={styles.addMoreText}>Add More Items</Text>
       </TouchableOpacity>
     </View>
   );
