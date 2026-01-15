@@ -1,5 +1,5 @@
 import debounce from 'lodash.debounce';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -15,6 +15,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useAuth } from '../../../contexts/login/AuthProvider';
@@ -34,9 +35,9 @@ import LoginButton from '../../common/LoginButton';
 import SectionDivider from '../../common/SectionDivider';
 
 const { height: screenHeight } = Dimensions.get('window');
-const MODAL_HEIGHT = screenHeight * 0.55;
-const CLOSE_BUTTON_SIZE = 36;
-const CLOSE_BUTTON_OFFSET = 12;
+const CLOSE_BUTTON_SIZE = 40;
+const ADDRESS_CARD_HEIGHT = 82; // Approximate height of each address card (70 minHeight + 12 marginBottom)
+const MAX_VISIBLE_ADDRESSES = 3; // Max addresses before scrolling
 
 interface AddressSelectionModalProps {
   visible: boolean;
@@ -54,6 +55,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   needCompulsoryAddress = false,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { addresses, loading, fetchAddresses } = useAddress();
   const { setSelectedAddress, authData } = useAuth();
   const { getCurrentLocation, isLoading: locationLoading } = useLocation();
@@ -64,8 +66,12 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
 
-  // Layout of the search container inside the modal (used to position overlay)
-  const [searchLayout, setSearchLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  // Fetch addresses when modal opens
+  useEffect(() => {
+    if (visible && isLoggedIn) {
+      fetchAddresses();
+    }
+  }, [visible, isLoggedIn]);
 
   // Default location (Pune, India)
   const defaultLocation: Location = {
@@ -240,6 +246,13 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   // Always show all saved addresses - no filtering
   const filteredAddresses = addresses;
 
+  // Calculate dynamic height for addresses container
+  const addressCount = filteredAddresses.length;
+  const visibleCount = Math.min(addressCount, MAX_VISIBLE_ADDRESSES);
+  const addressesHeight = addressCount === 0
+    ? 80 // Empty state height
+    : visibleCount * ADDRESS_CARD_HEIGHT;
+
   const themedStyles = StyleSheet.create({
     backdrop: {
       position: 'absolute',
@@ -247,43 +260,13 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
-    modalContainer: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: MODAL_HEIGHT,
-      paddingBottom: 26,
-      backgroundColor: getColor('background'),
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      ...Platform.select({
-        android: {
-          elevation: 20,
-        },
-        ios: {
-          shadowColor: theme.colors.shadow.color,
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: theme.colors.shadow.opacity,
-          shadowRadius: theme.colors.shadow.radius,
-        },
-      }),
-    },
-    handleBar: {
-      width: 40,
-      height: 4,
-      backgroundColor: getColor('border'),
-      borderRadius: 2,
-      alignSelf: 'center',
-      marginTop: 12,
-      marginBottom: 8,
-    },
+    // Close button - TOP LEFT
     closeButtonContainer: {
       position: 'absolute',
-      bottom: MODAL_HEIGHT + CLOSE_BUTTON_OFFSET,
-      alignSelf: 'center',
+      top: insets.top + 16,
+      left: 16,
       zIndex: 100,
     },
     closeButton: {
@@ -305,25 +288,32 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
         },
       }),
     },
-    content: {
-      flex: 1,
-      paddingHorizontal: 20,
-    },
-    searchContainer: {
-      marginTop: 8,
-      marginBottom: 16,
-      position: 'relative',
-      zIndex: 10,
+    // Search bar - BELOW CLOSE BUTTON
+    topSearchContainer: {
+      position: 'absolute',
+      top: insets.top + 70,
+      left: 16,
+      right: 16,
+      zIndex: 90,
     },
     searchBar: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: getColor('card'),
-      borderRadius: 12,
+      borderRadius: 24,
       paddingHorizontal: 16,
       paddingVertical: 12,
-      borderWidth: 1,
-      borderColor: getColor('border'),
+      ...Platform.select({
+        android: {
+          elevation: 4,
+        },
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.15,
+          shadowRadius: 4,
+        },
+      }),
     },
     searchIcon: {
       marginRight: 12,
@@ -338,8 +328,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       backgroundColor: getColor('card'),
       borderRadius: 12,
       maxHeight: 200,
-      borderWidth: 1,
-      borderColor: getColor('border'),
+      marginTop: 8,
       ...Platform.select({
         android: {
           elevation: 8,
@@ -351,25 +340,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
           shadowRadius: theme.colors.shadow.radius,
         },
       }),
-      zIndex: 9999,
       overflow: 'hidden',
-    },
-    currentLocationButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderRadius: 12,
-      marginTop: 12,
-      backgroundColor: getColor('primary'),
-    },
-    currentLocationButtonText: {
-      color: getColor('background'),
-      fontSize: getTypography('body'),
-      fontWeight: '600',
-      marginLeft: 8,
-      includeFontPadding: false,
     },
     searchResultItem: {
       padding: 12,
@@ -389,28 +360,58 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       includeFontPadding: false,
       marginTop: 2,
     },
+    // Address card - positioned below search bar (responsive height)
+    modalContainer: {
+      position: 'absolute',
+      top: insets.top + 140,
+      left: 16,
+      right: 16,
+      maxHeight: screenHeight * 0.6, // Safety max
+      paddingBottom: 16,
+      backgroundColor: getColor('background'),
+      borderRadius: 16,
+      ...Platform.select({
+        android: {
+          elevation: 20,
+        },
+        ios: {
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: theme.colors.shadow.opacity,
+          shadowRadius: theme.colors.shadow.radius,
+        },
+      }),
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 16,
+      paddingTop: 8,
+    },
     sectionDividerContainer: {
-      marginTop: 8,
       marginBottom: 12,
     },
     addressesContainer: {
-      flex: 1,
-      borderRadius: 12,
-      maxHeight: MODAL_HEIGHT * 0.5,
+      height: addressesHeight,
+      maxHeight: MAX_VISIBLE_ADDRESSES * ADDRESS_CARD_HEIGHT,
     },
     addressCardContainer: {},
-    editButton: {
+    currentLocationButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      alignSelf: 'flex-end',
+      justifyContent: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 12,
       marginTop: 8,
-      marginBottom: 16,
+      backgroundColor: getColor('card'),
+      borderWidth: 1,
+      borderColor: getColor('border'),
     },
-    editButtonText: {
+    currentLocationButtonText: {
+      color: getColor('text'),
       fontSize: getTypography('body'),
-      color: getColor('primary'),
       fontWeight: '500',
-      marginLeft: 4,
+      marginLeft: 8,
       includeFontPadding: false,
     },
     addButton: {
@@ -424,7 +425,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       paddingHorizontal: 20,
       paddingVertical: 14,
       borderRadius: 12,
-      marginTop: 12,
+      marginTop: 8,
     },
     addButtonText: {
       color: getColor('primary'),
@@ -434,10 +435,10 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       includeFontPadding: false,
     },
     emptyContainer: {
-      flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: 40,
+      paddingVertical: 20,
+      minHeight: 80,
     },
     emptyText: {
       fontSize: getTypography('body'),
@@ -446,31 +447,15 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       includeFontPadding: false,
     },
     loadingContainer: {
-      flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-    },
-    searchOverlay: {
-      position: 'absolute',
-      left: 20,
-      right: 20,
-      zIndex: 99999,
-      elevation: 99999,
+      paddingVertical: 20,
+      minHeight: 60,
     },
     closeArea: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-    },
-    backdropDimmed: {
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      ...StyleSheet.absoluteFillObject,
     },
   });
-
-  // compute top position for overlay: top of modal + searchLayout.y + searchLayout.height
-  const modalTop = screenHeight - MODAL_HEIGHT;
-  const overlayTop = modalTop + (searchLayout.y || 0) + (searchLayout.height || 0);
 
   return (
     <Modal
@@ -481,28 +466,81 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       statusBarTranslucent={true}
       onRequestClose={handleClose}
     >
-      {/* Top-level container lets touches pass through unless blocked by children */}
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-          {/* Visual dimming layer (no touch events) */}
-          <View style={[themedStyles.backdrop, themedStyles.backdropDimmed]} pointerEvents="none" />
+          {/* Visual dimming layer */}
+          <View style={themedStyles.backdrop} pointerEvents="none" />
 
           {/* Area above modal that closes when tapped */}
           <TouchableOpacity
-            style={[themedStyles.closeArea, { height: screenHeight - MODAL_HEIGHT }]}
+            style={themedStyles.closeArea}
             onPress={handleClose}
             activeOpacity={1}
           />
 
-          {/* Search results overlay rendered as a sibling of modal content (so it can capture touches independently) */}
-          {showSearchResults && searchResults.length > 0 && searchLayout.height > 0 && (
-            <View
-              style={[themedStyles.searchOverlay, { top: overlayTop }]}
-              pointerEvents="box-none"
+          {/* Close button - TOP LEFT */}
+          <View style={themedStyles.closeButtonContainer}>
+            <TouchableOpacity
+              style={themedStyles.closeButton}
+              onPress={handleClose}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Close address selection"
+              activeOpacity={0.7}
             >
-              <View style={themedStyles.searchResultsContainer} pointerEvents="auto">
-                {/* wrapper captures touch so list can scroll */}
-                <View onStartShouldSetResponder={() => true}>
+              <MaterialCommunityIcons name="close" size={20} color={getColor('text')} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Search bar - BELOW CLOSE BUTTON (only if not needCompulsoryAddress) */}
+          {!needCompulsoryAddress && (
+            <View style={themedStyles.topSearchContainer}>
+              <View style={themedStyles.searchBar}>
+                <MaterialCommunityIcons
+                  name="magnify"
+                  size={20}
+                  color={getColor('subText')}
+                  style={themedStyles.searchIcon}
+                />
+                <TextInput
+                  style={themedStyles.searchInput}
+                  placeholder="Search Locality"
+                  placeholderTextColor={getColor('placeholder')}
+                  value={searchQuery}
+                  onChangeText={handleSearchInputChange}
+                  accessible={true}
+                  accessibilityRole="search"
+                  accessibilityLabel="Search for locations"
+                  returnKeyType="search"
+                  autoCapitalize="words"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={handleClearSearch}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear search"
+                    activeOpacity={0.7}
+                  >
+                    <MaterialCommunityIcons
+                      name="close-circle"
+                      size={22}
+                      color={getColor('subText')}
+                    />
+                  </TouchableOpacity>
+                )}
+                {searchLoading && (
+                  <ActivityIndicator
+                    size="small"
+                    color={getColor('primary')}
+                    style={{ marginLeft: 8 }}
+                  />
+                )}
+              </View>
+
+              {/* Search results dropdown */}
+              {showSearchResults && searchResults.length > 0 && (
+                <View style={themedStyles.searchResultsContainer}>
                   <FlatList
                     data={searchResults}
                     keyExtractor={(item, index) => item.place_id || index.toString()}
@@ -524,112 +562,19 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                     contentContainerStyle={{ paddingVertical: 4 }}
                     keyboardShouldPersistTaps="handled"
                     nestedScrollEnabled={true}
-                    keyboardDismissMode="on-drag"
-                    overScrollMode="always"
                     showsVerticalScrollIndicator={true}
                   />
                 </View>
-              </View>
+              )}
             </View>
           )}
 
-          {/* Close button outside the sheet */}
-          <View style={themedStyles.closeButtonContainer}>
-            <TouchableOpacity
-              style={themedStyles.closeButton}
-              onPress={handleClose}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Close address selection"
-              activeOpacity={0.7}
-            >
-              <MaterialCommunityIcons name="close" size={18} color={getColor('text')} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Modal Content (rendered on top) */}
+          {/* Address selection card - positioned below search bar */}
           <View style={themedStyles.modalContainer}>
-            {/* Handle bar indicator */}
-            <View style={themedStyles.handleBar} />
-
             <View style={themedStyles.content}>
-              {/* Search Bar and Current Location Button - Only show if needCompulsoryAddress is false */}
-              {!needCompulsoryAddress && (
-                <>
-                  <View
-                    style={themedStyles.searchContainer}
-                    onLayout={e => setSearchLayout(e.nativeEvent.layout)}
-                  >
-                    <View style={themedStyles.searchBar}>
-                      <MaterialCommunityIcons
-                        name="magnify"
-                        size={20}
-                        color={getColor('subText')}
-                        style={themedStyles.searchIcon}
-                      />
-                      <TextInput
-                        style={themedStyles.searchInput}
-                        placeholder="Search for locations worldwide..."
-                        placeholderTextColor={getColor('placeholder')}
-                        value={searchQuery}
-                        onChangeText={handleSearchInputChange}
-                        accessible={true}
-                        accessibilityRole="search"
-                        accessibilityLabel="Search for locations worldwide"
-                        returnKeyType="search"
-                        autoCapitalize="words"
-                      />
-                      {searchQuery.length > 0 && (
-                        <TouchableOpacity
-                          onPress={handleClearSearch}
-                          accessible={true}
-                          accessibilityRole="button"
-                          accessibilityLabel="Clear search"
-                          accessibilityHint="Clears the search input"
-                          activeOpacity={0.7}
-                        >
-                          <MaterialCommunityIcons
-                            name="close-circle"
-                            size={22}
-                            color={getColor('subText')}
-                          />
-                        </TouchableOpacity>
-                      )}
-                      {searchLoading && (
-                        <ActivityIndicator
-                          size="small"
-                          color={getColor('primary')}
-                          style={{ marginLeft: 8 }}
-                        />
-                      )}
-                    </View>
-
-                    <TouchableOpacity
-                      style={themedStyles.currentLocationButton}
-                      onPress={handleUseCurrentLocation}
-                      disabled={locationLoading}
-                      accessible={true}
-                      accessibilityRole="button"
-                      accessibilityLabel="Use current location"
-                      accessibilityHint="Sets your current GPS location as the delivery address"
-                      activeOpacity={0.8}
-                    >
-                      <MaterialCommunityIcons
-                        name="crosshairs-gps"
-                        size={20}
-                        color={getColor('background')}
-                      />
-                      <Text style={themedStyles.currentLocationButtonText}>
-                        {locationLoading ? 'Getting Location...' : 'Use Current Location'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
-
               {/* Section Divider */}
               <View style={themedStyles.sectionDividerContainer}>
-                <SectionDivider text="CHOOSE DELIVERY ADDRESS" fontSize={16} />
+                <SectionDivider text="CHOOSE DELIVERY ADDRESS" fontSize={12} />
               </View>
 
               {/* Addresses Section or Login Prompt */}
@@ -652,40 +597,63 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                       <View style={themedStyles.emptyContainer}>
                         <MaterialCommunityIcons
                           name="map-marker-off"
-                          size={48}
+                          size={40}
                           color={getColor('subText')}
-                          style={{ marginBottom: 16 }}
+                          style={{ marginBottom: 12 }}
                         />
                         <Text style={themedStyles.emptyText}>
-                          No addresses found. Add your first address to get started.
+                          No addresses found. Add your first address.
                         </Text>
                       </View>
                     ) : (
-                      <>
-                        <ScrollView
-                          showsVerticalScrollIndicator={false}
-                          contentContainerStyle={{ paddingBottom: 20 }}
-                          style={{ flex: 1 }}
-                          scrollEnabled={!showSearchResults}
-                          nestedScrollEnabled={true}
-                        >
-                          {filteredAddresses.map((address, index) => (
-                            <View
-                              key={address.addressID || index}
-                              style={themedStyles.addressCardContainer}
-                            >
-                              <AddressCard
-                                address={address}
-                                size="small"
-                                onPress={() => handleAddressSelect(address)}
-                                isSelected={selectedAddress?.addressID === address.addressID}
-                              />
-                            </View>
-                          ))}
-                        </ScrollView>
-                      </>
+                      <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 8 }}
+                        style={{ flex: 1 }}
+                        nestedScrollEnabled={true}
+                      >
+                        {filteredAddresses.map((address, index) => (
+                          <View
+                            key={address.addressID || index}
+                            style={themedStyles.addressCardContainer}
+                          >
+                            <AddressCard
+                              address={address}
+                              size="small"
+                              onPress={() => handleAddressSelect(address)}
+                              isSelected={selectedAddress?.addressID === address.addressID}
+                              onLongPress={() => {
+                                // TODO: Show edit menu
+                                console.log('Long press - Edit address:', address.addressID);
+                              }}
+                            />
+                          </View>
+                        ))}
+                      </ScrollView>
                     )}
                   </View>
+
+                  {/* Use Current Location Button */}
+                  {!needCompulsoryAddress && (
+                    <TouchableOpacity
+                      style={themedStyles.currentLocationButton}
+                      onPress={handleUseCurrentLocation}
+                      disabled={locationLoading}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel="Use current location"
+                      activeOpacity={0.8}
+                    >
+                      <MaterialCommunityIcons
+                        name="crosshairs-gps"
+                        size={20}
+                        color={getColor('text')}
+                      />
+                      <Text style={themedStyles.currentLocationButtonText}>
+                        {locationLoading ? 'Getting Location...' : 'Use Current Location'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
 
                   {/* Add Address Button */}
                   <TouchableOpacity
@@ -694,7 +662,6 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                     accessible={true}
                     accessibilityRole="button"
                     accessibilityLabel="Add new address"
-                    accessibilityHint="Opens the add address form"
                     activeOpacity={0.8}
                   >
                     <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />

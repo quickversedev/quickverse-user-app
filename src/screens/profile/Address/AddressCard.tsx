@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Icons } from '../../../assets';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Address } from '../../../types/address';
@@ -12,27 +13,28 @@ interface AddressCardProps {
   size?: AddressCardSize;
   onPress?: () => void;
   isSelected?: boolean;
+  onLongPress?: () => void;
 }
 
-const AddressCard = ({ address, size = 'regular', onPress, isSelected }: AddressCardProps) => {
+const AddressCard = ({ address, size = 'regular', onPress, isSelected, onLongPress }: AddressCardProps) => {
   const { getColor, getTypography, theme } = useTheme();
 
   const themedStyles = StyleSheet.create({
     card: {
       backgroundColor: getColor('card'),
       borderRadius: theme.borderRadius.md,
-      padding: size === 'small' ? 16 : 20,
-      marginBottom: 16,
-      minHeight: size === 'small' ? 80 : 140,
+      padding: size === 'small' ? 12 : 20,
+      marginBottom: 12,
+      minHeight: size === 'small' ? 70 : 140,
       ...Platform.select({
         android: {
-          elevation: 8,
+          elevation: size === 'small' ? 2 : 8,
         },
         ios: {
           shadowColor: theme.colors.shadow.color,
-          shadowOffset: theme.colors.shadow.offset,
-          shadowOpacity: theme.colors.shadow.opacity,
-          shadowRadius: theme.colors.shadow.radius,
+          shadowOffset: size === 'small' ? { width: 0, height: 1 } : theme.colors.shadow.offset,
+          shadowOpacity: size === 'small' ? 0.1 : theme.colors.shadow.opacity,
+          shadowRadius: size === 'small' ? 2 : theme.colors.shadow.radius,
         },
       }),
     },
@@ -46,17 +48,18 @@ const AddressCard = ({ address, size = 'regular', onPress, isSelected }: Address
       alignItems: 'center',
     },
     houseIcon: {
-      width: size === 'small' ? 20 : 24,
-      height: size === 'small' ? 20 : 24,
+      width: size === 'small' ? 40 : 44,
+      height: size === 'small' ? 40 : 44,
       borderRadius: theme.borderRadius.full,
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: size === 'small' ? 8 : 12,
+      marginRight: size === 'small' ? 12 : 12,
+      backgroundColor: getColor('primary'),
     },
     addressType: {
       color: getColor('text'),
       fontSize: size === 'small' ? getTypography('body') : getTypography('subtitle'),
-      fontWeight: 'bold',
+      fontWeight: size === 'small' ? '600' : 'bold',
       includeFontPadding: false,
     },
     nameSection: {
@@ -145,11 +148,11 @@ const AddressCard = ({ address, size = 'regular', onPress, isSelected }: Address
     },
     smallAddress: {
       color: getColor('subText'),
-      fontSize: getTypography('body'),
-      lineHeight: getTypography('body') * 1.4,
+      fontSize: getTypography('caption'),
+      lineHeight: getTypography('caption') * 1.3,
       includeFontPadding: false,
       flexShrink: 1,
-      marginTop: 4,
+      marginTop: 2,
     },
     checkmarkIcon: {
       width: 24,
@@ -163,6 +166,41 @@ const AddressCard = ({ address, size = 'regular', onPress, isSelected }: Address
       fontSize: 14,
       color: getColor('white'),
       fontWeight: 'bold',
+    },
+    // Radio button styles
+    radioOuter: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: getColor('subText'),
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: 12,
+    },
+    radioOuterSelected: {
+      borderColor: getColor('primary'),
+      backgroundColor: getColor('primary'),
+    },
+    radioInner: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: getColor('card'),
+    },
+    // Small card action buttons
+    smallActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    smallEditButton: {
+      padding: 4,
+    },
+    smallEditText: {
+      fontSize: getTypography('caption'),
+      color: getColor('primary'),
+      fontWeight: '600',
     },
   });
 
@@ -180,16 +218,18 @@ const AddressCard = ({ address, size = 'regular', onPress, isSelected }: Address
       <TouchableOpacity
         style={themedStyles.card}
         onPress={onPress}
+        onLongPress={onLongPress}
+        delayLongPress={500}
         accessible={true}
         accessibilityRole="button"
-        accessibilityLabel={`Address card for ${getAddressTag(address)}`}
-        accessibilityHint="Double tap to select this address"
+        accessibilityLabel={`Address card for ${getAddressTag(address)}. Long press to edit.`}
+        accessibilityHint="Double tap to select, long press to edit"
         activeOpacity={0.7}
       >
         <View style={themedStyles.smallCard}>
           <View style={themedStyles.smallContent}>
             <View style={themedStyles.houseIcon}>
-              <Image source={Icons.home} />
+              <MaterialCommunityIcons name="home-outline" size={24} color={getColor('background')} />
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -212,11 +252,10 @@ const AddressCard = ({ address, size = 'regular', onPress, isSelected }: Address
               </Text>
             </View>
           </View>
-          {isSelected && (
-            <View style={themedStyles.checkmarkIcon}>
-              <Text style={themedStyles.checkmarkText}>✓</Text>
-            </View>
-          )}
+          {/* Radio button on right */}
+          <View style={[themedStyles.radioOuter, isSelected && themedStyles.radioOuterSelected]}>
+            {isSelected && <View style={themedStyles.radioInner} />}
+          </View>
         </View>
       </TouchableOpacity>
     );
