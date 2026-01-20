@@ -43,6 +43,11 @@ const CartBar: React.FC<CartBarProps> = ({
   const getVendorById = useVendorStore(state => state.getVendorById);
   const vendor = getVendorById(shopId);
   const vendorName = vendor?.name || shopId;
+  const cart = useCartStore(state => state.carts[cartId]);
+  const cartProducts = Object.values(cart?.products || {});
+  const firstItemName = cartProducts[0]?.name;
+  // Show item name for single item, vendor name for multiple items
+  const displayName = itemCount === 1 && firstItemName ? firstItemName : vendorName;
   const { navigate } = useNavigation<StackNavigationProp<RootStackParamList>>();
   const clearCart = useCartStore(state => state.clearCart);
   const { authData } = useAuth();
@@ -80,9 +85,9 @@ const CartBar: React.FC<CartBarProps> = ({
         },
         deleteButtonPositioned: {
           position: 'absolute',
-          left: 50,
-          top: 0,
-          bottom: -10,
+          left: 16,
+          top: '50%',
+          marginTop: -18, // Half of button height (36/2) to center vertically
           zIndex: 1,
         },
         cartContainer: {
@@ -230,7 +235,7 @@ const CartBar: React.FC<CartBarProps> = ({
               {
                 translateX: translateX.interpolate({
                   inputRange: [0, 80],
-                  outputRange: [-60, -20],
+                  outputRange: [-50, 0],
                   extrapolate: 'clamp',
                 }),
               },
@@ -291,7 +296,7 @@ const CartBar: React.FC<CartBarProps> = ({
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
-                  {vendorName}
+                  {displayName}
                 </ThemeText>
               </View>
 

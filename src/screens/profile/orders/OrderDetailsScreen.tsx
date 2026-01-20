@@ -1,13 +1,15 @@
 import notifee, { AuthorizationStatus } from '@notifee/react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
   Linking,
+  Modal,
   PermissionsAndroid,
   Platform,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -46,20 +48,60 @@ const OrderDetailsScreen = () => {
   // Notification permission state
   const [showPermissionBar, setShowPermissionBar] = useState(false);
 
+  // Pull-to-refresh state
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Polling interval ref
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const POLLING_INTERVAL_MS = 30000; // 30 seconds
+
+  // Custom dialog state
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState<{
+    title: string;
+    message: string;
+    confirmText: string;
+    cancelText: string;
+    onConfirm: () => void;
+    confirmColor?: string;
+  } | null>(null);
+
   // Get vendor details if we have a shopId
   const vendorDetails = useMemo(() => {
     if (!selectedOrder?.shopId) return null;
     return getVendorById(selectedOrder.shopId);
   }, [selectedOrder?.shopId, getVendorById]);
 
-  React.useEffect(() => {
+  // Load order and setup polling
+  useEffect(() => {
     if (orderId) {
       loadOrderById(orderId, selectedOrder?.shopId);
     }
-  }, [orderId, loadOrderById]);
+
+    // Setup polling for order status updates
+    // Only poll if order is not in a final state
+    const shouldPoll =
+      selectedOrder?.status &&
+      selectedOrder.status !== 'delivered' &&
+      selectedOrder.status !== 'cancelled';
+
+    if (shouldPoll) {
+      pollingIntervalRef.current = setInterval(() => {
+        loadOrderById(orderId, selectedOrder?.shopId);
+      }, POLLING_INTERVAL_MS);
+    }
+
+    // Cleanup polling on unmount or when order reaches final state
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [orderId, loadOrderById, selectedOrder?.status, selectedOrder?.shopId]);
 
   // Check notification permission on component mount
-  React.useEffect(() => {
+  useEffect(() => {
     checkNotificationPermission();
   }, []);
 
@@ -147,6 +189,16 @@ const OrderDetailsScreen = () => {
     navigation.goBack();
   }, [navigation]);
 
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadOrderById(orderId, selectedOrder?.shopId);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [orderId, selectedOrder?.shopId, loadOrderById]);
+
   const handleViewSummary = useCallback(() => {
     // TODO: Navigate to bill summary screen
     // //console.log('View summary pressed');
@@ -202,59 +254,75 @@ const OrderDetailsScreen = () => {
       }
     };
 
-    Alert.alert(
-      'Retry Payment',
-      'Press Retry to proceed with payment.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Retry', onPress: onConfirmRetry },
-      ],
-      { cancelable: true }
-    );
-  }, [selectedOrder, authData?.jwt, authData?.phone, refreshOrders, loadOrderById]);
+    setDialogConfig({
+      title: 'Retry Payment',
+      message: 'Press Retry to proceed with payment.',
+      confirmText: 'Retry',
+      cancelText: 'Cancel',
+      onConfirm: onConfirmRetry,
+      confirmColor: getColor('secondary'),
+    });
+    setDialogVisible(true);
+  }, [selectedOrder, authData?.jwt, authData?.phone, refreshOrders, loadOrderById, getColor]);
 
   const handleCancelOrder = useCallback(async () => {
     if (!selectedOrder || !authData?.jwt || !authData?.phone) return;
-    Alert.alert(
-      'Cancel Order',
-      'Are you sure you want to cancel this order?',
-      [
-        {
-          text: 'No',
-          style: 'cancel',
-        },
-        {
-          text: 'Yes',
-          style: 'destructive',
-          onPress: async () => {
-            setCancellingOrder(true);
-            try {
-              await orderService.cancelOrder(
-                selectedOrder.orderId,
-                selectedOrder.shopId,
-                'Need to change address', // Default reason
-                authData.jwt,
-                authData.phone
-              );
 
-              // Refresh orders list and navigate back
-              await refreshOrders();
-              navigation.goBack();
-              Alert.alert('Success', 'Order cancelled successfully');
-            } catch (error) {
-              Alert.alert(
-                'Error',
-                error instanceof Error ? error.message : 'Failed to cancel order. Please try again.'
-              );
-            } finally {
-              setCancellingOrder(false);
-            }
+    const onConfirmCancel = async () => {
+      setDialogVisible(false);
+      setCancellingOrder(true);
+      try {
+        await orderService.cancelOrder(
+          selectedOrder.orderId,
+          selectedOrder.shopId,
+          'Need to change address', // Default reason
+          authData.jwt,
+          authData.phone
+        );
+
+        // Refresh orders list
+        await refreshOrders();
+        setCancellingOrder(false);
+
+        // Show success dialog
+        setDialogConfig({
+          title: 'Success',
+          message: 'Order cancelled successfully',
+          confirmText: 'OK',
+          cancelText: '',
+          onConfirm: () => {
+            setDialogVisible(false);
+            navigation.goBack();
           },
-        },
-      ],
-      { cancelable: true }
-    );
-  }, [selectedOrder, authData?.jwt, authData?.phone, refreshOrders, navigation]);
+          confirmColor: getColor('secondary'),
+        });
+        setDialogVisible(true);
+      } catch (error) {
+        setCancellingOrder(false);
+        // Show error dialog
+        setDialogConfig({
+          title: 'Error',
+          message:
+            error instanceof Error ? error.message : 'Failed to cancel order. Please try again.',
+          confirmText: 'OK',
+          cancelText: '',
+          onConfirm: () => setDialogVisible(false),
+          confirmColor: getColor('secondary'),
+        });
+        setDialogVisible(true);
+      }
+    };
+
+    setDialogConfig({
+      title: 'Cancel Order',
+      message: 'Are you sure you want to cancel this order?',
+      confirmText: 'Yes',
+      cancelText: 'No',
+      onConfirm: onConfirmCancel,
+      confirmColor: '#F44336',
+    });
+    setDialogVisible(true);
+  }, [selectedOrder, authData?.jwt, authData?.phone, refreshOrders, navigation, getColor]);
 
   const handleGetHelp = useCallback(() => {
     // TODO: Navigate to help screen
@@ -407,6 +475,15 @@ const OrderDetailsScreen = () => {
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={getColor('secondary')}
+              colors={[getColor('secondary')]}
+              progressBackgroundColor={getColor('card')}
+            />
+          }
         >
           <OrderInfoCard
             order={selectedOrder}
@@ -461,7 +538,10 @@ const OrderDetailsScreen = () => {
           />
 
           {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (
-            <OrderProgress status={selectedOrder.status} />
+            <OrderProgress
+              status={selectedOrder.status}
+              orderCreationTime={selectedOrder.orderDate}
+            />
           )}
 
           {/* Shop Details Section */}
@@ -551,6 +631,65 @@ const OrderDetailsScreen = () => {
           <HelpCard onPress={handleGetHelp} order={selectedOrder} />
         </ScrollView>
       </View>
+
+      {/* Custom Themed Dialog */}
+      <Modal
+        visible={dialogVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDialogVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: getColor('card') }]}>
+            <Text style={[styles.modalTitle, { color: getColor('text') }]}>
+              {dialogConfig?.title}
+            </Text>
+            <Text style={[styles.modalMessage, { color: getColor('subText') }]}>
+              {dialogConfig?.message}
+            </Text>
+            <View style={styles.modalButtonRow}>
+              {dialogConfig?.cancelText ? (
+                <TouchableOpacity
+                  style={[
+                    styles.modalButton,
+                    styles.modalCancelButton,
+                    { borderColor: getColor('border') },
+                  ]}
+                  onPress={() => setDialogVisible(false)}
+                >
+                  <Text style={[styles.modalButtonText, { color: getColor('text') }]}>
+                    {dialogConfig?.cancelText}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.modalConfirmButton,
+                  { backgroundColor: dialogConfig?.confirmColor || getColor('secondary') },
+                ]}
+                onPress={() => {
+                  dialogConfig?.onConfirm();
+                }}
+              >
+                <Text
+                  style={[
+                    styles.modalButtonText,
+                    {
+                      color:
+                        dialogConfig?.confirmColor === '#F44336'
+                          ? '#FFFFFF'
+                          : getColor('background'),
+                    },
+                  ]}
+                >
+                  {dialogConfig?.confirmText}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -785,6 +924,60 @@ const styles = StyleSheet.create({
   },
   enableButtonText: {
     fontSize: 14,
+    fontWeight: '600',
+  },
+  // Custom modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  modalContainer: {
+    width: '100%',
+    borderRadius: 16,
+    padding: 24,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  modalCancelButton: {
+    borderWidth: 1,
+  },
+  modalConfirmButton: {
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  modalButtonText: {
+    fontSize: 15,
     fontWeight: '600',
   },
 });

@@ -1,7 +1,7 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AnimatedCard from '../../components/common/AnimatedCard';
@@ -86,6 +86,10 @@ const CartScreen: React.FC = () => {
   ); // Default to COD
   const [isOrderLoading, setIsOrderLoading] = React.useState(false);
   const [showDistanceModal, setShowDistanceModal] = React.useState(false);
+  const [storeClosedModal, setStoreClosedModal] = React.useState<{
+    visible: boolean;
+    message: string;
+  }>({ visible: false, message: '' });
 
   // Theme
   const { getColor } = useTheme();
@@ -401,21 +405,20 @@ const CartScreen: React.FC = () => {
               storeActive: vendor.storeActive,
             })
           : null;
-        const opensAt = status?.nextOpeningTime || vendor?.openingTime;
-        const opensAtText = opensAt ? ` Opens at ${formatTimeToAMPM(opensAt)}.` : '';
 
-        Alert.alert(
-          'Store Closed',
-          `The store is closed at the moment.${opensAtText} Please try again later.`,
-          [
-            {
-              text: 'OK',
-              onPress: async () => {
-                navigation.navigate('MainApp');
-              },
-            },
-          ]
-        );
+        // Only show opening time if store is closed due to time (not manually closed)
+        // If storeActive is false, it's manually closed - don't show opening time
+        // If status.isOpen would be true based on time but backend says closed, it's manual
+        const nextOpenTime = status?.nextOpeningTime;
+        const isTimeBased = vendor?.storeActive !== false && nextOpenTime;
+        const opensAtText = isTimeBased
+          ? ` Opens at ${formatTimeToAMPM(nextOpenTime)}.`
+          : '';
+
+        setStoreClosedModal({
+          visible: true,
+          message: `The store is closed at the moment.${opensAtText} Please try again later.`,
+        });
         return;
       }
 
@@ -837,6 +840,46 @@ const CartScreen: React.FC = () => {
           </View>
         </SafeAreaView>
       </Modal>
+
+      {/* Store Closed Modal */}
+      <Modal
+        visible={storeClosedModal.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setStoreClosedModal({ visible: false, message: '' });
+          navigation.navigate('MainApp');
+        }}
+      >
+        <View style={styles.storeClosedOverlay}>
+          <View style={[styles.storeClosedCard, { backgroundColor: getColor('card') }]}>
+            <View
+              style={[
+                styles.storeClosedIconBadge,
+                { backgroundColor: 'rgba(239, 68, 68, 0.12)' },
+              ]}
+            >
+              <MaterialCommunityIcons name="store-off" size={32} color="#EF4444" />
+            </View>
+            <Text style={[styles.storeClosedTitle, { color: getColor('text') }]}>Store Closed</Text>
+            <Text style={[styles.storeClosedMessage, { color: getColor('subText') }]}>
+              {storeClosedModal.message}
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setStoreClosedModal({ visible: false, message: '' });
+                navigation.navigate('MainApp');
+              }}
+              style={[styles.storeClosedBtn, { backgroundColor: getColor('primary') }]}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.storeClosedBtnText, { color: getColor('background') }]}>
+                Got it
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -885,4 +928,53 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   secondaryBtnText: {},
+  // Store Closed Modal Styles
+  storeClosedOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  storeClosedCard: {
+    width: '100%',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  storeClosedIconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  storeClosedTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  storeClosedMessage: {
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  storeClosedBtn: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  storeClosedBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });

@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Dimensions, Easing, LayoutAnimation, Platform, StyleSheet, TouchableOpacity, UIManager, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { TabBarVisibilityContext } from '../../../navigation/TabNavigation';
@@ -10,7 +10,12 @@ import OrderProgressBar from '../order/OrderProgressBar';
 import CartBar from './CartBar';
 
 const { width } = Dimensions.get('window');
-const ANIMATION_DURATION = 250;
+const ANIMATION_DURATION = 300;
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const FloatingCartsStack: React.FC = () => {
   const { authData } = useAuth();
@@ -24,42 +29,91 @@ const FloatingCartsStack: React.FC = () => {
     state.orders.some(o => o.status !== 'delivered' && o.status !== 'cancelled')
   );
 
+  // Filter to only carts with items
+  const nonEmptyCarts = allCarts.filter(
+    cart => Object.values(cart.products || {}).reduce((sum, p) => sum + (p?.quantity || 0), 0) > 0
+  );
+
   // Sort carts: most recently active at the top
-  const sortedCarts = [...allCarts].sort((a, b) => {
+  const sortedCarts = [...nonEmptyCarts].sort((a, b) => {
     if (a.cartId === activeCartId) return -1;
     if (b.cartId === activeCartId) return 1;
     return 0;
   });
 
-  const showExpandCollapse = allCarts.length > 1;
+  // Only show expand/collapse when there are multiple non-empty carts
+  const showExpandCollapse = nonEmptyCarts.length > 1;
 
-  // Animated values for each cart (for fade/slide in)
-  const animatedValues = useMemo(
-    () => sortedCarts.map((_, i) => new Animated.Value(expanded || i === 0 ? 1 : 0)),
-    [sortedCarts.length]
-  );
+  // Use refs for stable animated values
+  const animatedValuesRef = useRef<Animated.Value[]>([]);
+  const arrowRotation = useRef(new Animated.Value(0)).current;
+
+  // Ensure we have enough animated values for all carts
+  if (animatedValuesRef.current.length !== sortedCarts.length) {
+    animatedValuesRef.current = sortedCarts.map(
+      (_, i) => animatedValuesRef.current[i] || new Animated.Value(i === 0 ? 1 : 0)
+    );
+  }
+  const animatedValues = animatedValuesRef.current;
+
+  // Arrow rotation interpolation
+  const arrowRotateInterpolate = arrowRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
+
+  // Handle expand/collapse with smooth animations
+  const toggleExpanded = () => {
+    // Trigger layout animation for smooth height change
+    LayoutAnimation.configureNext({
+      duration: ANIMATION_DURATION,
+      create: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+      },
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+      },
+      delete: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+      },
+    });
+
+    // Animate arrow rotation
+    Animated.spring(arrowRotation, {
+      toValue: expanded ? 0 : 1,
+      friction: 8,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+
+    setExpanded(prev => !prev);
+  };
 
   useEffect(() => {
     if (expanded) {
-      // Animate all carts in
+      // Animate all carts in with spring effect
       Animated.stagger(
-        50,
+        80,
         animatedValues.map(av =>
-          Animated.timing(av, {
+          Animated.spring(av, {
             toValue: 1,
-            duration: ANIMATION_DURATION,
+            friction: 8,
+            tension: 40,
             useNativeDriver: true,
           })
         )
       ).start();
     } else {
-      // Animate all carts out except the first
+      // Animate all carts out except the first with easing
       Animated.stagger(
-        30,
+        40,
         animatedValues.map((av, idx) =>
           Animated.timing(av, {
             toValue: idx === 0 ? 1 : 0,
             duration: ANIMATION_DURATION,
+            easing: Easing.out(Easing.cubic),
             useNativeDriver: true,
           })
         )
@@ -108,8 +162,8 @@ const FloatingCartsStack: React.FC = () => {
     [theme, getColor]
   );
 
-  // Only hide if there are no carts AND no in-progress order to show
-  if (allCarts.length === 0 && !hasInProgressOrder) return null;
+  // Only hide if there are no non-empty carts AND no in-progress order to show
+  if (nonEmptyCarts.length === 0 && !hasInProgressOrder) return null;
 
   // Only render when user is logged in
   if (!authData?.jwt || !authData?.phone) {
@@ -144,31 +198,25 @@ const FloatingCartsStack: React.FC = () => {
         ]}
         pointerEvents="box-none"
       >
-        {/* Always show the in-progress order bar above cart bars */}
-        <View>
-          <OrderProgressBar />
-        </View>
+        {/* Toggle button at top - expands carts upward */}
         {showExpandCollapse && (
           <TouchableOpacity
             style={styles.toggleBarWrapper}
-            onPress={() => setExpanded(prev => !prev)}
+            onPress={toggleExpanded}
             activeOpacity={0.8}
           >
-            {expanded ? (
-              <MaterialCommunityIcons
-                name="chevron-down"
-                size={28}
-                color={getColor('primary')}
-                style={styles.chevronIcon}
-              />
-            ) : (
+            <Animated.View
+              style={{
+                transform: [{ rotate: arrowRotateInterpolate }],
+              }}
+            >
               <MaterialCommunityIcons
                 name="chevron-up"
                 size={28}
                 color={getColor('primary')}
                 style={styles.chevronIcon}
               />
-            )}
+            </Animated.View>
           </TouchableOpacity>
         )}
         <View style={styles.stack}>
@@ -183,14 +231,17 @@ const FloatingCartsStack: React.FC = () => {
               pointerEvents="none"
             />
           )}
-          {/* Main cart(s) */}
-          {sortedCarts.map((cart, idx) => {
-            // Only render the topmost cart if collapsed
-            if (!expanded && idx > 0) return null;
-            // Guard: skip if animatedValues[idx] is undefined
-            if (!animatedValues[idx]) return null;
+          {/* Main cart(s) - render in reverse order so they expand upward */}
+          {[...sortedCarts].reverse().map((cart, idx) => {
+            const originalIdx = sortedCarts.length - 1 - idx;
+            // Only render the topmost cart (last in original order) if collapsed
+            if (!expanded && originalIdx > 0) return null;
+            // Guard: skip if animatedValues[originalIdx] is undefined
+            if (!animatedValues[originalIdx]) return null;
             // Guard: skip if cart.cartId is undefined
             if (!cart.cartId) return null;
+
+            const animValue = animatedValues[originalIdx];
 
             // When collapsed, wrap the cart in TouchableOpacity to expand on press
             const CartContent = (
@@ -200,12 +251,21 @@ const FloatingCartsStack: React.FC = () => {
                   styles.cartBarWrapper,
                   dynamicStyles.cartBarWrapperMain,
                   {
-                    opacity: animatedValues[idx],
+                    opacity: animValue.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [0, 0.8, 1],
+                    }),
                     transform: [
                       {
-                        translateY: animatedValues[idx].interpolate({
+                        translateY: animValue.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [20, 0],
+                          outputRange: [-30, 0],
+                        }),
+                      },
+                      {
+                        scale: animValue.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.95, 1],
                         }),
                       },
                     ],
@@ -219,14 +279,18 @@ const FloatingCartsStack: React.FC = () => {
                   )}
                   shopId={cart.cartId ? cart.cartId.replace('vendor_', '') : ''}
                   cartId={cart.cartId || ''}
-                  isExpanded={expanded || allCarts.length === 1}
-                  onExpand={() => setExpanded(true)}
+                  isExpanded={expanded || nonEmptyCarts.length === 1}
+                  onExpand={toggleExpanded}
                 />
               </Animated.View>
             );
             // When expanded, clicking the cart navigates to CartScreen
             return CartContent;
           })}
+        </View>
+        {/* Show the in-progress order bar below cart bars */}
+        <View>
+          <OrderProgressBar />
         </View>
       </Animated.View>
     </>
@@ -264,7 +328,7 @@ const styles = StyleSheet.create({
   cartBarWrapper: {
     width: '100%',
     maxWidth: width - 32,
-    marginBottom: 10,
+    marginBottom: 4,
     alignItems: 'center',
   },
   cartBar: {
