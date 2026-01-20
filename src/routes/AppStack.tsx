@@ -46,17 +46,70 @@ export type RootStackParamList = {
 
 const Stack = createStackNavigator<RootStackParamList>();
 
+// Default screen transition animation
+const defaultScreenOptions = {
+  animationEnabled: true,
+  gestureEnabled: true,
+  gestureDirection: 'horizontal' as const,
+  cardStyleInterpolator: Platform.select({
+    ios: CardStyleInterpolators.forHorizontalIOS,
+    android: CardStyleInterpolators.forRevealFromBottomAndroid,
+    default: CardStyleInterpolators.forHorizontalIOS,
+  }),
+  transitionSpec: {
+    open: TransitionSpecs.TransitionIOSSpec,
+    close: TransitionSpecs.TransitionIOSSpec,
+  },
+};
+
+// Slide from right animation (for most screens)
+const slideFromRightOptions = {
+  animationEnabled: true,
+  gestureEnabled: true,
+  gestureDirection: 'horizontal' as const,
+  cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+  transitionSpec: {
+    open: { animation: 'timing' as const, config: { duration: 250 } },
+    close: { animation: 'timing' as const, config: { duration: 200 } },
+  },
+};
+
+// Slide up animation (for Cart, modals)
+const slideFromBottomOptions = {
+  animationEnabled: true,
+  gestureEnabled: true,
+  gestureDirection: 'vertical' as const,
+  cardStyleInterpolator: CardStyleInterpolators.forVerticalIOS,
+  transitionSpec: {
+    open: { animation: 'timing' as const, config: { duration: 280 } },
+    close: { animation: 'timing' as const, config: { duration: 220 } },
+  },
+};
+
 export const AppStack = () => {
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
+        ...defaultScreenOptions,
       }}
     >
       <Stack.Screen name="MainApp" component={TabNavigation} />
-      <Stack.Screen name="Profile" component={ProfileStack} />
-      <Stack.Screen name="VendorProduct" component={VendorProduct} />
-      <Stack.Screen name="VendorProfile" component={VendorProfile} />
+      <Stack.Screen
+        name="Profile"
+        component={ProfileStack}
+        options={slideFromRightOptions}
+      />
+      <Stack.Screen
+        name="VendorProduct"
+        component={VendorProduct}
+        options={slideFromRightOptions}
+      />
+      <Stack.Screen
+        name="VendorProfile"
+        component={VendorProfile}
+        options={slideFromRightOptions}
+      />
       <Stack.Screen
         name="VendorDetails"
         component={VendorDetails}
@@ -89,12 +142,44 @@ export const AppStack = () => {
           },
         }}
       />
-      <Stack.Screen name="ProductDetailDemo" component={ProductDetailDemo} />
-      <Stack.Screen name="Cart" component={CartScreen} />
-      <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
-      <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
-      <Stack.Screen name="OrderFailure" component={OrderFailureScreen} />
-      <Stack.Screen name="Coupons" component={CouponsScreen} />
+      <Stack.Screen
+        name="ProductDetailDemo"
+        component={ProductDetailDemo}
+        options={slideFromRightOptions}
+      />
+      <Stack.Screen
+        name="Cart"
+        component={CartScreen}
+        options={slideFromBottomOptions}
+      />
+      <Stack.Screen
+        name="OrderDetails"
+        component={OrderDetailsScreen}
+        options={slideFromRightOptions}
+      />
+      <Stack.Screen
+        name="OrderSuccess"
+        component={OrderSuccessScreen}
+        options={{
+          animationEnabled: true,
+          gestureEnabled: false,
+          cardStyleInterpolator: CardStyleInterpolators.forFadeFromCenter,
+        }}
+      />
+      <Stack.Screen
+        name="OrderFailure"
+        component={OrderFailureScreen}
+        options={{
+          animationEnabled: true,
+          gestureEnabled: false,
+          cardStyleInterpolator: CardStyleInterpolators.forFadeFromCenter,
+        }}
+      />
+      <Stack.Screen
+        name="Coupons"
+        component={CouponsScreen}
+        options={slideFromBottomOptions}
+      />
 
       <Stack.Screen
         name="Search"
@@ -124,9 +209,21 @@ export const AppStack = () => {
           }),
         }}
       />
-      <Stack.Screen name="Address" component={AddressScreen} />
-      <Stack.Screen name="HelpDesk" component={HelpDeskScreen} />
-      <Stack.Screen name="AboutUs" component={AboutUsScreen} />
+      <Stack.Screen
+        name="Address"
+        component={AddressScreen}
+        options={slideFromRightOptions}
+      />
+      <Stack.Screen
+        name="HelpDesk"
+        component={HelpDeskScreen}
+        options={slideFromRightOptions}
+      />
+      <Stack.Screen
+        name="AboutUs"
+        component={AboutUsScreen}
+        options={slideFromRightOptions}
+      />
     </Stack.Navigator>
   );
 };

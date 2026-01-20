@@ -105,6 +105,8 @@ const TabNavigation = () => {
           tabBarInactiveTintColor: getColor('subText'),
           tabBarLabelStyle: styles.tabLabel,
           tabBarItemStyle: styles.tabItem,
+          // Lazy load tabs for better performance
+          lazy: true,
         }}
       >
         <Tab.Screen
