@@ -79,3 +79,10 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# IDE files
+android/.project
+android/.settings/
+android/app/.classpath
+android/app/.project
+android/app/.settings/
