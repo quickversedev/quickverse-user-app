@@ -5,11 +5,12 @@ import {
 } from '@react-navigation/stack';
 import React from 'react';
 import { Platform } from 'react-native';
+import { Collection } from '../data/collectionsData';
 import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
 import CartScreen from '../screens/cart/CartScreen';
 import CouponsScreen from '../screens/cart/CouponsScreen';
-
+import CollectionDetailScreen from '../screens/collections/CollectionDetailScreen';
 import OrderFailureScreen from '../screens/order/OrderFailureScreen';
 import OrderSuccessScreen from '../screens/order/OrderSuccessScreen';
 import AboutUsScreen from '../screens/profile/AboutUsScreen';
@@ -30,6 +31,7 @@ export type RootStackParamList = {
   VendorProduct: { vendor: Vendor; searchQuery?: string };
   VendorProfile: { vendor: Vendor };
   VendorDetails: { vendor: Vendor };
+  CollectionDetail: { collection: Collection };
   ProductDetailDemo: undefined;
   Cart: { cartId: string } | undefined;
   Orders: undefined;
@@ -141,6 +143,11 @@ export const AppStack = () => {
             close: { animation: 'timing', config: { duration: 240 } },
           },
         }}
+      />
+      <Stack.Screen
+        name="CollectionDetail"
+        component={CollectionDetailScreen}
+        options={slideFromRightOptions}
       />
       <Stack.Screen
         name="ProductDetailDemo"

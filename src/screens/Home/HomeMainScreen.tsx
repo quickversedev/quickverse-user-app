@@ -14,6 +14,7 @@ import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Address } from '../../types/address';
 import { AppNavigationProp } from '../../types/navigation';
+import { CollectionsContent } from './components/tabs/CollectionsContent';
 import { FoodContent } from './components/tabs/FoodContent';
 import { ForYouContent } from './components/tabs/ForYouContent';
 import { GroceryContent } from './components/tabs/GroceryContent';
@@ -126,6 +127,8 @@ const HomeMainScreen = React.memo(() => {
         return <FoodContent {...contentProps} />;
       case 'Grocery':
         return <GroceryContent {...contentProps} />;
+      case 'Collections':
+        return <CollectionsContent {...contentProps} />;
       case 'Pharmacy':
         return <PharmacyContent {...contentProps} />;
       case 'ForYou':

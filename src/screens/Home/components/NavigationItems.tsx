@@ -9,13 +9,14 @@ type NavigationItem = {
   id: string;
   label: string;
   icon: string;
-  screen: 'HomeMain' | 'ForYou' | 'food' | 'Grocery' | 'Pharmacy';
+  screen: 'HomeMain' | 'ForYou' | 'food' | 'Grocery' | 'Collections' | 'Pharmacy';
 };
 
 const navigationItems: NavigationItem[] = [
   { id: 'for-you', label: 'For You', icon: 'star-four-points', screen: 'ForYou' },
   { id: 'food', label: 'Food', icon: 'food-turkey', screen: 'food' },
   { id: 'grocery', label: 'Grocery', icon: 'shopping-outline', screen: 'Grocery' },
+  { id: 'collections', label: 'Collections', icon: 'view-grid', screen: 'Collections' },
   // { id: 'pharmacy', label: 'Pharmacy', icon: 'pharmacy', screen: 'Pharmacy' },
 ];
 

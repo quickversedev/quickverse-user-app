@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 
-type TabType = 'HomeMain' | 'ForYou' | 'food' | 'Grocery' | 'Pharmacy';
+type TabType = 'HomeMain' | 'ForYou' | 'food' | 'Grocery' | 'Collections' | 'Pharmacy';
 
 interface TabContextType {
   selectedTab: TabType;
