@@ -12,8 +12,9 @@ import {
   TouchableOpacity,
   View,
   ViewStyle,
+  ActivityIndicator,
 } from 'react-native';
-import { Collection, getCollectionsBySection } from '../../../../data/collectionsData';
+import { Collection, getCollectionsBySection, fetchCollectionsFromApi } from '../../../../data/collectionsData';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import { useTheme } from '../../../../theme/ThemeContext';
 
@@ -81,7 +82,38 @@ const CollectionsContentComponent: React.FC<CollectionsContentProps> = ({
   const { theme } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  const sections = useMemo(() => getCollectionsBySection(), []);
+  // State for dynamic collections
+  const [sections, setSections] = React.useState<{ title: string; collections: Collection[] }[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  // Fetch collections on mount
+  React.useEffect(() => {
+    let mounted = true;
+
+    const loadCollections = async () => {
+      try {
+        setLoading(true);
+        // This fetch function now returns a Promise with the dynamic data
+        const fetchedSections = await fetchCollectionsFromApi();
+
+        if (mounted) {
+          setSections(fetchedSections);
+        }
+      } catch (error) {
+        console.error('Failed to load collections:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadCollections();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleCollectionPress = useCallback(
     (collection: Collection) => {
@@ -143,6 +175,14 @@ const CollectionsContentComponent: React.FC<CollectionsContentProps> = ({
     ),
     [themedStyles, handleCollectionPress, theme]
   );
+
+  if (loading) {
+    return (
+      <View style={[themedStyles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={theme.colors.text} />
+      </View>
+    );
+  }
 
   return (
     <Animated.ScrollView

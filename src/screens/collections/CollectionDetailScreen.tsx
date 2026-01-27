@@ -90,10 +90,24 @@ const CollectionDetailScreen: React.FC = () => {
   const { collection } = route.params;
 
   // Get the first Grocery vendor from store to use for collections
+  // Get the first Grocery vendor from store to use for collections
   const { getVendorsByCategory, vendors } = useVendorStore();
-  const groceryVendors = getVendorsByCategory('Grocery');
-  const vendor = groceryVendors.length > 0 ? groceryVendors[0] : null;
-  const collectionsVendorId = vendor?.shopId || '';
+
+  // Prioritize the specific API store, otherwise fallback to first Grocery vendor
+  const collectionsVendorId = useMemo(() => {
+    // 1. Try to find the specific API store (SmartBiz 68246)
+    const apiVendor = vendors.find(v => v.shopId === '68246'); // Hardcoded ID matching data/collectionsData path
+    if (apiVendor) return apiVendor.shopId;
+
+    // 2. Fallback to first Grocery vendor
+    const groceryVendors = getVendorsByCategory('Grocery');
+    return groceryVendors.length > 0 ? groceryVendors[0].shopId : '';
+  }, [vendors, getVendorsByCategory]);
+
+  const vendor = vendors.find(v => v.shopId === collectionsVendorId);
+
+  // DEBUG: Visual indicator of vendor state (Remove later)
+  // console.log(`CollectionDetail: VendorID=${collectionsVendorId}, Categories=${vendorCategories.length}`);
 
   // Search state
   const [isSearchVisible, setIsSearchVisible] = useState(false);
@@ -126,16 +140,34 @@ const CollectionDetailScreen: React.FC = () => {
 
     setShopId(collectionsVendorId);
     resetProducts();
-    fetchProducts({ offset: 0, limit: 1000 });
+
+    // Check if this is a synthetic collection (categories-based) or legacy/API collection (productId-based)
+    const isSynthetic = !collection.productIds || collection.productIds.length === 0;
+
+    if (isSynthetic) {
+      // Synthetic: Fetch ALL products for the shop, we will filter locally
+      fetchProducts({
+        offset: 0,
+        limit: 1500, // Ensure we get enough products to cover the categories
+      });
+    } else {
+      // Legacy/Specific: Fetch products specifically for this collection
+      fetchProducts({
+        offset: 0,
+        limit: 1000,
+        filters: {
+          collection: collection.id,
+          skus: collection.productIds
+        }
+      });
+    }
+
     fetchCategories(collectionsVendorId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isVendorConfigured, collectionsVendorId]);
+  }, [collectionsVendorId, collection.id, collection.productIds, fetchProducts, fetchCategories, isVendorConfigured, resetProducts, setShopId]);
 
   // Map collection categories to vendor categories using "contains match"
-  // This filters vendor categories to only those that contain a collection category name
   const mappedCategories: CategoryItem[] = useMemo(() => {
     if (!vendorCategories || vendorCategories.length === 0) {
-      // If no vendor categories, use collection categories as fallback
       return collection.categories.map(cat => ({
         id: cat.id,
         name: cat.name,
@@ -143,62 +175,153 @@ const CollectionDetailScreen: React.FC = () => {
       }));
     }
 
-    // Filter vendor categories where the vendor category name contains
-    // any of the collection category names (case-insensitive)
     const matchedCategories: CategoryItem[] = [];
 
+    // For synthetic collections, we trust our mapping ID matches the vendor category ID/Name
+    // But we still want to grab images from the vendorCategories if possible
+    // or fallback to the manual list.
+
+    // Simplification: Just traverse our collection categories and find matches
+    collection.categories.forEach(colCat => {
+      // Try exact ID match first (most reliable for synthetic)
+      const exactMatch = vendorCategories.find(vc => vc.id === colCat.id);
+      if (exactMatch) {
+        matchedCategories.push({
+          id: exactMatch.id,
+          name: exactMatch.name,
+          icon: exactMatch.imageURLs?.[0] || Images.bg1,
+        });
+        return;
+      }
+
+      // Loose match mechanism (legacy support)
+      const colCatNameLower = colCat.name.toLowerCase();
+      const looseMatch = vendorCategories.find(vc => {
+        const vcName = vc.name.toLowerCase();
+        return vcName.includes(colCatNameLower) || colCatNameLower.includes(vcName);
+      });
+
+      if (looseMatch) {
+        matchedCategories.push({
+          id: looseMatch.id,
+          name: looseMatch.name,
+          icon: looseMatch.imageURLs?.[0] || Images.bg1,
+        });
+        return;
+      }
+
+      // If no match, include it as is (so tab appears) but it might be empty
+      // matchedCategories.push({ id: colCat.id, name: colCat.name, icon: Images.bg1 });
+    });
+
+    // If we have some matches, return them. If purely synthetic and IDs align, this works.
+    if (matchedCategories.length > 0) return matchedCategories;
+
+    // Legacy fallback logic (kept for safety)
+    const legacyMatched: CategoryItem[] = [];
     for (const vendorCat of vendorCategories) {
       const vendorCatNameLower = vendorCat.name.toLowerCase();
-
       for (const collectionCat of collection.categories) {
         const collectionCatNameLower = collectionCat.name.toLowerCase();
+        let isMatch = vendorCatNameLower.includes(collectionCatNameLower) ||
+          collectionCatNameLower.includes(vendorCatNameLower);
 
-        // Check if vendor category name contains collection category name
-        if (vendorCatNameLower.includes(collectionCatNameLower) ||
-            collectionCatNameLower.includes(vendorCatNameLower)) {
-          matchedCategories.push({
+        if (!isMatch) {
+          const tokens = collectionCatNameLower.split(/[\s,&]+/);
+          const meaningfulTokens = tokens.filter(t => t.length > 2 && t !== 'and');
+          isMatch = meaningfulTokens.some(token => vendorCatNameLower.includes(token));
+        }
+
+        if (isMatch) {
+          legacyMatched.push({
             id: vendorCat.id,
             name: vendorCat.name,
             icon: vendorCat.imageURLs?.[0] || Images.bg1,
           });
-          break; // Don't add same vendor category multiple times
+          break;
         }
       }
     }
 
-    return matchedCategories;
-  }, [vendorCategories, collection.categories]);
-
-  // Filter products to only those in matched categories
-  const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) {
-      // Filter products to only those in our mapped categories
-      const categoryIds = new Set(mappedCategories.map(cat => cat.id));
-      return products.filter(product => categoryIds.has(product.division || ''));
+    if (legacyMatched.length > 0) {
+      return legacyMatched;
     }
 
-    // Apply search filter
-    const searchLower = searchQuery.toLowerCase();
-    const categoryIds = new Set(mappedCategories.map(cat => cat.id));
+    console.log('No manual category matches found. Falling back to all vendor categories');
+    return vendorCategories.map(vc => ({
+      id: vc.id,
+      name: vc.name,
+      icon: vc.imageURLs?.[0] || Images.bg1,
+    }));
+  }, [vendorCategories, collection.categories]);
 
-    return products.filter(product => {
-      const inCategory = categoryIds.has(product.division || '');
-      if (!inCategory) return false;
+  // Filter products matching search AND collection scope (for synthetic)
+  const filteredProducts = useMemo(() => {
+    let result = products;
 
-      const productNameMatch = product.name.toLowerCase().includes(searchLower);
-      const categoryMatch = mappedCategories.some(
-        cat => cat.id === product.division && cat.name.toLowerCase().includes(searchLower)
-      );
+    // 1. Scope by Collection Categories (if synthetic)
+    const isSynthetic = !collection.productIds || collection.productIds.length === 0;
+    if (isSynthetic && collection.categories.length > 0) {
+      // Create a set of allowed category IDs for O(1) lookup
+      // We use the ID because in collectionsData.ts we mapped them from API IDs specifically
+      const allowedDivisionIds = new Set(collection.categories.map(c => c.id));
 
-      return productNameMatch || categoryMatch;
-    });
-  }, [products, searchQuery, mappedCategories]);
+      // Also allow matching by name for robustness if IDs fail?
+      // Let's stick to IDs first as it's cleaner.
+      result = result.filter(p => p.division && allowedDivisionIds.has(p.division));
+    }
+
+    // 2. Search Filter
+    if (searchQuery.trim()) {
+      const searchLower = searchQuery.toLowerCase();
+      result = result.filter(product => product.name.toLowerCase().includes(searchLower));
+    }
+    return result;
+  }, [products, searchQuery, collection.productIds, collection.categories]);
 
   // Filter categories to only those with products
   const categoriesWithProducts = useMemo(() => {
-    const productDivisions = new Set(filteredProducts.map(p => p.division));
+    if (!mappedCategories) return [];
+
+    // Safety check for products without division
+    const productDivisions = new Set(filteredProducts.map(p => p.division).filter(Boolean));
     return mappedCategories.filter(cat => productDivisions.has(cat.id));
   }, [mappedCategories, filteredProducts]);
+
+  // Determine list rows
+  const listRows = useMemo(() => {
+    // 1. Get standard rows based on mapped categories
+    const rows = getRowBasedProductList(categoriesWithProducts, filteredProducts, NUM_COLUMNS);
+
+    // 2. Find any products that were NOT included in the category-based rows
+    if (filteredProducts.length > 0) {
+      const shownProductSkus = new Set<string>();
+
+      rows.forEach(row => {
+        if (row.type === 'products') {
+          row.products.forEach(p => shownProductSkus.add(p.sku));
+        }
+      });
+
+      const uncategorizedProducts = filteredProducts.filter(p => !shownProductSkus.has(p.sku));
+
+      if (uncategorizedProducts.length > 0) {
+        rows.push({
+          type: 'header',
+          category: { id: 'uncategorized', name: 'More Items', icon: Images.bg1 }
+        });
+
+        for (let i = 0; i < uncategorizedProducts.length; i += NUM_COLUMNS) {
+          rows.push({
+            type: 'products',
+            products: uncategorizedProducts.slice(i, i + NUM_COLUMNS)
+          });
+        }
+      }
+    }
+
+    return rows;
+  }, [categoriesWithProducts, filteredProducts]);
 
   // Cart store integration
   const { addToCart, increment, decrement, setActiveCart, carts } = useCartStore();
