@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useLocation } from '../../hooks/Permissions/useLocation';
-import HomeMainScreen from './HomeMainScreen';
+import HomeMainScreen_2 from './HomeMainScreen_2';
 
 const HomeScreen = () => {
   const { isDenied, isBlocked, handleDeniedPermissionModal } = useLocation();
@@ -15,7 +15,7 @@ const HomeScreen = () => {
       handleDeniedPermissionModal();
     }
   }, [handleDeniedPermissionModal, isDenied, isBlocked]);
-  return <HomeMainScreen />;
+  return <HomeMainScreen_2 />;
 };
 
 export default HomeScreen;

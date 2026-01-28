@@ -3,6 +3,7 @@ import React, { createContext, useEffect, useRef } from 'react';
 import { Animated, Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import CartScreen from '../screens/cart/CartScreen';
 import ExploreScreen from '../screens/Explore/ExploreScreen';
 import HomeScreen from '../screens/Home/HomeScreen';
 import { useTheme } from '../theme/ThemeContext';
@@ -20,71 +21,11 @@ const SCROLL_THRESHOLD = 10;
 
 const TabNavigation = () => {
   const scrollY = useRef(new Animated.Value(0)).current;
-  const lastScrollY = useRef(0);
-  const isAnimating = useRef(false);
   const tabBarTranslateY = useRef(new Animated.Value(0)).current;
   const { getColor } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomInset = Platform.OS === 'android' ? Math.max(insets.bottom, 16) : insets.bottom;
   const fullTabBarHeight = TAB_BAR_HEIGHT + bottomInset;
-
-  const showTabBar = () => {
-    if (isAnimating.current) return;
-    isAnimating.current = true;
-
-    Animated.spring(tabBarTranslateY, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 120,
-      friction: 14,
-    }).start(() => {
-      isAnimating.current = false;
-    });
-  };
-
-  const hideTabBar = () => {
-    if (isAnimating.current) return;
-    isAnimating.current = true;
-
-    Animated.spring(tabBarTranslateY, {
-      toValue: fullTabBarHeight,
-      useNativeDriver: true,
-      tension: 120,
-      friction: 14,
-    }).start(() => {
-      isAnimating.current = false;
-    });
-  };
-
-  useEffect(() => {
-    const listenerId = scrollY.addListener(({ value }) => {
-      // Always show tab bar when at the top
-      if (value <= 0) {
-        showTabBar();
-        lastScrollY.current = value;
-        return;
-      }
-
-      const diff = value - lastScrollY.current;
-
-      // Only trigger animation if scroll distance exceeds threshold
-      if (Math.abs(diff) > SCROLL_THRESHOLD) {
-        if (diff > 0) {
-          // Scrolling up (content moving up) - hide tab bar
-          hideTabBar();
-        } else {
-          // Scrolling down (content moving down) - show tab bar
-          showTabBar();
-        }
-      }
-
-      lastScrollY.current = value;
-    });
-
-    return () => {
-      scrollY.removeListener(listenerId);
-    };
-  }, []);
 
   return (
     <TabBarVisibilityContext.Provider value={{ scrollY, tabBarHeight: TAB_BAR_HEIGHT, tabBarTranslateY, fullTabBarHeight }}>
@@ -105,7 +46,6 @@ const TabNavigation = () => {
           tabBarInactiveTintColor: getColor('subText'),
           tabBarLabelStyle: styles.tabLabel,
           tabBarItemStyle: styles.tabItem,
-          // Lazy load tabs for better performance
           lazy: true,
         }}
       >
@@ -120,11 +60,21 @@ const TabNavigation = () => {
         />
 
         <Tab.Screen
+          name="Cart"
+          component={CartScreen}
+          options={{
+            tabBarIcon: ({ color }) => (
+              <MaterialCommunityIcons name="cart-outline" size={24} color={color} />
+            ),
+          }}
+        />
+
+        <Tab.Screen
           name="Explore"
           component={ExploreScreen}
           options={{
             tabBarIcon: ({ color }) => (
-              <MaterialCommunityIcons name="earth" size={24} color={color} />
+              <MaterialCommunityIcons name="compass-outline" size={24} color={color} />
             ),
           }}
         />
