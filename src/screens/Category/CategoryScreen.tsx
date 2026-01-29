@@ -3,8 +3,10 @@ import React from 'react';
 import {
     Dimensions,
     Image,
+    Platform,
     SafeAreaView,
     ScrollView,
+    StatusBar,
     StyleSheet,
     Text,
     TextInput,
@@ -22,14 +24,16 @@ import SectionDivider from '../../components/common/SectionDivider';
 import useVendorStore from '../../store/vendorStore';
 import { getStoreStatus } from '../../utils/storeUtils';
 import VendorCard2 from '../../components/modules/Vendor/VendorCard2'; // Updated to V2
+import VendorShowcaseWidget from '../../components/modules/Vendor/VendorShowcaseWidget';
 import { Vendor } from '../../types/vendor';
+import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 
 type CategoryScreenRouteProp = RouteProp<RootStackParamList, 'Category'>;
 
 const { width } = Dimensions.get('window');
 
 const CategoryScreen = () => {
-    const navigation = useNavigation();
+    const navigation = useNavigation<any>();
     const route = useRoute<CategoryScreenRouteProp>();
     const { theme } = useTheme();
 
@@ -43,10 +47,17 @@ const CategoryScreen = () => {
         return vendors.filter(vendor => getStoreStatus(vendor).isOpen);
     }, [categoryName, getVendorsByCategory]);
 
+    // Cart Logic
+    // Cart Logic
+
     const handleVendorPress = (vendor: Vendor) => {
         // @ts-ignore - Assuming VendorProduct exists in stack but might not be typed yet in this file
         navigation.navigate('VendorProduct', { vendor });
     };
+
+    const handleSearchPress = React.useCallback(() => {
+        navigation.navigate('Search');
+    }, [navigation]);
 
     const headerImage = require('../../assets/images/food-for-you_categoryScreen.png');
 
@@ -80,7 +91,10 @@ const CategoryScreen = () => {
 
                 {/* Search Bar */}
                 <View style={styles.searchContainer}>
-                    <SearchBar placeholder={isGrocery ? "Search for 'Milk'" : "Search for 'Shawarma'"} />
+                    <SearchBar
+                        onPress={handleSearchPress}
+                        placeholder={isGrocery ? "Search for 'Milk'" : "Search for 'Shawarma'"}
+                    />
                 </View>
 
                 {/* Promo Banners */}
@@ -128,16 +142,24 @@ const CategoryScreen = () => {
 
                 <View style={{ paddingHorizontal: 20 }}>
                     {categoryVendors.map((vendor) => (
-                        <VendorCard2
-                            key={vendor.shopId}
-                            vendor={vendor}
-                            size="large"
-                            onPress={handleVendorPress}
-                        />
+                        <View key={vendor.shopId}>
+                            {/* <VendorCard2
+                                vendor={vendor}
+                                size="large"
+                                onPress={handleVendorPress}
+                            /> */}
+                            <View style={{ marginTop: 8, marginBottom: 24 }}>
+                                <VendorShowcaseWidget
+                                    vendor={vendor}
+                                    onPressExplore={() => handleVendorPress(vendor)}
+                                />
+                            </View>
+                        </View>
                     ))}
                 </View>
 
             </ScrollView>
+            <FloatingCartsStack />
         </SafeAreaView>
     );
 };
@@ -145,6 +167,7 @@ const CategoryScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     scrollContent: {
         paddingBottom: 40,

@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import CartScreen from '../screens/cart/CartScreen';
 import ExploreScreen from '../screens/Explore/ExploreScreen';
-import HomeScreen from '../screens/Home/HomeScreen';
+import HomeStack from './HomeStack';
 import { useTheme } from '../theme/ThemeContext';
 import HomeIcon from '../assets/svg/navBar-homeIcon.svg';
 import CartIcon from '../assets/svg/navBar-cartIcon.svg';
@@ -54,7 +54,7 @@ const TabNavigation = () => {
       >
         <Tab.Screen
           name="Home"
-          component={HomeScreen}
+          component={HomeStack}
           options={{
             tabBarIcon: ({ color }) => (
               <HomeIcon width={24} height={24} fill={color} />

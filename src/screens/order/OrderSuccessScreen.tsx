@@ -72,61 +72,81 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
   // ... existing code ...
 
   return (
-    <View style={[styles.container, { backgroundColor: getColor('background') }]}>
-      <StatusBar barStyle="light-content" backgroundColor={getColor('background')} />
+    <View style={[styles.container, { backgroundColor: '#F9FAFB' }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
 
       {/* Success Icon with Dots */}
       <View style={styles.iconContainer}>
-        <View style={[styles.successCircle, { backgroundColor: '#4ADE80' }]}>
+        {/* Decorative dots - repositioned to be relative to the icon */}
+        {Array.from({ length: 30 }).map((_, index) => {
+          const size = Math.random() * 6 + 2;
+          const left = (Math.random() - 0.5) * 220;
+          const top = (Math.random() - 0.5) * 220;
+          return (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                {
+                  backgroundColor: '#4ADE80',
+                  width: size,
+                  height: size,
+                  borderRadius: size / 2,
+                  opacity: 0.2 + Math.random() * 0.4,
+                  left: left + 40, // 40 is half of 80 (icon width)
+                  top: top + 40,
+                  zIndex: 1,
+                },
+              ]}
+            />
+          );
+        })}
+        <View style={[styles.successCircle, { backgroundColor: '#22C55E' }]}>
           <ThemeText style={styles.checkmark}>✓</ThemeText>
         </View>
-
-        {/* Decorative dots */}
-        {Array.from({ length: 20 }).map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.dot,
-              {
-                backgroundColor: '#4ADE80',
-                opacity: 0.3 + Math.random() * 0.7,
-                left: Math.random() * width * 0.8 + width * 0.1,
-                top: Math.random() * height * 0.3 + height * 0.1,
-                zIndex: 1, // Ensure dots are behind the success circle
-              },
-            ]}
-          />
-        ))}
       </View>
 
       {/* Order Details */}
       <View style={styles.detailsContainer}>
-        <ThemeText style={[styles.amount, { color: getColor('white') }]}>₹{amount}</ThemeText>
+        <ThemeText style={[styles.amount, { color: '#111827' }]}>₹{amount}</ThemeText>
 
-        <ThemeText style={[styles.successMessage, { color: getColor('white') }]}>
+        <ThemeText style={[styles.successMessage, { color: '#111827' }]}>
           Order Placed Successfully!
         </ThemeText>
 
-        <ThemeText style={[styles.orderInfo, { color: getColor('white') }]}>
-          Order: #{orderId}
-        </ThemeText>
+        <View style={styles.infoWrapper}>
+          <ThemeText style={[styles.orderInfoLabel, { color: '#6B7280' }]}>Order ID:</ThemeText>
+          <ThemeText style={[styles.orderInfoValue, { color: '#111827' }]}>#{orderId}</ThemeText>
+        </View>
 
-        <ThemeText style={[styles.orderInfo, { color: getColor('white') }]}>{date}</ThemeText>
+        <View style={styles.infoWrapper}>
+          <ThemeText style={[styles.orderInfoLabel, { color: '#6B7280' }]}>Date:</ThemeText>
+          <ThemeText style={[styles.orderInfoValue, { color: '#111827' }]}>{date}</ThemeText>
+        </View>
       </View>
 
       {/* Action Buttons */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity onPress={handleBackToHome} style={styles.textButton}>
-          <ThemeText style={[styles.textButtonText, { color: '#FEDB51' }]}>Back to Home</ThemeText>
-        </TouchableOpacity>
-
         <TouchableOpacity
           onPress={handleTrackOrder}
-          style={[styles.primaryButton, { backgroundColor: '#FEDB51' }]}
+          style={[styles.primaryButton, {
+            backgroundColor: '#FEDB51',
+            borderWidth: 1,
+            borderColor: '#FEDB51',
+            shadowColor: '#253EA7',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.48,
+            shadowRadius: 2,
+            elevation: 3
+          }]}
         >
-          <ThemeText style={[styles.primaryButtonText, { color: getColor('black') }]}>
+          <ThemeText style={[styles.primaryButtonText, { color: '#111827' }]}>
             Track Order
           </ThemeText>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleBackToHome} style={styles.secondaryButton}>
+          <ThemeText style={[styles.secondaryButtonText, { color: '#6B7280' }]}>Back to Home</ThemeText>
         </TouchableOpacity>
       </View>
     </View>
@@ -180,20 +200,24 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     marginBottom: 16,
   },
-  orderInfo: {
+  orderInfoValue: {
     fontSize: 16,
-    marginBottom: 4,
+    fontWeight: '600',
+    fontFamily: 'serif',
+  },
+  orderInfoLabel: {
+    fontSize: 14,
+    marginRight: 8,
+  },
+  infoWrapper: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 8,
   },
   buttonContainer: {
     width: '100%',
-    alignItems: 'center',
-  },
-  textButton: {
-    marginBottom: 20,
-  },
-  textButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
+    paddingHorizontal: 20,
+    marginTop: 20,
   },
   primaryButton: {
     width: '100%',
@@ -201,9 +225,20 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 16,
   },
   primaryButtonText: {
     fontSize: 18,
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    width: '100%',
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    fontSize: 16,
     fontWeight: '600',
   },
 });

@@ -37,24 +37,24 @@ const OrderFailureScreen: React.FC<OrderFailureScreenProps> = ({ route }) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: getColor('background') }]}>
-      <StatusBar barStyle="light-content" backgroundColor={getColor('background')} />
+    <View style={[styles.container, { backgroundColor: '#F9FAFB' }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
 
       {/* Failure Icon */}
       <View style={styles.iconContainer}>
-        <View style={[styles.failureCircle, { backgroundColor: '#F87171' }]}>
+        <View style={[styles.failureCircle, { backgroundColor: '#EF4444' }]}>
           <ThemeText style={styles.xMark}>✕</ThemeText>
         </View>
       </View>
 
       {/* Error Message */}
       <View style={styles.messageContainer}>
-        <ThemeText style={[styles.errorMessage, { color: getColor('white') }]}>
+        <ThemeText style={[styles.errorMessage, { color: '#111827' }]}>
           Order Couldn't{'\n'}be Placed!
         </ThemeText>
 
         {errorMessage && (
-          <ThemeText style={[styles.errorDetails, { color: getColor('subText') }]}>
+          <ThemeText style={[styles.errorDetails, { color: '#6B7280' }]}>
             {errorMessage}
           </ThemeText>
         )}
@@ -62,18 +62,25 @@ const OrderFailureScreen: React.FC<OrderFailureScreenProps> = ({ route }) => {
 
       {/* Action Buttons */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity onPress={handleBackToHome} style={styles.textButton}>
-          <ThemeText style={[styles.textButtonText, { color: getColor('white') }]}>
-            Back to Home
+        <TouchableOpacity
+          onPress={handleTryAgain}
+          style={[styles.primaryButton, {
+            backgroundColor: '#FEDB51',
+            shadowColor: '#253EA7',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.4,
+            shadowRadius: 2,
+            elevation: 3
+          }]}
+        >
+          <ThemeText style={[styles.primaryButtonText, { color: '#111827' }]}>
+            Try Again
           </ThemeText>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={handleTryAgain}
-          style={[styles.primaryButton, { backgroundColor: '#FEDB51' }]}
-        >
-          <ThemeText style={[styles.primaryButtonText, { color: getColor('black') }]}>
-            Try Again
+        <TouchableOpacity onPress={handleBackToHome} style={styles.secondaryButton}>
+          <ThemeText style={[styles.secondaryButtonText, { color: '#6B7280' }]}>
+            Back to Home
           </ThemeText>
         </TouchableOpacity>
       </View>
@@ -121,14 +128,8 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     width: '100%',
-    alignItems: 'center',
-  },
-  textButton: {
-    marginBottom: 20,
-  },
-  textButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
+    paddingHorizontal: 20,
+    marginTop: 20,
   },
   primaryButton: {
     width: '100%',
@@ -136,9 +137,20 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 16,
   },
   primaryButtonText: {
     fontSize: 18,
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    width: '100%',
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    fontSize: 16,
     fontWeight: '600',
   },
 });

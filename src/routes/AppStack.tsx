@@ -8,10 +8,8 @@ import { Platform } from 'react-native';
 import { Collection } from '../data/collectionsData';
 import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
-import CartScreen from '../screens/cart/CartScreen';
 import CouponsScreen from '../screens/cart/CouponsScreen';
 import CollectionDetailScreen from '../screens/collections/CollectionDetailScreen';
-import CategoryScreen from '../screens/Category/CategoryScreen';
 import OrderFailureScreen from '../screens/order/OrderFailureScreen';
 import OrderSuccessScreen from '../screens/order/OrderSuccessScreen';
 import AboutUsScreen from '../screens/profile/AboutUsScreen';
@@ -157,11 +155,6 @@ export const AppStack = () => {
         options={slideFromRightOptions}
       />
       <Stack.Screen
-        name="Cart"
-        component={CartScreen}
-        options={slideFromBottomOptions}
-      />
-      <Stack.Screen
         name="OrderDetails"
         component={OrderDetailsScreen}
         options={slideFromRightOptions}
@@ -231,11 +224,6 @@ export const AppStack = () => {
       <Stack.Screen
         name="AboutUs"
         component={AboutUsScreen}
-        options={slideFromRightOptions}
-      />
-      <Stack.Screen
-        name="Category"
-        component={CategoryScreen}
         options={slideFromRightOptions}
       />
     </Stack.Navigator>

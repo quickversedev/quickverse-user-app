@@ -3,6 +3,7 @@ import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
+import { TabBarVisibilityContext } from '../../../navigation/TabNavigation';
 
 interface CartFooterProps {
   address: string;
@@ -21,6 +22,8 @@ const CartFooter: React.FC<CartFooterProps> = ({
 }) => {
   const { getColor, getTypography, theme, getButtonColor } = useTheme();
   const insets = useSafeAreaInsets();
+  const tabBarContext = React.useContext(TabBarVisibilityContext);
+  const extraBottom = tabBarContext?.fullTabBarHeight || 0;
 
   const isAddressSelected = address !== 'Select delivery address';
 
@@ -29,11 +32,11 @@ const CartFooter: React.FC<CartFooterProps> = ({
       position: 'absolute',
       left: 0,
       right: 0,
-      bottom: 0,
+      bottom: extraBottom,
       backgroundColor: getColor('card'),
       paddingHorizontal: 16,
       paddingTop: 16,
-      paddingBottom: Math.max(insets.bottom, 16) + 8,
+      paddingBottom: extraBottom > 0 ? 16 : Math.max(insets.bottom, 16) + 8,
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       flexDirection: 'column',

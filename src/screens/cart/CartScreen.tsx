@@ -60,6 +60,7 @@ const CartScreen: React.FC = () => {
     getAppliedCoupon,
     refreshCart,
     addToCart,
+    setActiveCart,
   } = useCartStore();
   const { vendors } = useVendorStore();
   const {
@@ -106,13 +107,16 @@ const CartScreen: React.FC = () => {
 
   // Memoized derived state
   const cart = useMemo(() => {
-    const selectedCart = cartId ? carts[cartId] : activeCartId ? carts[activeCartId] : undefined;
-    // Ensure cart has required properties
-    if (selectedCart && !selectedCart.cartId) {
-      console.warn('Cart missing cartId property:', selectedCart);
-      return undefined;
+    if (cartId && carts[cartId]) return carts[cartId];
+    if (activeCartId && carts[activeCartId]) return carts[activeCartId];
+
+    // Fallback: pick the first available cart if any
+    const allCartIds = Object.keys(carts);
+    if (allCartIds.length > 0) {
+      return carts[allCartIds[0]];
     }
-    return selectedCart;
+
+    return undefined;
   }, [cartId, activeCartId, carts]);
 
   const cartItems = useMemo(() => {
@@ -204,7 +208,7 @@ const CartScreen: React.FC = () => {
       if (navigation.canGoBack()) {
         navigation.goBack();
       } else {
-        navigation.navigate('Home');
+        navigation.navigate('MainApp');
       }
     }
   }, [cart, authData?.jwt, authData?.phone, clearCart, navigation]);
@@ -400,10 +404,10 @@ const CartScreen: React.FC = () => {
       ) {
         const status = vendor
           ? isStoreOpen({
-              openingTime: vendor.openingTime,
-              closingTime: vendor.closingTime,
-              storeActive: vendor.storeActive,
-            })
+            openingTime: vendor.openingTime,
+            closingTime: vendor.closingTime,
+            storeActive: vendor.storeActive,
+          })
           : null;
 
         // Only show opening time if store is closed due to time (not manually closed)
@@ -583,15 +587,12 @@ const CartScreen: React.FC = () => {
     authData,
   ]);
 
+  // Sync activeCartId if we found a cart via fallback
   React.useEffect(() => {
-    if (!cart || cartItems.length === 0) {
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      } else {
-        navigation.navigate('Home');
-      }
+    if (cart && !activeCartId) {
+      setActiveCart(cart.cartId);
     }
-  }, [cart, cartItems.length, navigation]);
+  }, [cart?.cartId, activeCartId, setActiveCart]);
 
   // Set default payment option when payment methods are loaded
   React.useEffect(() => {
@@ -643,9 +644,21 @@ const CartScreen: React.FC = () => {
     fetchFeatured();
   }, [vendor?.shopId, getFeaturedProducts]);
 
-  // Early return if cart or vendor is not available
-  if (!cart || !vendor) {
-    return null;
+  // Return empty state if cart or vendor is not available
+  if (!cart || !vendor || cartItems.length === 0) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background'), justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <MaterialCommunityIcons name="cart-off" size={80} color={getColor('subText')} />
+        <Text style={{ fontSize: 20, fontWeight: '700', color: getColor('text'), marginTop: 20 }}>Your cart is empty</Text>
+        <Text style={{ fontSize: 16, color: getColor('subText'), textAlign: 'center', marginTop: 10 }}>Looks like you haven't added anything to your cart yet.</Text>
+        <TouchableOpacity
+          style={{ marginTop: 30, backgroundColor: getColor('primary'), paddingHorizontal: 30, paddingVertical: 12, borderRadius: 25 }}
+          onPress={() => navigation.navigate('MainApp')}
+        >
+          <Text style={{ color: '#fff', fontWeight: '700' }}>Start Shopping</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -654,7 +667,7 @@ const CartScreen: React.FC = () => {
       edges={['top', 'bottom']}
     >
       <CartHeader
-        onBack={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home'))}
+        onBack={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('MainApp'))}
         onClearCart={handleClearCart}
       />
 
