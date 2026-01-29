@@ -7,6 +7,9 @@ import CartScreen from '../screens/cart/CartScreen';
 import ExploreScreen from '../screens/Explore/ExploreScreen';
 import HomeScreen from '../screens/Home/HomeScreen';
 import { useTheme } from '../theme/ThemeContext';
+import HomeIcon from '../assets/svg/navBar-homeIcon.svg';
+import CartIcon from '../assets/svg/navBar-cartIcon.svg';
+import ExploreIcon from '../assets/svg/navBar-exploreIcon.svg';
 
 export const TabBarVisibilityContext = createContext<{
   scrollY: Animated.Value;
@@ -54,7 +57,7 @@ const TabNavigation = () => {
           component={HomeScreen}
           options={{
             tabBarIcon: ({ color }) => (
-              <MaterialCommunityIcons name="home-variant" size={24} color={color} />
+              <HomeIcon width={24} height={24} fill={color} />
             ),
           }}
         />
@@ -64,7 +67,7 @@ const TabNavigation = () => {
           component={CartScreen}
           options={{
             tabBarIcon: ({ color }) => (
-              <MaterialCommunityIcons name="cart-outline" size={24} color={color} />
+              <CartIcon width={24} height={24} stroke={color} />
             ),
           }}
         />
@@ -74,7 +77,7 @@ const TabNavigation = () => {
           component={ExploreScreen}
           options={{
             tabBarIcon: ({ color }) => (
-              <MaterialCommunityIcons name="compass-outline" size={24} color={color} />
+              <ExploreIcon width={24} height={24} fill={color} />
             ),
           }}
         />

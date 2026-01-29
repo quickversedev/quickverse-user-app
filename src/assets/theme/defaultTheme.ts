@@ -3,40 +3,40 @@ import { Theme } from '../../theme/ThemeContext';
 
 export const DefaultTheme: Theme = {
   colors: {
-    main: '#FAE588',
-    secondary: '#FFE885', // used in otpButton background
-    background: '#111827', // screen background
-    tabBackground: '#1F2937',
-    card: '#1F2937', // card + input background
-    border: '#374151', // input border
-    overlay: '#4B5563', // skip button background
+    main: '#D97706', // Amber/Orange - from LightTheme
+    secondary: '#F59E0B',
+    background: '#F9FAFB', // Light background
+    tabBackground: '#FFFFFF',
+    card: '#F2F2F2',
+    border: '#E0E0E0',
+    overlay: '#EEEEEE',
     white: '#FFFFFF',
     black: '#000000',
-    error: '#EF4444',
-    text: '#F3F4F6', // title text
-    subText: '#9CA3AF', // subtitle + phoneLabel
+    error: '#DC2626',
+    text: '#1F2937', // Dark text
+    subText: '#4B5563',
     placeholder: '#9CA3AF',
-    dividerText: '#AEB2BC', // section divider text
-    dividerLine: '#888C99', // section divider line
+    dividerText: '#6B7280',
+    dividerLine: '#9CA3AF',
 
     button: {
-      default_background: '#FFE885',
-      default_text: '#000000',
-      pressed_background: '#E6D172',
-      pressed_text: '#000000',
-      disabled_background: '#CCCCCC',
-      disabled_text: '#666666',
+      default_background: '#D97706',
+      default_text: '#FFFFFF',
+      pressed_background: '#B45309',
+      pressed_text: '#FFFFFF',
+      disabled_background: '#E5E5E5',
+      disabled_text: '#9CA3AF',
     },
 
     shadow: {
-      color: '#FAE588',
-      opacity: 0.15,
+      color: '#000000',
+      opacity: 0.08,
       offset_width: 0,
-      offset_height: 5,
-      radius: 10,
+      offset_height: 2,
+      radius: 8,
     },
 
-    borderHighlight: 'yellow', // used in card border
+    borderHighlight: '#D97706',
   },
 
   typography: {
@@ -47,11 +47,11 @@ export const DefaultTheme: Theme = {
     }) as string,
     lineHeightMultiplier: 1.4,
 
-    h1: 28, // for title
+    h1: 28,
     h2: 22,
-    subtitle: 18, // for subtext
-    body: 16, // input text, calling code
-    caption: 14, // skip text, phoneLabel
+    subtitle: 18,
+    body: 16,
+    caption: 14,
     small: 12,
   },
 

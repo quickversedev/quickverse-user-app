@@ -5,7 +5,7 @@ export interface Promotion {
   size: string;
   backgroundColor: string;
   bannerImage: boolean;
-  imageURL: string;
+  imageURL: string | number;
 }
 
 export interface Page {

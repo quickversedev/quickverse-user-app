@@ -11,10 +11,10 @@ const MOCK_PROMOTIONS = [
         shopId: 'mock_1',
         title: 'Design Clients',
         subtitle: 'If you struggle to get design clients, read this.',
-        size: 'large', // Using 'large' for bigger height
+        size: 'large',
         backgroundColor: '#F5F5F5',
         bannerImage: true,
-        imageURL: 'https://images.unsplash.com/photo-1626785774583-b61d526ca6c3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        imageURL: require('../../../assets/images/homescreen_mockPromotion-poster.png'),
     },
     {
         shopId: 'mock_2',
@@ -78,7 +78,7 @@ const HomePromotionCarousel = () => {
                         // I'll stick to 'large' or maybe 200 via number if large isn't big enough.
                         // Let's us 'large' first as it's a standard size. 
                         // Actually, I'll use a custom size of 220 to be safe for "bigger".
-                        size={220}
+                        size={178}
                         style={styles.bannerContainer}
                         aspectRatio={1.5} // slightly taller aspect ratio
                     />

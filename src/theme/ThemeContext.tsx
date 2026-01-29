@@ -2,6 +2,7 @@
 // NOTE: ThemeProvider will always use DefaultTheme if useDefaultTheme is true in the config or if the API fails, as handled by the store.
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { DefaultTheme } from '../assets/theme/defaultTheme';
+import { LightTheme } from '../assets/theme/lightTheme';
 import useThemeStore, { ThemeMode } from '../store/themeStore';
 
 type ButtonColors = {
@@ -83,27 +84,18 @@ type ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const { theme, themeMode, toggleTheme } = useThemeStore();
+  const [isLoading, setIsLoading] = useState(false); // No loading needed
+  // const [error, setError] = useState<Error | null>(null);
+  // const { theme, themeMode, toggleTheme } = useThemeStore(); // Ignored
+
+  // FORCE LIGHT THEME
+  const theme = LightTheme;
+  const themeMode = 'light';
+  const toggleTheme = () => console.log('Theme toggling is disabled.');
 
   useEffect(() => {
     setIsLoading(false);
   }, []);
-
-  const _validateTheme = (apiTheme: unknown): Theme => {
-    // Basic validation - expand according to your API contract
-    const isValid =
-      apiTheme &&
-      typeof apiTheme === 'object' &&
-      apiTheme !== null &&
-      'colors' in apiTheme &&
-      'typography' in apiTheme &&
-      typeof (apiTheme as Partial<Theme>)?.colors?.button?.default_background === 'string' &&
-      typeof (apiTheme as Partial<Theme>)?.typography?.h1 === 'number';
-
-    return isValid ? (apiTheme as Theme) : DefaultTheme;
-  };
 
   const getColor = (colorKey: keyof Colors | 'primary' | 'primaryLight' | 'success'): string => {
     const map: Record<string, keyof Colors> = {
@@ -112,13 +104,13 @@ const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       success: 'secondary',
     };
     const resolvedKey = (map[colorKey as string] || colorKey) as keyof Colors;
-    return (theme.colors[resolvedKey] || DefaultTheme.colors[resolvedKey]) as string;
+    return theme.colors[resolvedKey] as string;
   };
 
   const getTypography = (
     type: keyof Omit<Typography, 'fontFamily' | 'lineHeightMultiplier'>
   ): number => {
-    return theme.typography[type] || DefaultTheme.typography[type];
+    return theme.typography[type];
   };
 
   const getButtonColor = (
@@ -126,7 +118,7 @@ const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     element: 'background' | 'text'
   ): string => {
     const key = `${state}_${element}` as keyof ButtonColors;
-    const value = theme.colors.button[key] ?? DefaultTheme.colors.button[key];
+    const value = theme.colors.button[key];
     return value as string;
   };
 
@@ -136,12 +128,12 @@ const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         theme,
         themeMode,
         isLoading,
-        error,
+        error: null,
         getColor,
         getTypography,
         getButtonColor,
         toggleTheme,
-        isDarkMode: themeMode === 'dark',
+        isDarkMode: false,
       }}
     >
       {children}

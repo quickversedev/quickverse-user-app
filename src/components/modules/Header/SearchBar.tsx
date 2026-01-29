@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Animated, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import LinearGradient from 'react-native-linear-gradient';
+import Icon from 'react-native-vector-icons/Feather';
 import { useTheme } from '../../../theme/ThemeContext';
 
 interface SearchBarProps {
@@ -11,33 +12,46 @@ const SearchBarContent: React.FC = () => {
   const { theme } = useTheme();
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.colors.card,
-          borderColor: theme.colors.main,
-          shadowColor: theme.colors.main,
-        },
-      ]}
+    <LinearGradient
+      colors={['#F9FAFB', '#FEDB51']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }} // 180 degrees (approx)
+      style={{
+        borderRadius: 12,
+        padding: 1, // acts as border width
+        // shadow/elevation logic if needed (might need to move to wrapper or handle locally)
+      }}
     >
-      <Icon name="magnify" size={22} color={theme.colors.subText} style={styles.icon} />
-      <TextInput
-        placeholder="Search for shops, products etc."
-        placeholderTextColor={theme.colors.subText}
+      <View
         style={[
-          styles.input,
+          styles.container,
           {
-            color: theme.colors.text,
-            fontSize: theme.typography.body,
-            lineHeight: theme.typography.body * theme.typography.lineHeightMultiplier,
-            fontFamily: theme.typography.fontFamily,
+            backgroundColor: '#F1F2F4', // Search Bar specific background
+            borderColor: 'transparent', // Handled by gradient
+            borderWidth: 0,
+            shadowColor: 'transparent',
+            elevation: 0,
           },
         ]}
-        editable={false}
-        pointerEvents="none"
-      />
-    </View>
+      >
+        <Icon name="search" size={22} color={"#9CA3AF"} style={styles.icon} />
+        <TextInput
+          placeholder="Search for shops, products etc."
+          placeholderTextColor={"#9CA3AF"}
+          style={[
+            styles.input,
+            {
+              color: theme.colors.text,
+              fontSize: theme.typography.body,
+              lineHeight: theme.typography.body * theme.typography.lineHeightMultiplier,
+              fontFamily: theme.typography.fontFamily,
+            },
+          ]}
+          editable={false}
+          pointerEvents="none"
+        />
+      </View>
+    </LinearGradient>
   );
 };
 
@@ -109,8 +123,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onPress }) => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingHorizontal: 8,
-    marginVertical: 8,
+    paddingHorizontal: 0,
+    marginVertical: 0,
   },
   container: {
     flexDirection: 'row',

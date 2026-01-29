@@ -1,6 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AppNavigationProp } from '../../../types/navigation';
 
@@ -21,16 +22,14 @@ const CategoryCards = () => {
             <Card
                 title="Food Delivery"
                 subtitle="(Offer UX copy)"
-                // color="#FF6B35" 
-                // image={require('../../../assets/food.png')} 
+                image={require('../../../assets/images/food_homeScreen-category.png')}
                 onPress={() => handlePress('food')}
                 theme={theme}
             />
             <Card
                 title="Grocery"
                 subtitle="(Offer UX copy)"
-                // color="#2D6A4F" 
-                // image={require('../../../assets/grocery.png')} 
+                image={require('../../../assets/images/grocery_homeScreen-category.png')}
                 onPress={() => handlePress('Grocery')}
                 theme={theme}
             />
@@ -38,20 +37,36 @@ const CategoryCards = () => {
     );
 };
 
-const Card = ({ title, subtitle, onPress, theme }: any) => (
+const Card = ({ title, subtitle, onPress, theme, image }: any) => (
     <TouchableOpacity
-        style={[styles.card, { backgroundColor: theme.colors.card }]}
         onPress={onPress}
         activeOpacity={0.8}
+        style={styles.cardWrapper}
     >
-        <View style={styles.textContainer}>
-            <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
-            <Text style={[styles.subtitle, { color: theme.colors.subText }]}>{subtitle}</Text>
-        </View>
-        <View style={styles.imagePlaceholder}>
-            {/* Placeholder for image */}
-            <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: theme.colors.border }} />
-        </View>
+        <LinearGradient
+            colors={['#F9FAFB', '#FEDB51']}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={{
+                borderRadius: 16,
+                padding: 1, // Border width
+                flex: 1,
+            }}
+        >
+            <View style={[styles.cardContent, { backgroundColor: theme.colors.card }]}>
+                <View style={styles.textContainer}>
+                    <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
+                    <Text style={[styles.subtitle, { color: theme.colors.subText }]}>{subtitle}</Text>
+                </View>
+                {image && (
+                    <Image
+                        source={image}
+                        style={styles.cardImage}
+                        resizeMode="contain"
+                    />
+                )}
+            </View>
+        </LinearGradient>
     </TouchableOpacity>
 );
 
@@ -62,17 +77,22 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         marginBottom: 24,
     },
-    card: {
+    cardWrapper: {
         width: CARD_WIDTH,
         height: 140,
         borderRadius: 16,
-        padding: 16,
-        justifyContent: 'space-between',
+        // Elevation/Shadow needs to be on wrapper or handled carefully with gradient
         elevation: 2,
         shadowColor: '#000',
         shadowOpacity: 0.1,
         shadowRadius: 8,
         shadowOffset: { width: 0, height: 2 },
+    },
+    cardContent: {
+        flex: 1,
+        borderRadius: 15, // Slightly less than wrapper (16-1)
+        padding: 16,
+        justifyContent: 'space-between',
     },
     textContainer: {
         flex: 1,
@@ -85,9 +105,13 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 12,
     },
-    imagePlaceholder: {
-        alignSelf: 'flex-end',
-        marginTop: 8,
+    cardImage: {
+        position: 'absolute',
+        bottom: -5,
+        right: -2,
+        width: 100,
+        height: 100,
+        borderBottomRightRadius: 15,
     }
 });
 

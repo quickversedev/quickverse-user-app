@@ -85,23 +85,23 @@ const ProfileScreen = () => {
   const features: FeatureItem[] = [
     ...(isLoggedIn
       ? [
-          {
-            id: 'addresses',
-            title: 'Addresses',
-            icon: 'map-marker-outline',
-            onPress: () => {
-              navigation.navigate('Address');
-            },
+        {
+          id: 'addresses',
+          title: 'Addresses',
+          icon: 'map-marker-outline',
+          onPress: () => {
+            navigation.navigate('Address');
           },
-          {
-            id: 'orders',
-            title: 'Orders',
-            icon: 'package-variant',
-            onPress: () => {
-              navigation.navigate('Orders');
-            },
+        },
+        {
+          id: 'orders',
+          title: 'Orders',
+          icon: 'package-variant',
+          onPress: () => {
+            navigation.navigate('Orders');
           },
-        ]
+        },
+      ]
       : []),
     {
       id: 'help',
@@ -148,7 +148,7 @@ const ProfileScreen = () => {
         </View>
 
         {/* Theme Toggle Section */}
-        <View style={[styles.themeToggleContainer, { backgroundColor: getColor('card') }]}>
+        {/* <View style={[styles.themeToggleContainer, { backgroundColor: getColor('card') }]}>
           <View style={styles.themeToggleContent}>
             <Icon
               name={isDarkMode ? 'weather-night' : 'weather-sunny'}
@@ -166,7 +166,7 @@ const ProfileScreen = () => {
             thumbColor={isDarkMode ? '#FFF' : '#FFF'}
             ios_backgroundColor="#E0E0E0"
           />
-        </View>
+        </View> */}
 
         {/* Delete Account Section */}
         {isLoggedIn && (

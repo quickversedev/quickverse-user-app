@@ -6,6 +6,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import type { Address } from '../../../types/address';
 import { ThemeText } from '../../common/theme/ThemeText';
 import { AddressSelectionModal } from './AddressSelectionModal';
+import MapIcon from '../../../assets/svg/homeHeader-mapIcon.svg';
 
 export const LocationSelector = () => {
   const { theme } = useTheme();
@@ -66,7 +67,7 @@ export const LocationSelector = () => {
         accessibilityHint="Opens address selection modal"
         activeOpacity={0.7}
       >
-        <Icon name="map-marker" size={24} color={theme.colors.main} style={styles.icon} />
+        <MapIcon width={24} height={24} style={styles.icon} />
         <View style={styles.textContainer}>
           <ThemeText variant="body" style={styles.greeting}>
             {getDisplayName()}
@@ -107,15 +108,26 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   greeting: {
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#111827',
+    lineHeight: 21.6, // 135%
+    letterSpacing: -0.3,
     marginBottom: 2,
+    fontFamily: 'Bricolage Grotesque',
   },
   addressRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   address: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#4B5563', // Grey/600
+    lineHeight: 15.4, // 110% of 14
+    letterSpacing: -0.3,
     marginRight: 4,
+    fontFamily: 'Bricolage Grotesque',
   },
   chevron: {
     marginTop: 2,

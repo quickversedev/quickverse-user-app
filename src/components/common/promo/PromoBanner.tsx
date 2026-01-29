@@ -189,13 +189,13 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
   const bannerShadow =
     Platform.OS === 'ios'
       ? {
-          shadowColor: theme.colors.shadow.color,
-          shadowOpacity: theme.colors.shadow.opacity,
-          shadowRadius: theme.colors.shadow.radius,
-        }
+        shadowColor: theme.colors.shadow.color,
+        shadowOpacity: theme.colors.shadow.opacity,
+        shadowRadius: theme.colors.shadow.radius,
+      }
       : {
-          elevation: 2,
-        };
+        elevation: 2,
+      };
 
   if (isBannerImage) {
     if (!imageUrl) {
@@ -212,7 +212,7 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
         ]}
       >
         <Image
-          source={{ uri: imageUrl }}
+          source={typeof imageUrl === 'string' ? { uri: imageUrl } : imageUrl}
           style={[styles.bannerImage, imageStyle]}
           resizeMode="cover"
         />
@@ -230,7 +230,13 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
       ]}
     >
       <Image
-        source={imageUrl ? { uri: imageUrl } : fallbackPromo}
+        source={
+          imageUrl
+            ? typeof imageUrl === 'string'
+              ? { uri: imageUrl }
+              : imageUrl
+            : fallbackPromo
+        }
         style={[
           styles.image,
           {

@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { RootStackParamList } from '../../../routes/AppStack';
 import { useTheme } from '../../../theme/ThemeContext';
 
@@ -16,15 +16,9 @@ export const ProfileIcon = () => {
 
   return (
     <TouchableOpacity
-      style={[
-        styles.container,
-        {
-          backgroundColor: getColor('card'),
-        },
-      ]}
       onPress={handleProfilePress}
     >
-      <Icon name="account" size={24} color={getColor('subText')} />
+      <Icon name="account-circle" size={40} color="#111827" />
     </TouchableOpacity>
   );
 };

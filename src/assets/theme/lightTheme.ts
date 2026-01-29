@@ -5,9 +5,9 @@ export const LightTheme: Theme = {
   colors: {
     main: '#D97706', // Amber/Orange - good contrast on white
     secondary: '#F59E0B',
-    background: '#F5F5F5', // Soft warm gray background
+    background: '#F9FAFB', // Soft warm gray background
     tabBackground: '#FFFFFF',
-    card: '#FFFFFF',
+    card: '#F2F2F2',
     border: '#E0E0E0', // Slightly darker border for definition
     overlay: '#EEEEEE',
     white: '#FFFFFF',

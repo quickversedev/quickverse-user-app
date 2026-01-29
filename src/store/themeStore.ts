@@ -24,7 +24,7 @@ const useThemeStore = create<ThemeStore>()(
   persist(
     (set, get) => ({
       theme: DefaultTheme,
-      themeMode: 'dark' as ThemeMode,
+      themeMode: 'light' as ThemeMode,
       loading: false,
       error: null,
 
@@ -41,7 +41,8 @@ const useThemeStore = create<ThemeStore>()(
           // Use local theme based on mode
           if (isDefaultThemeEnabled === true || isDefaultThemeEnabled === undefined) {
             set({
-              theme: currentMode === 'dark' ? DefaultTheme : LightTheme,
+              // theme: currentMode === 'dark' ? DefaultTheme : LightTheme,
+              theme: LightTheme,
               loading: false,
               error: null,
             });
@@ -53,13 +54,15 @@ const useThemeStore = create<ThemeStore>()(
 
           if (config.useDefaultTheme) {
             set({
-              theme: currentMode === 'dark' ? DefaultTheme : LightTheme,
+              // theme: currentMode === 'dark' ? DefaultTheme : LightTheme,
+              theme: LightTheme,
               loading: false,
               error: null,
             });
           } else {
             set({
-              theme: (config as unknown as Theme) || (currentMode === 'dark' ? DefaultTheme : LightTheme),
+              // theme: (config as unknown as Theme) || (currentMode === 'dark' ? DefaultTheme : LightTheme),
+              theme: (config as unknown as Theme) || LightTheme,
               loading: false,
               error: null,
             });
@@ -67,7 +70,8 @@ const useThemeStore = create<ThemeStore>()(
         } catch (err: unknown) {
           const currentMode = get().themeMode;
           set({
-            theme: currentMode === 'dark' ? DefaultTheme : LightTheme,
+            // theme: currentMode === 'dark' ? DefaultTheme : LightTheme,
+            theme: LightTheme,
             loading: false,
             error: (err as Error)?.message || 'Failed to fetch theme config',
           });
@@ -77,29 +81,30 @@ const useThemeStore = create<ThemeStore>()(
       getTheme: () => get().theme,
 
       toggleTheme: () => {
-        const currentMode = get().themeMode;
-        const newMode: ThemeMode = currentMode === 'dark' ? 'light' : 'dark';
+        // const currentMode = get().themeMode;
+        // const newMode: ThemeMode = currentMode === 'dark' ? 'light' : 'dark';
         set({
-          themeMode: newMode,
-          theme: newMode === 'dark' ? DefaultTheme : LightTheme,
+          themeMode: 'light',
+          theme: LightTheme,
         });
       },
 
       setThemeMode: (mode: ThemeMode) => {
         set({
-          themeMode: mode,
-          theme: mode === 'dark' ? DefaultTheme : LightTheme,
+          themeMode: 'light',
+          theme: LightTheme,
         });
       },
     }),
     {
-      name: 'theme-storage',
+      name: 'theme-storage-v2', // Reset storage to clear persisted dark theme
       storage: createJSONStorage(() => mmkvStorage),
       partialize: (state) => ({ themeMode: state.themeMode }),
       onRehydrateStorage: () => (state) => {
         // After rehydration, set the correct theme based on saved mode
         if (state) {
-          state.theme = state.themeMode === 'dark' ? DefaultTheme : LightTheme;
+          // state.theme = state.themeMode === 'dark' ? DefaultTheme : LightTheme;
+          state.theme = LightTheme;
         }
       },
     }
