@@ -11,6 +11,7 @@ import TabNavigation from '../navigation/TabNavigation';
 import CartScreen from '../screens/cart/CartScreen';
 import CouponsScreen from '../screens/cart/CouponsScreen';
 import CollectionDetailScreen from '../screens/collections/CollectionDetailScreen';
+import CategoryScreen from '../screens/Category/CategoryScreen';
 import OrderFailureScreen from '../screens/order/OrderFailureScreen';
 import OrderSuccessScreen from '../screens/order/OrderSuccessScreen';
 import AboutUsScreen from '../screens/profile/AboutUsScreen';
@@ -44,6 +45,7 @@ export type RootStackParamList = {
   Address: undefined;
   HelpDesk: undefined;
   AboutUs: undefined;
+  Category: { categoryName: string };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -229,6 +231,11 @@ export const AppStack = () => {
       <Stack.Screen
         name="AboutUs"
         component={AboutUsScreen}
+        options={slideFromRightOptions}
+      />
+      <Stack.Screen
+        name="Category"
+        component={CategoryScreen}
         options={slideFromRightOptions}
       />
     </Stack.Navigator>

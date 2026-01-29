@@ -1,0 +1,241 @@
+import React from 'react';
+import {
+    Dimensions,
+    Image,
+    ImageSourcePropType,
+    StyleSheet,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AntDesign from 'react-native-vector-icons/AntDesign';
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
+import { useTheme } from '../../../theme/ThemeContext';
+import { Vendor } from '../../../types/vendor';
+import { getCleanImageUri } from '../../../utils/imageUtils';
+import { formatTimeToAMPM, isStoreOpen } from '../../../utils/storeUtils';
+import { ThemeText } from '../../common/theme/ThemeText';
+
+const { width } = Dimensions.get('window');
+
+type CardSize = 'small' | 'medium' | 'large' | number;
+
+interface VendorCardProps {
+    vendor: Vendor;
+    onPress: (vendor: Vendor) => void;
+    onFavoritePress?: (vendor: Vendor) => void;
+    isFavorite?: boolean;
+    size?: CardSize;
+    disabled?: boolean;
+}
+
+const VendorCard2: React.FC<VendorCardProps> = ({
+    vendor,
+    onPress,
+    onFavoritePress,
+    isFavorite = false,
+    size = 'medium',
+    disabled = false,
+}) => {
+    const { getColor, theme } = useTheme();
+
+    const storeStatus = React.useMemo(
+        () =>
+            isStoreOpen({
+                openingTime: vendor.openingTime,
+                closingTime: vendor.closingTime,
+                storeActive: vendor.storeActive,
+            }),
+        [vendor.openingTime, vendor.closingTime, vendor.storeActive]
+    );
+
+    const getCardWidth = (): number => {
+        switch (size) {
+            case 'small':
+                return (width - 48) / 3;
+            case 'large':
+                return width - 40; // Full width with margins
+            case 'medium':
+            default:
+                return (width - 48) / 2;
+        }
+    };
+
+    const cardWidth = typeof size === 'number' ? size : getCardWidth();
+    const imageHeight = 120; // Fixed reasonable height for the image part, matches screenshot proportions roughly
+
+    const bannerUri = getCleanImageUri(vendor.banner as string);
+    const logoUri = getCleanImageUri(vendor.logo as string);
+
+    const imageSource: ImageSourcePropType | undefined = bannerUri
+        ? { uri: bannerUri }
+        : logoUri
+            ? { uri: logoUri }
+            : undefined;
+
+    // Hardcoded colors to match screenshot aesthetics
+    const COLORS = {
+        background: '#F9FAFB', // Very light grey/white
+        cardBg: '#FFFFFF',
+        title: '#003F66', // Dark slate/navy
+        starBg: '#12A58C', // Emerald green
+        metaText: '#9CA3AF', // Grey
+        metaIcon: '#9CA3AF',
+    };
+
+    const styles = StyleSheet.create({
+        cardContainer: {
+            width: cardWidth,
+            backgroundColor: COLORS.cardBg,
+            borderRadius: 16,
+            marginBottom: 16,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.08,
+            shadowRadius: 12,
+            elevation: 3,
+            overflow: 'visible', // Allow shadow to show
+        },
+        innerContainer: {
+            borderRadius: 16,
+            overflow: 'hidden',
+            backgroundColor: COLORS.cardBg,
+        },
+        imageWrapper: {
+            position: 'relative',
+            height: imageHeight,
+            width: '100%',
+            backgroundColor: '#E2E8F0',
+        },
+        vendorImage: {
+            width: '100%',
+            height: '100%',
+            resizeMode: 'cover',
+        },
+        disabledOverlay: {
+            ...StyleSheet.absoluteFillObject,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            zIndex: 10,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        closedText: {
+            color: '#fff',
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+        },
+        favoriteButton: {
+            position: 'absolute',
+            top: 6,
+            right: 6,
+            zIndex: 20,
+            backgroundColor: '#55555566',
+            borderRadius: 20,
+            padding: 4,
+        },
+        contentContainer: {
+            padding: 10,
+            paddingBottom: 12,
+        },
+        title: {
+            fontSize: 16,
+            fontWeight: '700',
+            color: COLORS.title,
+            marginBottom: 4,
+            fontFamily: 'Inter-Bold', // Assuming Inter or system bold
+        },
+        ratingRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 6,
+        },
+        ratingBadge: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: COLORS.starBg,
+            paddingHorizontal: 4,
+            // paddingVertical: 2,
+            borderRadius: 6,
+            marginRight: 8,
+        },
+        ratingText: {
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: '700',
+            marginLeft: 4,
+        },
+        reviewCount: {
+            color: COLORS.metaText,
+            fontSize: 13,
+            fontWeight: '400',
+        },
+        metaRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        metaText: {
+            color: COLORS.metaText,
+            fontSize: 13,
+            fontWeight: '500',
+        },
+        dot: {
+            marginHorizontal: 6,
+            color: COLORS.metaText,
+            fontSize: 10,
+        }
+    });
+
+    return (
+        <TouchableOpacity
+            activeOpacity={0.9}
+            style={styles.cardContainer}
+            onPress={() => onPress(vendor)}
+        >
+            <View style={styles.innerContainer}>
+                <View style={styles.imageWrapper}>
+                    {disabled && (
+                        <View style={styles.disabledOverlay}>
+                            <ThemeText style={styles.closedText}>CLOSED</ThemeText>
+                        </View>
+                    )}
+                    {imageSource && (
+                        <Image source={imageSource} style={styles.vendorImage} />
+                    )}
+                    {/* <TouchableOpacity
+                        style={styles.favoriteButton}
+                        onPress={() => onFavoritePress && onFavoritePress(vendor)}
+                    >
+                        <MaterialCommunityIcons
+                            name={isFavorite ? 'heart' : 'heart-outline'}
+                            size={24}
+                            color="#fff"
+                        />
+                    </TouchableOpacity> */}
+                </View>
+
+                <View style={styles.contentContainer}>
+                    <ThemeText style={styles.title} numberOfLines={1}>
+                        {vendor.name}
+                    </ThemeText>
+
+                    <View style={styles.ratingRow}>
+                        <View style={styles.ratingBadge}>
+                            <AntDesign name="star" size={12} color="#fff" />
+                            <ThemeText style={styles.ratingText}>{vendor.rating || 4.3}</ThemeText>
+                        </View>
+                        <ThemeText style={styles.reviewCount}>(242)</ThemeText>
+                    </View>
+
+                    <View style={styles.metaRow}>
+                        <FontAwesome6 name="bolt-lightning" size={14} color={COLORS.metaIcon} style={{ marginRight: 4 }} />
+                        <ThemeText style={styles.metaText}>{vendor.preparationTime || '30 mins'}</ThemeText>
+                        <ThemeText style={styles.dot}>•</ThemeText>
+                        <ThemeText style={styles.metaText}>{vendor.shopAddress?.city || 'Location'}</ThemeText>
+                    </View>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+};
+
+export default VendorCard2;

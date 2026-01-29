@@ -9,12 +9,11 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2; // 2 columns
 
 const CategoryCards = () => {
-    //   const navigation = useNavigation<AppNavigationProp>();
+    const navigation = useNavigation<AppNavigationProp>();
     const { theme } = useTheme();
 
     const handlePress = (category: string) => {
-        console.log('Navigate to category:', category);
-        // navigation.navigate('Explore'); // Optional: Navigate to Explore tab
+        navigation.navigate('Category', { categoryName: category });
     };
 
     return (
@@ -23,7 +22,7 @@ const CategoryCards = () => {
                 title="Food Delivery"
                 subtitle="(Offer UX copy)"
                 image={require('../../../assets/images/food_homeScreen-category.png')}
-                onPress={() => handlePress('food')}
+                onPress={() => handlePress('Food')}
                 theme={theme}
             />
             <Card

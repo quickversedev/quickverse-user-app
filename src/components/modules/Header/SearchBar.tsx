@@ -6,9 +6,10 @@ import { useTheme } from '../../../theme/ThemeContext';
 
 interface SearchBarProps {
   onPress?: () => void;
+  placeholder?: string;
 }
 
-const SearchBarContent: React.FC = () => {
+const SearchBarContent: React.FC<{ placeholder?: string }> = ({ placeholder }) => {
   const { theme } = useTheme();
 
   return (
@@ -36,7 +37,7 @@ const SearchBarContent: React.FC = () => {
       >
         <Icon name="search" size={22} color={"#9CA3AF"} style={styles.icon} />
         <TextInput
-          placeholder="Search for shops, products etc."
+          placeholder={placeholder || "Search for shops, products etc."}
           placeholderTextColor={"#9CA3AF"}
           style={[
             styles.input,
@@ -55,7 +56,7 @@ const SearchBarContent: React.FC = () => {
   );
 };
 
-export const SearchBar: React.FC<SearchBarProps> = ({ onPress }) => {
+export const SearchBar: React.FC<SearchBarProps> = ({ onPress, placeholder }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
 
@@ -111,11 +112,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onPress }) => {
             onPress={handlePress}
             activeOpacity={1}
           >
-            <SearchBarContent />
+            <SearchBarContent placeholder={placeholder} />
           </TouchableOpacity>
         </Animated.View>
       ) : (
-        <SearchBarContent />
+        <SearchBarContent placeholder={placeholder} />
       )}
     </View>
   );
