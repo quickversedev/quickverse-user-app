@@ -7,9 +7,12 @@ import CartScreen from '../screens/cart/CartScreen';
 import ExploreScreen from '../screens/Explore/ExploreScreen';
 import HomeStack from './HomeStack';
 import { useTheme } from '../theme/ThemeContext';
-import HomeIcon from '../assets/svg/navBar-homeIcon.svg';
-import CartIcon from '../assets/svg/navBar-cartIcon.svg';
-import ExploreIcon from '../assets/svg/navBar-exploreIcon.svg';
+import HomeFilled from '../assets/svg/bottom-navBar/homeIcon/homeIcon_filled.svg';
+import HomeOutline from '../assets/svg/bottom-navBar/homeIcon/homeIcon_outline.svg';
+import CartFilled from '../assets/svg/bottom-navBar/cartIcon/cartIcon_filled.svg';
+import CartOutline from '../assets/svg/bottom-navBar/cartIcon/cartIcon_outline.svg';
+import ExploreFilled from '../assets/svg/bottom-navBar/exploreIcon/exploreIcon_filled.svg';
+import ExploreOutline from '../assets/svg/bottom-navBar/exploreIcon/exploreIcon_outline.svg';
 
 export const TabBarVisibilityContext = createContext<{
   scrollY: Animated.Value;
@@ -45,8 +48,8 @@ const TabNavigation = () => {
               paddingBottom: bottomInset,
             },
           ],
-          tabBarActiveTintColor: getColor('primary'),
-          tabBarInactiveTintColor: getColor('subText'),
+          tabBarActiveTintColor: '#003F66',
+          tabBarInactiveTintColor: '#003F66',
           tabBarLabelStyle: styles.tabLabel,
           tabBarItemStyle: styles.tabItem,
           lazy: true,
@@ -56,8 +59,10 @@ const TabNavigation = () => {
           name="Home"
           component={HomeStack}
           options={{
-            tabBarIcon: ({ color }) => (
-              <HomeIcon width={24} height={24} fill={color} />
+            tabBarIcon: ({ color, focused }) => (
+              focused ?
+                <HomeFilled width={24} height={24} fill={color} /> :
+                <HomeOutline width={24} height={24} stroke={color} />
             ),
           }}
         />
@@ -66,8 +71,10 @@ const TabNavigation = () => {
           name="Cart"
           component={CartScreen}
           options={{
-            tabBarIcon: ({ color }) => (
-              <CartIcon width={24} height={24} stroke={color} />
+            tabBarIcon: ({ color, focused }) => (
+              focused ?
+                <CartFilled width={24} height={24} fill={color} /> :
+                <CartOutline width={24} height={24} stroke={color} />
             ),
           }}
         />
@@ -76,8 +83,10 @@ const TabNavigation = () => {
           name="Explore"
           component={ExploreScreen}
           options={{
-            tabBarIcon: ({ color }) => (
-              <ExploreIcon width={24} height={24} fill={color} />
+            tabBarIcon: ({ color, focused }) => (
+              focused ?
+                <ExploreFilled width={24} height={24} fill={color} /> :
+                <ExploreOutline width={24} height={24} stroke={color} />
             ),
           }}
         />

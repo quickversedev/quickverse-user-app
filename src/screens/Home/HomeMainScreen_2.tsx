@@ -1,7 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback } from 'react';
-import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import React, { useCallback, useContext } from 'react';
+import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, View, Image } from 'react-native';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
+import { Images } from '../../assets';
+import { TabBarVisibilityContext } from '../../navigation/TabNavigation';
 
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAppStateRefresh } from '../../hooks/useAppStateRefresh';
@@ -48,6 +50,9 @@ const HomeMainScreen_2 = React.memo(() => {
         navigation.navigate('Search');
     }, [navigation]);
 
+    const tabBarContext = useContext(TabBarVisibilityContext);
+    const bottomHeight = tabBarContext?.tabBarHeight || 50;
+
     return (
         <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
             <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -65,17 +70,12 @@ const HomeMainScreen_2 = React.memo(() => {
                     <CategoryCards />
                 </View>
 
-                <View style={styles.bottomIllustrationContainer}>
-                    {/* 
-                       CRITICAL: The following SVG component causes a native crash if react-native-svg is missing.
-                       Ensure native app is rebuilt (npx react-native run-android) before uncommenting.
-                    */}
-                    {typeof DeliveryGuy === 'function' ? (
-                        <DeliveryGuy width={width * 0.45} height={width * 0.35} />
-                    ) : (
-                        // Fallback placeholder
-                        <View style={{ width: width * 0.45, height: width * 0.35, alignItems: 'center', justifyContent: 'center' }} />
-                    )}
+                <View style={[styles.bottomIllustrationContainer, { bottom: bottomHeight, height: width * 0.48, overflow: 'hidden' }]}>
+                    <Image
+                        source={Images.homeScreenIllustration}
+                        style={{ width: width, height: width * 0.5 }}
+                        resizeMode="contain"
+                    />
                 </View>
 
             </View>
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 0,
         right: 0,
-        zIndex: -1, // Ensure it's behind other elements if they overlap
+        // zIndex: -1, // Removed to ensure visibility
     }
 });
 

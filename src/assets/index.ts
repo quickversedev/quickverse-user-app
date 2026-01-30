@@ -2,6 +2,9 @@
 export const Images = {
   // Backgrounds
   homeBackground: require('./images/homeBackground.png'),
+  homeScreenIllustration: require('./images/homeScreen-illustration.png'),
+  foodCategoryIllustration: require('./images/foodCategory-illustration.png'),
+  groceryCategoryIllustration: require('./images/groceryCategory-illustration.png'),
   bg1: require('./images/bg_1.png'),
 
   // Icons

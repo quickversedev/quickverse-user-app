@@ -18,6 +18,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Or Feath
 import Feather from 'react-native-vector-icons/Feather';
 import { useTheme } from '../../theme/ThemeContext';
 import { RootStackParamList } from '../../routes/AppStack';
+import { Images } from '../../assets';
 import { SearchBar } from '../../components/modules/Header/SearchBar';
 import PromotionCarousel from '../Home/components/PromotionCarousel';
 import SectionDivider from '../../components/common/SectionDivider';
@@ -59,7 +60,9 @@ const CategoryScreen = () => {
         navigation.navigate('Search');
     }, [navigation]);
 
-    const headerImage = require('../../assets/images/food-for-you_categoryScreen.png');
+    const headerImage = isGrocery
+        ? Images.groceryCategoryIllustration
+        : Images.foodCategoryIllustration;
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: '#FFF6EC' }]}>
@@ -67,16 +70,18 @@ const CategoryScreen = () => {
 
                 {/* Header Section */}
                 <View style={styles.header}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Feather name="arrow-left" size={24} color="#000" />
-                    </TouchableOpacity>
+                    <View style={styles.headerTopBar}>
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => navigation.goBack()}
+                        >
+                            <Feather name="arrow-left" size={24} color="#000" />
+                        </TouchableOpacity>
 
-                    <View style={styles.headerTitleContainer}>
-                        <Text style={styles.headerTitleMain}>{categoryName}</Text>
-                        <Text style={styles.headerTitleSub}>for you</Text>
+                        <View style={styles.headerTitleContainer}>
+                            <Text style={styles.headerTitleMain}>{categoryName}</Text>
+                            <Text style={styles.headerTitleSub}>for you</Text>
+                        </View>
                     </View>
 
                     <View style={styles.imageContainer}>
@@ -178,10 +183,19 @@ const styles = StyleSheet.create({
         position: 'relative',
         // marginBottom: 100,
     },
+    headerTopBar: {
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        zIndex: 10,
+        height: 60, // Fixed height for alignment
+    },
     backButton: {
         position: 'absolute',
         left: 20,
-        top: 13, // Aligned with text
+        // top is removed, centered by flex/absolute vertical center
         padding: 8,
         backgroundColor: '#fff',
         borderRadius: 20,
@@ -195,7 +209,7 @@ const styles = StyleSheet.create({
     headerTitleContainer: {
         flexDirection: 'row', // Single line
         alignItems: 'baseline',
-        paddingTop: 10, // Push down slightly
+        paddingTop: 0, // Removed padding
         zIndex: 1,
     },
     headerTitleMain: {

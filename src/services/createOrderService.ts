@@ -86,10 +86,12 @@ class OrderService {
       return response;
     } catch (error: unknown) {
       console.error('Create Order Error:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: (error as any)?.message || 'Unknown error',
         code: (error as any)?.code || 'UNKNOWN',
         status: (error as any)?.status || 'UNKNOWN',
         apiEndpoint: (error as any)?.apiEndpoint || 'Unknown',
+        // Log the full error object for debugging
+        fullError: error,
         requestData,
         sessionKey: sessionKey ? '***' : 'MISSING',
         phone: phone ? '***' : 'MISSING',

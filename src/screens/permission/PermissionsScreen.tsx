@@ -126,12 +126,12 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
       flex: 1,
     },
     permissionTitle: {
-      color: theme.colors.text,
+      color: '#FFFFFF',
       fontWeight: 'bold',
       fontSize: theme.typography.subtitle,
     },
     permissionDesc: {
-      color: theme.colors.subText,
+      color: '#D1D5DB',
       fontSize: theme.typography.caption,
       marginTop: 2,
     },
@@ -165,7 +165,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
       elevation: 2,
     },
     skipText: {
-      color: '#E5E7EB',
+      color: '#4B5563',
       fontSize: 14,
     },
   });

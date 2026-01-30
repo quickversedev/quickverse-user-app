@@ -653,7 +653,7 @@ const CartScreen: React.FC = () => {
         <Text style={{ fontSize: 16, color: getColor('subText'), textAlign: 'center', marginTop: 10 }}>Looks like you haven't added anything to your cart yet.</Text>
         <TouchableOpacity
           style={{ marginTop: 30, backgroundColor: getColor('primary'), paddingHorizontal: 30, paddingVertical: 12, borderRadius: 25 }}
-          onPress={() => navigation.navigate('MainApp')}
+          onPress={() => navigation.navigate('MainApp', { screen: 'Home' } as any)}
         >
           <Text style={{ color: '#fff', fontWeight: '700' }}>Start Shopping</Text>
         </TouchableOpacity>
