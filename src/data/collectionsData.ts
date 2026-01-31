@@ -155,12 +155,14 @@ const API_BASE_URL = `https://api.smartbiz.in/stores/${API_STORE_ID}`;
 
 import productsService from '../services/productsService';
 
-export const fetchCollectionsFromApi = async (): Promise<CollectionSection[]> => {
+export const fetchCollectionsFromApi = async (storeId: string = API_STORE_ID): Promise<CollectionSection[]> => {
   try {
-    console.log(`[CollectionsData] Fetching categories from: ${API_BASE_URL}/category`);
+    const baseUrl = `https://api.smartbiz.in/stores/${storeId}`;
+    console.log(`[CollectionsData] Fetching categories from: ${baseUrl}/category`);
     // Fetch all categories from the API
-    const apiCategories = await productsService.fetchCategories(API_STORE_ID);
+    const apiCategories = await productsService.fetchCategories(storeId);
     console.log(`[CollectionsData] Fetched ${apiCategories.length} categories`);
+    console.log('[CollectionsData] API Response Categories (Sample):', JSON.stringify(apiCategories.slice(0, 5), null, 2));
 
     const collections: Collection[] = [];
 
@@ -173,57 +175,63 @@ export const fetchCollectionsFromApi = async (): Promise<CollectionSection[]> =>
       // 1. Add categories from the map that exist in the API (to get images/counts)
       // We also fallback to the map's name if API name differs slightly, but prefer API data
       mappedCategories.forEach(mappedCat => {
-        // Find by ID match OR Name match (case-insensitive)
+        // Find by ID match OR Name match (case-insensitive) OR fuzzy match
         const apiCat = apiCategories.find(c =>
           c.id === mappedCat.id ||
           c.name.toLowerCase() === mappedCat.name.toLowerCase() ||
-          c.id.toLowerCase() === mappedCat.id.toLowerCase()
+          c.id.toLowerCase() === mappedCat.id.toLowerCase() ||
+          // Fuzzy match: if mapped name is contained in api name or vice versa (be careful with this)
+          c.name.toLowerCase().includes(mappedCat.name.toLowerCase())
         );
 
         if (apiCat) {
-          collectionCategories.push({
-            id: apiCat.id, // Use the REAL API ID (crucial for product matching)
-            name: apiCat.name,
-          });
+          // Check if we already added this category to avoid duplicates
+          if (!collectionCategories.some(existing => existing.id === apiCat.id)) {
+            collectionCategories.push({
+              id: apiCat.id, // Use the REAL API ID
+              name: apiCat.name,
+            });
+          }
         } else {
-          // If not found, use the manual one. 
-          // IMPORTANT: If the API uses "Fresh Vegetables" as ID but we have "fresh-vegetables",
-          // and we didn't find it above, product filtering will fail.
-          // We assume if it's not in the API list, likely no products exist for it anyway.
-          collectionCategories.push(mappedCat);
+          // For debugging: Log which ones we couldn't match
+          // console.log(`[CollectionsData] Could not map '${mappedCat.name}' to a real API category.`);
         }
       });
 
-      // 2. Determine an image for the collection (use first category's image from API if available)
-      let collectionImage = 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=270/layout-engine/2022-11/Slice-3_9.png'; // Fallback
-      const firstCatWithImage = mappedCategories.find(mc => {
-        const apiCat = apiCategories.find(c => c.id === mc.id);
-        return apiCat && apiCat.imageURLs && apiCat.imageURLs.length > 0;
-      });
+      // If no categories found for this collection, skip it (or add empty if desired, but better to skip)
+      if (collectionCategories.length > 0) {
+        // 2. Determine an image for the collection (use first category's image from API if available)
+        let collectionImage = 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=270/layout-engine/2022-11/Slice-3_9.png'; // Fallback
+        const firstCatWithImage = collectionCategories.find(cat => {
+          const apiCat = apiCategories.find(c => c.id === cat.id);
+          return apiCat && apiCat.imageURLs && apiCat.imageURLs.length > 0;
+        });
 
-      if (firstCatWithImage) {
-        const apiCat = apiCategories.find(c => c.id === firstCatWithImage.id);
-        if (apiCat && apiCat.imageURLs) {
-          collectionImage = apiCat.imageURLs[0];
+        if (firstCatWithImage) {
+          const apiCat = apiCategories.find(c => c.id === firstCatWithImage.id);
+          if (apiCat && apiCat.imageURLs) {
+            collectionImage = apiCat.imageURLs[0];
+          }
         }
+
+        // 3. Create the Collection object
+        const collectionId = collectionName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+        collections.push({
+          id: collectionId,
+          name: collectionName,
+          icon: 'shape',
+          image: collectionImage,
+          section: 'Shop by Category',
+          categories: collectionCategories,
+          productIds: [],
+        });
       }
-
-      // 3. Create the Collection object
-      // We use the collection name as ID (slugified) or just the name if unique enough
-      const collectionId = collectionName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-      collections.push({
-        id: collectionId,
-        name: collectionName,
-        icon: 'shape', // Placeholder, could map specific icons if needed
-        image: collectionImage,
-        section: 'Shop by Category',
-        categories: collectionCategories,
-        productIds: [], // Empty to indicate synthetic/category-based collection
-      });
     });
 
-    console.log(`[CollectionsData] Generated ${collections.length} synthetic collections`);
+    // Sort collections by name or keep mapped order? Mapped order is better.
+
+    console.log(`[CollectionsData] Generated ${collections.length} synthetic collections with real IDs`);
 
     return [{
       title: 'Shop by Category',

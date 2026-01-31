@@ -1,3 +1,4 @@
+import axios from 'axios'; // Import axios directly
 import { AUTHORIZATION_KEY } from '@env';
 import { Product } from '../assets/mock/products';
 import axiosInstance, { apiCall } from '../config/api/axios.config';
@@ -292,6 +293,68 @@ class ProductsService {
       offset: 0,
       limit,
     });
+  }
+
+  /**
+   * Fetch products for a collection (using external API)
+   */
+  async fetchProductsForCollection({
+    shopId,
+    categoryId,
+  }: {
+    shopId: string;
+    categoryId: string;
+  }): Promise<Product[]> {
+    try {
+      const url = 'https://smartpos.amazon.in/api-unauthenticated/resources/external/catalog/products?groupVariants=true';
+      const payload = {
+        shopId: Number(shopId) || shopId, // Try sending as number if possible, or fallback
+        filter: {
+          isInStock: true,
+          division: categoryId
+        },
+        sortingOption: {
+          alphabetical: "ASCENDING"
+        },
+        offset: 0,
+        limit: 50
+      };
+
+      console.log(`[ProductsService] Fetching collection products for shop ${shopId} (type: ${typeof payload.shopId}), category ${categoryId}`);
+      console.log(`[ProductsService] URL: ${url}`);
+      console.log(`[ProductsService] Payload:`, JSON.stringify(payload));
+
+      const response = await axios.post(
+        url,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Host': 'smartpos.amazon.in',
+            'User-Agent': 'Mozilla/5.0'
+          }
+        }
+      );
+
+      console.log(`[ProductsService] Response status: ${response.status}`);
+
+      // Check for array response (Postman observed behavior)
+      if (Array.isArray(response.data)) {
+        console.log(`[ProductsService] Found ${response.data.length} products for category ${categoryId} (Array response)`);
+        return response.data;
+      }
+
+      // Check for object response (Fallback)
+      if (response.data && response.data.products) {
+        console.log(`[ProductsService] Found ${response.data.products.length} products for category ${categoryId} (Object response)`);
+        return response.data.products;
+      }
+      console.log(`[ProductsService] No products found in response for category ${categoryId}`);
+      return [];
+    } catch (error) {
+      console.error(`[ProductsService] Error fetching collection products for category ${categoryId}:`, error);
+      return [];
+    }
   }
 
   /**

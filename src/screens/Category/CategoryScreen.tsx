@@ -1,5 +1,5 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Dimensions,
     Image,
@@ -28,6 +28,8 @@ import VendorCard2 from '../../components/modules/Vendor/VendorCard2'; // Update
 import VendorShowcaseWidget from '../../components/modules/Vendor/VendorShowcaseWidget';
 import { Vendor } from '../../types/vendor';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
+import { Collection, fetchCollectionsFromApi } from '../../data/collectionsData';
+import CollectionsGrid from './components/CollectionsGrid';
 
 type CategoryScreenRouteProp = RouteProp<RootStackParamList, 'Category'>;
 
@@ -45,10 +47,29 @@ const CategoryScreen = () => {
     const { getVendorsByCategory } = useVendorStore();
     const categoryVendors = React.useMemo(() => {
         const vendors = getVendorsByCategory(categoryName);
-        return vendors.filter(vendor => getStoreStatus(vendor).isOpen);
+        // return vendors.filter(vendor => getStoreStatus(vendor).isOpen);
+        return vendors; // TEMPORARY: Show all vendors for testing
     }, [categoryName, getVendorsByCategory]);
 
     // Cart Logic
+    // Collections Logic (Grocery Only)
+    const [collections, setCollections] = useState<Collection[]>([]);
+
+    useEffect(() => {
+        const loadCollections = async () => {
+            if (isGrocery && categoryVendors.length > 0) {
+                // Use the first vendor's ID to fetch collections
+                const storeId = categoryVendors[0].shopId;
+                const sections = await fetchCollectionsFromApi(storeId);
+                if (sections.length > 0) {
+                    setCollections(sections[0].collections);
+                }
+            }
+        };
+
+        loadCollections();
+    }, [isGrocery, categoryVendors]);
+
     // Cart Logic
 
     const handleVendorPress = (vendor: Vendor) => {
@@ -106,6 +127,15 @@ const CategoryScreen = () => {
                 <View style={styles.promoContainer}>
                     <PromotionCarousel />
                 </View>
+
+
+                {/* Collections Grid (Grocery Only) */}
+                {isGrocery && collections.length > 0 && (
+                    <CollectionsGrid
+                        collections={collections}
+                        shopId={categoryVendors[0]?.shopId}
+                    />
+                )}
 
                 {/* Horizontal List 1 */}
                 <SectionDivider
