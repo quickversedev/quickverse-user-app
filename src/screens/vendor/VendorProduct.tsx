@@ -154,6 +154,26 @@ const VendorProductComponent: React.FC = () => {
   // If no detailed vendor object, assume open or fetch status? For now assume open for collection
   const isStoreActive = routeVendor ? storeStatus.isOpen : true;
 
+  // In collection mode, vendor may only have shopId → modals see store as closed. Pass a vendor with store open so add-to-cart works.
+  const vendorForModals = useMemo((): Vendor => {
+    if (!collection) return vendor;
+    return {
+      ...vendor,
+      name: vendor.name || collection.name,
+      openingTime: vendor.openingTime ?? '00:00',
+      closingTime: vendor.closingTime ?? '23:59',
+      storeActive: true,
+      logo: vendor.logo ?? '',
+      banner: vendor.banner ?? '',
+      owner: vendor.owner ?? '',
+      phone: vendor.phone ?? '',
+      preparationTime: vendor.preparationTime ?? '30',
+      description: vendor.description ?? '',
+      category: vendor.category ?? 'Grocery',
+      storeEnabled: vendor.storeEnabled ?? true,
+    };
+  }, [collection, vendor]);
+
   // Fetch products and categories on mount or when vendor.shopId changes
   useEffect(() => {
     setShopId(shopId);
@@ -1222,21 +1242,23 @@ const VendorProductComponent: React.FC = () => {
           {/* Main Content: Categories + Products - Only show when products exist */}
           {products.length > 0 && (
             <View style={styles.mainContent}>
-              {/* Category List (absolute overlay with animation) */}
-              <Animated.View
-                style={{
-                  opacity: timingOpacity,
-                  height: timingHeight,
-                  overflow: 'hidden',
-                }}
-              >
-                <SectionDivider
-                  text={`${formatTimeToAMPM(vendor.openingTime)} - ${formatTimeToAMPM(
-                    vendor.closingTime
-                  )}`}
-                  textStyle={{ fontSize: 14, fontWeight: 'normal' }}
-                />
-              </Animated.View>
+              {/* Category List (absolute overlay with animation) - hide time range in collection mode or when vendor has no times */}
+              {!collection && vendor.openingTime && vendor.closingTime && (
+                <Animated.View
+                  style={{
+                    opacity: timingOpacity,
+                    height: timingHeight,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <SectionDivider
+                    text={`${formatTimeToAMPM(vendor.openingTime)} - ${formatTimeToAMPM(
+                      vendor.closingTime
+                    )}`}
+                    textStyle={{ fontSize: 14, fontWeight: 'normal' }}
+                  />
+                </Animated.View>
+              )}
 
               {/* Horizontal layout: Categories on left, Products on right */}
               <View style={styles.categoryProductContainer}>
@@ -1309,7 +1331,7 @@ const VendorProductComponent: React.FC = () => {
               visible={variantsModalVisible}
               onClose={handleCloseVariantsModal}
               product={selectedProductForVariants}
-              vendor={vendor}
+              vendor={vendorForModals}
               onVariantSelect={handleVariantSelect}
             />
           )}
@@ -1321,7 +1343,7 @@ const VendorProductComponent: React.FC = () => {
           visible={productDetailModalVisible}
           onClose={handleCloseProductDetailModal}
           product={selectedProductForDetail}
-          vendor={vendor}
+          vendor={vendorForModals}
         />
       )
       }

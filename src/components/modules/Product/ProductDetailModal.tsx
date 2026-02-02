@@ -62,9 +62,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   vendor,
 }) => {
   const storeStatus = getStoreStatus({
-    storeActive: vendor.storeActive,
-    openingTime: vendor.openingTime,
-    closingTime: vendor.closingTime,
+    storeActive: vendor.storeActive !== false,
+    openingTime: vendor.openingTime ?? '00:00',
+    closingTime: vendor.closingTime ?? '23:59',
   });
   const isStoreClosed = !storeStatus.isOpen;
   const { getColor, theme } = useTheme();

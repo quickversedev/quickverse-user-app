@@ -793,25 +793,31 @@ const CollectionDetailScreen: React.FC = () => {
     ]
   );
 
-  // Create a mock vendor object for modals
+  // Create a vendor object for modals. In collection context we always allow ordering:
+  // use real vendor data but force storeActive: true and valid times so "Store is manually closed"
+  // never greys out products or disables add-to-cart in collection view.
   const mockVendor = useMemo(() => {
-    if (vendor) return vendor;
+    const base = vendor
+      ? { ...vendor }
+      : {
+          shopId: collectionsVendorId,
+          name: collection.name,
+          logo: '',
+          banner: '',
+          owner: '',
+          phone: '',
+          preparationTime: '30',
+          description: '',
+          category: 'Collections',
+          storeEnabled: true,
+        };
     return {
-      shopId: collectionsVendorId,
-      name: collection.name,
-      logo: '',
-      banner: '',
-      owner: '',
-      phone: '',
-      openingTime: '00:00',
-      closingTime: '23:59',
-      preparationTime: '30',
-      description: '',
-      category: 'Collections',
-      storeEnabled: true,
+      ...base,
+      openingTime: base.openingTime ?? '00:00',
+      closingTime: base.closingTime ?? '23:59',
       storeActive: true,
     };
-  }, [vendor, collection.name]);
+  }, [vendor, collection.name, collectionsVendorId]);
 
   // Show configuration message if vendor ID is not set
   if (!isVendorConfigured) {
