@@ -4,7 +4,7 @@ import {
   TransitionSpecs,
 } from '@react-navigation/stack';
 import React from 'react';
-import CollectionProductScreen from '../screens/Category/CollectionProductScreen'; // Import added
+
 import { Platform } from 'react-native';
 import { Collection } from '../data/collectionsData';
 import ProfileStack from '../navigation/profileNavigation';
@@ -28,10 +28,10 @@ import { Vendor } from '../types/vendor';
 export type RootStackParamList = {
   MainApp: undefined;
   Profile: undefined;
-  VendorProduct: { vendor: Vendor; searchQuery?: string };
+  VendorProduct: { vendor?: Vendor; searchQuery?: string; collection?: Collection; shopId?: string }; // Updated params
   VendorProfile: { vendor: Vendor };
   VendorDetails: { vendor: Vendor };
-  CollectionProduct: { collection: Collection; vendor?: Vendor; shopId?: string }; // Params added
+  // CollectionProduct removed
   CollectionDetail: { collection: Collection };
   ProductDetailDemo: undefined;
   Cart: { cartId: string } | undefined;
@@ -151,11 +151,7 @@ export const AppStack = () => {
         component={CollectionDetailScreen}
         options={slideFromRightOptions}
       />
-      <Stack.Screen
-        name="CollectionProduct"
-        component={CollectionProductScreen}
-        options={slideFromRightOptions}
-      />
+
       <Stack.Screen
         name="ProductDetailDemo"
         component={ProductDetailDemo}

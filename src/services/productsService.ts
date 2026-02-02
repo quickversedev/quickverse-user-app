@@ -1,6 +1,6 @@
 import axios from 'axios'; // Import axios directly
 import { AUTHORIZATION_KEY } from '@env';
-import { Product } from '../assets/mock/products';
+import { Product } from '../types/product';
 import axiosInstance, { apiCall } from '../config/api/axios.config';
 
 // Mock data toggle
@@ -84,7 +84,7 @@ class ProductsService {
           filteredProducts = filteredProducts.filter(
             p =>
               p.name.toLowerCase().includes(searchLower) ||
-              p.brand.toLowerCase().includes(searchLower)
+              p.brand?.toLowerCase().includes(searchLower)
           );
         }
 

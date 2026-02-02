@@ -27,6 +27,8 @@ interface ProductsStore {
   getProductsByCategories: (categoriesString: string) => Product[];
   // Selector: Get best seller products (tagName === 'BestSeller')
   getBestSellers: () => Product[];
+
+  fetchCollectionProducts: (shopId: string, categoryIds: string[]) => Promise<void>;
 }
 
 export const useProductsStore = create<ProductsStore>((set, get) => ({
@@ -178,4 +180,38 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       return false;
     });
   },
+
+  fetchCollectionProducts: async (shopId: string, categoryIds: string[]) => {
+    set({ loading: true, fullyLoaded: false, error: null, products: [] });
+    try {
+      const productPromises = categoryIds.map(categoryId =>
+        productsService.fetchProductsForCollection({ shopId, categoryId })
+      );
+
+      const results = await Promise.all(productPromises);
+      // results is an array of arrays of products
+      const allProducts = results.flat();
+
+      // Filter unique products
+      const seenSkus = new Set<string>();
+      const uniqueProducts = allProducts.filter(product => {
+        if (product.sku && !seenSkus.has(product.sku)) {
+          seenSkus.add(product.sku);
+          return true;
+        }
+        return false;
+      });
+
+      set({
+        products: uniqueProducts,
+        loading: false,
+        fullyLoaded: true, // Assuming we fetched everything for these categories
+        total: uniqueProducts.length,
+        shopId
+      });
+    } catch (error) {
+      console.error('[ProductsStore] Error fetching collection products:', error);
+      set({ loading: false, error: 'Failed to fetch collection products' });
+    }
+  }
 }));

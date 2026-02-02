@@ -30,10 +30,11 @@ const CollectionsGrid: React.FC<CollectionsGridProps> = ({ collections, shopId }
     };
 
     const startNavigation = (collection: Collection) => {
-        // Navigate to the new CollectionProduct screen
-        navigation.navigate('CollectionProduct', {
+        // Navigate to VendorProduct with collection param
+        navigation.navigate('VendorProduct', {
             collection,
-            shopId: shopId
+            shopId: shopId,
+            // vendor: shopId ? { shopId } : undefined // Optional: pass minimal vendor obj if needed by types
         });
     };
 

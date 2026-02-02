@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { Images } from '../../assets';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import CartBar from '../../components/common/Cart/CartBar';
 import SectionDivider from '../../components/common/SectionDivider';
 import HorizontalProductCard from '../../components/modules/Product/HorizontalProductCard';
@@ -43,6 +44,8 @@ type Category = CategoryItem;
 interface VendorProductRouteParams {
   vendor: Vendor;
   searchQuery?: string;
+  collection?: { id: string; name: string; categories: { id: string; name: string }[] }; // Simplified collection type or import it
+  shopId?: string;
 }
 type VendorProductRouteProp = RouteProp<
   { VendorProduct: VendorProductRouteParams },
@@ -116,7 +119,12 @@ const VendorProductComponent: React.FC = () => {
   const { authData } = useAuth();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<VendorProductRouteProp>();
-  const { vendor, searchQuery: initialSearchQuery } = route.params;
+  // Allow collection and shopId to be passed
+  const { vendor: routeVendor, searchQuery: initialSearchQuery, collection, shopId: routeShopId } = route.params;
+
+  // Use passed vendor or derive/fallback
+  const vendor = routeVendor || { shopId: routeShopId || '' } as Vendor;
+  const shopId = vendor.shopId || routeShopId || '';
 
   // Search state
   const [isSearchVisible, setIsSearchVisible] = useState(!!initialSearchQuery);
@@ -137,21 +145,43 @@ const VendorProductComponent: React.FC = () => {
     categories,
     fetchCategories,
     setShopId,
+    fetchCollectionProducts // Destructure new method
   } = useProductsStore();
 
   // Memoized values
   const hasAuth = useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
   const storeStatus = useMemo(() => getStoreStatus(vendor), [vendor]);
-  const isStoreActive = useMemo(() => storeStatus.isOpen, [storeStatus.isOpen]);
+  // If no detailed vendor object, assume open or fetch status? For now assume open for collection
+  const isStoreActive = routeVendor ? storeStatus.isOpen : true;
 
   // Fetch products and categories on mount or when vendor.shopId changes
   useEffect(() => {
-    setShopId(vendor.shopId);
+    setShopId(shopId);
     resetProducts();
-    fetchProducts({ offset: 0, limit: 1000 });
-    fetchCategories(vendor.shopId);
+
+    // Logic branch: Collection Mode vs Normal Vendor Mode
+    if (collection) {
+      console.log('[VendorProduct] Collection Mode:', collection.name);
+      // In collection mode, we don't fetch categories from store. 
+      // We use collection.categories.
+      // We fetch products specifically for these columns.
+      const categoryIds = collection.categories.map(c => c.id);
+      fetchCollectionProducts(shopId, categoryIds);
+
+      // We need to set the store's categories to the collection's categories 
+      // so that `categories` derived state works correctly?
+      // Actually `useProductsStore` has a `categories` state. 
+      // We should probably override `categories` in store? 
+      // or just rely on `collection` param to build `categoriesForTabs`.
+      // BUT `VendorProduct` relies on `categories` from store in `categoryMap` and elsewhere.
+      // It's cleaner to "mock" the categories into the store or handle it locally.
+      // Let's handle it locally by checking `collection` in `categoriesForTabs` and `categoryMap`.
+    } else {
+      fetchProducts({ offset: 0, limit: 1000 });
+      fetchCategories(shopId);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vendor.shopId]);
+  }, [shopId, collection]);
 
   // Show search bar and focus input when initialSearchQuery is provided
   useEffect(() => {
@@ -159,14 +189,18 @@ const VendorProductComponent: React.FC = () => {
       showSearchBar();
     }
   }, [initialSearchQuery]);
+
   // Optimized search with memoized category lookup
   const categoryMap = useMemo(() => {
     const map = new Map<string, string>();
-    categories?.forEach(cat => map.set(cat.id, cat.name.toLowerCase()));
+    // Use collection categories if available, else store categories
+    const sourceCategories = collection ? collection.categories : categories;
+
+    sourceCategories?.forEach(cat => map.set(cat.id, cat.name.toLowerCase()));
     // Add "Other" category for search
     map.set('other', 'other');
     return map;
-  }, [categories]);
+  }, [categories, collection]);
 
   // Filter products based on search query (product name and category name)
   const filteredProducts = useMemo(() => {
@@ -198,13 +232,18 @@ const VendorProductComponent: React.FC = () => {
 
   // Map store categories to CategoryTabs items with a placeholder icon
   const categoriesForTabs: Category[] = useMemo(
-    () =>
-      (categories || []).map(c => ({
+    () => {
+      const sourceCategories = collection ? collection.categories : (categories || []);
+      return sourceCategories.map(c => ({
         id: c.id,
         name: c.name,
-        icon: c.imageURLs?.[0] || Images.bg1,
-      })),
-    [categories]
+        // Collection categories don't have images in this simplified structure usually, or do they?
+        // The Collection type has `categories: CollectionCategory[]` which has `id, name`.
+        // We can use a placeholder or try to find an image if we had more data.
+        icon: Images.bg1, // Placeholder
+      }));
+    },
+    [categories, collection]
   );
 
   // Only include categories that have at least one product (match product.division)
@@ -391,7 +430,7 @@ const VendorProductComponent: React.FC = () => {
       if (
         firstHeader &&
         selectedCategory !==
-          (firstHeader.item as { type: 'header'; category: Category }).category.id
+        (firstHeader.item as { type: 'header'; category: Category }).category.id
       ) {
         setSelectedCategory(
           (firstHeader.item as { type: 'header'; category: Category }).category.id
@@ -744,9 +783,9 @@ const VendorProductComponent: React.FC = () => {
           borderRadius: 12,
           marginBottom: 16,
           padding: 12,
-          shadowColor: getColor('shadow').color,
-          shadowOpacity: getColor('shadow').opacity,
-          shadowRadius: getColor('shadow').radius,
+          shadowColor: (getColor('shadow') as any).color,
+          shadowOpacity: (getColor('shadow') as any).opacity,
+          shadowRadius: (getColor('shadow') as any).radius,
           elevation: 2,
         },
         productImage: {
@@ -947,9 +986,9 @@ const VendorProductComponent: React.FC = () => {
           justifyContent: 'center',
           alignItems: 'center',
           marginBottom: 24,
-          shadowColor: getColor('shadow').color,
-          shadowOpacity: getColor('shadow').opacity,
-          shadowRadius: getColor('shadow').radius,
+          shadowColor: (getColor('shadow') as any).color,
+          shadowOpacity: (getColor('shadow') as any).opacity,
+          shadowRadius: (getColor('shadow') as any).radius,
           elevation: 4,
         },
         zeroStateIcon: {
@@ -1076,51 +1115,64 @@ const VendorProductComponent: React.FC = () => {
         style={{ flex: 1, backgroundColor: getColor('background'), paddingTop: safeAreaTop }}
       >
         <View style={styles.container}>
-          {/* Header */}
-          <VendorTopBar
-            title={vendor.name}
-            onBack={() => navigation.goBack()}
-            onSearchPress={handleSearchPress}
-          />
-
-          {/* Search Bar */}
-          {isSearchVisible && (
-            <Animated.View
-              style={[
-                styles.searchContainer,
-                {
-                  opacity: searchBarOpacity,
-                  maxHeight: searchBarHeight.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 60], // Adjust based on your search container height
-                  }),
-                  overflow: 'hidden',
-                },
-              ]}
+          {/* Header with Search and Back Button */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
             >
-              <TextInput
-                ref={searchInputRef}
-                style={styles.searchInput}
-                placeholder="Search products or categories..."
-                placeholderTextColor={getColor('subText')}
-                value={searchQuery}
-                onChangeText={handleSearchChange}
-                returnKeyType="search"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity style={styles.searchCloseButton} onPress={handleSearchClose}>
-                <Text style={{ color: getColor('text'), fontSize: 18 }}>✕</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          )}
+              <Icon name="arrow-left" size={24} color={getColor('text')} />
+            </TouchableOpacity>
+
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: getColor('text') }}>
+                {collection ? collection.name : vendor.name}
+              </Text>
+            </View>
+
+            <TouchableOpacity onPress={handleSearchPress} style={styles.searchCloseButton}>
+              <Icon name="magnify" size={24} color={getColor('text')} />
+            </TouchableOpacity>
+          </View>
+          <Animated.View
+            style={[
+              styles.searchContainer,
+              {
+                opacity: searchBarOpacity,
+                maxHeight: searchBarHeight.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 60], // Adjust based on your search container height
+                }),
+                overflow: 'hidden',
+              },
+            ]}
+          >
+            <TextInput
+              ref={searchInputRef}
+              style={styles.searchInput}
+              placeholder="Search products or categories..."
+              placeholderTextColor={getColor('subText')}
+              value={searchQuery}
+              onChangeText={handleSearchChange}
+              returnKeyType="search"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity style={styles.searchCloseButton} onPress={handleSearchClose}>
+              <Text style={{ color: getColor('text'), fontSize: 18 }}>✕</Text>
+            </TouchableOpacity>
+          </Animated.View>
+
 
           {/* Vendor Card */}
-          <VendorHeaderCard
-            vendor={vendor}
-            onPress={() => navigation.navigate('VendorProfile', { vendor })}
-            style={!isStoreActive ? styles.vendorCardClosed : undefined}
-          />
+          {/* Vendor Card - Only show if not in collection mode */}
+          {!collection && (
+            <VendorHeaderCard
+              vendor={vendor}
+              onPress={() => navigation.navigate('VendorProfile', { vendor })}
+              style={!isStoreActive ? styles.vendorCardClosed : undefined}
+            />
+          )}
 
           {/* Store Status Banner */}
           {/* {!isStoreActive && (
@@ -1263,7 +1315,7 @@ const VendorProductComponent: React.FC = () => {
           )}
         </View>
         {/* Product Detail Modal */}
-      </SafeAreaView>
+      </SafeAreaView >
       {selectedProductForDetail && (
         <ProductDetailModal
           visible={productDetailModalVisible}
@@ -1271,7 +1323,8 @@ const VendorProductComponent: React.FC = () => {
           product={selectedProductForDetail}
           vendor={vendor}
         />
-      )}
+      )
+      }
     </>
   );
 };
