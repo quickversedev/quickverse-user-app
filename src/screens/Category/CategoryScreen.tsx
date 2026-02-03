@@ -30,6 +30,7 @@ import { Vendor } from '../../types/vendor';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import { Collection, fetchCollectionsFromApi } from '../../data/collectionsData';
 import CollectionsGrid from './components/CollectionsGrid';
+import CollectionsGridSkeleton from './components/CollectionsGridSkeleton';
 
 type CategoryScreenRouteProp = RouteProp<RootStackParamList, 'Category'>;
 
@@ -54,16 +55,28 @@ const CategoryScreen = () => {
     // Cart Logic
     // Collections Logic (Grocery Only)
     const [collections, setCollections] = useState<Collection[]>([]);
+    const [collectionsLoading, setCollectionsLoading] = useState(false);
 
     useEffect(() => {
         const loadCollections = async () => {
-            if (isGrocery && categoryVendors.length > 0) {
-                // Use the first vendor's ID to fetch collections
+            if (!isGrocery || categoryVendors.length === 0) {
+                setCollectionsLoading(false);
+                return;
+            }
+            setCollectionsLoading(true);
+            try {
                 const storeId = categoryVendors[0].shopId;
                 const sections = await fetchCollectionsFromApi(storeId);
                 if (sections.length > 0) {
                     setCollections(sections[0].collections);
+                } else {
+                    setCollections([]);
                 }
+            } catch (error) {
+                console.error('[CategoryScreen] Failed to load collections:', error);
+                setCollections([]);
+            } finally {
+                setCollectionsLoading(false);
             }
         };
 
@@ -130,7 +143,8 @@ const CategoryScreen = () => {
 
 
                 {/* Collections Grid (Grocery Only) */}
-                {isGrocery && collections.length > 0 && (
+                {isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
+                {isGrocery && !collectionsLoading && collections.length > 0 && (
                     <CollectionsGrid
                         collections={collections}
                         shopId={categoryVendors[0]?.shopId}
