@@ -3,7 +3,7 @@ import {
   Animated,
   Dimensions,
   Platform,
-  ScrollView,
+  SafeAreaView,
   StatusBar,
   StyleSheet,
   View,
@@ -11,6 +11,10 @@ import {
 import { useTheme } from '../../../theme/ThemeContext';
 
 const { width } = Dimensions.get('window');
+
+// Match CategoryCards layout: 2 columns, (width - 48) / 2, height 140
+const CARD_WIDTH = (width - 48) / 2;
+const CAROUSEL_BANNER_HEIGHT = 178;
 
 interface SkeletonProps {
   width: number | string;
@@ -72,29 +76,22 @@ const SkeletonItem: React.FC<SkeletonProps> = ({
 export const HomeScreenSkeleton: React.FC = () => {
   const { getColor, theme } = useTheme();
 
-  // Card dimensions matching VendorCard small size
-  const vendorCardWidth = (width - 48) / 3;
-  const vendorImageHeight = vendorCardWidth * 0.7;
-
-  // Product card dimensions
-  const productCardWidth = (width - 48) / 2.5;
-
   const styles = StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    },
     container: {
       flex: 1,
       backgroundColor: getColor('background'),
     },
-    // Header styles
+    // Header – matches HomeHeader (LocationSelector + ProfileIcon)
     header: {
-      backgroundColor: getColor('background'),
-      paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) - 15 : 0,
-    },
-    topRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: 16,
-      paddingTop: 8,
+      paddingTop: 16,
       paddingBottom: 8,
     },
     locationSection: {
@@ -102,112 +99,53 @@ export const HomeScreenSkeleton: React.FC = () => {
       alignItems: 'center',
       gap: 8,
     },
-    bannerSection: {
-      width: '100%',
-      height: Platform.OS === 'ios' ? 150 : 130,
-      paddingHorizontal: 0,
+    // Carousel – matches HomePromotionCarousel (marginVertical 16, carouselContainer marginBottom 24)
+    carouselContainer: {
+      marginVertical: 16,
+      marginBottom: 24,
     },
-    searchSection: {
+    carouselBanner: {
+      width: width - 32,
+      height: CAROUSEL_BANNER_HEIGHT,
+      marginHorizontal: 16,
+      marginRight: 28, // 16 + 12
+    },
+    // Search – matches SearchBar container (paddingHorizontal 16, marginBottom 24)
+    searchContainer: {
       paddingHorizontal: 16,
-      paddingVertical: 8,
+      marginBottom: 24,
     },
-    navTabs: {
+    // Category cards – matches CategoryCards (paddingHorizontal 16, 2 cards, height 140)
+    cardsContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      paddingTop: 12,
-      paddingBottom: 8,
-      borderBottomWidth: 3,
-      borderBottomColor: getColor('border'),
-    },
-    navTab: {
-      flex: 1,
-      alignItems: 'center',
-      gap: 4,
-    },
-    // Content styles
-    content: {
-      paddingTop: 16,
-      paddingBottom: 160,
-    },
-    promoBanner: {
       paddingHorizontal: 16,
-      marginBottom: 16,
+      marginTop: 8,
+      marginBottom: 24,
     },
-    sectionDivider: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      marginVertical: 12,
-      gap: 12,
-    },
-    dividerLine: {
-      flex: 1,
-      height: 1,
-      backgroundColor: getColor('border'),
-    },
-    // Vendor list (horizontal)
-    vendorListContainer: {
-      paddingVertical: 16,
-    },
-    vendorList: {
-      paddingHorizontal: 16,
-    },
-    vendorCard: {
-      width: vendorCardWidth,
-      backgroundColor: getColor('card'),
-      borderRadius: theme.borderRadius.md,
-      marginRight: 20,
+    categoryCard: {
+      width: CARD_WIDTH,
+      height: 140,
+      borderRadius: 16,
       overflow: 'hidden',
     },
-    vendorCardInfo: {
-      padding: 8,
-      gap: 6,
-    },
-    vendorRating: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-    vendorMeta: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-    // Product list (vertical)
-    productSection: {
-      paddingHorizontal: 16,
-    },
-    productVendorHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 12,
-      marginTop: 16,
-      gap: 12,
-    },
-    productVendorInfo: {
-      flex: 1,
-      gap: 4,
-    },
-    productRow: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    productCard: {
-      width: productCardWidth,
-      marginBottom: 16,
-    },
-    productCardInfo: {
-      marginTop: 8,
-      gap: 4,
+    // Bottom illustration area placeholder
+    bottomPlaceholder: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: width * 0.48,
+      backgroundColor: getColor('border'),
+      opacity: 0.2,
     },
   });
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        {/* Top Row: Location + Profile */}
-        <View style={styles.topRow}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        {/* Header: Location + Profile */}
+        <View style={styles.header}>
           <View style={styles.locationSection}>
             <SkeletonItem width={20} height={20} borderRadius={4} />
             <View>
@@ -218,123 +156,38 @@ export const HomeScreenSkeleton: React.FC = () => {
           <SkeletonItem width={40} height={40} borderRadius={20} />
         </View>
 
-        {/* Banner Image */}
-        <View style={styles.bannerSection}>
-          <SkeletonItem width="100%" height="100%" borderRadius={0} />
+        {/* Promotion carousel banner */}
+        <View style={styles.carouselContainer}>
+          <SkeletonItem
+            width={width - 32}
+            height={CAROUSEL_BANNER_HEIGHT}
+            borderRadius={12}
+            style={{ marginHorizontal: 16 }}
+          />
         </View>
 
-        {/* Search Bar */}
-        <View style={styles.searchSection}>
+        {/* Search bar */}
+        <View style={styles.searchContainer}>
           <SkeletonItem width="100%" height={48} borderRadius={24} />
         </View>
 
-        {/* Navigation Tabs */}
-        <View style={styles.navTabs}>
-          {[1, 2, 3].map(index => (
-            <View key={index} style={styles.navTab}>
-              <SkeletonItem width={24} height={24} borderRadius={4} />
-              <SkeletonItem width={50} height={12} borderRadius={4} />
-            </View>
-          ))}
+        {/* Category cards (2 cards like CategoryCards) */}
+        <View style={styles.cardsContainer}>
+          <SkeletonItem
+            width={CARD_WIDTH}
+            height={140}
+            borderRadius={16}
+          />
+          <SkeletonItem
+            width={CARD_WIDTH}
+            height={140}
+            borderRadius={16}
+          />
         </View>
+
+        {/* Bottom illustration area */}
+        <View style={styles.bottomPlaceholder} />
       </View>
-
-      {/* Scrollable Content */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Promo Banner */}
-        <View style={styles.promoBanner}>
-          <SkeletonItem width="100%" height={140} borderRadius={12} />
-        </View>
-
-        {/* SHOPS Section Divider */}
-        <View style={styles.sectionDivider}>
-          <View style={styles.dividerLine} />
-          <SkeletonItem width={60} height={16} borderRadius={4} />
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Horizontal Vendor List */}
-        <View style={styles.vendorListContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.vendorList}
-          >
-            {[1, 2, 3, 4].map(index => (
-              <View key={index} style={styles.vendorCard}>
-                <SkeletonItem
-                  width={vendorCardWidth}
-                  height={vendorImageHeight}
-                  borderRadius={0}
-                />
-                <View style={styles.vendorCardInfo}>
-                  <SkeletonItem width="80%" height={14} borderRadius={4} />
-                  <View style={styles.vendorRating}>
-                    <SkeletonItem width={16} height={16} borderRadius={4} />
-                    <SkeletonItem width={24} height={12} borderRadius={4} />
-                  </View>
-                  <View style={styles.vendorMeta}>
-                    <SkeletonItem width={16} height={16} borderRadius={4} />
-                    <SkeletonItem width={50} height={12} borderRadius={4} />
-                  </View>
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* BESTSELLERS Section Divider */}
-        <View style={styles.sectionDivider}>
-          <View style={styles.dividerLine} />
-          <SkeletonItem width={100} height={16} borderRadius={4} />
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Product List with Vendor Headers */}
-        <View style={styles.productSection}>
-          {[1, 2].map(vendorIndex => (
-            <View key={vendorIndex}>
-              {/* Vendor Header */}
-              <View style={styles.productVendorHeader}>
-                <SkeletonItem width={50} height={50} borderRadius={25} />
-                <View style={styles.productVendorInfo}>
-                  <SkeletonItem width={120} height={16} borderRadius={4} />
-                  <SkeletonItem width={80} height={12} borderRadius={4} />
-                </View>
-                <SkeletonItem width={70} height={32} borderRadius={16} />
-              </View>
-
-              {/* Products Row */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginBottom: 8 }}
-              >
-                <View style={styles.productRow}>
-                  {[1, 2, 3].map(productIndex => (
-                    <View key={productIndex} style={styles.productCard}>
-                      <SkeletonItem
-                        width={productCardWidth}
-                        height={productCardWidth}
-                        borderRadius={12}
-                      />
-                      <View style={styles.productCardInfo}>
-                        <SkeletonItem width="90%" height={14} borderRadius={4} />
-                        <SkeletonItem width="60%" height={12} borderRadius={4} />
-                        <SkeletonItem width="40%" height={16} borderRadius={4} />
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };

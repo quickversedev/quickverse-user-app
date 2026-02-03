@@ -50,7 +50,7 @@ const AddressCard = ({ address, size = 'regular', onPress, isSelected, onLongPre
     houseIcon: {
       width: size === 'small' ? 40 : 44,
       height: size === 'small' ? 40 : 44,
-      borderRadius: theme.borderRadius.full,
+      borderRadius: size === 'small' ? 20 : 22,
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: size === 'small' ? 12 : 12,

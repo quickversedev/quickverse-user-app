@@ -45,12 +45,12 @@ const CategoryScreen = () => {
     const categoryName = route.params?.categoryName || 'Food';
     const isGrocery = categoryName.toLowerCase().includes('grocery');
 
-    const { getVendorsByCategory } = useVendorStore();
+    const vendors = useVendorStore(state => state.vendors);
+    const getVendorsByCategory = useVendorStore(state => state.getVendorsByCategory);
     const categoryVendors = React.useMemo(() => {
-        const vendors = getVendorsByCategory(categoryName);
-        // return vendors.filter(vendor => getStoreStatus(vendor).isOpen);
-        return vendors; // TEMPORARY: Show all vendors for testing
-    }, [categoryName, getVendorsByCategory]);
+        const list = getVendorsByCategory(categoryName);
+        return list;
+    }, [categoryName, getVendorsByCategory, vendors]);
 
     // Cart Logic
     // Collections Logic (Grocery Only)
