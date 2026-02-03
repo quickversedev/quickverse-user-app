@@ -7,10 +7,8 @@ import messaging from '@react-native-firebase/messaging';
 export const getNotificationPermissionStatus = async (): Promise<string> => {
   try {
     const authStatus = await messaging().hasPermission();
-    return authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-      authStatus === messaging.AuthorizationStatus.PROVISIONAL
-      ? 'true'
-      : 'false';
+    // 1 = AUTHORIZED, 2 = PROVISIONAL
+    return authStatus === 1 || authStatus === 2 ? 'true' : 'false';
   } catch (error) {
     return 'false';
   }
