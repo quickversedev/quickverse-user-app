@@ -94,9 +94,17 @@ const CategoryScreen = () => {
         navigation.navigate('Search');
     }, [navigation]);
 
+    const navigateToOtherCategory = React.useCallback(() => {
+        const otherCategory = isGrocery ? 'Food' : 'Grocery';
+        navigation.navigate('Category', { categoryName: otherCategory });
+    }, [navigation, isGrocery]);
+
     const headerImage = isGrocery
         ? Images.groceryCategoryIllustration
         : Images.foodCategoryIllustration;
+
+    const hasNoVendors = categoryVendors.length === 0;
+    const otherCategoryLabel = isGrocery ? 'Food' : 'Grocery';
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: '#FFF6EC' }]}>
@@ -141,71 +149,84 @@ const CategoryScreen = () => {
                     <PromotionCarousel />
                 </View>
 
-
-                {/* Collections Grid (Grocery Only) */}
-                {isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
-                {isGrocery && !collectionsLoading && collections.length > 0 && (
-                    <CollectionsGrid
-                        collections={collections}
-                        shopId={categoryVendors[0]?.shopId}
-                    />
-                )}
-
-                {/* Horizontal list of store cards */}
-                <SectionDivider
-                    text="Browse stores"
-                    style={{ marginVertical: 16, paddingHorizontal: 40 }}
-                    textStyle={{
-                        color: '#4B5563',
-                        fontWeight: '600',
-                        fontFamily: 'serif',
-                        fontStyle: 'italic',
-                        fontSize: 16,
-                    }}
-                />
-
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalList}>
-                    {categoryVendors.map((vendor) => (
-                        <View key={vendor.shopId} style={{ marginRight: 16 }}>
-                            <VendorCard2
-                                vendor={vendor}
-                                size={160} // Fixed width for horizontal items
-                                onPress={handleVendorPress}
+                {/* No vendors: show message + button to other category */}
+                {hasNoVendors ? (
+                    <View style={styles.emptyStateContainer}>
+                        <Text style={styles.emptyStateMessage}>
+                            No {categoryName} stores near you right now. Try browsing {otherCategoryLabel} instead.
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.emptyStateButton}
+                            onPress={navigateToOtherCategory}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.emptyStateButtonText}>Browse {otherCategoryLabel}</Text>
+                            <Feather name="arrow-right" size={20} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <>
+                        {/* Collections Grid (Grocery Only) */}
+                        {isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
+                        {isGrocery && !collectionsLoading && collections.length > 0 && (
+                            <CollectionsGrid
+                                collections={collections}
+                                shopId={categoryVendors[0]?.shopId}
                             />
-                        </View>
-                    ))}
-                </ScrollView>
+                        )}
 
-                {/* Full store list with showcase */}
-                <SectionDivider
-                    text="Stores for you"
-                    style={{ marginVertical: 16, paddingHorizontal: 40 }}
-                    textStyle={{
-                        color: '#4B5563',
-                        fontWeight: '600',
-                        fontFamily: 'serif',
-                        fontStyle: 'italic',
-                        fontSize: 16,
-                    }}
-                />
+                        {/* Horizontal list of store cards */}
+                        <SectionDivider
+                            text="Browse stores"
+                            style={{ marginVertical: 16, paddingHorizontal: 40 }}
+                            textStyle={{
+                                color: '#4B5563',
+                                fontWeight: '600',
+                                fontFamily: 'serif',
+                                fontStyle: 'italic',
+                                fontSize: 16,
+                            }}
+                        />
 
-                <View style={{ paddingHorizontal: 20 }}>
-                    {categoryVendors.map((vendor) => (
-                        <View key={vendor.shopId}>
-                            {/* <VendorCard2
-                                vendor={vendor}
-                                size="large"
-                                onPress={handleVendorPress}
-                            /> */}
-                            <View style={{ marginTop: 8, marginBottom: 24 }}>
-                                <VendorShowcaseWidget
-                                    vendor={vendor}
-                                    onPressExplore={() => handleVendorPress(vendor)}
-                                />
-                            </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalList}>
+                            {categoryVendors.map((vendor) => (
+                                <View key={vendor.shopId} style={{ marginRight: 16 }}>
+                                    <VendorCard2
+                                        vendor={vendor}
+                                        size={160}
+                                        onPress={handleVendorPress}
+                                    />
+                                </View>
+                            ))}
+                        </ScrollView>
+
+                        {/* Full store list with showcase */}
+                        <SectionDivider
+                            text="Stores for you"
+                            style={{ marginVertical: 16, paddingHorizontal: 40 }}
+                            textStyle={{
+                                color: '#4B5563',
+                                fontWeight: '600',
+                                fontFamily: 'serif',
+                                fontStyle: 'italic',
+                                fontSize: 16,
+                            }}
+                        />
+
+                        <View style={{ paddingHorizontal: 20 }}>
+                            {categoryVendors.map((vendor) => (
+                                <View key={vendor.shopId}>
+                                    <View style={{ marginTop: 8, marginBottom: 24 }}>
+                                        <VendorShowcaseWidget
+                                            vendor={vendor}
+                                            onPressExplore={() => handleVendorPress(vendor)}
+                                        />
+                                    </View>
+                                </View>
+                            ))}
                         </View>
-                    ))}
-                </View>
+                    </>
+                )}
 
             </ScrollView>
             <FloatingCartsStack />
@@ -302,6 +323,43 @@ const styles = StyleSheet.create({
         paddingLeft: 20,
         paddingRight: 20,
         marginBottom: 0,
+    },
+    emptyStateContainer: {
+        marginTop: 32,
+        marginHorizontal: 24,
+        paddingVertical: 28,
+        paddingHorizontal: 24,
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+    },
+    emptyStateMessage: {
+        fontSize: 16,
+        color: '#6B7280',
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: 20,
+    },
+    emptyStateButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: '#6B7280',
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+    },
+    emptyStateButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#fff',
     },
 });
 
