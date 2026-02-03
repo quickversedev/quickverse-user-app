@@ -323,6 +323,10 @@ const useCartStore = create<CartStore>()(
             if (!jwtToken) {
               throw new Error('No authentication token available');
             }
+            if (cartId == null || typeof cartId !== 'string') {
+              set({ loading: false });
+              return;
+            }
 
             // Get the smartBizCartId from the cart
             const cart = get().carts[cartId];
@@ -352,6 +356,9 @@ const useCartStore = create<CartStore>()(
           try {
             if (!jwtToken) {
               throw new Error('No authentication token available');
+            }
+            if (cartId == null || typeof cartId !== 'string') {
+              return;
             }
 
             // Extract shopId from cartId (assuming format: vendor_shopId)
@@ -431,25 +438,28 @@ const useCartStore = create<CartStore>()(
         },
 
         clearCart: async (cartId, jwtToken, phone) => {
-          //console.log('clearCart', cartId, jwtToken, phone);
+          if (cartId == null || typeof cartId !== 'string') return;
+
           set({ loading: true, error: null });
+
+          // Optimistic update: remove cart from state immediately so badge/count updates
+          const prevCarts = get().carts;
+          set(state => {
+            const { [cartId]: _, ...restCarts } = state.carts;
+            return { carts: restCarts, loading: false };
+          });
+
           try {
-            if (!jwtToken) {
-              throw new Error('No authentication token available');
-            }
+            if (!jwtToken) return;
 
             const shopId = cartId.replace('vendor_', '');
             await cartApiService.clearCart(shopId, jwtToken, phone);
-
-            // Remove cart from local state
-            set(state => {
-              const { [cartId]: _, ...restCarts } = state.carts;
-              return { carts: restCarts, loading: false };
-            });
           } catch (error) {
+            // Restore cart on API failure so user can retry
             set({
-              error: error instanceof Error ? error.message : 'Failed to clear cart',
+              carts: prevCarts,
               loading: false,
+              error: error instanceof Error ? error.message : 'Failed to clear cart',
             });
           }
         },

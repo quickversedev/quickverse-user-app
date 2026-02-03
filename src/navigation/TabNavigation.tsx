@@ -37,7 +37,12 @@ const TabNavigation = () => {
   const cartItemCount = useMemo(
     () =>
       Object.values(carts).reduce(
-        (sum, cart) => sum + Object.values(cart?.products ?? {}).reduce((s, p) => s + (p?.quantity ?? 0), 0),
+        (sum, cart) =>
+          sum +
+          Object.values(cart?.products ?? {}).reduce(
+            (s, p) => s + Number(p?.quantity ?? 0),
+            0
+          ),
         0
       ),
     [carts]

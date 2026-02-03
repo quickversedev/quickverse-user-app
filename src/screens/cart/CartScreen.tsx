@@ -565,14 +565,14 @@ const CartScreen: React.FC = () => {
   // Refresh cart data when screen loads
   React.useEffect(() => {
     const refreshCartData = async () => {
-      if (cart && authData?.jwt && authData?.phone) {
-        // Refresh cart data to ensure we have the latest state from server
-        await refreshCart(cart.cartId, authData.jwt, authData.phone);
+      if (!cart?.cartId || !authData?.jwt || !authData?.phone) return;
 
-        // After cart refresh, revalidate coupons
-        if (vendor?.shopId) {
-          await checkAndFetchOffers(vendor.shopId, authData);
-        }
+      // Refresh cart data to ensure we have the latest state from server
+      await refreshCart(cart.cartId, authData.jwt, authData.phone);
+
+      // After cart refresh, revalidate coupons
+      if (vendor?.shopId) {
+        await checkAndFetchOffers(vendor.shopId, authData);
       }
     };
 
