@@ -192,15 +192,31 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       // results is an array of arrays of products
       const allProducts = results.flat();
 
-      // Filter unique products
+      // Normalize product image: SmartPOS/collection API may use image, primaryImage, imageURL, etc.
+      const normalizeImageUrl = (p: Product & Record<string, unknown>): string => {
+        if (typeof p.imageUrl === 'string' && p.imageUrl) return p.imageUrl;
+        if (typeof p.image === 'string' && p.image) return p.image;
+        if (typeof (p as { primaryImage?: string }).primaryImage === 'string') return (p as { primaryImage: string }).primaryImage;
+        const urls = (p as { imageURL?: string | string[] }).imageURL;
+        if (Array.isArray(urls) && urls[0]) return urls[0];
+        if (typeof urls === 'string') return urls;
+        return '';
+      };
+
+      // Filter unique products and normalize imageUrl
       const seenSkus = new Set<string>();
-      const uniqueProducts = allProducts.filter(product => {
-        if (product.sku && !seenSkus.has(product.sku)) {
-          seenSkus.add(product.sku);
-          return true;
-        }
-        return false;
-      });
+      const uniqueProducts = allProducts
+        .filter(product => {
+          if (product.sku && !seenSkus.has(product.sku)) {
+            seenSkus.add(product.sku);
+            return true;
+          }
+          return false;
+        })
+        .map(product => ({
+          ...product,
+          imageUrl: product.imageUrl || normalizeImageUrl(product as Product & Record<string, unknown>),
+        }));
 
       set({
         products: uniqueProducts,

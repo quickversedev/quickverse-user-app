@@ -338,19 +338,62 @@ class ProductsService {
 
       console.log(`[ProductsService] Response status: ${response.status}`);
 
-      // Check for array response (Postman observed behavior)
+      let rawProducts: unknown[] = [];
       if (Array.isArray(response.data)) {
-        console.log(`[ProductsService] Found ${response.data.length} products for category ${categoryId} (Array response)`);
-        return response.data;
+        rawProducts = response.data;
+      } else if (response.data && typeof response.data === 'object' && Array.isArray((response.data as { products?: unknown[] }).products)) {
+        rawProducts = (response.data as { products: unknown[] }).products;
       }
 
-      // Check for object response (Fallback)
-      if (response.data && response.data.products) {
-        console.log(`[ProductsService] Found ${response.data.products.length} products for category ${categoryId} (Object response)`);
-        return response.data.products;
+      if (rawProducts.length === 0) {
+        console.log(`[ProductsService] No products found in response for category ${categoryId}`);
+        return [];
       }
-      console.log(`[ProductsService] No products found in response for category ${categoryId}`);
-      return [];
+
+      console.log(`[ProductsService] Found ${rawProducts.length} products for category ${categoryId}`);
+
+      // Normalize each product to our Product shape; SmartPOS may use different image field names
+      const pickImageUrl = (p: Record<string, unknown>): string => {
+        const keys = [
+          'imageUrl', 'imageURL', 'image', 'primaryImage', 'primaryImageUrl',
+          'thumbnailUrl', 'thumbnail', 'productImage', 'productImageUrl', 'img', 'photoUrl', 'picture',
+        ];
+        for (const k of keys) {
+          const v = p[k];
+          if (typeof v === 'string' && v.trim()) return v;
+          if (Array.isArray(v) && v[0] && typeof v[0] === 'string') return v[0];
+        }
+        const images = p.images ?? p.imageUrls ?? p.media ?? p.photos;
+        if (Array.isArray(images) && images.length > 0) {
+          const first = images[0];
+          if (typeof first === 'string') return first;
+          if (first && typeof first === 'object') {
+            const obj = first as Record<string, unknown>;
+            if (typeof obj.url === 'string') return obj.url;
+            if (typeof obj.imageUrl === 'string') return obj.imageUrl;
+            if (typeof obj.src === 'string') return obj.src;
+          }
+        }
+        // Nested: details.image, attributes.image, etc.
+        const details = p.details ?? p.attributes ?? p.info;
+        if (details && typeof details === 'object') {
+          const d = details as Record<string, unknown>;
+          if (typeof d.image === 'string') return d.image;
+          if (typeof d.imageUrl === 'string') return d.imageUrl;
+        }
+        return '';
+      };
+
+      const products: Product[] = rawProducts.map((raw: unknown) => {
+        const p = (raw && typeof raw === 'object' ? raw : {}) as Product & Record<string, unknown>;
+        const imageUrl = p.imageUrl || pickImageUrl(p as Record<string, unknown>);
+        if (!imageUrl && rawProducts[0] === raw && __DEV__) {
+          console.log('[ProductsService] Collection product sample keys:', Object.keys(p));
+        }
+        return { ...p, imageUrl: typeof imageUrl === 'string' ? imageUrl : '' } as Product;
+      });
+
+      return products;
     } catch (error) {
       console.error(`[ProductsService] Error fetching collection products for category ${categoryId}:`, error);
       return [];

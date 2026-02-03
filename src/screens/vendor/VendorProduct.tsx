@@ -182,20 +182,10 @@ const VendorProductComponent: React.FC = () => {
     // Logic branch: Collection Mode vs Normal Vendor Mode
     if (collection) {
       console.log('[VendorProduct] Collection Mode:', collection.name);
-      // In collection mode, we don't fetch categories from store. 
-      // We use collection.categories.
-      // We fetch products specifically for these columns.
       const categoryIds = collection.categories.map(c => c.id);
       fetchCollectionProducts(shopId, categoryIds);
-
-      // We need to set the store's categories to the collection's categories 
-      // so that `categories` derived state works correctly?
-      // Actually `useProductsStore` has a `categories` state. 
-      // We should probably override `categories` in store? 
-      // or just rely on `collection` param to build `categoriesForTabs`.
-      // BUT `VendorProduct` relies on `categories` from store in `categoryMap` and elsewhere.
-      // It's cleaner to "mock" the categories into the store or handle it locally.
-      // Let's handle it locally by checking `collection` in `categoriesForTabs` and `categoryMap`.
+      // Also fetch categories so we have imageURLs for category tabs (match by id)
+      fetchCategories(shopId);
     } else {
       fetchProducts({ offset: 0, limit: 1000 });
       fetchCategories(shopId);
@@ -250,18 +240,21 @@ const VendorProductComponent: React.FC = () => {
     [searchQuery, filteredProducts, products]
   );
 
-  // Map store categories to CategoryTabs items with a placeholder icon
+  // Map categories to CategoryTabs items; use store category imageURLs when available (regular mode or after fetch in collection mode)
   const categoriesForTabs: Category[] = useMemo(
     () => {
       const sourceCategories = collection ? collection.categories : (categories || []);
-      return sourceCategories.map(c => ({
-        id: c.id,
-        name: c.name,
-        // Collection categories don't have images in this simplified structure usually, or do they?
-        // The Collection type has `categories: CollectionCategory[]` which has `id, name`.
-        // We can use a placeholder or try to find an image if we had more data.
-        icon: Images.bg1, // Placeholder
-      }));
+      const storeCategories = categories || [];
+      return sourceCategories.map(c => {
+        const storeCat = storeCategories.find((sc: { id: string; imageURLs?: string[] | null }) => sc.id === c.id);
+        const apiCategory = c as { id: string; name: string; imageURLs?: string[] | null };
+        const imageUrl = storeCat?.imageURLs?.[0] ?? apiCategory.imageURLs?.[0];
+        return {
+          id: c.id,
+          name: c.name,
+          icon: (typeof imageUrl === 'string' && imageUrl) ? imageUrl : Images.bg1,
+        };
+      });
     },
     [categories, collection]
   );
