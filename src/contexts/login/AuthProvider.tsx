@@ -78,16 +78,18 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSkipUserLogin(skipLoginFlow);
         const storedIsNewUser = getNewUser();
         setIsNewUser(storedIsNewUser);
-        // Load selected address from storage
-        // const storedAddress = StorageService.getItem('selectedAddress');
-        // if (storedAddress) {
-        //   try {
-        //     const parsedAddress = JSON.parse(storedAddress);
-        //     setSelectedAddress(parsedAddress);
-        //   } catch (error) {
-        //     console.error('Failed to parse stored address', error);
-        //   }
-        // }
+        // Restore selected address from storage (same device only; new device has no stored address)
+        const storedAddress = StorageService.getItem('selectedAddress');
+        if (storedAddress) {
+          try {
+            const parsedAddress = JSON.parse(storedAddress);
+            if (parsedAddress && typeof parsedAddress === 'object' && parsedAddress.addressID) {
+              setSelectedAddress(parsedAddress);
+            }
+          } catch (error) {
+            console.error('Failed to parse stored address', error);
+          }
+        }
       } catch (error) {
         console.error('Failed to load auth data from storage', error);
       } finally {

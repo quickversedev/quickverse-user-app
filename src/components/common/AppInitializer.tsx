@@ -11,6 +11,7 @@ import useThemeStore from '../../store/themeStore';
 import useVendorStore from '../../store/vendorStore';
 import { Address } from '../../types/address';
 import ErrorState from './ErrorState';
+import LocationRequiredModal from './LocationRequiredModal';
 import { HomeScreenSkeleton } from './skeleton';
 
 /**
@@ -44,12 +45,12 @@ interface AppInitializerProps {
  * 3. Reverse geocoded current location
  * 4. Default address from auth data (using defaultAddressId)
  * 5. First saved address (if no defaultAddressId)
- * 6. Config default location (reverse geocoded)
- * 7. Hardcoded fallback (Connaught Place, Delhi)
+ * 6. No location set → open LocationRequiredModal (user must select; no default Pune/fallback)
  */
 const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData }) => {
   // UI state
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initComplete, setInitComplete] = useState(false);
   const initializationRef = useRef(false);
   const prevAddressRef = useRef<Address | null>(null);
 
@@ -65,7 +66,6 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     fetchInitialConfig,
     loading: configLoading,
     error: _configError,
-    getDefaultLocation,
   } = useConfig();
   const { fetchTheme } = useThemeStore();
   const { fetchPages, loading: pagesLoading } = usePages();
@@ -213,69 +213,16 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
         addresses &&
         addresses.length > 0
       ) {
-        if (authData?.defaultAddressId) {
-          const defaultAddress = addresses.find(
-            addr => addr.addressID === authData.defaultAddressId
-          );
-          if (defaultAddress) {
-            setSelectedAddress(defaultAddress);
-            return;
-          }
-        }
-        setSelectedAddress(addresses[0]);
+        // Do not auto-select first/default saved address on new device.
+        // selectedAddress is only set when: (1) restored from storage (same device), or
+        // (2) user has location permission (current location), or (3) user picks in LocationRequiredModal.
         return;
       } else if (
         (!permissionStatus || permissionStatus !== 'granted') &&
         (!addresses || addresses.length === 0)
       ) {
-        const defaultLocation = getDefaultLocation();
-        if (defaultLocation) {
-          try {
-            const components = await getAddressFromCoordinates({
-              latitude: parseFloat(defaultLocation.latitude),
-              longitude: parseFloat(defaultLocation.longitude),
-            });
-            const configAddress: Address = {
-              addressID: 'config-default-location',
-              name: 'Default Location',
-              phone: '',
-              city: components.city || '',
-              state: components.state || '',
-              tag: 'QV_DEFAULT_LOCATION',
-              addressLine1: components.formatted_address || 'Default Location',
-              addressLine2: '',
-              addressLine3: '',
-              postalCode: components.postalCode || '',
-              coordinates: {
-                longitude: parseFloat(defaultLocation.longitude),
-                latitude: parseFloat(defaultLocation.latitude),
-              },
-              isSavedAddress: false,
-            };
-            setSelectedAddress(configAddress);
-            return;
-          } catch (geocodeError) {
-            console.warn('Failed to reverse geocode default location:', geocodeError);
-          }
-        }
-        const fallbackAddress: Address = {
-          addressID: 'fallback-default-location',
-          name: 'Connaught Place',
-          phone: '',
-          city: 'New Delhi',
-          state: 'Delhi',
-          tag: 'Home',
-          addressLine1: 'Connaught Place',
-          addressLine2: '',
-          addressLine3: '',
-          postalCode: '110001',
-          coordinates: {
-            longitude: 77.209,
-            latitude: 28.6139,
-          },
-          isSavedAddress: false,
-        };
-        setSelectedAddress(fallbackAddress);
+        // Do not set any default location (e.g. Pune). User must select location to continue.
+        return;
       } else if (permissionStatus === 'granted' && (!currentLatitude || !currentLongitude)) {
         console.warn('Location permission granted but coordinates not available');
       } else {
@@ -294,8 +241,6 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     currentLatitude,
     currentLongitude,
     setSelectedAddress,
-    authData?.defaultAddressId,
-    getDefaultLocation,
   ]);
 
   const initializeApp = useCallback(async (): Promise<void> => {
@@ -344,6 +289,8 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       if (isLoggedIn && authData?.jwt && authData?.phone) {
         await fetchOrders(authData.jwt, authData.phone, null, 5);
       }
+
+      setInitComplete(true);
     } catch (e) {
       // Silent catch; UI handles error states from stores
       console.error('app initializer initializeApp error', e);
@@ -424,7 +371,17 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     );
   }
 
-  // Show main app content if initialization successful
+  // Location not configured: show app and open location modal so user can select (avoids stuck skeleton)
+  if (initComplete && !selectedAddress) {
+    return (
+      <>
+        {children}
+        <LocationRequiredModal />
+      </>
+    );
+  }
+
+  // Show main app content when initialization successful and location is set
   if (isInitialized) {
     return <>{children}</>;
   }

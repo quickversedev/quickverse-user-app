@@ -80,6 +80,10 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   };
 
   const handleClose = () => {
+    // Prevent closing if address is compulsory and no address is selected
+    if (needCompulsoryAddress && !selectedAddress) {
+      return; // Don't allow closing
+    }
     onClose();
   };
 
@@ -471,12 +475,14 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
           {/* Visual dimming layer */}
           <View style={themedStyles.backdrop} pointerEvents="none" />
 
-          {/* Area above modal that closes when tapped */}
-          <TouchableOpacity
-            style={themedStyles.closeArea}
-            onPress={handleClose}
-            activeOpacity={1}
-          />
+          {/* Area above modal that closes when tapped (disabled if needCompulsoryAddress) */}
+          {!needCompulsoryAddress && (
+            <TouchableOpacity
+              style={themedStyles.closeArea}
+              onPress={handleClose}
+              activeOpacity={1}
+            />
+          )}
 
           {/* Close button - TOP LEFT */}
           <View style={themedStyles.closeButtonContainer}>
@@ -492,9 +498,8 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Search bar - BELOW CLOSE BUTTON (only if not needCompulsoryAddress) */}
-          {!needCompulsoryAddress && (
-            <View style={themedStyles.topSearchContainer}>
+          {/* Search bar - same modal experience whether compulsory or not */}
+          <View style={themedStyles.topSearchContainer}>
               <View style={themedStyles.searchBar}>
                 <MaterialCommunityIcons
                   name="magnify"
@@ -567,7 +572,6 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                 </View>
               )}
             </View>
-          )}
 
           {/* Address selection card - positioned below search bar */}
           <View style={themedStyles.modalContainer}>
@@ -633,27 +637,25 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                     )}
                   </View>
 
-                  {/* Use Current Location Button */}
-                  {!needCompulsoryAddress && (
-                    <TouchableOpacity
-                      style={themedStyles.currentLocationButton}
-                      onPress={handleUseCurrentLocation}
-                      disabled={locationLoading}
-                      accessible={true}
-                      accessibilityRole="button"
-                      accessibilityLabel="Use current location"
-                      activeOpacity={0.8}
-                    >
-                      <MaterialCommunityIcons
-                        name="crosshairs-gps"
-                        size={20}
-                        color={getColor('text')}
-                      />
-                      <Text style={themedStyles.currentLocationButtonText}>
-                        {locationLoading ? 'Getting Location...' : 'Use Current Location'}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                  {/* Use Current Location Button - same modal as home location selector */}
+                  <TouchableOpacity
+                    style={themedStyles.currentLocationButton}
+                    onPress={handleUseCurrentLocation}
+                    disabled={locationLoading}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Use current location"
+                    activeOpacity={0.8}
+                  >
+                    <MaterialCommunityIcons
+                      name="crosshairs-gps"
+                      size={20}
+                      color={getColor('text')}
+                    />
+                    <Text style={themedStyles.currentLocationButtonText}>
+                      {locationLoading ? 'Getting Location...' : 'Use Current Location'}
+                    </Text>
+                  </TouchableOpacity>
 
                   {/* Add Address Button */}
                   <TouchableOpacity
