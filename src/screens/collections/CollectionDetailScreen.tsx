@@ -773,7 +773,7 @@ const CollectionDetailScreen: React.FC = () => {
                 onAdd={() => handleAddToCart(product)}
                 onIncrement={() => handleIncrement(product.sku)}
                 onDecrement={() => handleDecrement(product.sku)}
-                disabled={!product.inStock}
+                disabled={false}
                 showVariantsCount={true}
                 onPress={() => handleProductPress(product)}
               />

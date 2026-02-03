@@ -151,8 +151,8 @@ const VendorProductComponent: React.FC = () => {
   // Memoized values
   const hasAuth = useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
   const storeStatus = useMemo(() => getStoreStatus(vendor), [vendor]);
-  // If no detailed vendor object, assume open or fetch status? For now assume open for collection
-  const isStoreActive = routeVendor ? storeStatus.isOpen : true;
+  // In collection mode always treat store as active so products are never greyed out; otherwise use vendor open status
+  const isStoreActive = collection ? true : (routeVendor ? storeStatus.isOpen : true);
 
   // In collection mode, vendor may only have shopId → modals see store as closed. Pass a vendor with store open so add-to-cart works.
   const vendorForModals = useMemo((): Vendor => {
@@ -1081,7 +1081,7 @@ const VendorProductComponent: React.FC = () => {
                 onAdd={() => handleAddToCart(product)}
                 onIncrement={() => handleIncrement(product.sku)}
                 onDecrement={() => handleDecrement(product.sku)}
-                disabled={!isStoreActive || !product.inStock}
+                disabled={collection ? false : (!isStoreActive || !product.inStock)}
                 showVariantsCount={true}
                 onPress={() => handleProductPress(product)}
               />

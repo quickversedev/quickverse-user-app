@@ -387,10 +387,12 @@ class ProductsService {
       const products: Product[] = rawProducts.map((raw: unknown) => {
         const p = (raw && typeof raw === 'object' ? raw : {}) as Product & Record<string, unknown>;
         const imageUrl = p.imageUrl || pickImageUrl(p as Record<string, unknown>);
+        // SmartPOS may use different keys for stock; default to true so collection products aren't greyed out
+        const inStock = p.inStock ?? (p as Record<string, unknown>).available ?? (p as Record<string, unknown>).in_stock ?? true;
         if (!imageUrl && rawProducts[0] === raw && __DEV__) {
           console.log('[ProductsService] Collection product sample keys:', Object.keys(p));
         }
-        return { ...p, imageUrl: typeof imageUrl === 'string' ? imageUrl : '' } as Product;
+        return { ...p, imageUrl: typeof imageUrl === 'string' ? imageUrl : '', inStock: Boolean(inStock) } as Product;
       });
 
       return products;
