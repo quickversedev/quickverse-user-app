@@ -1,10 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, Animated } from 'react-native';
+import { View, StyleSheet, Dimensions, Animated } from 'react-native';
+import SectionDivider from '../../../components/common/SectionDivider';
 
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 4;
 const SPACING = 16;
+const GAP = 8;
 const ITEM_WIDTH = (width - SPACING * (COLUMN_COUNT + 1)) / COLUMN_COUNT;
+const GRID_WIDTH = COLUMN_COUNT * ITEM_WIDTH + (COLUMN_COUNT - 1) * GAP;
 const SKELETON_ITEMS = 8; // 2 rows of 4
 
 const CollectionsGridSkeleton: React.FC = () => {
@@ -31,7 +34,7 @@ const CollectionsGridSkeleton: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Collections</Text>
+      <SectionDivider text="Collections" style={styles.sectionDivider} />
       <View style={styles.grid}>
         {Array.from({ length: SKELETON_ITEMS }).map((_, index) => (
           <View key={index} style={styles.itemContainer}>
@@ -48,19 +51,17 @@ const styles = StyleSheet.create({
   container: {
     marginTop: 24,
     paddingHorizontal: SPACING,
+    alignItems: 'center',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+  sectionDivider: {
     marginBottom: 16,
-    color: '#111',
-    fontFamily: 'serif',
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
-    gap: 8,
+    gap: GAP,
+    width: GRID_WIDTH,
   },
   itemContainer: {
     width: ITEM_WIDTH,

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { Collection } from '../../../data/collectionsData';
 import { useNavigation } from '@react-navigation/native';
+import SectionDivider from '../../../components/common/SectionDivider';
 
 interface CollectionsGridProps {
     collections: Collection[];
@@ -11,8 +12,10 @@ interface CollectionsGridProps {
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 4;
 const SPACING = 16;
-// Calculate item width based on available width and spacing
+const GAP = 8;
+// Calculate item width; grid will be centered so use full width for item size
 const ITEM_WIDTH = (width - (SPACING * (COLUMN_COUNT + 1))) / COLUMN_COUNT;
+const GRID_WIDTH = COLUMN_COUNT * ITEM_WIDTH + (COLUMN_COUNT - 1) * GAP;
 
 const CollectionsGrid: React.FC<CollectionsGridProps> = ({ collections, shopId }) => {
     const navigation = useNavigation<any>();
@@ -40,7 +43,7 @@ const CollectionsGrid: React.FC<CollectionsGridProps> = ({ collections, shopId }
 
     return (
         <View style={styles.container}>
-            <Text style={styles.sectionTitle}>Collections</Text>
+            <SectionDivider text="Collections" style={styles.sectionDivider} />
             <View style={styles.grid}>
                 {collections.map((collection) => (
                     <TouchableOpacity
@@ -69,25 +72,22 @@ const styles = StyleSheet.create({
     container: {
         marginTop: 24,
         paddingHorizontal: SPACING,
+        alignItems: 'center',
     },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '700',
+    sectionDivider: {
         marginBottom: 16,
-        color: '#111',
-        fontFamily: 'serif', // Matching existing serene typography if used elsewhere
     },
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'flex-start',
-        gap: 8, // Row/Column gap if supported (RN 0.71+), else use margin
+        gap: GAP,
+        width: GRID_WIDTH,
     },
     itemContainer: {
         width: ITEM_WIDTH,
         marginBottom: 20,
         alignItems: 'center',
-        marginRight: (width - SPACING * 2 - ITEM_WIDTH * COLUMN_COUNT) / (COLUMN_COUNT - 1) > 0 ? 0 : 4, // slight adjustment fallback
     },
     imageContainer: {
         width: ITEM_WIDTH,
