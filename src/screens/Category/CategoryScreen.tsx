@@ -151,9 +151,9 @@ const CategoryScreen = () => {
                     />
                 )}
 
-                {/* Horizontal List 1 */}
+                {/* Horizontal list of store cards */}
                 <SectionDivider
-                    text="{SOME copy}"
+                    text="Browse stores"
                     style={{ marginVertical: 16, paddingHorizontal: 40 }}
                     textStyle={{
                         color: '#4B5563',
@@ -176,9 +176,9 @@ const CategoryScreen = () => {
                     ))}
                 </ScrollView>
 
-                {/* Store List */}
+                {/* Full store list with showcase */}
                 <SectionDivider
-                    text="{SOME copy}"
+                    text="Stores for you"
                     style={{ marginVertical: 16, paddingHorizontal: 40 }}
                     textStyle={{
                         color: '#4B5563',

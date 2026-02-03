@@ -1,11 +1,11 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import React, { createContext, useEffect, useRef } from 'react';
+import React, { createContext, useMemo, useRef } from 'react';
 import { Animated, Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import CartScreen from '../screens/cart/CartScreen';
 import ExploreScreen from '../screens/Explore/ExploreScreen';
 import HomeStack from './HomeStack';
+import useCartStore from '../store/cart/cartStore';
 import { useTheme } from '../theme/ThemeContext';
 import HomeFilled from '../assets/svg/bottom-navBar/homeIcon/homeIcon_filled.svg';
 import HomeOutline from '../assets/svg/bottom-navBar/homeIcon/homeIcon_outline.svg';
@@ -32,6 +32,16 @@ const TabNavigation = () => {
   const insets = useSafeAreaInsets();
   const bottomInset = Platform.OS === 'android' ? Math.max(insets.bottom, 16) : insets.bottom;
   const fullTabBarHeight = TAB_BAR_HEIGHT + bottomInset;
+
+  const carts = useCartStore(state => state.carts);
+  const cartItemCount = useMemo(
+    () =>
+      Object.values(carts).reduce(
+        (sum, cart) => sum + Object.values(cart?.products ?? {}).reduce((s, p) => s + (p?.quantity ?? 0), 0),
+        0
+      ),
+    [carts]
+  );
 
   return (
     <TabBarVisibilityContext.Provider value={{ scrollY, tabBarHeight: TAB_BAR_HEIGHT, tabBarTranslateY, fullTabBarHeight }}>
@@ -71,6 +81,7 @@ const TabNavigation = () => {
           name="Cart"
           component={CartScreen}
           options={{
+            tabBarBadge: cartItemCount > 0 ? cartItemCount : undefined,
             tabBarIcon: ({ color, focused }) => (
               focused ?
                 <CartFilled width={24} height={24} fill={color} /> :

@@ -55,7 +55,7 @@ const CollectionsGrid: React.FC<CollectionsGridProps> = ({ collections, shopId }
                             <Image
                                 source={{ uri: collection.image }}
                                 style={styles.image}
-                                resizeMode="cover"
+                                resizeMode="contain"
                             />
                         </View>
                         <Text style={styles.itemText} numberOfLines={2}>
@@ -101,17 +101,21 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
         shadowRadius: 2,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     image: {
         width: '100%',
         height: '100%',
     },
     itemText: {
+        width: ITEM_WIDTH,
         fontSize: 12,
         textAlign: 'center',
         color: '#333',
         fontWeight: '500',
         lineHeight: 16,
+        paddingHorizontal: 2,
     },
 });
 
