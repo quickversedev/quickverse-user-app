@@ -58,13 +58,14 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   const insets = useSafeAreaInsets();
   const { addresses, loading, fetchAddresses } = useAddress();
   const { setSelectedAddress, authData } = useAuth();
-  const { getCurrentLocation, isLoading: locationLoading } = useLocation();
+  const { getCurrentLocation } = useLocation();
   const isLoggedIn = Boolean(authData?.jwt);
   const [showAddModal, setShowAddModal] = React.useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [currentLocationLoading, setCurrentLocationLoading] = useState(false);
 
   // Fetch addresses when modal opens
   useEffect(() => {
@@ -183,6 +184,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   };
 
   const handleUseCurrentLocation = async () => {
+    setCurrentLocationLoading(true);
     try {
       const location = await getCurrentLocation();
       if (location.latitude && location.longitude) {
@@ -244,6 +246,8 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       } catch (fallbackError) {
         console.error('Failed to get current location as fallback:', fallbackError);
       }
+    } finally {
+      setCurrentLocationLoading(false);
     }
   };
 
@@ -388,7 +392,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     },
     content: {
       flex: 1,
-      paddingHorizontal: 16,
+      paddingHorizontal: 20,
       paddingTop: 8,
     },
     sectionDividerContainer: {
@@ -612,7 +616,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                     ) : (
                       <ScrollView
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 8 }}
+                        contentContainerStyle={{ paddingBottom: 8, paddingHorizontal: 4 }}
                         style={{ flex: 1 }}
                         nestedScrollEnabled={true}
                       >
@@ -641,19 +645,24 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                   <TouchableOpacity
                     style={themedStyles.currentLocationButton}
                     onPress={handleUseCurrentLocation}
-                    disabled={locationLoading}
+                    disabled={currentLocationLoading}
                     accessible={true}
                     accessibilityRole="button"
-                    accessibilityLabel="Use current location"
+                    accessibilityLabel={currentLocationLoading ? 'Getting location...' : 'Use current location'}
                     activeOpacity={0.8}
                   >
-                    <MaterialCommunityIcons
-                      name="crosshairs-gps"
-                      size={20}
-                      color={getColor('text')}
-                    />
+                    {currentLocationLoading ? (
+                      <ActivityIndicator size="small" color={getColor('primary')} style={{ marginRight: 10 }} />
+                    ) : (
+                      <MaterialCommunityIcons
+                        name="crosshairs-gps"
+                        size={20}
+                        color={getColor('text')}
+                        style={{ marginRight: 10 }}
+                      />
+                    )}
                     <Text style={themedStyles.currentLocationButtonText}>
-                      {locationLoading ? 'Getting Location...' : 'Use Current Location'}
+                      {currentLocationLoading ? 'Getting Location...' : 'Use Current Location'}
                     </Text>
                   </TouchableOpacity>
 
