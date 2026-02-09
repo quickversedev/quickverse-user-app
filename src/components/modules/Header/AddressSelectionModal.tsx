@@ -1,19 +1,19 @@
 import debounce from 'lodash.debounce';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    FlatList,
-    Keyboard,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Keyboard,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -24,10 +24,10 @@ import { useAddress } from '../../../hooks/useAddress';
 import AddAddressModal from '../../../screens/profile/Address/AddAddressModal';
 import AddressCard from '../../../screens/profile/Address/AddressCard';
 import {
-    getAddressFromCoordinates,
-    getAutocompleteSuggestions,
-    type Location,
-    type SearchResult,
+  getAddressFromCoordinates,
+  getAutocompleteSuggestions,
+  type Location,
+  type SearchResult,
 } from '../../../services/api/olaLocationService';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Address } from '../../../types/address';
@@ -246,7 +246,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   const addressCount = filteredAddresses.length;
   const visibleCount = Math.min(addressCount, MAX_VISIBLE_ADDRESSES);
   const addressesHeight = addressCount === 0
-    ? 80 // Empty state height
+    ? 150 // Empty state height (increased to fit icon and text)
     : visibleCount * ADDRESS_CARD_HEIGHT;
 
   const themedStyles = StyleSheet.create({
