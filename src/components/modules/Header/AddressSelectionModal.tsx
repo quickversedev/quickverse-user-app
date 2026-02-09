@@ -1,19 +1,19 @@
 import debounce from 'lodash.debounce';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Dimensions,
-  FlatList,
-  Keyboard,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Keyboard,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -24,10 +24,10 @@ import { useAddress } from '../../../hooks/useAddress';
 import AddAddressModal from '../../../screens/profile/Address/AddAddressModal';
 import AddressCard from '../../../screens/profile/Address/AddressCard';
 import {
-  getAddressFromCoordinates,
-  getAutocompleteSuggestions,
-  type Location,
-  type SearchResult,
+    getAddressFromCoordinates,
+    getAutocompleteSuggestions,
+    type Location,
+    type SearchResult,
 } from '../../../services/api/olaLocationService';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Address } from '../../../types/address';
@@ -187,65 +187,53 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     setCurrentLocationLoading(true);
     try {
       const location = await getCurrentLocation();
-      if (location.latitude && location.longitude) {
+
+      if (!location.latitude || !location.longitude) {
+        throw new Error('Could not get current location coordinates');
+      }
+
+      let addressComponents;
+      try {
         // Get address details from coordinates using reverse geocoding
-        const addressComponents = await getAddressFromCoordinates({
+        addressComponents = await getAddressFromCoordinates({
           latitude: location.latitude,
           longitude: location.longitude,
         });
-
-        // Create a new address object with current location and address details
-        const currentLocationAddress: Address = {
-          addressID: `current_location_${Date.now()}`,
-          name: 'Current Location',
-          phone: '',
-          city: addressComponents.city || 'Current Location',
-          state: addressComponents.state || '',
-          tag: 'current',
-          addressLine1: addressComponents.formatted_address || 'Current GPS Location',
-          addressLine2: '',
-          addressLine3: '',
-          postalCode: addressComponents.postalCode || '',
-          coordinates: {
-            latitude: location.latitude,
-            longitude: location.longitude,
-          },
-        };
-
-        // Set as selected address
-        setSelectedAddress(currentLocationAddress);
-
-        handleClose();
-      }
-    } catch (error) {
-      console.error('Failed to get current location or address:', error);
-      // Fallback: create address with just coordinates if reverse geocoding fails
-      try {
-        const location = await getCurrentLocation();
-        if (location.latitude && location.longitude) {
-          const fallbackAddress: Address = {
-            addressID: `current_location_${Date.now()}`,
-            name: 'Current Location',
-            phone: '',
+      } catch (geocodeError) {
+        console.warn('Reverse geocoding failed, using coordinates only:', geocodeError);
+        // Fallback to empty components if reverse geocoding fails
+        addressComponents = {
             city: 'Current Location',
             state: '',
-            tag: 'current',
-            addressLine1: 'Current GPS Location',
-            addressLine2: '',
-            addressLine3: '',
-            postalCode: '',
-            coordinates: {
-              latitude: location.latitude,
-              longitude: location.longitude,
-            },
-          };
-          setSelectedAddress(fallbackAddress);
-
-          handleClose();
-        }
-      } catch (fallbackError) {
-        console.error('Failed to get current location as fallback:', fallbackError);
+            formatted_address: 'Current GPS Location: ' + location.latitude.toFixed(4) + ', ' + location.longitude.toFixed(4),
+            postalCode: ''
+        };
       }
+
+      // Create a new address object with current location and address details (or fallback)
+      const currentLocationAddress: Address = {
+        addressID: `current_location_${Date.now()}`,
+        name: 'Current Location',
+        phone: '',
+        city: addressComponents.city || 'Current Location',
+        state: addressComponents.state || '',
+        tag: 'current',
+        addressLine1: addressComponents.formatted_address || 'Current GPS Location',
+        addressLine2: '',
+        addressLine3: '',
+        postalCode: addressComponents.postalCode || '',
+        coordinates: {
+          latitude: location.latitude,
+          longitude: location.longitude,
+        },
+      };
+
+      // Set as selected address
+      setSelectedAddress(currentLocationAddress);
+      handleClose();
+
+    } catch (error) {
+      console.error('Failed to get current location:', error);
     } finally {
       setCurrentLocationLoading(false);
     }
