@@ -94,8 +94,10 @@ const useVendorStore = create<VendorStore>((set, get) => ({
 
   // Actions
   fetchVendors: async (location?: LocationFilter) => {
+    console.log('[VendorStore] fetchVendors called with location:', location);
     // Cancel any pending request
     if (pendingRequest) {
+      console.log('[VendorStore] Aborting pending request');
       pendingRequest.abort();
     }
 
@@ -107,11 +109,13 @@ const useVendorStore = create<VendorStore>((set, get) => ({
     set({ loading: true, error: null });
 
     if (USE_VENDOR_MOCKS) {
+      console.log('[VendorStore] Using mocks');
       // Always return all mock vendors regardless of location
       setTimeout(() => {
         // Only update if this is still the current request
         if (requestId === currentRequestId) {
           const sortedVendors = sortVendorsByDistanceAndActiveStatus(mockVendors, location);
+          console.log('[VendorStore] Mock vendors sorted:', sortedVendors.length);
           set({ vendors: sortedVendors, loading: false, userLocation: location || null });
         }
       }, 1000);
@@ -127,19 +131,31 @@ const useVendorStore = create<VendorStore>((set, get) => ({
           }
         : {};
 
+      console.log('[VendorStore] Fetching from API:', VENDOR_API_URL, 'Params:', params);
+
+      // Add Basic prefix if not present
+      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
+        ? `Basic ${AUTHORIZATION_KEY}`
+        : AUTHORIZATION_KEY;
+
+      console.log('[VendorStore] Auth Header:', authHeader ? 'Present (with Basic)' : 'Missing');
+
       const data = await apiCall(
         axiosInstance.get(VENDOR_API_URL, {
           params,
           headers: {
-            Authorization: AUTHORIZATION_KEY,
+            Authorization: authHeader,
           },
           signal: abortController.signal,
         })
       );
 
+      console.log('[VendorStore] API Response data length:', Array.isArray(data) ? data.length : 'Not Array');
+
       // Only update state if this is still the current request
       if (requestId === currentRequestId) {
         const sortedVendors = sortVendorsByDistanceAndActiveStatus(data, location);
+        console.log('[VendorStore] Setting vendors in state:', sortedVendors.length);
         set({
           vendors: sortedVendors,
           loading: false,
@@ -147,9 +163,19 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         });
       }
     } catch (err: unknown) {
-      const error = err as { name?: string };
+      // Extensive error logging
+      const error: any = err;
+      console.error('[VendorStore] API Error Details:', {
+        message: error.message,
+        status: error.status,
+        code: error.code,
+        endpoint: error.apiEndpoint,
+        responsedata: error.response?.data || 'No data'
+      });
+
       // Don't update state if request was aborted
       if (error.name === 'AbortError') {
+        console.log('[VendorStore] Request aborted');
         return;
       }
 
@@ -181,7 +207,15 @@ const useVendorStore = create<VendorStore>((set, get) => ({
     }
 
     try {
-      const data = await apiCall(axiosInstance.get(`${VENDOR_API_URL}/${shopId}`));
+      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
+        ? `Basic ${AUTHORIZATION_KEY}`
+        : AUTHORIZATION_KEY;
+
+      const data = await apiCall(axiosInstance.get(`${VENDOR_API_URL}/${shopId}`, {
+          headers: {
+            Authorization: authHeader,
+          },
+      }));
       set({ selectedVendor: data, loading: false });
     } catch (err) {
       set({ error: 'Failed to fetch vendor details', loading: false });

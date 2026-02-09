@@ -49,6 +49,7 @@ const CartItem: React.FC<CartItemProps> = React.memo(
         justifyContent: 'center',
         minWidth: 70,
         alignSelf: 'center',
+        marginLeft: 8,
       },
       cartItemTag: {
         backgroundColor: getColor('card'),

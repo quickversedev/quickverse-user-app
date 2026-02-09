@@ -18,10 +18,14 @@ const usePagesStore = create<PagesStore>((set, get) => ({
     try {
       set({ loading: true, error: null });
 
+      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
+        ? `Basic ${AUTHORIZATION_KEY}`
+        : AUTHORIZATION_KEY;
+
       const data = await apiCall(
         axiosInstance.get(`/v3/pages?regionId=${regionId}`, {
           headers: {
-            Authorization: AUTHORIZATION_KEY,
+            Authorization: authHeader,
           },
         })
       );

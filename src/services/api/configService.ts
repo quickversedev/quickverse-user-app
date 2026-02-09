@@ -18,11 +18,15 @@ const AUTH_HEADERS = {
 export const fetchInitialConfig = async (
   params: InitialConfigParams
 ): Promise<InitialConfigResponse> => {
-  console.log('AUTHORIZATION_KEY', AUTH_HEADERS);
+  const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
+    ? `Basic ${AUTHORIZATION_KEY}`
+    : AUTHORIZATION_KEY;
+
+  console.log('AUTHORIZATION_KEY', { ...AUTH_HEADERS, Authorization: authHeader });
   const response = await apiCall(
     axiosInstance.get<InitialConfigResponse>(CONFIG_ENDPOINTS.initialConfig, {
       params,
-      headers: AUTH_HEADERS,
+      headers: { ...AUTH_HEADERS, Authorization: authHeader },
     })
   );
 

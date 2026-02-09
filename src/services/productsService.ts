@@ -1,7 +1,7 @@
-import axios from 'axios'; // Import axios directly
 import { AUTHORIZATION_KEY } from '@env';
-import { Product } from '../types/product';
+import axios from 'axios'; // Import axios directly
 import axiosInstance, { apiCall } from '../config/api/axios.config';
+import { Product } from '../types/product';
 
 // Mock data toggle
 const USE_PRODUCTS_MOCKS = false; // Set to false for real API
@@ -113,6 +113,10 @@ class ProductsService {
       }
 
       // Real API call
+      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
+        ? `Basic ${AUTHORIZATION_KEY}`
+        : AUTHORIZATION_KEY;
+
       const response = await apiCall(
         axiosInstance.post<ProductsApiResponse>(
           `/v3/products?shopId=${shopId}`,
@@ -123,7 +127,7 @@ class ProductsService {
           },
           {
             headers: {
-              Authorization: AUTHORIZATION_KEY,
+              Authorization: authHeader,
             },
           }
         )
@@ -231,10 +235,14 @@ class ProductsService {
       }
 
       // Real API call
+      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
+        ? `Basic ${AUTHORIZATION_KEY}`
+        : AUTHORIZATION_KEY;
+
       const response = await apiCall(
         axiosInstance.get<CategoryApiResponse>(`/v3/${shopId}/category`, {
           headers: {
-            Authorization: 'Basic cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx',
+            Authorization: authHeader,
           },
         })
       );
