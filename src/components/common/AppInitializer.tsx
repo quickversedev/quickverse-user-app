@@ -132,7 +132,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   // Exclude addressLoading if we have cached addresses (non-blocking API call)
   const isLoading =
     (!isInitialized && vendorLoading) ||
-    (!hasCachedAddresses && addressLoading) ||
+    (!initComplete && !hasCachedAddresses && addressLoading) ||
     (!isInitialized && (configLoading || pagesLoading));
   const error = !isInitialized ? vendorError : null;
   const { longitude: currentLongitude, latitude: currentLatitude } = locationData?.location || {};
@@ -158,6 +158,10 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
             setSelectedAddress(closest.address as unknown as Address);
             return;
           }
+        } else {
+             // If user has no addresses (new user), do NOT auto-select "Current Location".
+             // Leaving selectedAddress as null will trigger LocationRequiredModal.
+             return;
         }
 
         try {

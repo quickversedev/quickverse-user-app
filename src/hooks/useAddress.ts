@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/login/AuthProvider';
 import { AuthSession } from '../services/localStorage/storage.service';
 import useAddressStore from '../store/address/addressStore';
@@ -25,19 +26,23 @@ export const useAddress = () => {
   //   fetchAddresses();
   // }, [fetchAddresses]);
 
-  const handleAddAddress = async (newAddress: NewAddress) => {
+  const handleAddAddress = useCallback(async (newAddress: NewAddress) => {
     const result = await addAddress(newAddress, authData as AuthSession);
     return result;
-  };
+  }, [addAddress, authData]);
 
-  const retryFetch = () => {
+  const retryFetch = useCallback(() => {
     clearFetchError();
     if (authData) {
       fetchAddresses(authData);
     }
-  };
+  }, [authData, clearFetchError, fetchAddresses]);
 
-  return {
+  const stableFetchAddresses = useCallback(() => {
+    return fetchAddresses(authData as AuthSession);
+  }, [authData, fetchAddresses]);
+
+  return useMemo(() => ({
     // State
     addresses,
     loading,
@@ -46,7 +51,7 @@ export const useAddress = () => {
     addError,
 
     // Actions
-    fetchAddresses: () => fetchAddresses(authData as AuthSession),
+    fetchAddresses: stableFetchAddresses,
     addAddress: handleAddAddress,
     retryFetch,
     clearFetchError,
@@ -57,5 +62,19 @@ export const useAddress = () => {
     // Computed values
     hasAddresses: addresses.length > 0,
     defaultAddress: addresses.find(addr => addr.tag === 'Home'), // Use tag instead of isDefault
-  };
+  }), [
+    addresses,
+    loading,
+    addingLoading,
+    fetchError,
+    addError,
+    stableFetchAddresses,
+    handleAddAddress,
+    retryFetch,
+    clearFetchError,
+    clearAddError,
+    setFetchError,
+    setAddError,
+    loadAddressesFromStorage
+  ]);
 };
