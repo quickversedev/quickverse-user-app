@@ -58,8 +58,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
   const styles = StyleSheet.create({
     section: {
-      paddingHorizontal: 16,
-      paddingVertical: 16,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
     },
     vendorsGrid: {
       flexDirection: 'row',

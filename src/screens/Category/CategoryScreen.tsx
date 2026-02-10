@@ -107,7 +107,7 @@ const CategoryScreen = () => {
     const otherCategoryLabel = isGrocery ? 'Food' : 'Grocery';
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: '#FFF6EC' }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
                 {/* Header Section */}
@@ -129,7 +129,7 @@ const CategoryScreen = () => {
                     <View style={styles.imageContainer}>
                         <Image source={headerImage} style={styles.headerImage} resizeMode="contain" />
                         <LinearGradient
-                            colors={['rgba(255, 246, 236, 0)', '#FFF6EC', '#FFF6EC']}
+                            colors={['rgba(255, 255, 255, 0)', '#FFFFFF', '#FFFFFF']}
                             locations={[0, 0.4, 1]}
                             style={styles.headerBlur}
                         />
