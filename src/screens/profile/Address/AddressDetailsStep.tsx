@@ -13,7 +13,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAddress } from '../../../hooks/useAddress';
+
 import { AddressComponents } from '../../../services/api/olaLocationService';
 import { useTheme } from '../../../theme/ThemeContext';
 import { NewAddress } from '../../../types/address';
@@ -779,7 +781,65 @@ const AddressDetailsStep = ({
           maxLength2: 6,
         })}
         {renderInputRow('city', 'City', 'state', 'State', { required1: true, required2: true })}
-        {renderInput('tag', 'tag (Home, work, other, etc)', { required: true, maxLength: 20 })}
+
+        {/* custom tag selector */}
+        {(() => {
+          const options = ['Home', 'Work', 'Other'];
+          const currentTag = details.tag;
+          const hasError = touched.tag && errors.tag;
+
+          return (
+            <View style={themedStyles.tagContainer}>
+              <Text style={themedStyles.tagLabel}>Tag Address As *</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                {options.map(option => {
+                  const isSelected = currentTag.toLowerCase() === option.toLowerCase();
+                  return (
+                    <TouchableOpacity
+                      key={option}
+                      style={[
+                        themedStyles.tagButton,
+                        {
+                          paddingVertical: 6, // Smaller vertical padding
+                          paddingHorizontal: 16, // Smaller horizontal padding
+                          minHeight: 36, // Smaller min height
+                        },
+                        isSelected && {
+                          backgroundColor: `${getColor('primary')}15`,
+                          borderColor: getColor('primary'),
+                          borderWidth: 2, // Thicker border for selected
+                        },
+                      ]}
+                      onPress={() => {
+                        handleChange('tag', option);
+                        // Also trigger blur to validate
+                        if (!touched.tag) {
+                          setTouched(prev => ({ ...prev, tag: true }));
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          themedStyles.tagButtonText,
+                          {
+                            color: isSelected ? getColor('primary') : getColor('text'),
+                            fontWeight: isSelected ? '700' : '500',
+                            fontSize: getTypography('caption'), // Slightly smaller text
+                          },
+                        ]}
+                      >
+                        {option}
+                      </Text>
+                      {/* Dot removed as requested */}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {hasError && <Text style={themedStyles.errorText}>{errors.tag}</Text>}
+            </View>
+          );
+        })()}
 
         <View style={themedStyles.defaultContainer}>
           <Text

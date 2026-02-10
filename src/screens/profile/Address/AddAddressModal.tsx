@@ -212,6 +212,15 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
     },
   });
 
+  // Force remount of map when modal opens to reset state
+  const [mapKey, setMapKey] = useState(Date.now().toString());
+
+  React.useEffect(() => {
+    if (visible) {
+      setMapKey(Date.now().toString());
+    }
+  }, [visible]);
+
   return (
     <Modal
       visible={visible}
@@ -250,7 +259,10 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
 
         {/* Body */}
         {step === 1 ? (
-          <MapLocationStep onLocationSelect={handleLocationSelect} />
+          <MapLocationStep
+            key={mapKey}
+            onLocationSelect={handleLocationSelect}
+          />
         ) : (
           <AddressDetailsStep
             location={location}
