@@ -168,6 +168,71 @@ class SearchService {
       vendors: [],
     };
   }
+
+  /**
+   * Search for products in a specific collection/store via Smartbiz API
+   */
+  async searchCollection(storeId: string, query: string): Promise<SearchProduct[]> {
+    console.log(`[SearchService] searchCollection called with storeId: ${storeId}, query: ${query}`);
+    try {
+      const url = `https://api.smartbiz.in/stores/${storeId}/catalog/items?searchString=${encodeURIComponent(query)}&pageSize=100&offset=0`;
+      console.log(`[SearchService] Fetching: ${url}`);
+
+      // Direct call to Smartbiz API
+      const response = await fetch(
+        url,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Origin': 'https://www.smartbiz.in',
+            'Referer': 'https://www.smartbiz.in/',
+          }
+        }
+      );
+
+      console.log(`[SearchService] Response status: ${response.status}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[SearchService] API Error: ${response.status} - ${errorText}`);
+        throw new Error(`Smartbiz API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('[SearchService] Raw data received:', JSON.stringify(data).substring(0, 200) + '...');
+
+      // Map response to SearchProduct
+      // API returns a list of items directly or in a wrapper
+      // Based on curl response assumption (standard list or paged list)
+      const items = Array.isArray(data)
+        ? data
+        : (data.searchResultDataDocuments || data.products || data.items || []);
+
+      console.log(`[SearchService] Parsed items count: ${items.length}`);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mappedItems = items.map((item: any) => ({
+        productSKU: item.sku || item.id || '',
+        productName: item.name || '',
+        shopId: storeId,
+        productImage: item.imageUrl || item.image || (item.images && item.images[0]) || '',
+        veg: item.veg,
+        price: item.sellingPrice || item.price,
+        mrp: item.mrp,
+        discount: item.discount,
+        inStock: item.inStock ?? true,
+      }));
+
+      console.log(`[SearchService] Mapped items count: ${mappedItems.length}`);
+      return mappedItems;
+
+    } catch (error) {
+      console.error('[SearchService] Smartbiz search failed:', error);
+      return [];
+    }
+  }
 }
 
 export default new SearchService();
