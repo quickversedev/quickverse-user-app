@@ -35,6 +35,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { Product } from '../../types/product';
 import { Vendor } from '../../types/vendor';
 import { formatTimeToAMPM, getStoreStatus } from '../../utils/storeUtils';
+import { API_STORE_ID } from '../../data/collectionsData';
 
 // Category type for local use (as expected by CategoryTabs)
 type Category = CategoryItem;
@@ -186,12 +187,25 @@ const VendorProductComponent: React.FC = () => {
       fetchCollectionProducts(shopId, categoryIds);
       // Also fetch categories so we have imageURLs for category tabs (match by id)
       fetchCategories(shopId);
+    } else if (shopId === API_STORE_ID) {
+      console.log('[VendorProduct] Implicit Collection Mode for API_STORE_ID');
+      // Just fetch categories first. The second useEffect will trigger product fetch.
+      fetchCategories(shopId);
     } else {
       fetchProducts({ offset: 0, limit: 1000 });
       fetchCategories(shopId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shopId, collection]);
+
+  // Special effect: For implicit collection mode, fetch products once categories are loaded
+  useEffect(() => {
+    if (shopId === API_STORE_ID && !collection && categories.length > 0 && products.length === 0 && !productsLoading && !productsError) {
+      console.log('[VendorProduct] Fetching products for implicit collection mode using categories:', categories.length);
+      const categoryIds = categories.map(c => c.id);
+      fetchCollectionProducts(shopId, categoryIds);
+    }
+  }, [shopId, collection, categories, products.length, productsLoading, productsError, fetchCollectionProducts]);
 
   // Show search bar and focus input when initialSearchQuery is provided
   useEffect(() => {

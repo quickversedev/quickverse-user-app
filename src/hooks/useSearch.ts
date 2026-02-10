@@ -86,12 +86,6 @@ export const useSearch = (): UseSearchReturn => {
       // Filter products to only include those from valid vendors in the store
       const validShopIds = new Set(storeVendors.map(vendor => vendor.shopId));
 
-      // Add API_STORE_ID to valid shop IDs so collection products are not filtered out
-      if (API_STORE_ID) {
-        validShopIds.add(API_STORE_ID);
-        console.log(`[useSearch] Added API_STORE_ID ${API_STORE_ID} to valid shop IDs`);
-      }
-
       console.log(`[useSearch] Valid Shop IDs: ${Array.from(validShopIds).join(', ')}`);
 
       const filteredProducts: Product[] = searchResponse.products
