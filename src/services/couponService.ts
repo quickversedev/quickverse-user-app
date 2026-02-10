@@ -78,9 +78,8 @@ const transformCustomerOffer = (
   id: customerOffer.offerId,
   code: customerOffer.offerCode || '',
   description: customerOffer.offerName,
-  discount: `${customerOffer.discountValue}${
-    customerOffer.offerType.includes('PERCENTAGE') ? '%' : '₹'
-  } OFF`,
+  discount: `${customerOffer.discountValue}${customerOffer.offerType.includes('PERCENTAGE') ? '%' : '₹'
+    } OFF`,
   minOrder: customerOffer.minimumOrderAmount,
   expiryDate: `Valid till ${new Date(customerOffer.endDate).toLocaleDateString('en-IN', {
     day: 'numeric',
@@ -184,10 +183,15 @@ class CouponService {
     }
 
     try {
+      // Add Basic prefix if not present
+      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
+        ? `Basic ${AUTHORIZATION_KEY}`
+        : AUTHORIZATION_KEY;
+
       const data: VendorOffersResponse = await apiCall(
         axiosInstance.get(`/v3/${vendorId}/Offers`, {
           headers: {
-            Authorization: AUTHORIZATION_KEY,
+            Authorization: authHeader,
           },
         })
       );
@@ -211,6 +215,11 @@ class CouponService {
     }
 
     try {
+      // Add Basic prefix if not present
+      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
+        ? `Basic ${AUTHORIZATION_KEY}`
+        : AUTHORIZATION_KEY;
+
       const data: CustomerOffersResponse = await apiCall(
         axiosInstance.get('/v3/Offers/Customer', {
           params: {
@@ -221,7 +230,7 @@ class CouponService {
             isBuyNow: 'false',
           },
           headers: {
-            Authorization: AUTHORIZATION_KEY,
+            Authorization: authHeader,
             SessionKey: authData?.jwt || '',
             phone: authData?.phone || '',
           },
@@ -257,11 +266,16 @@ class CouponService {
     authData?: AuthSession
   ): Promise<TransformedCartData> {
     try {
+      // Add Basic prefix if not present
+      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
+        ? `Basic ${AUTHORIZATION_KEY}`
+        : AUTHORIZATION_KEY;
+
       const data = await apiCall(
         axiosInstance.post<CartApiResponse>('/v3/Offers/Apply', null, {
           params: { shopId, offerId: offerIdOrCode, isBuyNow },
           headers: {
-            Authorization: AUTHORIZATION_KEY,
+            Authorization: authHeader,
             SessionKey: authData?.jwt || '',
             phone: authData?.phone || '',
           },
@@ -296,15 +310,15 @@ class CouponService {
     // Extract applied coupon from smartBizOffer if it exists
     const appliedCoupon = apiResponse.smartBizOffer
       ? {
-          code: apiResponse.smartBizOffer.offerCode || apiResponse.smartBizOffer.offerId,
-          discount:
-            apiResponse.smartBizOffer.discountValue > 0
-              ? `${apiResponse.smartBizOffer.discountValue}%`
-              : `₹${apiResponse.smartBizOffer.totalBenefit || 0}`,
-          minOrder: 0, // This might need to come from a different field
-          offerId: apiResponse.smartBizOffer.offerId,
-          totalBenefit: apiResponse.smartBizOffer.totalBenefit || 0,
-        }
+        code: apiResponse.smartBizOffer.offerCode || apiResponse.smartBizOffer.offerId,
+        discount:
+          apiResponse.smartBizOffer.discountValue > 0
+            ? `${apiResponse.smartBizOffer.discountValue}%`
+            : `₹${apiResponse.smartBizOffer.totalBenefit || 0}`,
+        minOrder: 0, // This might need to come from a different field
+        offerId: apiResponse.smartBizOffer.offerId,
+        totalBenefit: apiResponse.smartBizOffer.totalBenefit || 0,
+      }
       : null;
 
     return {
@@ -320,13 +334,13 @@ class CouponService {
         apiResponse.totalCartAmountWithDeliveryFeeAndBenefit || 0,
       smartBizOffer: apiResponse.smartBizOffer
         ? {
-            offerId: apiResponse.smartBizOffer.offerId,
-            offerCode: apiResponse.smartBizOffer.offerCode ?? null,
-            offerName: apiResponse.smartBizOffer.offerName,
-            offerType: apiResponse.smartBizOffer.offerType,
-            discountValue: apiResponse.smartBizOffer.discountValue,
-            totalBenefit: apiResponse.smartBizOffer.totalBenefit ?? 0,
-          }
+          offerId: apiResponse.smartBizOffer.offerId,
+          offerCode: apiResponse.smartBizOffer.offerCode ?? null,
+          offerName: apiResponse.smartBizOffer.offerName,
+          offerType: apiResponse.smartBizOffer.offerType,
+          discountValue: apiResponse.smartBizOffer.discountValue,
+          totalBenefit: apiResponse.smartBizOffer.totalBenefit ?? 0,
+        }
         : null,
       appliedCoupon,
       products,
