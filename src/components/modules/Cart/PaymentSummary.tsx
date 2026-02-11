@@ -56,7 +56,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     outputRange: ['0deg', '180deg'],
   });
 
-  const { subtotal, deliveryFee, total, totalDiscountOnItems, couponDiscount, finalTotal } =
+  const { subtotal, deliveryFee, platformFee, packagingCharges, taxes, total, totalDiscountOnItems, couponDiscount, finalTotal } =
     useMemo(() => {
       if (!cart) {
         return {
@@ -83,21 +83,40 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
       const apiTotal = cart.totalCartAmountWithDeliveryFeeAndBenefit ?? 0;
 
       // Use API total if available, otherwise calculate manually
+      // const calculatedTotal =
+      //   apiTotal > 0
+      //     ? apiTotal
+      //     : calculatedSubtotal -
+      //       calculatedTotalDiscountOnItems -
+      //       calculatedCouponDiscount +
+      //       calculatedDeliveryFee;
+
+
+      // New fee structure as per requirements
+      const platformFee = 8;
+      const packagingCharges = 7;
+      const deliveryCharges = 25;
+      const taxes = Math.round(calculatedSubtotal * 0.05);
+
       const calculatedTotal =
-        apiTotal > 0
-          ? apiTotal
-          : calculatedSubtotal -
-            calculatedTotalDiscountOnItems -
-            calculatedCouponDiscount +
-            calculatedDeliveryFee;
+        calculatedSubtotal +
+        deliveryCharges +
+        platformFee +
+        packagingCharges +
+        taxes -
+        calculatedTotalDiscountOnItems -
+        calculatedCouponDiscount;
+
 
       // Calculate final total including COD charges if COD is selected
-      const calculatedFinalTotal =
-        selectedPaymentOption === 'cod' ? calculatedTotal + codCharges : calculatedTotal;
+      const calculatedFinalTotal = calculatedTotal;
 
       return {
         subtotal: calculatedSubtotal,
-        deliveryFee: calculatedDeliveryFee,
+        deliveryFee: deliveryCharges, // Override efficiently to 25
+        platformFee,
+        packagingCharges,
+        taxes,
         total: calculatedTotal,
         totalDiscountOnItems: calculatedTotalDiscountOnItems,
         couponDiscount: calculatedCouponDiscount,
@@ -206,6 +225,16 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
       justifyContent: 'center',
     },
     paymentSummaryDetails: { marginTop: 12 },
+    crossedText: {
+      textDecorationLine: 'line-through',
+      opacity: 0.6,
+      marginRight: 6,
+      fontSize: 12,
+    },
+    feeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
   });
 
   return (
@@ -307,27 +336,64 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
             </>
           )}
           <View style={styles.dottedLine} />
+
+          {/* Delivery Fee */}
           <View style={styles.billRow}>
             <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
               Delivery Fee
             </ThemeText>
+            <View style={styles.feeRow}>
+              <ThemeText variant="body" color={getColor('text')} style={styles.crossedText}>
+                ₹35
+              </ThemeText>
+              <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
+                ₹{deliveryFee}
+              </ThemeText>
+            </View>
+          </View>
+
+          {/* Platform Fee */}
+          <View style={styles.billRow}>
+            <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+              Platform Fee
+            </ThemeText>
+            <View style={styles.feeRow}>
+              <ThemeText variant="body" color={getColor('text')} style={styles.crossedText}>
+                ₹12
+              </ThemeText>
+              <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
+                ₹{platformFee}
+              </ThemeText>
+            </View>
+          </View>
+
+
+
+          {/* Packaging Charges */}
+          <View style={styles.billRow}>
+            <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+              Packaging Charges
+            </ThemeText>
+            <View style={styles.feeRow}>
+              <ThemeText variant="body" color={getColor('text')} style={styles.crossedText}>
+                ₹11
+              </ThemeText>
+              <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
+                ₹{packagingCharges}
+              </ThemeText>
+            </View>
+          </View>
+
+          {/* Taxes (GST & Services) */}
+          <View style={styles.billRow}>
+            <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+              Taxes (GST & Services)
+            </ThemeText>
             <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-              ₹{deliveryFee}
+              ₹{taxes}
             </ThemeText>
           </View>
-          {selectedPaymentOption === 'cod' && codCharges > 0 && (
-            <>
-              <View style={styles.dottedLine} />
-              <View style={styles.billRow}>
-                <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
-                  COD Charges
-                </ThemeText>
-                <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-                  ₹{codCharges}
-                </ThemeText>
-              </View>
-            </>
-          )}
+
           <View style={styles.dottedLine} />
           <View style={styles.billRowLast}>
             <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>

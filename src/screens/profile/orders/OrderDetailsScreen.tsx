@@ -541,6 +541,7 @@ const OrderDetailsScreen = () => {
             <OrderProgress
               status={selectedOrder.status}
               orderCreationTime={selectedOrder.orderDate}
+              category={vendorDetails?.category}
             />
           )}
 

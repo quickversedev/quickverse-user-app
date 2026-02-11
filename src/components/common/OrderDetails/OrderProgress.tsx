@@ -7,6 +7,7 @@ import type { Order } from '../../../types/order';
 type OrderProgressProps = {
   status: Order['status'];
   orderCreationTime?: string | number;
+  category?: string; // Add category prop
 };
 
 const DELAY_MESSAGES = [
@@ -17,7 +18,7 @@ const DELAY_MESSAGES = [
   { text: 'On its way soon!', icon: 'map-marker-path' },
 ];
 
-const DELIVERY_TIME_MINUTES = 20;
+// const DELIVERY_TIME_MINUTES = 20;
 
 const STEPS = ['Order Placed', 'Accepted', 'Picked Up', 'Delivered'] as const;
 
@@ -44,16 +45,20 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-const OrderProgress: React.FC<OrderProgressProps> = ({ status, orderCreationTime }) => {
+const OrderProgress: React.FC<OrderProgressProps> = ({ status, orderCreationTime, category }) => {
   const { theme } = useTheme();
   const activeIndex = getActiveStepIndex(status);
+
+  // Determine delivery time based on category
+  const isFood = category?.toLowerCase().includes('food');
+  const deliveryTimeMinutes = isFood ? 35 : 20;
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [delayMessageIndex, setDelayMessageIndex] = useState(0);
 
-  const isDelayed = elapsedSeconds >= DELIVERY_TIME_MINUTES * 60;
-  const remainingSeconds = Math.max(0, DELIVERY_TIME_MINUTES * 60 - elapsedSeconds);
-  const progressPercent = Math.min(100, (elapsedSeconds / (DELIVERY_TIME_MINUTES * 60)) * 100);
+  const isDelayed = elapsedSeconds >= deliveryTimeMinutes * 60;
+  const remainingSeconds = Math.max(0, deliveryTimeMinutes * 60 - elapsedSeconds);
+  const progressPercent = Math.min(100, (elapsedSeconds / (deliveryTimeMinutes * 60)) * 100);
 
   // Timer effect - updates every second
   useEffect(() => {
