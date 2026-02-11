@@ -671,7 +671,7 @@ const CartScreen: React.FC = () => {
         onClearCart={handleClearCart}
       />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 160 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 240 }}>
         <AnimatedCard delay={0}>
           {vendor && <VendorPill vendor={vendor} />}
 
@@ -715,7 +715,7 @@ const CartScreen: React.FC = () => {
           />
         </AnimatedCard>
 
-        <AnimatedCard delay={400}>
+        {/* <AnimatedCard delay={400}>
           <SuggestedItems
             products={featuredProducts}
             onItemPress={handleAddSuggested}
@@ -723,7 +723,7 @@ const CartScreen: React.FC = () => {
             onIncrement={handleIncrementSuggested}
             onDecrement={handleDecrementSuggested}
           />
-        </AnimatedCard>
+        </AnimatedCard> */}
       </ScrollView>
 
       <CartFooter
