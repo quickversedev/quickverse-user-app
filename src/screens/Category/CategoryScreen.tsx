@@ -1,34 +1,32 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  FlatList,
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Or Feather
 import Feather from 'react-native-vector-icons/Feather';
-import { useTheme } from '../../theme/ThemeContext';
-import { RootStackParamList } from '../../routes/AppStack';
 import { Images } from '../../assets';
-import { SearchBar } from '../../components/modules/Header/SearchBar';
-import PromotionCarousel from '../Home/components/PromotionCarousel';
+import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import SectionDivider from '../../components/common/SectionDivider';
-import useVendorStore from '../../store/vendorStore';
-import { getStoreStatus } from '../../utils/storeUtils';
+import { SearchBar } from '../../components/modules/Header/SearchBar';
 import VendorCard2 from '../../components/modules/Vendor/VendorCard2'; // Updated to V2
 import VendorShowcaseWidget from '../../components/modules/Vendor/VendorShowcaseWidget';
-import { Vendor } from '../../types/vendor';
-import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import { Collection, fetchCollectionsFromApi } from '../../data/collectionsData';
+import { RootStackParamList } from '../../routes/AppStack';
+import useVendorStore from '../../store/vendorStore';
+import { useTheme } from '../../theme/ThemeContext';
+import { Vendor } from '../../types/vendor';
+import PromotionCarousel from '../Home/components/PromotionCarousel';
 import CollectionsGrid from './components/CollectionsGrid';
 import CollectionsGridSkeleton from './components/CollectionsGridSkeleton';
 
@@ -106,129 +104,143 @@ const CategoryScreen = () => {
     const hasNoVendors = categoryVendors.length === 0;
     const otherCategoryLabel = isGrocery ? 'Food' : 'Grocery';
 
-    return (
-        <SafeAreaView style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    const renderHeader = () => (
+        <View>
+            {/* Header Section */}
+            <View style={styles.header}>
+                <View style={styles.headerTopBar}>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <Feather name="arrow-left" size={24} color="#000" />
+                    </TouchableOpacity>
 
-                {/* Header Section */}
-                <View style={styles.header}>
-                    <View style={styles.headerTopBar}>
-                        <TouchableOpacity
-                            style={styles.backButton}
-                            onPress={() => navigation.goBack()}
-                        >
-                            <Feather name="arrow-left" size={24} color="#000" />
-                        </TouchableOpacity>
-
-                        <View style={styles.headerTitleContainer}>
-                            <Text style={styles.headerTitleMain}>{categoryName}</Text>
-                            <Text style={styles.headerTitleSub}>for you</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.imageContainer}>
-                        <Image source={headerImage} style={styles.headerImage} resizeMode="contain" />
-                        <LinearGradient
-                            colors={['rgba(255, 255, 255, 0)', '#FFFFFF', '#FFFFFF']}
-                            locations={[0, 0.4, 1]}
-                            style={styles.headerBlur}
-                        />
+                    <View style={styles.headerTitleContainer}>
+                        <Text style={styles.headerTitleMain}>{categoryName}</Text>
+                        <Text style={styles.headerTitleSub}>for you</Text>
                     </View>
                 </View>
 
-                {/* Search Bar */}
-                <View style={styles.searchContainer}>
-                    <SearchBar
-                        onPress={handleSearchPress}
-                        placeholder={isGrocery ? "Search for 'Milk'" : "Search for 'Shawarma'"}
+                <View style={styles.imageContainer}>
+                    <Image source={headerImage} style={styles.headerImage} resizeMode="contain" />
+                    <LinearGradient
+                        colors={['rgba(255, 255, 255, 0)', '#FFFFFF', '#FFFFFF']}
+                        locations={[0, 0.4, 1]}
+                        style={styles.headerBlur}
                     />
                 </View>
+            </View>
 
-                {/* Promo Banners */}
-                <View style={styles.promoContainer}>
-                    <PromotionCarousel />
-                </View>
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+                <SearchBar
+                    onPress={handleSearchPress}
+                    placeholder={isGrocery ? "Search for 'Milk'" : "Search for 'Shawarma'"}
+                />
+            </View>
 
-                {/* No vendors: show message + button to other category */}
-                {hasNoVendors ? (
-                    <View style={styles.emptyStateContainer}>
-                        <Text style={styles.emptyStateMessage}>
-                            No {categoryName} stores near you right now. Try browsing {otherCategoryLabel} instead.
-                        </Text>
-                        <TouchableOpacity
-                            style={styles.emptyStateButton}
-                            onPress={navigateToOtherCategory}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={styles.emptyStateButtonText}>Browse {otherCategoryLabel}</Text>
-                            <Feather name="arrow-right" size={20} color="#fff" />
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    <>
-                        {/* Collections Grid (Grocery Only) */}
-                        {isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
-                        {isGrocery && !collectionsLoading && collections.length > 0 && (
-                            <CollectionsGrid
-                                collections={collections}
-                                shopId={categoryVendors[0]?.shopId}
-                            />
-                        )}
+            {/* Promo Banners */}
+            <View style={styles.promoContainer}>
+                <PromotionCarousel />
+            </View>
 
-                        {/* Horizontal list of store cards */}
-                        <SectionDivider
-                            text="Browse stores"
-                            style={{ marginVertical: 16, paddingHorizontal: 40 }}
-                            textStyle={{
-                                color: '#4B5563',
-                                fontWeight: '600',
-                                fontFamily: 'serif',
-                                fontStyle: 'italic',
-                                fontSize: 16,
-                            }}
+            {/* Conditional Content if Vendors Exist */}
+            {!hasNoVendors && (
+                <>
+                    {/* Collections Grid (Grocery Only) */}
+                    {isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
+                    {isGrocery && !collectionsLoading && collections.length > 0 && (
+                        <CollectionsGrid
+                            collections={collections}
+                            shopId={categoryVendors[0]?.shopId}
                         />
+                    )}
 
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalList}>
-                            {categoryVendors.map((vendor) => (
-                                <View key={vendor.shopId} style={{ marginRight: 16 }}>
-                                    <VendorCard2
-                                        vendor={vendor}
-                                        size={160}
-                                        onPress={handleVendorPress}
-                                    />
-                                </View>
-                            ))}
-                        </ScrollView>
+                    {/* Horizontal list of store cards */}
+                    <SectionDivider
+                        text="Browse stores"
+                        style={{ marginVertical: 16, paddingHorizontal: 40 }}
+                        textStyle={{
+                            color: '#4B5563',
+                            fontWeight: '600',
+                            fontFamily: 'serif',
+                            fontStyle: 'italic',
+                            fontSize: 16,
+                        }}
+                    />
 
-                        {/* Full store list with showcase */}
-                        <SectionDivider
-                            text="Stores for you"
-                            style={{ marginVertical: 16, paddingHorizontal: 40 }}
-                            textStyle={{
-                                color: '#4B5563',
-                                fontWeight: '600',
-                                fontFamily: 'serif',
-                                fontStyle: 'italic',
-                                fontSize: 16,
-                            }}
-                        />
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalList}>
+                        {categoryVendors.map((vendor) => (
+                            <View key={vendor.shopId} style={{ marginRight: 16 }}>
+                                <VendorCard2
+                                    vendor={vendor}
+                                    size={160}
+                                    onPress={handleVendorPress}
+                                />
+                            </View>
+                        ))}
+                    </ScrollView>
 
-                        <View style={{ paddingHorizontal: 20 }}>
-                            {categoryVendors.map((vendor) => (
-                                <View key={vendor.shopId}>
-                                    <View style={{ marginTop: 8, marginBottom: 24 }}>
-                                        <VendorShowcaseWidget
-                                            vendor={vendor}
-                                            onPressExplore={() => handleVendorPress(vendor)}
-                                        />
-                                    </View>
-                                </View>
-                            ))}
-                        </View>
-                    </>
-                )}
+                    {/* Full store list with showcase */}
+                    <SectionDivider
+                        text="Stores for you"
+                        style={{ marginVertical: 16, paddingHorizontal: 40 }}
+                        textStyle={{
+                            color: '#4B5563',
+                            fontWeight: '600',
+                            fontFamily: 'serif',
+                            fontStyle: 'italic',
+                            fontSize: 16,
+                        }}
+                    />
+                </>
+            )}
+        </View>
+    );
 
-            </ScrollView>
+    const renderEmpty = () => (
+        <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateMessage}>
+                No {categoryName} stores near you right now. Try browsing {otherCategoryLabel} instead.
+            </Text>
+            <TouchableOpacity
+                style={styles.emptyStateButton}
+                onPress={navigateToOtherCategory}
+                activeOpacity={0.8}
+            >
+                <Text style={styles.emptyStateButtonText}>Browse {otherCategoryLabel}</Text>
+                <Feather name="arrow-right" size={20} color="#fff" />
+            </TouchableOpacity>
+        </View>
+    );
+
+    const renderItem = ({ item }: { item: Vendor }) => (
+        <View style={{ paddingHorizontal: 20 }}>
+            <View style={{ marginTop: 8, marginBottom: 24 }}>
+                <VendorShowcaseWidget
+                    vendor={item}
+                    onPressExplore={() => handleVendorPress(item)}
+                />
+            </View>
+        </View>
+    );
+
+    return (
+        <SafeAreaView style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
+            <FlatList
+                data={hasNoVendors ? [] : categoryVendors}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.shopId}
+                ListHeaderComponent={renderHeader}
+                ListEmptyComponent={renderEmpty}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                removeClippedSubviews={true}
+                initialNumToRender={3}
+                maxToRenderPerBatch={3}
+                windowSize={5}
+            />
             <FloatingCartsStack />
         </SafeAreaView>
     );

@@ -8,19 +8,18 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import LinearGradient from 'react-native-linear-gradient';
-import productsService, { Category } from '../../../services/productsService';
+import { useAuth } from '../../../contexts/login/AuthProvider';
+import productsService from '../../../services/productsService';
+import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
-import { getCleanImageUri } from '../../../utils/imageUtils';
-import { ThemeText } from '../../common/theme/ThemeText';
-import useCartStore from '../../../store/cart/cartStore';
-import { useAuth } from '../../../contexts/login/AuthProvider';
 import { getStoreStatus } from '../../../utils/storeUtils';
+import { ThemeText } from '../../common/theme/ThemeText';
 
 const { width } = Dimensions.get('window');
 
@@ -678,4 +677,4 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
     );
 };
 
-export default VendorShowcaseWidget;
+export default React.memo(VendorShowcaseWidget);
