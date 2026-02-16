@@ -1,10 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useCallback, useContext } from 'react';
-import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, View, Image } from 'react-native';
-import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
+import { Image, Platform, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
 import { Images } from '../../assets';
+import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import { TabBarVisibilityContext } from '../../navigation/TabNavigation';
 
+import { SearchBar } from '../../components/modules/Header/SearchBar';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAppStateRefresh } from '../../hooks/useAppStateRefresh';
 import useVendorStore from '../../store/vendorStore';
@@ -13,9 +14,7 @@ import { AppNavigationProp } from '../../types/navigation';
 import CategoryCards from './components/CategoryCards';
 import HomeHeader from './components/HomeHeader';
 import HomePromotionCarousel from './components/HomePromotionCarousel';
-import { SearchBar } from '../../components/modules/Header/SearchBar';
 // @ts-ignore
-import DeliveryGuy from '../../assets/svg/homeScreen-deliveryGuy.svg';
 import { Dimensions } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -70,7 +69,7 @@ const HomeMainScreen_2 = React.memo(() => {
                     <CategoryCards />
                 </View>
 
-                <View style={[styles.bottomIllustrationContainer, { bottom: bottomHeight, height: width * 0.48, overflow: 'hidden' }]}>
+                <View style={[styles.bottomIllustrationContainer, { bottom: bottomHeight, height: width * 0.48, overflow: 'hidden' }]} pointerEvents="none">
                     <Image
                         source={Images.homeScreenIllustration}
                         style={{ width: width, height: width * 0.5 }}
