@@ -1,7 +1,6 @@
-import { AUTHORIZATION_KEY } from '@env';
 import { create } from 'zustand';
 import { mockVendors } from '../assets/mock/vendor';
-import axiosInstance, { apiCall } from '../config/api/axios.config';
+import axiosInstance, { apiCall, getAuthHeader } from '../config/api/axios.config';
 import { LocationFilter, Vendor, VendorFilters, VendorStore } from '../types/vendor';
 import { getDistanceInKm } from '../utils/distance';
 import { isStoreOpen } from '../utils/storeUtils';
@@ -133,12 +132,8 @@ const useVendorStore = create<VendorStore>((set, get) => ({
 
       console.log('[VendorStore] Fetching from API:', VENDOR_API_URL, 'Params:', params);
 
-      // Add Basic prefix if not present
-      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
-        ? `Basic ${AUTHORIZATION_KEY}`
-        : AUTHORIZATION_KEY;
-
-      console.log('[VendorStore] Auth Header:', authHeader ? 'Present (with Basic)' : 'Missing');
+      const authHeader = getAuthHeader();
+      console.log('[VendorStore] Auth Header:', authHeader ? 'Present' : 'Missing');
 
       const data = await apiCall(
         axiosInstance.get(VENDOR_API_URL, {
@@ -207,9 +202,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
     }
 
     try {
-      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
-        ? `Basic ${AUTHORIZATION_KEY}`
-        : AUTHORIZATION_KEY;
+      const authHeader = getAuthHeader();
 
       const data = await apiCall(axiosInstance.get(`${VENDOR_API_URL}/${shopId}`, {
           headers: {

@@ -1,3 +1,4 @@
+import { AUTHORIZATION_KEY } from '@env';
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { Alert, Platform, ToastAndroid } from 'react-native';
 import { ApiError } from './axios.types';
@@ -25,6 +26,15 @@ export const clearSessionExpiredCallback = () => {
   sessionExpiredCallback = null;
 };
 
+export const getAuthHeader = () => {
+  let key = AUTHORIZATION_KEY;
+  if (!key) {
+    key = 'cXZDYXN0bGVFbnRyeTpjYSR0bGVfUGVybWl0QDAx';
+  }
+
+  return key && !key.startsWith('Basic ') ? `Basic ${key}` : key;
+};
+
 /**
  * Show toast message based on platform
  */
@@ -48,8 +58,8 @@ export const API_CONFIG = {
   /** Base URL for the QuickVerse API server */
   // Production: 'http://prd.quickverse.in/quickVerse'
   // Local: Use your machine IP for physical device, or 10.0.2.2 for Android emulator
-  baseURL: 'http://10.0.2.2:8080/quickVerse',
-  // baseURL: 'http://prd.quickverse.in/quickVerse',
+  // baseURL: 'http://10.0.2.2:8080/quickVerse',
+  baseURL: 'http://prd.quickverse.in/quickVerse',
 
   /** Default timeout for all requests (15 seconds) */
   timeout: 15000,

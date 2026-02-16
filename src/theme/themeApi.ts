@@ -1,5 +1,4 @@
-import { AUTHORIZATION_KEY } from '@env';
-import axiosInstance, { withHeaders } from '../config/api/axios.config';
+import axiosInstance, { getAuthHeader, withHeaders } from '../config/api/axios.config';
 
 export interface ThemeConfigResponse {
   theme: unknown;
@@ -14,9 +13,7 @@ const THEME_ENDPOINT = '/v3/theme';
  * @returns Promise<ThemeConfigResponse>
  */
 export async function fetchThemeConfig(themeId: string = 'theme1'): Promise<ThemeConfigResponse> {
-  const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
-    ? `Basic ${AUTHORIZATION_KEY}`
-    : AUTHORIZATION_KEY;
+  const authHeader = getAuthHeader();
 
   const authHeaders = {
     Authorization: authHeader,

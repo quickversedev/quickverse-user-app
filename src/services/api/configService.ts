@@ -1,5 +1,4 @@
-import { AUTHORIZATION_KEY } from '@env';
-import axiosInstance, { apiCall } from '../../config/api/axios.config';
+import axiosInstance, { apiCall, getAuthHeader } from '../../config/api/axios.config';
 import { InitialConfigParams, InitialConfigResponse } from '../../types/config';
 
 const CONFIG_ENDPOINTS = {
@@ -7,7 +6,7 @@ const CONFIG_ENDPOINTS = {
 } as const;
 
 const AUTH_HEADERS = {
-  Authorization: AUTHORIZATION_KEY,
+  // Authorization header is now dynamic
 } as const;
 
 /**
@@ -18,9 +17,7 @@ const AUTH_HEADERS = {
 export const fetchInitialConfig = async (
   params: InitialConfigParams
 ): Promise<InitialConfigResponse> => {
-  const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
-    ? `Basic ${AUTHORIZATION_KEY}`
-    : AUTHORIZATION_KEY;
+  const authHeader = getAuthHeader();
 
   console.log('AUTHORIZATION_KEY', { ...AUTH_HEADERS, Authorization: authHeader });
   const response = await apiCall(

@@ -1,5 +1,4 @@
-import { AUTHORIZATION_KEY } from '@env';
-import axiosInstance, { apiCall } from '../config/api/axios.config';
+import axiosInstance, { apiCall, getAuthHeader } from '../config/api/axios.config';
 import { Product } from '../types/product';
 
 // Product Details API Response Types
@@ -116,7 +115,7 @@ class ProductDetailsService {
         axiosInstance.get<Product[]>(`/v3/product/${parentSku}`, {
           params: { variant: true },
           headers: {
-            Authorization: AUTHORIZATION_KEY,
+            Authorization: getAuthHeader(),
           },
         })
       );

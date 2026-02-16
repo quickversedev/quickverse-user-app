@@ -1,5 +1,4 @@
-import { AUTHORIZATION_KEY } from '@env';
-import axiosInstance, { apiCall } from '../config/api/axios.config';
+import axiosInstance, { apiCall, getAuthHeader } from '../config/api/axios.config';
 
 export interface CreateOrderRequest {
   shopId: number;
@@ -78,7 +77,7 @@ class OrderService {
         axiosInstance.post<CreateOrderResponse>('/v2/order/createOrder', requestData, {
           headers: {
             SessionKey: sessionKey,
-            Authorization: AUTHORIZATION_KEY,
+            Authorization: getAuthHeader(),
             phone: phone,
           },
         })
@@ -115,7 +114,7 @@ class OrderService {
           {
             headers: {
               SessionKey: sessionKey,
-              Authorization: AUTHORIZATION_KEY,
+              Authorization: getAuthHeader(),
 
               phone,
             },

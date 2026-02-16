@@ -1,6 +1,5 @@
-import { AUTHORIZATION_KEY } from '@env';
 import { create } from 'zustand';
-import axiosInstance, { apiCall } from '../../config/api/axios.config';
+import axiosInstance, { apiCall, getAuthHeader } from '../../config/api/axios.config';
 import { Page, PagesStore } from '../../types/pages';
 
 const usePagesStore = create<PagesStore>((set, get) => ({
@@ -18,9 +17,7 @@ const usePagesStore = create<PagesStore>((set, get) => ({
     try {
       set({ loading: true, error: null });
 
-      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
-        ? `Basic ${AUTHORIZATION_KEY}`
-        : AUTHORIZATION_KEY;
+      const authHeader = getAuthHeader();
 
       const data = await apiCall(
         axiosInstance.get(`/v3/pages?regionId=${regionId}`, {

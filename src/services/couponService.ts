@@ -1,5 +1,4 @@
-import { AUTHORIZATION_KEY } from '@env';
-import axiosInstance, { apiCall } from '../config/api/axios.config';
+import axiosInstance, { apiCall, getAuthHeader } from '../config/api/axios.config';
 import { AuthSession } from '../services/localStorage/storage.service';
 import { Coupon } from '../store/cart/couponStore';
 import { CartApiResponse, TransformedCartData, TransformedCartProduct } from './cartApiService';
@@ -184,9 +183,7 @@ class CouponService {
 
     try {
       // Add Basic prefix if not present
-      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
-        ? `Basic ${AUTHORIZATION_KEY}`
-        : AUTHORIZATION_KEY;
+      const authHeader = getAuthHeader();
 
       const data: VendorOffersResponse = await apiCall(
         axiosInstance.get(`/v3/${vendorId}/Offers`, {
@@ -216,9 +213,7 @@ class CouponService {
 
     try {
       // Add Basic prefix if not present
-      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
-        ? `Basic ${AUTHORIZATION_KEY}`
-        : AUTHORIZATION_KEY;
+      const authHeader = getAuthHeader();
 
       const data: CustomerOffersResponse = await apiCall(
         axiosInstance.get('/v3/Offers/Customer', {
@@ -267,9 +262,7 @@ class CouponService {
   ): Promise<TransformedCartData> {
     try {
       // Add Basic prefix if not present
-      const authHeader = AUTHORIZATION_KEY && !AUTHORIZATION_KEY.startsWith('Basic ')
-        ? `Basic ${AUTHORIZATION_KEY}`
-        : AUTHORIZATION_KEY;
+      const authHeader = getAuthHeader();
 
       const data = await apiCall(
         axiosInstance.post<CartApiResponse>('/v3/Offers/Apply', null, {

@@ -1,5 +1,4 @@
-import { AUTHORIZATION_KEY } from '@env';
-import axiosInstance, { apiCall } from '../config/api/axios.config';
+import axiosInstance, { apiCall, getAuthHeader } from '../config/api/axios.config';
 
 export interface FAQ {
   question: string;
@@ -15,7 +14,7 @@ class FAQService {
       const response = await apiCall(
         axiosInstance.get<FAQResponse>('/v1/FAQs', {
           headers: {
-            Authorization: AUTHORIZATION_KEY,
+            Authorization: getAuthHeader(),
             'Request-Origin': 'CUSTOMER',
           },
         })

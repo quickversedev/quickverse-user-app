@@ -1,7 +1,6 @@
-import { AUTHORIZATION_KEY } from '@env';
 import { create } from 'zustand';
 import { mockOrders } from '../../assets/mock/orders';
-import axiosInstance, { apiCall } from '../../config/api/axios.config';
+import axiosInstance, { apiCall, getAuthHeader } from '../../config/api/axios.config';
 import { Order, OrderCursor, OrderFilters, OrderResponse, OrderStore } from '../../types/order';
 
 const ORDER_API_URL = '/v2/order/getSMZBIZOrders';
@@ -87,7 +86,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         axiosInstance.post<OrderResponse>(`${ORDER_API_URL}?pageSize=${pageSize}`, requestData, {
           headers: {
             SessionKey: jwt,
-            Authorization: AUTHORIZATION_KEY,
+            Authorization: getAuthHeader(),
 
             phone: phone,
           },
@@ -98,6 +97,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
 
       type SkuGroup = {
         id?: string;
+        shopId?: string;
         sku?: string;
         itemCount?: number;
         finalPrice?: number;
@@ -252,7 +252,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
           {
             headers: {
               SessionKey: jwt,
-              Authorization: AUTHORIZATION_KEY,
+              Authorization: getAuthHeader(),
 
               phone: phone,
             },

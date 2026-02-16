@@ -1,7 +1,6 @@
 // src/hooks/useFetchUpdateData.js
-import { AUTHORIZATION_KEY } from '@env';
 import { useEffect, useState } from 'react';
-import axiosInstance, { apiCall } from '../config/api/axios.config';
+import axiosInstance, { apiCall, getAuthHeader } from '../config/api/axios.config';
 
 interface UpdateData {
   min_required_version: string;
@@ -36,7 +35,7 @@ const useFetchUpdateData = () => {
       const data = await apiCall<ApiResponse>(
         axiosInstance.get('/v3/appConfig', {
           headers: {
-            Authorization: AUTHORIZATION_KEY,
+            Authorization: getAuthHeader(),
           },
         })
       );

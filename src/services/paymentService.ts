@@ -1,5 +1,4 @@
-import { AUTHORIZATION_KEY } from '@env';
-import axiosInstance, { apiCall, withHeaders } from '../config/api/axios.config';
+import axiosInstance, { apiCall, getAuthHeader, withHeaders } from '../config/api/axios.config';
 
 export interface PaymentConfiguration {
   paymentMethodStatus: string;
@@ -31,7 +30,7 @@ export const fetchEligiblePaymentMethods = async (
 
   const headers = {
     SessionKey: sessionKey,
-    Authorization: AUTHORIZATION_KEY,
+    Authorization: getAuthHeader(),
     phone: phone,
   };
 
