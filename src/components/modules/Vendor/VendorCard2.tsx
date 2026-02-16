@@ -7,13 +7,12 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
 import { getCleanImageUri } from '../../../utils/imageUtils';
-import { formatTimeToAMPM, isStoreOpen } from '../../../utils/storeUtils';
+import { isStoreOpen } from '../../../utils/storeUtils';
 import { ThemeText } from '../../common/theme/ThemeText';
 
 const { width } = Dimensions.get('window');
@@ -238,4 +237,4 @@ const VendorCard2: React.FC<VendorCardProps> = ({
     );
 };
 
-export default VendorCard2;
+export default React.memo(VendorCard2);

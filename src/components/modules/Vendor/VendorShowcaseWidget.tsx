@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import AntDesign from 'react-native-vector-icons/AntDesign';
@@ -61,60 +61,111 @@ const MOCK_VENDOR: Vendor = {
     storeActive: true,
 };
 
-const MOCK_CATEGORIES: CategoryItem[] = [
-    { id: '1', name: 'Pizza', image: 'https://loremflickr.com/320/240/pizza' },
-    { id: '2', name: 'Burger', image: 'https://loremflickr.com/320/240/burger' },
-    { id: '3', name: 'Pasta', image: 'https://loremflickr.com/320/240/pasta' },
-    { id: '4', name: 'Salad', image: 'https://loremflickr.com/320/240/salad' },
-    { id: '5', name: 'Dessert', image: 'https://loremflickr.com/320/240/dessert' },
-];
-
-// We need a placeholder image for categories since I don't have the exact pizza icon
-// I'll use a generic placeholder or rely on the user to provide correct assets later.
-// For now I will assume some assets exist or use a remote URL for the mock.
 const MOCK_IMAGE = 'https://loremflickr.com/320/240/pizza';
 
-const MOCK_PRODUCTS: Product[] = [
-    {
-        name: 'Schezwan Rice',
-        mrp: 79,
-        sellingPrice: 69,
-        discount: 50,
-        veg: true,
-        rating: 4.5,
-        numberOfVariants: 0,
-        imageUrl: 'https://loremflickr.com/320/240/rice',
-        shopId: 'mock-1',
-        sku: 'sku-1',
-        primarySKU: 'sku-1',
-    },
-    {
-        name: 'Schezwan Rice',
-        mrp: 79,
-        sellingPrice: 69,
-        discount: 50,
-        veg: true,
-        rating: 4.5,
-        numberOfVariants: 0,
-        imageUrl: 'https://loremflickr.com/320/240/rice',
-        shopId: 'mock-1',
-        sku: 'sku-2',
-        primarySKU: 'sku-2',
-    },
-    {
-        name: 'Schezwan Rice',
-        mrp: 79,
-        sellingPrice: 69,
-        discount: 50,
-        veg: true,
-        rating: 4.5,
-        numberOfVariants: 0,
-        imageUrl: 'https://loremflickr.com/320/240/rice',
-        shopId: 'mock-1',
-        sku: 'sku-3',
-        primarySKU: 'sku-3',
-    },
-];
+// --- Extracted & Memoized Components ---
+
+interface CategoryRenderItemProps {
+    item: CategoryItem;
+    isSelected: boolean;
+    onPress: (id: string) => void;
+}
+
+const CategoryRenderItem = React.memo(({ item, isSelected, onPress }: CategoryRenderItemProps) => (
+    <TouchableOpacity
+        style={styles.categoryItem}
+        onPress={() => onPress(item.id)}
+    >
+        <View style={[
+            styles.categoryImageContainer,
+            isSelected && { borderColor: '#003F66', borderWidth: 1.5 }
+        ]}>
+            <Image source={typeof item.image === 'string' ? { uri: item.image } : item.image} style={styles.categoryImage} />
+        </View>
+        <ThemeText style={[
+            styles.categoryName,
+            isSelected && { color: '#003F66', fontWeight: '700' }
+        ]}>{item.name}</ThemeText>
+        {isSelected && <View style={styles.activeBar} />}
+    </TouchableOpacity>
+));
+
+interface ProductRenderItemProps {
+    item: Product;
+    quantity: number;
+    onPress: (product: Product) => void;
+    onAddToCart: (product: Product) => void;
+    onIncrement: (sku: string) => void;
+    onDecrement: (sku: string) => void;
+}
+
+const ProductRenderItem = React.memo(({ item, quantity, onPress, onAddToCart, onIncrement, onDecrement }: ProductRenderItemProps) => (
+    <TouchableOpacity
+        style={styles.productCard}
+        onPress={() => onPress(item)}
+    >
+        <View style={styles.productImageWrapper}>
+            <Image source={{ uri: item.imageUrl || MOCK_IMAGE }} style={styles.productImage} />
+            {item.discount > 0 && (
+                <View style={styles.discountBadge}>
+                    <ThemeText style={styles.discountText}>{item.discount}% OFF</ThemeText>
+                </View>
+            )}
+            <View style={[styles.vegIcon, !item.veg && { borderColor: '#EF4444' }]}>
+                <View style={[styles.vegDot, !item.veg && { backgroundColor: '#EF4444' }]} />
+            </View>
+        </View>
+
+        <View style={styles.productContent}>
+            <ThemeText style={styles.productName} numberOfLines={1}>{item.name}</ThemeText>
+
+            <View style={styles.priceRow}>
+                <View style={styles.prices}>
+                    {item.mrp > item.sellingPrice && (
+                        <ThemeText style={styles.mrpText}>₹{item.mrp}</ThemeText>
+                    )}
+                    <ThemeText style={styles.sellingPriceText}>₹{item.sellingPrice}</ThemeText>
+                </View>
+
+                {quantity > 0 ? (
+                    <View>
+                        <LinearGradient
+                            colors={['#FFE566', '#FEDB51']} // Lighter yellow top to standard yellow bottom
+                            style={styles.quantityContainer}
+                            useAngle={true}
+                            angle={180}
+                        >
+                            <TouchableOpacity
+                                style={styles.qtyBtnMinus}
+                                onPress={() => onDecrement(item.sku)}
+                            >
+                                <AntDesign name="minus" size={12} color="#1F2937" />
+                            </TouchableOpacity>
+                            <ThemeText style={styles.qtyText}>{quantity}</ThemeText>
+                            <TouchableOpacity
+                                style={styles.qtyBtnPlus}
+                                onPress={() => onIncrement(item.sku)}
+                            >
+                                <AntDesign name="plus" size={12} color="#1F2937" />
+                            </TouchableOpacity>
+                        </LinearGradient>
+                    </View>
+                ) : (
+                    <TouchableOpacity onPress={() => onAddToCart(item)}>
+                        <LinearGradient
+                            colors={['#FFE566', '#FEDB51']} // Lighter yellow top to standard yellow bottom
+                            style={styles.addButton}
+                            useAngle={true}
+                            angle={180}
+                        >
+                            <AntDesign name="plus" size={16} color="#1F2937" />
+                        </LinearGradient>
+                    </TouchableOpacity>
+                )}
+            </View>
+        </View>
+    </TouchableOpacity>
+));
 
 const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
     vendor = MOCK_VENDOR,
@@ -130,7 +181,7 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
 
     // UI State for category switching
     const [isSwitchingCat, setIsSwitchingCat] = React.useState(false);
-    const productsScrollRef = React.useRef<ScrollView>(null);
+    const productsListRef = React.useRef<FlatList>(null);
 
     const activeProducts = products || fetchedProducts;
     const activeCategories = categories || fetchedCategories;
@@ -196,9 +247,8 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
         loadData();
     }, [vendor?.shopId, products, categories]);
 
-
     // Cart Handlers
-    const handleAddToCart = (product: Product) => {
+    const handleAddToCart = useCallback((product: Product) => {
         if (!isStoreActive || !hasAuth || !product.inStock) return;
 
         // Ensure active cart is set
@@ -218,312 +268,64 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
             authData!.jwt,
             authData!.phone
         );
-    };
+    }, [isStoreActive, hasAuth, cartId, vendor.shopId, addToCart, setActiveCart, authData]);
 
-    const handleIncrement = (sku: string) => {
+    const handleIncrement = useCallback((sku: string) => {
         if (!isStoreActive || !hasAuth) return;
         increment(cartId, sku, authData!.jwt, authData!.phone);
-    };
+    }, [isStoreActive, hasAuth, cartId, increment, authData]);
 
-    const handleDecrement = (sku: string) => {
+    const handleDecrement = useCallback((sku: string) => {
         if (!isStoreActive || !hasAuth) return;
         decrement(cartId, sku, authData!.jwt, authData!.phone);
-    };
+    }, [isStoreActive, hasAuth, cartId, decrement, authData]);
 
-    const getProductQuantity = (sku: string) => {
+    const getProductQuantity = useCallback((sku: string) => {
         if (!cart || !cart.products) return 0;
         return cart.products[sku]?.quantity || 0;
-    };
+    }, [cart]);
 
-    const handleCategorySelect = (categoryId: string) => {
+    const handleCategorySelect = useCallback((categoryId: string) => {
         if (selectedCategory === categoryId) return;
 
         setIsSwitchingCat(true);
         setSelectedCategory(categoryId);
 
         // Reset scroll position
-        if (productsScrollRef.current) {
-            productsScrollRef.current.scrollTo({ x: 0, animated: false });
+        if (productsListRef.current) {
+            productsListRef.current.scrollToOffset({ offset: 0, animated: false });
         }
 
         // Brief delay to show loading state
         setTimeout(() => {
             setIsSwitchingCat(false);
         }, 500);
-    };
+    }, [selectedCategory]);
 
-    // Color constants from design
-    const COLORS = {
-        background: '#F9FAFB',
-        textDark: '#003F66', // Adjusted dark blue/slate
-        textGrey: '#6B7280',
-        primaryGreen: '#12A58C',
-        greenDot: '#10B981',
-        redDot: '#EF4444',
-        yellowBtn: '#FCD34D',
-        discountRed: '#DC2626',
-        border: '#E5E7EB',
-    };
+    const handlePressProduct = useCallback((product: Product) => {
+        if (onPressProduct) onPressProduct(product);
+    }, [onPressProduct]);
 
-    const styles = StyleSheet.create({
-        container: {
-            backgroundColor: COLORS.background,
-            borderRadius: 8,
-            padding: 16,
-            marginVertical: 10,
-            // Box Shadow: 0px 1px 9.3px 0px #0000001A
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1, // 1A is approx 10%
-            shadowRadius: 9.3,
-            elevation: 2, // Android approximation
-            width: '100%',
-        },
-        header: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: 16,
-        },
-        vendorInfo: {
-            flex: 1,
-        },
-        vendorName: {
-            fontSize: 18,
-            fontWeight: '700',
-            color: COLORS.textDark,
-            marginBottom: 4,
-            fontFamily: 'BricolageGrotesque-Bold',
-        },
-        metaRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-        },
-        metaText: {
-            fontSize: 12,
-            color: COLORS.textGrey,
-            fontWeight: '500',
-        },
-        ratingContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-        },
-        ratingBadge: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: COLORS.primaryGreen,
-            paddingHorizontal: 6,
-            paddingVertical: 2,
-            borderRadius: 4,
-        },
-        ratingText: {
-            color: '#fff',
-            fontSize: 12,
-            fontWeight: '700',
-            marginLeft: 4,
-        },
-        ratingCount: {
-            color: COLORS.textGrey,
-            fontSize: 12,
-            marginLeft: 4,
-        },
-        dividerLine: {
-            height: 1,
-            backgroundColor: '#E5E7EB', // Light grey divider
-            marginVertical: 16,
-            width: '100%',
-        },
-        // Categories
-        categoriesContainer: {
-            flexDirection: 'row',
-            marginBottom: 20,
+    const renderCategoryItem = useCallback(({ item }: { item: CategoryItem }) => (
+        <CategoryRenderItem
+            item={item}
+            isSelected={selectedCategory === item.id}
+            onPress={handleCategorySelect}
+        />
+    ), [selectedCategory, handleCategorySelect]);
 
-        },
-        categoryItem: {
-            alignItems: 'center',
-            marginRight: 20,
-        },
-        categoryImageContainer: {
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: '#E2E8F0',
-            marginBottom: 6,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: '#fff',
-        },
-        categoryImage: {
-            width: '100%',
-            height: '100%',
-            resizeMode: 'cover',
-        },
-        categoryName: {
-            fontSize: 12,
-            fontWeight: '600',
-            color: '#1F2937',
-        },
-        activeBar: {
-            marginTop: 6,
-            width: '100%',
-            height: 3,
-            backgroundColor: '#003F66', // Deep Blue
-            borderRadius: 2,
-        },
-        // Products
-        productsContainer: {
-            marginBottom: 20,
-        },
-        productCard: {
-            width: 140, // Fixed width for horizontal items
-            marginRight: 12,
-            backgroundColor: '#fff',
-            borderRadius: 12,
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: '#F3F4F6',
-        },
-        productImageWrapper: {
-            width: '100%',
-            height: 110,
-            backgroundColor: '#E5E7EB',
-            position: 'relative',
-        },
-        productImage: {
-            width: '100%',
-            height: '100%',
-            resizeMode: 'cover',
-        },
-        discountBadge: {
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            backgroundColor: COLORS.discountRed,
-            paddingHorizontal: 6,
-            paddingVertical: 2,
-            borderBottomRightRadius: 8,
-        },
-        discountText: {
-            color: '#fff',
-            fontSize: 10,
-            fontWeight: '700',
-        },
-        vegIcon: {
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            width: 16,
-            height: 16,
-            borderRadius: 4,
-            borderWidth: 1,
-            borderColor: COLORS.greenDot,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: '#fff',
-        },
-        vegDot: {
-            width: 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: COLORS.greenDot,
-        },
-        productContent: {
-            padding: 8,
-        },
-        productName: {
-            fontSize: 13,
-            fontWeight: '600',
-            color: '#1F2937',
-            marginBottom: 4,
-            height: 20, // limit to 1 line approx
-        },
-        priceRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: 8,
-            justifyContent: 'space-between',
-        },
-        prices: {
-            flexDirection: 'column',
-        },
-        mrpText: {
-            fontSize: 11,
-            color: '#9CA3AF',
-            textDecorationLine: 'line-through',
-        },
-        sellingPriceText: {
-            fontSize: 14,
-            fontWeight: '700',
-            color: '#1F2937',
-        },
-        addButton: {
-            width: 28,
-            height: 28,
-            borderRadius: 6,
-            justifyContent: 'center',
-            alignItems: 'center',
-            // box-shadow: 0px 0px 0px 1px #FEDB51;
-            borderWidth: 1,
-            borderColor: '#FEDB51',
-            // box-shadow: 0px 1px 2px 0px #253EA77A;
-            shadowColor: "#253EA7",
-            shadowOffset: {
-                width: 0,
-                height: 1,
-            },
-            shadowOpacity: 0.48, // 7A hex approx
-            shadowRadius: 2,
-            elevation: 2,
-        },
-        quantityContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            borderRadius: 6,
-            height: 28,
-            paddingHorizontal: 4,
-            // box-shadow: 0px 0px 0px 1px #FEDB51;
-            borderWidth: 1,
-            borderColor: '#FEDB51',
-            // box-shadow: 0px 1px 2px 0px #253EA77A;
-            shadowColor: "#253EA7",
-            shadowOffset: {
-                width: 0,
-                height: 1,
-            },
-            shadowOpacity: 0.48,
-            shadowRadius: 2,
-            elevation: 2,
-        },
-        qtyBtnMinus: {
-            padding: 4,
-        },
-        qtyBtnPlus: {
-            padding: 4,
-        },
-        qtyText: {
-            fontSize: 12,
-            fontWeight: '700',
-            color: '#1F2937',
-            minWidth: 16,
-            textAlign: 'center',
-        },
-        // Footer
-        exploreButton: {
-            backgroundColor: '#E5E7EB', // Light grey bg
-            paddingVertical: 12,
-            borderRadius: 8,
-            alignItems: 'center',
-            flexDirection: 'row',
-            justifyContent: 'center',
-        },
-        exploreText: {
-            fontSize: 14,
-            fontWeight: '600',
-            color: '#003F66', // Dark blue
-        },
-    });
+    const renderProductItem = useCallback(({ item }: { item: Product }) => (
+        <View style={{ marginRight: 12 }}>
+            <ProductRenderItem
+                item={item}
+                quantity={getProductQuantity(item.sku)}
+                onPress={handlePressProduct}
+                onAddToCart={handleAddToCart}
+                onIncrement={handleIncrement}
+                onDecrement={handleDecrement}
+            />
+        </View>
+    ), [getProductQuantity, handlePressProduct, handleAddToCart, handleIncrement, handleDecrement]);
 
     return (
         <View style={styles.container}>
@@ -555,30 +357,15 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
             ) : (
                 <>
                     {/* Categories */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesContainer}>
-                        {activeCategories.map((cat, index) => {
-                            const isSelected = selectedCategory === cat.id;
-                            return (
-                                <TouchableOpacity
-                                    key={cat.id}
-                                    style={styles.categoryItem}
-                                    onPress={() => handleCategorySelect(cat.id)}
-                                >
-                                    <View style={[
-                                        styles.categoryImageContainer,
-                                        isSelected && { borderColor: '#003F66', borderWidth: 1.5 }
-                                    ]}>
-                                        <Image source={typeof cat.image === 'string' ? { uri: cat.image } : cat.image} style={styles.categoryImage} />
-                                    </View>
-                                    <ThemeText style={[
-                                        styles.categoryName,
-                                        isSelected && { color: '#003F66', fontWeight: '700' }
-                                    ]}>{cat.name}</ThemeText>
-                                    {isSelected && <View style={styles.activeBar} />}
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </ScrollView>
+                    <FlatList
+                        horizontal
+                        data={activeCategories}
+                        renderItem={renderCategoryItem}
+                        keyExtractor={(item) => item.id}
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.categoriesContainer}
+                        contentContainerStyle={{ paddingRight: 20 }}
+                    />
 
                     {/* Products */}
                     {isSwitchingCat ? (
@@ -586,84 +373,20 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
                             <ActivityIndicator size="small" color={COLORS.primaryGreen} />
                         </View>
                     ) : (
-                        <ScrollView
-                            ref={productsScrollRef}
+                        <FlatList
+                            ref={productsListRef}
                             horizontal
+                            data={displayedProducts}
+                            renderItem={renderProductItem}
+                            keyExtractor={(item, index) => `${item.sku}-${index}`}
                             showsHorizontalScrollIndicator={false}
                             style={styles.productsContainer}
-                        >
-                            {displayedProducts.map((product, index) => {
-                                const quantity = getProductQuantity(product.sku);
-                                return (
-                                    <TouchableOpacity
-                                        key={`${product.sku}-${index}`}
-                                        style={styles.productCard}
-                                        onPress={() => onPressProduct && onPressProduct(product)}
-                                    >
-                                        <View style={styles.productImageWrapper}>
-                                            <Image source={{ uri: product.imageUrl || MOCK_IMAGE }} style={styles.productImage} />
-                                            {product.discount > 0 && (
-                                                <View style={styles.discountBadge}>
-                                                    <ThemeText style={styles.discountText}>{product.discount}% OFF</ThemeText>
-                                                </View>
-                                            )}
-                                            <View style={[styles.vegIcon, !product.veg && { borderColor: '#EF4444' }]}>
-                                                <View style={[styles.vegDot, !product.veg && { backgroundColor: '#EF4444' }]} />
-                                            </View>
-                                        </View>
-
-                                        <View style={styles.productContent}>
-                                            <ThemeText style={styles.productName} numberOfLines={1}>{product.name}</ThemeText>
-
-                                            <View style={styles.priceRow}>
-                                                <View style={styles.prices}>
-                                                    {product.mrp > product.sellingPrice && (
-                                                        <ThemeText style={styles.mrpText}>₹{product.mrp}</ThemeText>
-                                                    )}
-                                                    <ThemeText style={styles.sellingPriceText}>₹{product.sellingPrice}</ThemeText>
-                                                </View>
-
-                                                {quantity > 0 ? (
-                                                    <View>
-                                                        <LinearGradient
-                                                            colors={['#FFE566', '#FEDB51']} // Lighter yellow top to standard yellow bottom
-                                                            style={styles.quantityContainer}
-                                                            useAngle={true}
-                                                            angle={180}
-                                                        >
-                                                            <TouchableOpacity
-                                                                style={styles.qtyBtnMinus}
-                                                                onPress={() => handleDecrement(product.sku)}
-                                                            >
-                                                                <AntDesign name="minus" size={12} color="#1F2937" />
-                                                            </TouchableOpacity>
-                                                            <ThemeText style={styles.qtyText}>{quantity}</ThemeText>
-                                                            <TouchableOpacity
-                                                                style={styles.qtyBtnPlus}
-                                                                onPress={() => handleIncrement(product.sku)}
-                                                            >
-                                                                <AntDesign name="plus" size={12} color="#1F2937" />
-                                                            </TouchableOpacity>
-                                                        </LinearGradient>
-                                                    </View>
-                                                ) : (
-                                                    <TouchableOpacity onPress={() => handleAddToCart(product)}>
-                                                        <LinearGradient
-                                                            colors={['#FFE566', '#FEDB51']} // Lighter yellow top to standard yellow bottom
-                                                            style={styles.addButton}
-                                                            useAngle={true}
-                                                            angle={180}
-                                                        >
-                                                            <AntDesign name="plus" size={16} color="#1F2937" />
-                                                        </LinearGradient>
-                                                    </TouchableOpacity>
-                                                )}
-                                            </View>
-                                        </View>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
+                            contentContainerStyle={{ paddingRight: 10 }}
+                            initialNumToRender={4}
+                            maxToRenderPerBatch={4}
+                            windowSize={3}
+                            removeClippedSubviews={true}
+                        />
                     )}
                 </>
             )}
@@ -676,5 +399,272 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
         </View>
     );
 };
+
+// Color constants from design
+const COLORS = {
+    background: '#F9FAFB',
+    textDark: '#003F66', // Adjusted dark blue/slate
+    textGrey: '#6B7280',
+    primaryGreen: '#12A58C',
+    greenDot: '#10B981',
+    redDot: '#EF4444',
+    yellowBtn: '#FCD34D',
+    discountRed: '#DC2626',
+    border: '#E5E7EB',
+};
+
+const styles = StyleSheet.create({
+    container: {
+        backgroundColor: COLORS.background,
+        borderRadius: 8,
+        padding: 16,
+        marginVertical: 10,
+        // Box Shadow: 0px 1px 9.3px 0px #0000001A
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1, // 1A is approx 10%
+        shadowRadius: 9.3,
+        elevation: 2, // Android approximation
+        width: '100%',
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 16,
+    },
+    vendorInfo: {
+        flex: 1,
+    },
+    vendorName: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: COLORS.textDark,
+        marginBottom: 4,
+        fontFamily: 'BricolageGrotesque-Bold',
+    },
+    metaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    metaText: {
+        fontSize: 12,
+        color: COLORS.textGrey,
+        fontWeight: '500',
+    },
+    ratingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    ratingBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.primaryGreen,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    ratingText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '700',
+        marginLeft: 4,
+    },
+    ratingCount: {
+        color: COLORS.textGrey,
+        fontSize: 12,
+        marginLeft: 4,
+    },
+    dividerLine: {
+        height: 1,
+        backgroundColor: '#E5E7EB', // Light grey divider
+        marginVertical: 16,
+        width: '100%',
+    },
+    // Categories
+    categoriesContainer: {
+        marginBottom: 20,
+    },
+    categoryItem: {
+        alignItems: 'center',
+        marginRight: 20,
+    },
+    categoryImageContainer: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginBottom: 6,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+    },
+    categoryImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    categoryName: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#1F2937',
+    },
+    activeBar: {
+        marginTop: 6,
+        width: '100%',
+        height: 3,
+        backgroundColor: '#003F66', // Deep Blue
+        borderRadius: 2,
+    },
+    // Products
+    productsContainer: {
+        marginBottom: 20,
+    },
+    productCard: {
+        width: 140, // Fixed width for horizontal items
+        // marginRight: 12, // Moved to wrapper view in renderItem
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#F3F4F6',
+    },
+    productImageWrapper: {
+        width: '100%',
+        height: 110,
+        backgroundColor: '#E5E7EB',
+        position: 'relative',
+    },
+    productImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    discountBadge: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        backgroundColor: COLORS.discountRed,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderBottomRightRadius: 8,
+    },
+    discountText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: '700',
+    },
+    vegIcon: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        width: 16,
+        height: 16,
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: COLORS.greenDot,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+    },
+    vegDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: COLORS.greenDot,
+    },
+    productContent: {
+        padding: 8,
+    },
+    productName: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#1F2937',
+        marginBottom: 4,
+        height: 20, // limit to 1 line approx
+    },
+    priceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+        justifyContent: 'space-between',
+    },
+    prices: {
+        flexDirection: 'column',
+    },
+    mrpText: {
+        fontSize: 11,
+        color: '#9CA3AF',
+        textDecorationLine: 'line-through',
+    },
+    sellingPriceText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#1F2937',
+    },
+    addButton: {
+        width: 28,
+        height: 28,
+        borderRadius: 6,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#FEDB51',
+        shadowColor: "#253EA7",
+        shadowOffset: {
+            width: 0,
+            height: 1,
+        },
+        shadowOpacity: 0.48,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    quantityContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 6,
+        height: 28,
+        paddingHorizontal: 4,
+        borderWidth: 1,
+        borderColor: '#FEDB51',
+        shadowColor: "#253EA7",
+        shadowOffset: {
+            width: 0,
+            height: 1,
+        },
+        shadowOpacity: 0.48,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    qtyBtnMinus: {
+        padding: 4,
+    },
+    qtyBtnPlus: {
+        padding: 4,
+    },
+    qtyText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#1F2937',
+        minWidth: 16,
+        textAlign: 'center',
+    },
+    // Footer
+    exploreButton: {
+        backgroundColor: '#E5E7EB', // Light grey bg
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'center',
+    },
+    exploreText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#003F66', // Dark blue
+    },
+});
 
 export default React.memo(VendorShowcaseWidget);

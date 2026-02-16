@@ -6,7 +6,6 @@ import {
   Image,
   Platform,
   SafeAreaView,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -170,17 +169,26 @@ const CategoryScreen = () => {
                         }}
                     />
 
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalList}>
-                        {categoryVendors.map((vendor) => (
-                            <View key={vendor.shopId} style={{ marginRight: 16 }}>
+                    <FlatList
+                        horizontal
+                        data={categoryVendors}
+                        renderItem={({ item }) => (
+                            <View style={{ marginRight: 16 }}>
                                 <VendorCard2
-                                    vendor={vendor}
+                                    vendor={item}
                                     size={160}
                                     onPress={handleVendorPress}
                                 />
                             </View>
-                        ))}
-                    </ScrollView>
+                        )}
+                        keyExtractor={(item) => item.shopId}
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.horizontalList}
+                        initialNumToRender={3}
+                        maxToRenderPerBatch={3}
+                        windowSize={3}
+                        removeClippedSubviews={true}
+                    />
 
                     {/* Full store list with showcase */}
                     <SectionDivider
