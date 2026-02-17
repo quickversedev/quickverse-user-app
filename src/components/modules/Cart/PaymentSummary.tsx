@@ -93,9 +93,9 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
 
 
       // New fee structure as per requirements
-      const platformFee = 8;
-      const packagingCharges = 7;
-      const deliveryCharges = 25;
+      const platformFee = 5;
+      const packagingCharges = 0;
+      const deliveryCharges = 20;
       const taxes = Math.round(calculatedSubtotal * 0.05);
 
       const calculatedTotal =
@@ -113,7 +113,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
 
       return {
         subtotal: calculatedSubtotal,
-        deliveryFee: deliveryCharges, // Override efficiently to 25
+        deliveryFee: deliveryCharges, // Override efficiently to 20
         platformFee,
         packagingCharges,
         taxes,
@@ -344,7 +344,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
             </ThemeText>
             <View style={styles.feeRow}>
               <ThemeText variant="body" color={getColor('text')} style={styles.crossedText}>
-                ₹35
+                ₹29
               </ThemeText>
               <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
                 ₹{deliveryFee}
@@ -376,7 +376,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
             </ThemeText>
             <View style={styles.feeRow}>
               <ThemeText variant="body" color={getColor('text')} style={styles.crossedText}>
-                ₹11
+                ₹8
               </ThemeText>
               <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
                 ₹{packagingCharges}
