@@ -2,29 +2,29 @@ import notifee, { AuthorizationStatus } from '@notifee/react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Linking,
-  Modal,
-  PermissionsAndroid,
-  Platform,
-  RefreshControl,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Linking,
+    Modal,
+    PermissionsAndroid,
+    Platform,
+    RefreshControl,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SectionDivider } from '../../../components/common';
 import {
-  BillSummaryCard,
-  HelpCard,
-  OrderHeader,
-  OrderInfoCard,
-  OrderProgress,
+    BillSummaryCard,
+    HelpCard,
+    OrderHeader,
+    OrderInfoCard,
+    OrderProgress,
 } from '../../../components/common/OrderDetails';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useNotifications } from '../../../hooks/useNotifications';
@@ -41,7 +41,7 @@ const OrderDetailsScreen = () => {
   const { getColor } = useTheme();
   const { selectedOrder, loadOrderById, refreshOrders } = useOrders();
   const { authData } = useAuth();
-  const { orderId } = route.params as { orderId: string };
+  const { orderId, shopId } = route.params as { orderId: string; shopId?: string };
   const { getVendorById } = useVendorStore();
   const { requestPermissions } = useNotifications();
 
@@ -75,7 +75,7 @@ const OrderDetailsScreen = () => {
   // Load order and setup polling
   useEffect(() => {
     if (orderId) {
-      loadOrderById(orderId, selectedOrder?.shopId);
+      loadOrderById(orderId, shopId || selectedOrder?.shopId);
     }
 
     // Setup polling for order status updates
@@ -87,7 +87,7 @@ const OrderDetailsScreen = () => {
 
     if (shouldPoll) {
       pollingIntervalRef.current = setInterval(() => {
-        loadOrderById(orderId, selectedOrder?.shopId);
+        loadOrderById(orderId, shopId || selectedOrder?.shopId);
       }, POLLING_INTERVAL_MS);
     }
 
@@ -98,7 +98,7 @@ const OrderDetailsScreen = () => {
         pollingIntervalRef.current = null;
       }
     };
-  }, [orderId, loadOrderById, selectedOrder?.status, selectedOrder?.shopId]);
+  }, [orderId, loadOrderById, selectedOrder?.status, selectedOrder?.shopId, shopId]);
 
   // Check notification permission on component mount
   useEffect(() => {

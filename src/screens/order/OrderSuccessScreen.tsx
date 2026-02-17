@@ -56,7 +56,7 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
     navigation.dispatch(
       CommonActions.reset({
         index: 1,
-        routes: [{ name: 'MainApp' }, { name: 'OrderDetails', params: { orderId } }],
+        routes: [{ name: 'MainApp' }, { name: 'OrderDetails', params: { orderId, shopId } }],
       })
     );
   }, [navigation, orderId]);
