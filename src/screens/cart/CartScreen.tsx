@@ -1,24 +1,23 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo } from 'react';
-import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AnimatedCard from '../../components/common/AnimatedCard';
 import {
-  CartFooter,
-  CartHeader,
-  CartItemList,
-  CouponSection,
-  PaymentOptions,
-  PaymentSummary,
-  VendorPill,
+    CartFooter,
+    CartHeader,
+    CartItemList,
+    CouponSection,
+    PaymentOptions,
+    PaymentSummary,
+    VendorPill,
 } from '../../components/modules/Cart';
 import {
-  AddressSelectionModal,
-  SmartBizAddressSelectionModal,
+    AddressSelectionModal,
+    SmartBizAddressSelectionModal,
 } from '../../components/modules/Header';
-import SuggestedItems from '../../components/modules/Product/SuggestedItems';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { RootStackParamList } from '../../routes/AppStack';
@@ -645,6 +644,17 @@ const CartScreen: React.FC = () => {
   }, [vendor?.shopId, getFeaturedProducts]);
 
   // Return empty state if cart or vendor is not available
+  if (isOrderLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: getColor('background'), justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={getColor('primary')} />
+        <Text style={{ marginTop: 16, color: getColor('text'), fontSize: 16, fontWeight: '500' }}>
+          Placing your order, hold on...
+        </Text>
+      </View>
+    );
+  }
+
   if (!cart || !vendor || cartItems.length === 0) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background'), justifyContent: 'center', alignItems: 'center', padding: 20 }}>
