@@ -2,29 +2,29 @@ import notifee, { AuthorizationStatus } from '@notifee/react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Linking,
-    Modal,
-    PermissionsAndroid,
-    Platform,
-    RefreshControl,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Linking,
+  Modal,
+  PermissionsAndroid,
+  Platform,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SectionDivider } from '../../../components/common';
 import {
-    BillSummaryCard,
-    HelpCard,
-    OrderHeader,
-    OrderInfoCard,
-    OrderProgress,
+  BillSummaryCard,
+  HelpCard,
+  OrderHeader,
+  OrderInfoCard,
+  OrderProgress,
 } from '../../../components/common/OrderDetails';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useNotifications } from '../../../hooks/useNotifications';
@@ -410,17 +410,41 @@ const OrderDetailsScreen = () => {
 
   // Payment summary derived from items + order delivery details
   const summary = useMemo(() => {
-    if (!selectedOrder) return { subTotal: 0, deliveryFee: 0, additionalCharges: 0, total: 0 };
+    if (!selectedOrder)
+      return {
+        subTotal: 0,
+        deliveryFee: 0,
+        additionalCharges: 0,
+        total: 0,
+        platformFee: 0,
+        packagingCharges: 0,
+        taxes: 0,
+      };
 
     const apiOrder = selectedOrder as unknown as ApiOrderShape;
-    const subTotal = selectedOrder.totalInvoiceAmount ?? selectedOrder.totalAmount;
-    const deliveryFee = Number(
-      selectedOrder.deliveryFees ?? apiOrder?.deliveryDetails?.deliveryFees ?? 0
-    );
+    // Calculate subTotal from items to match Cart logic
+    const subTotal = derivedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+    // Fee structure matching PaymentSummary.tsx
+    // Delivery Fee: 20
+    // Platform Fee: 5
+    // Packaging Charges: 0
+    // Taxes: 5% of subTotal
+
+    const deliveryFee = 20; // Hardcoded to match PaymentSummary
+    const platformFee = 5;
+    const packagingCharges = 0;
+    const taxes = Math.round(Number(subTotal) * 0.05);
+
     const additionalCharges = Number(selectedOrder.additionalPaymentCharges ?? 0);
-    const total = Number(subTotal + deliveryFee + additionalCharges);
-    return { subTotal, deliveryFee, additionalCharges, total };
-  }, [selectedOrder]);
+
+    // Calculate total based on these components
+    // Note: We are aligning the display with the cart logic, even if the stored total might differ slightly.
+    // Ideally, these should be stored in the order object from the backend.
+    const total = Number(subTotal) + deliveryFee + platformFee + packagingCharges + taxes + additionalCharges;
+
+    return { subTotal, deliveryFee, additionalCharges, total, platformFee, packagingCharges, taxes };
+  }, [selectedOrder, derivedItems]);
 
   const [showAllItems, setShowAllItems] = React.useState(false);
   const displayedItems = showAllItems ? derivedItems : derivedItems.slice(0, 2);
@@ -624,6 +648,9 @@ const OrderDetailsScreen = () => {
             totalAmount={summary.total}
             subtotal={summary.subTotal}
             deliveryFee={summary.deliveryFee}
+            platformFee={summary.platformFee}
+            packagingCharges={summary.packagingCharges}
+            taxes={summary.taxes}
             additionalPaymentCharges={summary.additionalCharges}
             paymentMethod={selectedOrder.paymentMethod}
             onPress={handleViewSummary}

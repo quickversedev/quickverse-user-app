@@ -7,6 +7,9 @@ interface BillSummaryCardProps {
   totalAmount: number;
   subtotal: number;
   deliveryFee: number;
+  platformFee?: number;
+  packagingCharges?: number;
+  taxes?: number;
   additionalPaymentCharges?: number;
   paymentMethod?: string;
   onPress: () => void;
@@ -16,6 +19,9 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
   totalAmount,
   subtotal,
   deliveryFee,
+  platformFee = 0,
+  packagingCharges = 0,
+  taxes = 0,
   additionalPaymentCharges = 0,
   paymentMethod,
   onPress,
@@ -66,6 +72,32 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
               ₹{deliveryFee.toFixed(2)}
             </Text>
           </View>
+          {platformFee > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>Platform Fee</Text>
+              <Text style={[styles.summaryValue, { color: getColor('text') }]}>
+                ₹{platformFee.toFixed(2)}
+              </Text>
+            </View>
+          )}
+          {packagingCharges > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>
+                Packaging Charges
+              </Text>
+              <Text style={[styles.summaryValue, { color: getColor('text') }]}>
+                ₹{packagingCharges.toFixed(2)}
+              </Text>
+            </View>
+          )}
+          {taxes > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>Taxes (5%)</Text>
+              <Text style={[styles.summaryValue, { color: getColor('text') }]}>
+                ₹{taxes.toFixed(2)}
+              </Text>
+            </View>
+          )}
           {additionalPaymentCharges > 0 && (
             <View style={styles.summaryRow}>
               <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>
