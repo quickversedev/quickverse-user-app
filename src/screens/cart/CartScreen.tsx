@@ -6,17 +6,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AnimatedCard from '../../components/common/AnimatedCard';
 import {
-    CartFooter,
-    CartHeader,
-    CartItemList,
-    CouponSection,
-    PaymentOptions,
-    PaymentSummary,
-    VendorPill,
+  CartFooter,
+  CartHeader,
+  CartItemList,
+  CouponSection,
+  PaymentOptions,
+  PaymentSummary,
+  VendorPill,
 } from '../../components/modules/Cart';
 import {
-    AddressSelectionModal,
-    SmartBizAddressSelectionModal,
+  AddressSelectionModal,
+  SmartBizAddressSelectionModal,
 } from '../../components/modules/Header';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';

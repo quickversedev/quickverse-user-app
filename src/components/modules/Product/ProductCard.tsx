@@ -1,12 +1,12 @@
 import React, { memo, useMemo } from 'react';
 import {
-  Dimensions,
-  Image,
-  ImageSourcePropType,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    Image,
+    ImageSourcePropType,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
@@ -335,8 +335,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
       <View style={styles.priceRow}>
         <View style={styles.priceLeft}>
-          {showMrp && <Text style={[styles.mrp, isOutOfStock && { opacity: 0.6 }]}>₹{mrp}</Text>}
-          <Text style={[styles.price, isOutOfStock && { opacity: 0.6 }]}>₹{price}</Text>
+          {showMrp && <Text style={[styles.mrp, isOutOfStock && { opacity: 0.6 }]}>₹{(mrp ?? 0).toFixed(2)}</Text>}
+          <Text style={[styles.price, isOutOfStock && { opacity: 0.6 }]}>₹{(price ?? 0).toFixed(2)}</Text>
         </View>
         <View style={{ marginRight: 4 }}>
           <VegIcon veg={veg} size="xs" />

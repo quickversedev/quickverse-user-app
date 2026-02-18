@@ -108,7 +108,7 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
 
       {/* Order Details */}
       <View style={styles.detailsContainer}>
-        <ThemeText style={[styles.amount, { color: '#111827' }]}>₹{amount}</ThemeText>
+        {/* <ThemeText style={[styles.amount, { color: '#111827' }]}>₹{amount}</ThemeText> */}
 
         <ThemeText style={[styles.successMessage, { color: '#111827' }]}>
           Order Placed Successfully!

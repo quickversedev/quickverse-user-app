@@ -269,7 +269,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
             color={getButtonColor('default', 'background')}
             style={styles.paymentSummaryAmount}
           >
-            ₹{finalTotal}
+            ₹{(finalTotal ?? 0).toFixed(2)}
           </ThemeText>
         </View>
         <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
@@ -306,7 +306,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
               Sub Total
             </ThemeText>
             <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-              ₹{subtotal}
+              ₹{(subtotal ?? 0).toFixed(2)}
             </ThemeText>
           </View>
           {totalDiscountOnItems > 0 && (
@@ -317,7 +317,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
                   Item Discount
                 </ThemeText>
                 <ThemeText variant="body" color={getColor('primary')} style={styles.billAmount}>
-                  -₹{totalDiscountOnItems}
+                  -₹{(totalDiscountOnItems ?? 0).toFixed(2)}
                 </ThemeText>
               </View>
             </>
@@ -330,7 +330,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
                   Coupon Discount
                 </ThemeText>
                 <ThemeText variant="body" color={getColor('primary')} style={styles.billAmount}>
-                  -₹{couponDiscount}
+                  -₹{(couponDiscount ?? 0).toFixed(2)}
                 </ThemeText>
               </View>
             </>
@@ -344,10 +344,10 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
             </ThemeText>
             <View style={styles.feeRow}>
               <ThemeText variant="body" color={getColor('text')} style={styles.crossedText}>
-                ₹29
+                ₹39
               </ThemeText>
               <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-                ₹{deliveryFee}
+                ₹{(deliveryFee ?? 0).toFixed(2)}
               </ThemeText>
             </View>
           </View>
@@ -362,7 +362,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
                 ₹12
               </ThemeText>
               <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-                ₹{platformFee}
+                ₹{(platformFee ?? 0).toFixed(2)}
               </ThemeText>
             </View>
           </View>
@@ -379,7 +379,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
                 ₹8
               </ThemeText>
               <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-                ₹{packagingCharges}
+                ₹{(packagingCharges ?? 0).toFixed(2)}
               </ThemeText>
             </View>
           </View>
@@ -390,7 +390,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
               Taxes (GST & Services)
             </ThemeText>
             <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-              ₹{taxes}
+              ₹{(taxes ?? 0).toFixed(2)}
             </ThemeText>
           </View>
 
@@ -400,7 +400,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
               Total Pay
             </ThemeText>
             <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-              ₹{finalTotal}
+              ₹{(finalTotal ?? 0).toFixed(2)}
             </ThemeText>
           </View>
         </View>
