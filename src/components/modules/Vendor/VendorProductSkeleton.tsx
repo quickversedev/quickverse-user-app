@@ -3,7 +3,9 @@ import { Animated, Dimensions, Platform, StatusBar, StyleSheet, View } from 'rea
 import { useTheme } from '../../../theme/ThemeContext';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = ((width - 32) / 3) * 0.9;
+// Calculate card width for the list view (taking up remaining space)
+// Sidebar ~90px, Padding ~16px -> Available ~ width - 106px
+const PRODUCT_LIST_WIDTH = width - 106;
 
 interface VendorProductSkeletonProps {
   showVendorCard?: boolean;
@@ -133,6 +135,7 @@ const VendorProductSkeleton: React.FC<VendorProductSkeletonProps> = ({ showVendo
     sectionDivider: {
       paddingHorizontal: 16,
       paddingVertical: 8,
+      marginBottom: 8,
     },
     sectionDividerText: {
       width: 150,
@@ -141,50 +144,47 @@ const VendorProductSkeleton: React.FC<VendorProductSkeletonProps> = ({ showVendo
       backgroundColor: getColor('border'),
       overflow: 'hidden',
     },
-    categoryContainer: {
-      backgroundColor: getColor('background'),
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: getColor('border'),
-    },
-    categoryScroll: {
+    mainContent: {
+      flex: 1,
       flexDirection: 'row',
     },
-    categoryItem: {
+    sidebar: {
+      width: 90,
+      backgroundColor: getColor('background'),
+      borderRightWidth: 1,
+      borderRightColor: getColor('border'),
+      paddingVertical: 12,
       alignItems: 'center',
-      marginRight: 24,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
     },
-    categoryIcon: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+    sidebarItem: {
+      alignItems: 'center',
+      marginBottom: 24,
+      paddingHorizontal: 4,
+    },
+    sidebarIcon: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
       backgroundColor: getColor('border'),
-      marginBottom: 4,
+      marginBottom: 8,
       overflow: 'hidden',
     },
-    categoryText: {
+    sidebarText: {
       width: 60,
-      height: 12,
-      borderRadius: 6,
+      height: 10,
+      borderRadius: 5,
       backgroundColor: getColor('border'),
       overflow: 'hidden',
     },
     productList: {
       flex: 1,
-      padding: 8,
+      padding: 12,
     },
     categoryHeader: {
-      width: '100%',
-      backgroundColor: getColor('background'),
-      paddingVertical: 18,
-      paddingHorizontal: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: getColor('border'),
-      marginTop: 16,
-      marginBottom: 4,
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+      marginTop: 8,
     },
     categoryHeaderText: {
       width: 120,
@@ -193,37 +193,58 @@ const VendorProductSkeleton: React.FC<VendorProductSkeletonProps> = ({ showVendo
       backgroundColor: getColor('border'),
       overflow: 'hidden',
     },
-    productRow: {
-      flexDirection: 'row',
-      justifyContent: 'flex-start',
+    categoryHeaderLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: getColor('border'),
+      marginLeft: 12,
     },
     productCard: {
-      width: CARD_WIDTH,
-      margin: 8,
+      flexDirection: 'row', // Horizontal card for list view now? Or keep vertical?
+      // Screenshot shows horizontal card: Image (Left) + Details (Right) + Add Button
       alignItems: 'center',
+      marginBottom: 16,
+      padding: 8,
+      backgroundColor: getColor('card'), // Optional: if cards have background
+      borderRadius: 12,
+      // borderBottomWidth: 1,
+      // borderBottomColor: getColor('border'),
     },
     productImage: {
-      width: '100%',
-      aspectRatio: 1,
-      borderRadius: 12,
+      width: 70,
+      height: 70,
+      borderRadius: 8,
+      backgroundColor: getColor('border'),
+      marginRight: 12,
+      overflow: 'hidden',
+    },
+    productInfo: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    productName: {
+      width: '90%',
+      height: 14,
+      borderRadius: 7,
       backgroundColor: getColor('border'),
       marginBottom: 8,
       overflow: 'hidden',
     },
-    productName: {
-      width: '90%',
-      height: 12,
-      borderRadius: 6,
+    productPrice: {
+      width: 60,
+      height: 14,
+      borderRadius: 7,
       backgroundColor: getColor('border'),
       marginBottom: 4,
       overflow: 'hidden',
     },
-    productPrice: {
-      width: '60%',
-      height: 10,
-      borderRadius: 5,
+    addButton: {
+      width: 70,
+      height: 30,
+      borderRadius: 6,
       backgroundColor: getColor('border'),
       overflow: 'hidden',
+      marginLeft: 8,
     },
     shimmer: {
       position: 'absolute',
@@ -258,46 +279,51 @@ const VendorProductSkeleton: React.FC<VendorProductSkeletonProps> = ({ showVendo
     />
   );
 
-  const renderCategorySkeleton = () => (
-    <View style={styles.categoryContainer}>
-      <View style={styles.categoryScroll}>
-        {Array.from({ length: 6 }).map((_, index) => (
-          <View key={index} style={styles.categoryItem}>
-            <View style={styles.categoryIcon}>
-              <ShimmerOverlay />
-            </View>
-            <View style={styles.categoryText}>
-              <ShimmerOverlay />
-            </View>
+  const renderSidebar = () => (
+    <View style={styles.sidebar}>
+      {Array.from({ length: 8 }).map((_, index) => (
+        <View key={index} style={styles.sidebarItem}>
+          <View style={styles.sidebarIcon}>
+            <ShimmerOverlay />
           </View>
-        ))}
-      </View>
+          <View style={styles.sidebarText}>
+            <ShimmerOverlay />
+          </View>
+        </View>
+      ))}
     </View>
   );
 
-  const renderProductSkeleton = () => (
+  const renderProductList = () => (
     <View style={styles.productList}>
-      {Array.from({ length: 2 }).map((_, sectionIndex) => (
-        <View key={sectionIndex}>
-          <View style={styles.categoryHeader}>
-            <View style={styles.categoryHeaderText}>
+      {/* Category Header */}
+      <View style={styles.categoryHeader}>
+        <View style={styles.categoryHeaderLine} />
+        <View style={[styles.categoryHeaderText, { marginHorizontal: 8 }]}>
+           <ShimmerOverlay />
+        </View>
+        <View style={styles.categoryHeaderLine} />
+      </View>
+
+      {/* Product Items */}
+      {Array.from({ length: 5 }).map((_, productIndex) => (
+        <View key={productIndex} style={styles.productCard}>
+          <View style={styles.productImage}>
+            <ShimmerOverlay />
+          </View>
+          <View style={styles.productInfo}>
+            <View style={styles.productName}>
+              <ShimmerOverlay />
+            </View>
+            <View style={[styles.productName, { width: '60%' }]}>
+              <ShimmerOverlay />
+            </View>
+            <View style={styles.productPrice}>
               <ShimmerOverlay />
             </View>
           </View>
-          <View style={styles.productRow}>
-            {Array.from({ length: 3 }).map((_, productIndex) => (
-              <View key={productIndex} style={styles.productCard}>
-                <View style={styles.productImage}>
-                  <ShimmerOverlay />
-                </View>
-                <View style={styles.productName}>
-                  <ShimmerOverlay />
-                </View>
-                <View style={styles.productPrice}>
-                  <ShimmerOverlay />
-                </View>
-              </View>
-            ))}
+          <View style={styles.addButton}>
+            <ShimmerOverlay />
           </View>
         </View>
       ))}
@@ -348,18 +374,22 @@ const VendorProductSkeleton: React.FC<VendorProductSkeletonProps> = ({ showVendo
         </View>
       )}
 
-      {/* Section Divider */}
+      {/* Section Divider (Time range?) */}
       <View style={styles.sectionDivider}>
-        <View style={styles.sectionDividerText}>
+        {/* <View style={styles.sectionDividerText}>
           <ShimmerOverlay />
-        </View>
+        </View> */}
+         <View style={[styles.sectionDividerText, { width: '80%', alignSelf: 'center', height: 1 } ]}>
+             {/* Divider Line */}
+             <ShimmerOverlay />
+         </View>
       </View>
 
-      {/* Categories */}
-      {renderCategorySkeleton()}
-
-      {/* Products */}
-      {renderProductSkeleton()}
+      {/* Main Content: Sidebar + Product List */}
+      <View style={styles.mainContent}>
+        {renderSidebar()}
+        {renderProductList()}
+      </View>
     </View>
   );
 };
