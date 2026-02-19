@@ -581,9 +581,18 @@ const OrderDetailsScreen = () => {
                   {vendorDetails.description}
                 </Text>
                 {vendorDetails.phone && (
-                  <Text style={[styles.shopContact, { color: getColor('text') }]}>
-                    Contact: {vendorDetails.phone}
-                  </Text>
+                  <View style={styles.contactRow}>
+                    <Text style={[styles.shopContact, { color: getColor('text') }]}>
+                      Contact: {vendorDetails.phone}
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.callButton, { backgroundColor: getColor('primary') }]}
+                      onPress={() => Linking.openURL(`tel:${vendorDetails.phone}`)}
+                    >
+                      <Icon name="phone" size={16} color="#FFF" />
+                      <Text style={styles.callButtonText}>Call Shop</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
                 {vendorDetails.shopAddress && (
                   <Text style={[styles.shopAddress, { color: getColor('subText') }]}>
@@ -1006,6 +1015,25 @@ const styles = StyleSheet.create({
   },
   modalButtonText: {
     fontSize: 15,
+    fontWeight: '600',
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  callButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    gap: 6,
+  },
+  callButtonText: {
+    color: '#FFF',
+    fontSize: 12,
     fontWeight: '600',
   },
 });
