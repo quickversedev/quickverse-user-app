@@ -1,19 +1,17 @@
 import debounce from 'lodash.debounce';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    Image,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  Keyboard,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,11 +20,11 @@ import { Images } from '../../../../assets';
 import SectionDivider from '../../../../components/common/SectionDivider';
 import { useLocation } from '../../../../hooks/Permissions/useLocation';
 import {
-    getAddressFromCoordinates,
-    getAutocompleteSuggestions,
-    type AddressComponents,
-    type Location,
-    type SearchResult,
+  getAddressFromCoordinates,
+  getAutocompleteSuggestions,
+  type AddressComponents,
+  type Location,
+  type SearchResult,
 } from '../../../../services/api/olaLocationService';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { getRegionFromLocation } from '../utils/mapUtils';
@@ -275,6 +273,11 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       left: 64,
       right: 16,
       zIndex: 10,
+      ...Platform.select({
+        android: {
+          elevation: 10,
+        },
+      }),
     },
     searchBar: {
       flexDirection: 'row',
@@ -496,16 +499,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   });
 
   return (
-    <TouchableWithoutFeedback
-      onPress={() => {
-        Keyboard.dismiss();
-        // Close search results when clicking outside
-        if (searchResults.length > 0) {
-          setSearchResults([]);
-        }
-      }}
-      accessible={false}
-    >
+    <View style={{ flex: 1 }}>
       <View
         style={[themedStyles.outerContainer, { paddingBottom: insets.bottom }]}
         accessible={true}
@@ -520,7 +514,12 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
             onRegionChangeComplete={handleRegionChangeComplete}
             showsUserLocation={true}
             showsMyLocationButton={false}
-            onPress={Keyboard.dismiss}
+            onPress={() => {
+              Keyboard.dismiss();
+              if (searchResults.length > 0) {
+                setSearchResults([]);
+              }
+            }}
           >
             {/* Show current location marker if available */}
             {currentLocation.latitude && currentLocation.longitude && (
@@ -557,8 +556,8 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
             </View>
           )}
           {/* Search Bar Overlay */}
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          <View
+            pointerEvents="box-none"
             style={themedStyles.searchBarContainer}
           >
             <View style={themedStyles.searchBar}>
@@ -668,7 +667,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                 </ScrollView>
               </View>
             )}
-          </KeyboardAvoidingView>
+          </View>
           {/* Use Current Location Button Overlay */}
           <View style={themedStyles.currentLocationButtonContainer}>
             <TouchableOpacity
@@ -759,7 +758,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
           </View>
         </View>
       </View>
-    </TouchableWithoutFeedback>
+    </View>
   );
 };
 

@@ -231,7 +231,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       >
         {/* Header - Transparent for step 1, regular for step 2 */}
         {step === 1 ? (
-          <View style={themedStyles.headerTransparent}>
+          <View style={themedStyles.headerTransparent} pointerEvents="box-none">
             <TouchableOpacity
               onPress={handleBack}
               activeOpacity={0.7}
