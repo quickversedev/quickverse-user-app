@@ -141,7 +141,7 @@ const CategoryScreen = () => {
 
             {/* Promo Banners */}
             <View style={styles.promoContainer}>
-                <PromotionCarousel />
+                <PromotionCarousel category={categoryName as 'Food' | 'Grocery'} />
             </View>
 
             {/* Conditional Content if Vendors Exist */}

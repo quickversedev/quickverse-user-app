@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import AutoScrollBanner from '../../../components/common/promo/AutoScrollBanner';
 import { usePromotions } from '../../../hooks/usePromotions';
 
-const PromotionCarousel = ({ category = 'Food' }: { category?: string }) => {
+const PromotionCarousel = ({ category = 'Food' }: { category?: 'Food' | 'Grocery' }) => {
     // Can use 'Food' or 'Grocery' or a new category 'Home'
     const { promotions } = usePromotions(category);
 
