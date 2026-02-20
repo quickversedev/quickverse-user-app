@@ -2,21 +2,21 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
-  Dimensions,
-  FlatList,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    FlatList,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { Images } from '../../assets';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Images } from '../../assets';
 import CartBar from '../../components/common/Cart/CartBar';
 import SectionDivider from '../../components/common/SectionDivider';
 import HorizontalProductCard from '../../components/modules/Product/HorizontalProductCard';
@@ -26,8 +26,8 @@ import VendorProductSkeleton from '../../components/modules/Vendor/VendorProduct
 import CategoryHeader from '../../components/vendor/CategoryHeader';
 import CategoryTabs, { CategoryItem } from '../../components/vendor/CategoryTabs';
 import VendorHeaderCard from '../../components/vendor/VendorHeaderCard';
-import VendorTopBar from '../../components/vendor/VendorTopBar';
 import { useAuth } from '../../contexts/login/AuthProvider';
+import { API_STORE_ID } from '../../data/collectionsData';
 import { RootStackParamList } from '../../routes/AppStack';
 import useCartStore from '../../store/cart/cartStore';
 import { useProductsStore } from '../../store/products/productsStore';
@@ -35,7 +35,6 @@ import { useTheme } from '../../theme/ThemeContext';
 import { Product } from '../../types/product';
 import { Vendor } from '../../types/vendor';
 import { formatTimeToAMPM, getStoreStatus } from '../../utils/storeUtils';
-import { API_STORE_ID } from '../../data/collectionsData';
 
 // Category type for local use (as expected by CategoryTabs)
 type Category = CategoryItem;
@@ -125,6 +124,7 @@ const VendorProductComponent: React.FC = () => {
 
   // Use passed vendor or derive/fallback
   const vendor = routeVendor || { shopId: routeShopId || '' } as Vendor;
+  console.log("FETCHED STORE DETAILS:", JSON.stringify(vendor, null, 2));
   const shopId = vendor.shopId || routeShopId || '';
 
   // Search state
