@@ -20,14 +20,14 @@ const CategoryCards = () => {
         <View style={styles.container}>
             <Card
                 title="Food Delivery"
-                subtitle="(Offer UX copy)"
+                subtitle="On Restaurant Prices"
                 image={require('../../../assets/images/food_homeScreen-category.png')}
                 onPress={() => handlePress('Food')}
                 theme={theme}
             />
             <Card
-                title="Grocery"
-                subtitle="(Offer UX copy)"
+                title="Daily Essentials"
+                subtitle="Delivered in minutes"
                 image={require('../../../assets/images/grocery_homeScreen-category.png')}
                 onPress={() => handlePress('Grocery')}
                 theme={theme}

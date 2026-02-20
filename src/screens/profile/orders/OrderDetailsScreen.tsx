@@ -665,6 +665,23 @@ const OrderDetailsScreen = () => {
             onPress={handleViewSummary}
           />
 
+          <View style={[styles.itemsCard, { backgroundColor: getColor('card'), flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Icon name="headset" size={24} color={getColor('primary')} />
+              <View style={{ marginLeft: 12 }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: getColor('text') }}>QuickVerse Support</Text>
+                <Text style={{ fontSize: 12, color: getColor('subText'), marginTop: 2 }}>We are available to help</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[styles.callButton, { backgroundColor: getColor('primary') }]}
+              onPress={() => Linking.openURL(`tel:8459418525`)}
+            >
+              <Icon name="phone" size={16} color="#FFF" />
+              <Text style={styles.callButtonText}>Call</Text>
+            </TouchableOpacity>
+          </View>
+
           <HelpCard onPress={handleGetHelp} order={selectedOrder} />
         </ScrollView>
       </View>
