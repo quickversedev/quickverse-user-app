@@ -293,6 +293,19 @@ const LoginScreen: React.FC = () => {
       textAlign: 'center',
       fontWeight: 'bold',
     },
+    partneredContainer: {
+      position: 'absolute',
+      bottom: Platform.OS === 'ios' ? 30 : 20,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+    },
+    amazonLogo: {
+      height: 24,
+      width: 100,
+      resizeMode: 'contain',
+      marginTop: 8,
+    },
   });
 
   const isCooldownActive = timeRemaining > 0 && phoneNumber === lastRequestedPhone;
@@ -390,6 +403,13 @@ const LoginScreen: React.FC = () => {
           </View>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
+
+      <View style={styles.partneredContainer}>
+        <ThemeText variant="caption" color={theme.colors.subText}>
+          Partnered With
+        </ThemeText>
+        <Image source={Images.amazonLogo} style={styles.amazonLogo} />
+      </View>
     </SafeAreaView>
   );
 };

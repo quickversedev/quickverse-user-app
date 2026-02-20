@@ -21,6 +21,9 @@ export const Images = {
   grocery: require('./images/grocery.png'),
   pharmacy: require('./images/pharmacy.png'),
   food: require('./images/food.png'),
+
+  // Partner Logos
+  amazonLogo: require('./images/512px-Amazon_logo.svg.png'),
 } as const;
 
 // Icons

@@ -24,9 +24,9 @@ import {
   useClearByFocusCell,
 } from 'react-native-confirmation-code-field';
 import {
-  startOtpListener,
-  removeListener,
   getHash,
+  removeListener,
+  startOtpListener,
 } from 'react-native-otp-verify';
 import { Images } from '../../assets';
 import { ThemeText } from '../../components/common/theme/ThemeText';
@@ -253,6 +253,19 @@ const OTPScreen: React.FC = () => {
     timerText: {
       marginLeft: 4,
     },
+    partneredContainer: {
+      position: 'absolute',
+      bottom: Platform.OS === 'ios' ? 30 : 20,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+    },
+    amazonLogo: {
+      height: 24,
+      width: 100,
+      resizeMode: 'contain',
+      marginTop: 8,
+    },
   });
 
   return (
@@ -343,6 +356,13 @@ const OTPScreen: React.FC = () => {
           </View>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
+
+      <View style={styles.partneredContainer}>
+        <ThemeText variant="caption" color={theme.colors.subText}>
+          Partnered With
+        </ThemeText>
+        <Image source={Images.amazonLogo} style={styles.amazonLogo} />
+      </View>
     </SafeAreaView>
   );
 };
