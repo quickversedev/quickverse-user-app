@@ -70,11 +70,11 @@ export const COLLECTION_CATEGORIES_MAPPING: { [key: string]: CollectionCategory[
   'Personal Care': [
     { id: 'bath-body', name: 'Bath & Body' },
     { id: 'hair-care', name: 'Hair Care' },
-    { id: 'mens-grooming', name: "Men's Grooming" },
+    { id: 'mens-grooming', name: 'Men’s Grooming' },
     { id: 'oral-care', name: 'Oral Care' },
     { id: 'personal-hygiene', name: 'Personal Hygiene' },
     { id: 'skin-care', name: 'Skin Care' },
-    { id: 'womens-hygiene', name: "Women's Hygiene" },
+    { id: 'womens-hygiene', name: 'Women’s Hygiene' },
   ],
   'Instant Mixes': [
     { id: 'noodles-pasta-other', name: 'Noodles, Pasta, & Other' },
@@ -95,7 +95,7 @@ export const COLLECTION_CATEGORIES_MAPPING: { [key: string]: CollectionCategory[
   ],
   'Pharma & Wellness': [
     { id: 'first-aid-health', name: 'First Aid & Health' },
-    { id: 'gym-supplements', name: 'Gym Supplements' },
+    { id: 'gym-supplements', name: 'Gym Sumplements' },
     { id: 'health-supplements', name: 'Health Supplements' },
     { id: 'sexual-wellness', name: 'Sexual Wellness' },
   ],
@@ -111,7 +111,7 @@ export const COLLECTION_CATEGORIES_MAPPING: { [key: string]: CollectionCategory[
     { id: 'mobile-accessories', name: 'Mobile Accessories' },
   ],
   'Pan Corner': [
-    { id: 'tobacco-smoking', name: 'Tobacco & Smoking' },
+    { id: 'tobaco-smoking', name: 'Tobaco & Smoking' },
   ],
 };
 
