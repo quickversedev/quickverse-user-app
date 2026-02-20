@@ -1,32 +1,32 @@
 import debounce from 'lodash.debounce';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Dimensions,
-  Image,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    Image,
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Images } from '../../../../assets';
 import SectionDivider from '../../../../components/common/SectionDivider';
 import { useLocation } from '../../../../hooks/Permissions/useLocation';
 import {
-  getAddressFromCoordinates,
-  getAutocompleteSuggestions,
-  type AddressComponents,
-  type Location,
-  type SearchResult,
+    getAddressFromCoordinates,
+    getAutocompleteSuggestions,
+    type AddressComponents,
+    type Location,
+    type SearchResult,
 } from '../../../../services/api/olaLocationService';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { getRegionFromLocation } from '../utils/mapUtils';
@@ -506,9 +506,8 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       }}
       accessible={false}
     >
-      <SafeAreaView
-        style={[themedStyles.outerContainer]}
-        edges={['bottom']}
+      <View
+        style={[themedStyles.outerContainer, { paddingBottom: insets.bottom }]}
         accessible={true}
         accessibilityLabel="Map location selection screen"
       >
@@ -759,7 +758,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
             </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     </TouchableWithoutFeedback>
   );
 };

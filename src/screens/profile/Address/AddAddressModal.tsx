@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
-  Dimensions,
-  Modal,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    Modal,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -212,14 +212,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
     },
   });
 
-  // Force remount of map when modal opens to reset state
-  const [mapKey, setMapKey] = useState(Date.now().toString());
-
-  React.useEffect(() => {
-    if (visible) {
-      setMapKey(Date.now().toString());
-    }
-  }, [visible]);
+  // We rely on resetForm to reset the modal state when closing.
 
   return (
     <Modal
@@ -260,7 +253,6 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
         {/* Body */}
         {step === 1 ? (
           <MapLocationStep
-            key={mapKey}
             onLocationSelect={handleLocationSelect}
           />
         ) : (
