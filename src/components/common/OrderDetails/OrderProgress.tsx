@@ -8,6 +8,7 @@ type OrderProgressProps = {
   status: Order['status'];
   orderCreationTime?: string | number;
   category?: string; // Add category prop
+  preparationTime?: string; // e.g. "20 MIN" from vendor
 };
 
 const DELAY_MESSAGES = [
@@ -18,18 +19,17 @@ const DELAY_MESSAGES = [
   { text: 'On its way soon!', icon: 'map-marker-path' },
 ];
 
-// const DELIVERY_TIME_MINUTES = 20;
-
 const STEPS = ['Order Placed', 'Accepted', 'Picked Up', 'Delivered'] as const;
 
 const getActiveStepIndex = (status: Order['status']): number => {
   switch (status) {
-    case 'pending':
+    case 'payment_pending':
       return 0;
     case 'confirmed':
-    case 'preparing':
+    case 'processing':
       return 1;
     case 'ready':
+    case 'shipped':
       return 2;
     case 'delivered':
       return 3;
@@ -45,13 +45,23 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-const OrderProgress: React.FC<OrderProgressProps> = ({ status, orderCreationTime, category }) => {
+const OrderProgress: React.FC<OrderProgressProps> = ({ status, orderCreationTime, category, preparationTime }) => {
   const { theme } = useTheme();
   const activeIndex = getActiveStepIndex(status);
 
-  // Determine delivery time based on category
-  const isFood = category?.toLowerCase().includes('food');
-  const deliveryTimeMinutes = isFood ? 35 : 20;
+  // Determine delivery time based on preparationTime (e.g. "20 MIN", "45 mins"), otherwise fallback to category defaults
+  let deliveryTimeMinutes = 20; // default
+
+  if (preparationTime) {
+    const parsedTime = parseInt(preparationTime.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(parsedTime) && parsedTime > 0) {
+      deliveryTimeMinutes = parsedTime;
+    }
+  } else {
+    // Fallback if no preparation time provided
+    const isFood = category?.toLowerCase().includes('food');
+    deliveryTimeMinutes = isFood ? 35 : 20;
+  }
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [delayMessageIndex, setDelayMessageIndex] = useState(0);

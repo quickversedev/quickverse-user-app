@@ -2,29 +2,29 @@ import notifee, { AuthorizationStatus } from '@notifee/react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Linking,
-  Modal,
-  PermissionsAndroid,
-  Platform,
-  RefreshControl,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Linking,
+    Modal,
+    PermissionsAndroid,
+    Platform,
+    RefreshControl,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SectionDivider } from '../../../components/common';
 import {
-  BillSummaryCard,
-  HelpCard,
-  OrderHeader,
-  OrderInfoCard,
-  OrderProgress,
+    BillSummaryCard,
+    HelpCard,
+    OrderHeader,
+    OrderInfoCard,
+    OrderProgress,
 } from '../../../components/common/OrderDetails';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useNotifications } from '../../../hooks/useNotifications';
@@ -566,6 +566,7 @@ const OrderDetailsScreen = () => {
               status={selectedOrder.status}
               orderCreationTime={selectedOrder.orderDate}
               category={vendorDetails?.category}
+              preparationTime={vendorDetails?.preparationTime}
             />
           )}
 
