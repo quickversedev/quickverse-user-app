@@ -214,7 +214,8 @@ class ProductsService {
         // Build categories from mock products using unique divisions
         const shopProducts = mockProducts.filter(p => p.shopId === shopId);
         const divisionCount = shopProducts.reduce<Record<string, number>>((acc, p) => {
-          acc[p.division] = (acc[p.division] || 0) + 1;
+          const div = p.division || 'missing';
+          acc[div] = (acc[div] || 0) + 1;
           return acc;
         }, {});
 
@@ -392,10 +393,18 @@ class ProductsService {
         const imageUrl = p.imageUrl || pickImageUrl(p as Record<string, unknown>);
         // SmartPOS may use different keys for stock; default to true so collection products aren't greyed out
         const inStock = p.inStock ?? (p as Record<string, unknown>).available ?? (p as Record<string, unknown>).in_stock ?? true;
+        // SmartPOS may omit 'veg' indicator for groceries, so default to true unless explicitly false
+        const isVeg = p.veg ?? (p as Record<string, unknown>).isVeg ?? (p as Record<string, unknown>).is_veg ?? true;
+
         if (!imageUrl && rawProducts[0] === raw && __DEV__) {
           console.log('[ProductsService] Collection product sample keys:', Object.keys(p));
         }
-        return { ...p, imageUrl: typeof imageUrl === 'string' ? imageUrl : '', inStock: Boolean(inStock) } as Product;
+        return {
+          ...p,
+          imageUrl: typeof imageUrl === 'string' ? imageUrl : '',
+          inStock: Boolean(inStock),
+          veg: Boolean(isVeg)
+        } as Product;
       });
 
       return products;

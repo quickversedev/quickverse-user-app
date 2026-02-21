@@ -81,7 +81,8 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 12,
-        paddingHorizontal: 12,
+        paddingLeft: 0,
+        paddingRight: 12,
         borderBottomWidth: 1,
         borderBottomColor: getColor('border'),
         opacity: isDisabled ? 0.5 : 1,
@@ -106,7 +107,7 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
       },
       contentContainer: {
         flex: 1,
-        marginLeft: 12,
+        marginLeft: 3,
         justifyContent: 'center',
       },
       nameRow: {

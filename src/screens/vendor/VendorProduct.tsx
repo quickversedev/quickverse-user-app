@@ -2,18 +2,18 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Animated,
-    Dimensions,
-    FlatList,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  FlatList,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Images } from '../../assets';
@@ -206,6 +206,13 @@ const VendorProductComponent: React.FC = () => {
       fetchCollectionProducts(shopId, categoryIds);
     }
   }, [shopId, collection, categories, products.length, productsLoading, productsError, fetchCollectionProducts]);
+
+  // Log fetched products
+  useEffect(() => {
+    if (products && products.length > 0) {
+      console.log("FETCHED PRODUCTS/ITEMS:", JSON.stringify(products, null, 2));
+    }
+  }, [products]);
 
   // Show search bar and focus input when initialSearchQuery is provided
   useEffect(() => {
