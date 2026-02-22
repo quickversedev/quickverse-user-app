@@ -280,10 +280,10 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       top: Platform.OS === 'ios' ? Math.max(insets.top + 4, 8) : Math.max(16, width * 0.04),
       left: 64,
       right: 16,
-      zIndex: 10,
+      zIndex: 90,
       ...Platform.select({
         android: {
-          elevation: 10,
+          elevation: 90,
         },
       }),
     },
@@ -618,6 +618,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                   style={{ maxHeight: 200 }}
                   contentContainerStyle={{ paddingVertical: 4 }}
                   keyboardShouldPersistTaps="handled"
+                  nestedScrollEnabled={true}
                 >
                   {searchResults.map((result, index) => (
                     <TouchableOpacity

@@ -301,6 +301,11 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       left: 16,
       right: 16,
       zIndex: 90,
+      ...Platform.select({
+        android: {
+          elevation: 90,
+        },
+      }),
     },
     searchBar: {
       flexDirection: 'row',
@@ -501,7 +506,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
           </View>
 
           {/* Search bar - same modal experience whether compulsory or not */}
-          <View style={themedStyles.topSearchContainer}>
+          <View style={themedStyles.topSearchContainer} pointerEvents="box-none">
               <View style={themedStyles.searchBar}>
                 <MaterialCommunityIcons
                   name="magnify"
