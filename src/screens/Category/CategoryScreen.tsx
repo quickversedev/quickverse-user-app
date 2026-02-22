@@ -1,16 +1,16 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import {
-  Dimensions,
-  FlatList,
-  Image,
-  Platform,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Dimensions,
+    FlatList,
+    Image,
+    Platform,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Feather from 'react-native-vector-icons/Feather';
@@ -157,51 +157,55 @@ const CategoryScreen = () => {
                     )}
 
                     {/* Horizontal list of store cards */}
-                    <SectionDivider
-                        text="Browse stores"
-                        style={{ marginVertical: 16, paddingHorizontal: 40 }}
-                        textStyle={{
-                            color: '#4B5563',
-                            fontWeight: '600',
-                            fontFamily: 'serif',
-                            fontStyle: 'italic',
-                            fontSize: 16,
-                        }}
-                    />
+                    {(!isGrocery || (!collectionsLoading && collections.length === 0)) && (
+                        <>
+                            <SectionDivider
+                                text="Browse stores"
+                                style={{ marginVertical: 16, paddingHorizontal: 40 }}
+                                textStyle={{
+                                    color: '#4B5563',
+                                    fontWeight: '600',
+                                    fontFamily: 'serif',
+                                    fontStyle: 'italic',
+                                    fontSize: 16,
+                                }}
+                            />
 
-                    <FlatList
-                        horizontal
-                        data={categoryVendors}
-                        renderItem={({ item }) => (
-                            <View style={{ marginRight: 16 }}>
-                                <VendorCard2
-                                    vendor={item}
-                                    size={160}
-                                    onPress={handleVendorPress}
-                                />
-                            </View>
-                        )}
-                        keyExtractor={(item) => item.shopId}
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.horizontalList}
-                        initialNumToRender={3}
-                        maxToRenderPerBatch={3}
-                        windowSize={3}
-                        removeClippedSubviews={true}
-                    />
+                            <FlatList
+                                horizontal
+                                data={categoryVendors}
+                                renderItem={({ item }) => (
+                                    <View style={{ marginRight: 16 }}>
+                                        <VendorCard2
+                                            vendor={item}
+                                            size={160}
+                                            onPress={handleVendorPress}
+                                        />
+                                    </View>
+                                )}
+                                keyExtractor={(item) => item.shopId}
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.horizontalList}
+                                initialNumToRender={3}
+                                maxToRenderPerBatch={3}
+                                windowSize={3}
+                                removeClippedSubviews={true}
+                            />
 
-                    {/* Full store list with showcase */}
-                    <SectionDivider
-                        text="Stores for you"
-                        style={{ marginVertical: 16, paddingHorizontal: 40 }}
-                        textStyle={{
-                            color: '#4B5563',
-                            fontWeight: '600',
-                            fontFamily: 'serif',
-                            fontStyle: 'italic',
-                            fontSize: 16,
-                        }}
-                    />
+                            {/* Full store list with showcase */}
+                            <SectionDivider
+                                text="Stores for you"
+                                style={{ marginVertical: 16, paddingHorizontal: 40 }}
+                                textStyle={{
+                                    color: '#4B5563',
+                                    fontWeight: '600',
+                                    fontFamily: 'serif',
+                                    fontStyle: 'italic',
+                                    fontSize: 16,
+                                }}
+                            />
+                        </>
+                    )}
                 </>
             )}
         </View>
@@ -234,14 +238,16 @@ const CategoryScreen = () => {
         </View>
     );
 
+    const showStoresList = !isGrocery || (!collectionsLoading && collections.length === 0);
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
             <FlatList
-                data={hasNoVendors ? [] : categoryVendors}
+                data={!showStoresList || hasNoVendors ? [] : categoryVendors}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.shopId}
                 ListHeaderComponent={renderHeader}
-                ListEmptyComponent={renderEmpty}
+                ListEmptyComponent={!showStoresList ? null : renderEmpty}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 removeClippedSubviews={true}
