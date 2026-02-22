@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import { Collection } from '../../../data/collectionsData';
 import { useNavigation } from '@react-navigation/native';
+import React from 'react';
+import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import SectionDivider from '../../../components/common/SectionDivider';
+import { Collection } from '../../../data/collectionsData';
 
 interface CollectionsGridProps {
     collections: Collection[];
@@ -24,7 +24,7 @@ const CollectionsGrid: React.FC<CollectionsGridProps> = ({ collections, shopId }
         // Navigate to a screen where we can show products for this collection
         // Since the prompt didn't specify exactly where, we'll try 'CollectionDetails' or similar if it exists in your app,
         // otherwise fallback to something generic or just log.
-        // For now, let's assume we might want to go to a product listing. 
+        // For now, let's assume we might want to go to a product listing.
         // The user mentioned "collections will be list of various category grouped", so effectively a filter.
         console.log('Pressed collection:', collection.name);
         console.log('Collection Categories:', JSON.stringify(collection.categories.map(c => ({ name: c.name, id: c.id })), null, 2));
@@ -45,10 +45,15 @@ const CollectionsGrid: React.FC<CollectionsGridProps> = ({ collections, shopId }
         <View style={styles.container}>
             <SectionDivider text="Collections" style={styles.sectionDivider} />
             <View style={styles.grid}>
-                {collections.map((collection) => (
+                {collections.map((collection, index) => {
+                    const isLastItem = index === collections.length - 1;
+                    return (
                     <TouchableOpacity
                         key={collection.id}
-                        style={styles.itemContainer}
+                        style={[
+                            styles.itemContainer,
+                            isLastItem && { marginBottom: 54 }
+                        ]}
                         onPress={() => handlePress(collection)}
                     >
                         <View style={styles.imageContainer}>
@@ -62,7 +67,8 @@ const CollectionsGrid: React.FC<CollectionsGridProps> = ({ collections, shopId }
                             {collection.name}
                         </Text>
                     </TouchableOpacity>
-                ))}
+                    );
+                })}
             </View>
         </View>
     );
@@ -86,7 +92,7 @@ const styles = StyleSheet.create({
     },
     itemContainer: {
         width: ITEM_WIDTH,
-        marginBottom: 20,
+        marginBottom: 14,
         alignItems: 'center',
     },
     imageContainer: {
