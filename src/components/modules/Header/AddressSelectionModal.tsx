@@ -58,7 +58,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   const insets = useSafeAreaInsets();
   const { addresses, loading, fetchAddresses } = useAddress();
   const { setSelectedAddress, authData } = useAuth();
-  const { getCurrentLocation } = useLocation();
+  const { getCurrentLocation, checkLocationPermission, requestLocationPermission } = useLocation();
   const isLoggedIn = Boolean(authData?.jwt);
   const [showAddModal, setShowAddModal] = React.useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -186,6 +186,16 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   const handleUseCurrentLocation = async () => {
     setCurrentLocationLoading(true);
     try {
+      let permission = await checkLocationPermission();
+      if (permission !== 'granted') {
+        permission = await requestLocationPermission();
+      }
+
+      if (permission !== 'granted') {
+        console.warn('Location permission denied by user');
+        return;
+      }
+
       const location = await getCurrentLocation();
 
       if (!location.latitude || !location.longitude) {

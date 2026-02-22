@@ -138,15 +138,23 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
 
   const handleGetCurrentLocation = async () => {
     try {
-      // Getting current location...
+      let latitude = currentLocation.latitude;
+      let longitude = currentLocation.longitude;
 
-      // // Get current location and wait for it to be available
-      // const coords = await getCurrentLocation();
-      // //console.log('Current location obtained:', coords);
+      if (!latitude || !longitude) {
+        const coords = await getCurrentLocation();
+        latitude = coords.latitude;
+        longitude = coords.longitude;
+      }
+
+      if (!latitude || !longitude) {
+        console.warn('Could not get current location');
+        return;
+      }
 
       const newLocation = {
-        latitude: Number(currentLocation.latitude),
-        longitude: Number(currentLocation.longitude),
+        latitude: Number(latitude),
+        longitude: Number(longitude),
       };
 
       // Update the map region to center on current location
