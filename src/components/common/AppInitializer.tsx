@@ -144,6 +144,34 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       }
 
       const addresses: Address[] = useAddressStore.getState().addresses as unknown as Address[];
+
+      const applyDefaultLocationFallback = async () => {
+        // Temporarily disabling backend config default location to force Beed fallback
+        // const configDefaultLocation = useConfigStore.getState().getDefaultLocation();
+        // console.log('--- DEBUG AppInitializer using Default Location Fallback ---', configDefaultLocation);
+
+        console.log('--- DEBUG AppInitializer configDefaultLocation missing or disabled, forcing Beed fallback ---');
+        const hardcodedDefaultAddress: Address = {
+            addressID: 'hardcoded-default-location',
+            name: 'Default',
+            phone: '',
+            city: 'Beed',
+            state: 'Maharashtra',
+            tag: 'QV_Current_Location',
+            addressLine1: 'Beed, Maharashtra',
+            addressLine2: '',
+            addressLine3: '',
+            postalCode: '431122',
+            coordinates: {
+                longitude: 75.75312535654565, // Beed lng
+                latitude: 18.990116994328275, // Beed lat
+            },
+            isSavedAddress: false,
+        };
+        setSelectedAddress(hardcodedDefaultAddress);
+        return;
+      };
+
       if (permissionStatus === 'granted' && currentLatitude && currentLongitude) {
         if (addresses && addresses.length > 0) {
           const closest = findClosestAddressWithinRadius(
@@ -158,24 +186,27 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
             setSelectedAddress(closest.address as unknown as Address);
             return;
           }
-        } else {
-             // If user has no addresses (new user), do NOT auto-select "Current Location".
-             // Leaving selectedAddress as null will trigger LocationRequiredModal.
-             return;
         }
 
+        // Either no saved addresses, or no saved address was close enough. Use current GPS location.
         try {
           const components = await getAddressFromCoordinates({
             latitude: currentLatitude,
             longitude: currentLongitude,
           });
 
+          // If reverse geocoding didn't return useful city/state, fall back to default
+          if (!components.city || components.city === 'unknown') {
+            await applyDefaultLocationFallback();
+            return;
+          }
+
           const currentAddress: Address = {
             addressID: 'current-location',
-            name: components.postalCode,
+            name: components.postalCode || 'Current Location',
             phone: '',
-            city: components.city || '',
-            state: components.state || '',
+            city: components.city || 'Pune',
+            state: components.state || 'Maharashtra',
             tag: 'QV_Current_Location',
             addressLine1: components.formatted_address || 'Current Location',
             addressLine2: '',
@@ -190,26 +221,9 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
           setSelectedAddress(currentAddress);
           return;
         } catch (geocodeError) {
-          console.warn('Failed to reverse geocode current location:', geocodeError);
-          // Fallback to a default address if geocoding fails
-          const fallbackAddress: Address = {
-            addressID: 'fallback-current-location',
-            name: 'Current Location',
-            phone: '',
-            city: 'unknown',
-            state: 'unknown',
-            tag: 'QV_Current_Location',
-            addressLine1: 'Current Location',
-            addressLine2: '',
-            addressLine3: '',
-            postalCode: '',
-            coordinates: {
-              longitude: currentLongitude,
-              latitude: currentLatitude,
-            },
-            isSavedAddress: false,
-          };
-          setSelectedAddress(fallbackAddress);
+          console.warn('Failed to reverse geocode current location, using default config:', geocodeError);
+          // Instead of using 'unknown', fallback to the default global location (e.g. Pune)
+          await applyDefaultLocationFallback();
           return;
         }
       } else if (
@@ -218,23 +232,23 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
         addresses.length > 0
       ) {
         // Do not auto-select first/default saved address on new device.
-        // selectedAddress is only set when: (1) restored from storage (same device), or
-        // (2) user has location permission (current location), or (3) user picks in LocationRequiredModal.
+        // Provide the default location so it doesn't get stuck asking via modal.
+        await applyDefaultLocationFallback();
         return;
       } else if (
         (!permissionStatus || permissionStatus !== 'granted') &&
         (!addresses || addresses.length === 0)
       ) {
-        // Do not set any default location (e.g. Pune). User must select location to continue.
+        await applyDefaultLocationFallback();
         return;
       } else if (permissionStatus === 'granted' && (!currentLatitude || !currentLongitude)) {
-        console.warn('Location permission granted but coordinates not available');
+        console.warn('Location permission granted but coordinates not available. Falling back to default.');
+        await applyDefaultLocationFallback();
+        return;
       } else {
-        console.warn('Unexpected state in address initialization:', {
-          permissionStatus,
-          hasLocation: Boolean(currentLatitude && currentLongitude),
-          hasAddresses: Boolean(addresses && addresses.length > 0),
-        });
+        console.warn('Unexpected state in address initialization. Falling back to default.');
+        await applyDefaultLocationFallback();
+        return;
       }
     } catch (e) {
       console.warn('Address initialization failed:', e);
