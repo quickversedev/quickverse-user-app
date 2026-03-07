@@ -11,7 +11,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -564,10 +564,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
             </View>
           )}
           {/* Search Bar Overlay */}
-          <View
-            pointerEvents="box-none"
-            style={themedStyles.searchBarContainer}
-          >
+          <View pointerEvents="box-none" style={themedStyles.searchBarContainer}>
             <View style={themedStyles.searchBar}>
               <View style={themedStyles.searchIconBadge}>
                 <MaterialCommunityIcons name="magnify" size={20} color={getColor('subText')} />

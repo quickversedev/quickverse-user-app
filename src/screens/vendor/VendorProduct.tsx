@@ -120,11 +120,16 @@ const VendorProductComponent: React.FC = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<VendorProductRouteProp>();
   // Allow collection and shopId to be passed
-  const { vendor: routeVendor, searchQuery: initialSearchQuery, collection, shopId: routeShopId } = route.params;
+  const {
+    vendor: routeVendor,
+    searchQuery: initialSearchQuery,
+    collection,
+    shopId: routeShopId,
+  } = route.params;
 
   // Use passed vendor or derive/fallback
-  const vendor = routeVendor || { shopId: routeShopId || '' } as Vendor;
-  console.log("FETCHED STORE DETAILS:", JSON.stringify(vendor, null, 2));
+  const vendor = routeVendor || ({ shopId: routeShopId || '' } as Vendor);
+  console.log('FETCHED STORE DETAILS:', JSON.stringify(vendor, null, 2));
   const shopId = vendor.shopId || routeShopId || '';
 
   // Search state
@@ -146,14 +151,14 @@ const VendorProductComponent: React.FC = () => {
     categories,
     fetchCategories,
     setShopId,
-    fetchCollectionProducts // Destructure new method
+    fetchCollectionProducts, // Destructure new method
   } = useProductsStore();
 
   // Memoized values
   const hasAuth = useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
   const storeStatus = useMemo(() => getStoreStatus(vendor), [vendor]);
   // In collection mode always treat store as active so products are never greyed out; otherwise use vendor open status
-  const isStoreActive = collection ? true : (routeVendor ? storeStatus.isOpen : true);
+  const isStoreActive = collection ? true : routeVendor ? storeStatus.isOpen : true;
 
   // In collection mode, vendor may only have shopId → modals see store as closed. Pass a vendor with store open so add-to-cart works.
   const vendorForModals = useMemo((): Vendor => {
@@ -200,17 +205,35 @@ const VendorProductComponent: React.FC = () => {
 
   // Special effect: For implicit collection mode, fetch products once categories are loaded
   useEffect(() => {
-    if (shopId === API_STORE_ID && !collection && categories.length > 0 && products.length === 0 && !productsLoading && !productsError) {
-      console.log('[VendorProduct] Fetching products for implicit collection mode using categories:', categories.length);
+    if (
+      shopId === API_STORE_ID &&
+      !collection &&
+      categories.length > 0 &&
+      products.length === 0 &&
+      !productsLoading &&
+      !productsError
+    ) {
+      console.log(
+        '[VendorProduct] Fetching products for implicit collection mode using categories:',
+        categories.length
+      );
       const categoryIds = categories.map(c => c.id);
       fetchCollectionProducts(shopId, categoryIds);
     }
-  }, [shopId, collection, categories, products.length, productsLoading, productsError, fetchCollectionProducts]);
+  }, [
+    shopId,
+    collection,
+    categories,
+    products.length,
+    productsLoading,
+    productsError,
+    fetchCollectionProducts,
+  ]);
 
   // Log fetched products
   useEffect(() => {
     if (products && products.length > 0) {
-      console.log("FETCHED PRODUCTS/ITEMS:", JSON.stringify(products, null, 2));
+      console.log('FETCHED PRODUCTS/ITEMS:', JSON.stringify(products, null, 2));
     }
   }, [products]);
 
@@ -262,23 +285,22 @@ const VendorProductComponent: React.FC = () => {
   );
 
   // Map categories to CategoryTabs items; use store category imageURLs when available (regular mode or after fetch in collection mode)
-  const categoriesForTabs: Category[] = useMemo(
-    () => {
-      const sourceCategories = collection ? collection.categories : (categories || []);
-      const storeCategories = categories || [];
-      return sourceCategories.map(c => {
-        const storeCat = storeCategories.find((sc: { id: string; imageURLs?: string[] | null }) => sc.id === c.id);
-        const apiCategory = c as { id: string; name: string; imageURLs?: string[] | null };
-        const imageUrl = storeCat?.imageURLs?.[0] ?? apiCategory.imageURLs?.[0];
-        return {
-          id: c.id,
-          name: c.name,
-          icon: (typeof imageUrl === 'string' && imageUrl) ? imageUrl : Images.bg1,
-        };
-      });
-    },
-    [categories, collection]
-  );
+  const categoriesForTabs: Category[] = useMemo(() => {
+    const sourceCategories = collection ? collection.categories : categories || [];
+    const storeCategories = categories || [];
+    return sourceCategories.map(c => {
+      const storeCat = storeCategories.find(
+        (sc: { id: string; imageURLs?: string[] | null }) => sc.id === c.id
+      );
+      const apiCategory = c as { id: string; name: string; imageURLs?: string[] | null };
+      const imageUrl = storeCat?.imageURLs?.[0] ?? apiCategory.imageURLs?.[0];
+      return {
+        id: c.id,
+        name: c.name,
+        icon: typeof imageUrl === 'string' && imageUrl ? imageUrl : Images.bg1,
+      };
+    });
+  }, [categories, collection]);
 
   // Only include categories that have at least one product (match product.division)
   // When searching, show all categories that have matching products
@@ -464,7 +486,7 @@ const VendorProductComponent: React.FC = () => {
       if (
         firstHeader &&
         selectedCategory !==
-        (firstHeader.item as { type: 'header'; category: Category }).category.id
+          (firstHeader.item as { type: 'header'; category: Category }).category.id
       ) {
         setSelectedCategory(
           (firstHeader.item as { type: 'header'; category: Category }).category.id
@@ -1102,7 +1124,7 @@ const VendorProductComponent: React.FC = () => {
                 onAdd={() => handleAddToCart(product)}
                 onIncrement={() => handleIncrement(product.sku)}
                 onDecrement={() => handleDecrement(product.sku)}
-                disabled={collection ? false : (!isStoreActive || !product.inStock)}
+                disabled={collection ? false : !isStoreActive || !product.inStock}
                 showVariantsCount={true}
                 onPress={() => handleProductPress(product)}
               />
@@ -1151,10 +1173,7 @@ const VendorProductComponent: React.FC = () => {
         <View style={styles.container}>
           {/* Header with Search and Back Button */}
           <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-            >
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
               <Icon name="arrow-left" size={24} color={getColor('text')} />
             </TouchableOpacity>
 
@@ -1196,7 +1215,6 @@ const VendorProductComponent: React.FC = () => {
               <Text style={{ color: getColor('text'), fontSize: 18 }}>✕</Text>
             </TouchableOpacity>
           </Animated.View>
-
 
           {/* Vendor Card */}
           {/* Vendor Card - Only show if not in collection mode */}
@@ -1351,7 +1369,7 @@ const VendorProductComponent: React.FC = () => {
           )}
         </View>
         {/* Product Detail Modal */}
-      </SafeAreaView >
+      </SafeAreaView>
       {selectedProductForDetail && (
         <ProductDetailModal
           visible={productDetailModalVisible}
@@ -1359,8 +1377,7 @@ const VendorProductComponent: React.FC = () => {
           product={selectedProductForDetail}
           vendor={vendorForModals}
         />
-      )
-      }
+      )}
     </>
   );
 };

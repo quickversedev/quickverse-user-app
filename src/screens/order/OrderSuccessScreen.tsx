@@ -129,16 +129,19 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           onPress={handleTrackOrder}
-          style={[styles.primaryButton, {
-            backgroundColor: '#FEDB51',
-            borderWidth: 1,
-            borderColor: '#FEDB51',
-            shadowColor: '#253EA7',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.48,
-            shadowRadius: 2,
-            elevation: 3
-          }]}
+          style={[
+            styles.primaryButton,
+            {
+              backgroundColor: '#FEDB51',
+              borderWidth: 1,
+              borderColor: '#FEDB51',
+              shadowColor: '#253EA7',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.48,
+              shadowRadius: 2,
+              elevation: 3,
+            },
+          ]}
         >
           <ThemeText style={[styles.primaryButtonText, { color: '#111827' }]}>
             Track Order
@@ -146,7 +149,9 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleBackToHome} style={styles.secondaryButton}>
-          <ThemeText style={[styles.secondaryButtonText, { color: '#6B7280' }]}>Back to Home</ThemeText>
+          <ThemeText style={[styles.secondaryButtonText, { color: '#6B7280' }]}>
+            Back to Home
+          </ThemeText>
         </TouchableOpacity>
       </View>
     </View>

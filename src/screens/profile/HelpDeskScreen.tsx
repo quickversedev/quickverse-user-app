@@ -1,13 +1,13 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import RaiseQueryModal from '../../components/common/RaiseQueryModal';
@@ -49,7 +49,13 @@ const HelpDeskScreen: React.FC = () => {
   const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    if (!hasFetchedRef.current && authData?.jwt && authData?.phone && !loading && orders.length === 0) {
+    if (
+      !hasFetchedRef.current &&
+      authData?.jwt &&
+      authData?.phone &&
+      !loading &&
+      orders.length === 0
+    ) {
       hasFetchedRef.current = true;
       // Always fetch 6 orders initially, but display only 3 until "Show More" is clicked
       fetchOrders(authData.jwt, authData.phone, null, 6);

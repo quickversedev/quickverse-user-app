@@ -1,7 +1,15 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo } from 'react';
-import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AnimatedCard from '../../components/common/AnimatedCard';
@@ -403,10 +411,10 @@ const CartScreen: React.FC = () => {
       ) {
         const status = vendor
           ? isStoreOpen({
-            openingTime: vendor.openingTime,
-            closingTime: vendor.closingTime,
-            storeActive: vendor.storeActive,
-          })
+              openingTime: vendor.openingTime,
+              closingTime: vendor.closingTime,
+              storeActive: vendor.storeActive,
+            })
           : null;
 
         // Only show opening time if store is closed due to time (not manually closed)
@@ -414,9 +422,7 @@ const CartScreen: React.FC = () => {
         // If status.isOpen would be true based on time but backend says closed, it's manual
         const nextOpenTime = status?.nextOpeningTime;
         const isTimeBased = vendor?.storeActive !== false && nextOpenTime;
-        const opensAtText = isTimeBased
-          ? ` Opens at ${formatTimeToAMPM(nextOpenTime)}.`
-          : '';
+        const opensAtText = isTimeBased ? ` Opens at ${formatTimeToAMPM(nextOpenTime)}.` : '';
 
         setStoreClosedModal({
           visible: true,
@@ -544,7 +550,13 @@ const CartScreen: React.FC = () => {
     };
 
     initializeCart();
-  }, [vendor?.shopId, authData?.jwt, authData?.phone, checkAndFetchOffers, selectedSmartBizAddress]);
+  }, [
+    vendor?.shopId,
+    authData?.jwt,
+    authData?.phone,
+    checkAndFetchOffers,
+    selectedSmartBizAddress,
+  ]);
 
   // Revalidate coupons when cart contents change
   React.useEffect(() => {
@@ -646,7 +658,14 @@ const CartScreen: React.FC = () => {
   // Return empty state if cart or vendor is not available
   if (isOrderLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: getColor('background'), justifyContent: 'center', alignItems: 'center' }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: getColor('background'),
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
         <ActivityIndicator size="large" color={getColor('primary')} />
         <Text style={{ marginTop: 16, color: getColor('text'), fontSize: 16, fontWeight: '500' }}>
           Placing your order, hold on...
@@ -657,12 +676,32 @@ const CartScreen: React.FC = () => {
 
   if (!cart || !vendor || cartItems.length === 0) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background'), justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: getColor('background'),
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20,
+        }}
+      >
         <MaterialCommunityIcons name="cart-off" size={80} color={getColor('subText')} />
-        <Text style={{ fontSize: 20, fontWeight: '700', color: getColor('text'), marginTop: 20 }}>Your cart is empty</Text>
-        <Text style={{ fontSize: 16, color: getColor('subText'), textAlign: 'center', marginTop: 10 }}>Looks like you haven't added anything to your cart yet.</Text>
+        <Text style={{ fontSize: 20, fontWeight: '700', color: getColor('text'), marginTop: 20 }}>
+          Your cart is empty
+        </Text>
+        <Text
+          style={{ fontSize: 16, color: getColor('subText'), textAlign: 'center', marginTop: 10 }}
+        >
+          Looks like you haven't added anything to your cart yet.
+        </Text>
         <TouchableOpacity
-          style={{ marginTop: 30, backgroundColor: getColor('primary'), paddingHorizontal: 30, paddingVertical: 12, borderRadius: 25 }}
+          style={{
+            marginTop: 30,
+            backgroundColor: getColor('primary'),
+            paddingHorizontal: 30,
+            paddingVertical: 12,
+            borderRadius: 25,
+          }}
           onPress={() => navigation.navigate('MainApp', { screen: 'Home' } as any)}
         >
           <Text style={{ color: '#fff', fontWeight: '700' }}>Start Shopping</Text>
@@ -677,7 +716,9 @@ const CartScreen: React.FC = () => {
       edges={['top', 'bottom']}
     >
       <CartHeader
-        onBack={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('MainApp'))}
+        onBack={() =>
+          navigation.canGoBack() ? navigation.goBack() : navigation.navigate('MainApp')
+        }
         onClearCart={handleClearCart}
       />
 
@@ -877,10 +918,7 @@ const CartScreen: React.FC = () => {
         <View style={styles.storeClosedOverlay}>
           <View style={[styles.storeClosedCard, { backgroundColor: getColor('card') }]}>
             <View
-              style={[
-                styles.storeClosedIconBadge,
-                { backgroundColor: 'rgba(239, 68, 68, 0.12)' },
-              ]}
+              style={[styles.storeClosedIconBadge, { backgroundColor: 'rgba(239, 68, 68, 0.12)' }]}
             >
               <MaterialCommunityIcons name="store-off" size={32} color="#EF4444" />
             </View>

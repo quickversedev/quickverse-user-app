@@ -1,5 +1,12 @@
 import React, { useCallback } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -146,11 +153,7 @@ const CartFooter: React.FC<CartFooterProps> = ({
 
   return (
     <View style={styles.footerBar}>
-      <TouchableOpacity
-        style={styles.addressBox}
-        onPress={handleAddressPress}
-        activeOpacity={0.7}
-      >
+      <TouchableOpacity style={styles.addressBox} onPress={handleAddressPress} activeOpacity={0.7}>
         <View
           style={[
             styles.iconBadge,
@@ -173,11 +176,7 @@ const CartFooter: React.FC<CartFooterProps> = ({
             {address}
           </Text>
         </View>
-        <MaterialCommunityIcons
-          name="chevron-right"
-          size={24}
-          color={getColor('primary')}
-        />
+        <MaterialCommunityIcons name="chevron-right" size={24} color={getColor('primary')} />
       </TouchableOpacity>
 
       <TouchableOpacity

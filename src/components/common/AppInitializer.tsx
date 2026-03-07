@@ -62,11 +62,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     fetchError: _addressError,
     loadAddressesFromStorage,
   } = useAddress();
-  const {
-    fetchInitialConfig,
-    loading: configLoading,
-    error: _configError,
-  } = useConfig();
+  const { fetchInitialConfig, loading: configLoading, error: _configError } = useConfig();
   const { fetchTheme } = useThemeStore();
   const { fetchPages, loading: pagesLoading } = usePages();
   const { fetchOrders } = useOrderStore();
@@ -150,23 +146,25 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
         // const configDefaultLocation = useConfigStore.getState().getDefaultLocation();
         // console.log('--- DEBUG AppInitializer using Default Location Fallback ---', configDefaultLocation);
 
-        console.log('--- DEBUG AppInitializer configDefaultLocation missing or disabled, forcing Beed fallback ---');
+        console.log(
+          '--- DEBUG AppInitializer configDefaultLocation missing or disabled, forcing Beed fallback ---'
+        );
         const hardcodedDefaultAddress: Address = {
-            addressID: 'hardcoded-default-location',
-            name: 'Default',
-            phone: '',
-            city: 'Beed',
-            state: 'Maharashtra',
-            tag: 'QV_Current_Location',
-            addressLine1: 'Beed, Maharashtra',
-            addressLine2: '',
-            addressLine3: '',
-            postalCode: '431122',
-            coordinates: {
-                longitude: 75.75312535654565, // Beed lng
-                latitude: 18.990116994328275, // Beed lat
-            },
-            isSavedAddress: false,
+          addressID: 'hardcoded-default-location',
+          name: 'Default',
+          phone: '',
+          city: 'Beed',
+          state: 'Maharashtra',
+          tag: 'QV_Current_Location',
+          addressLine1: 'Beed, Maharashtra',
+          addressLine2: '',
+          addressLine3: '',
+          postalCode: '431122',
+          coordinates: {
+            longitude: 75.75312535654565, // Beed lng
+            latitude: 18.990116994328275, // Beed lat
+          },
+          isSavedAddress: false,
         };
         setSelectedAddress(hardcodedDefaultAddress);
         return;
@@ -221,7 +219,10 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
           setSelectedAddress(currentAddress);
           return;
         } catch (geocodeError) {
-          console.warn('Failed to reverse geocode current location, using default config:', geocodeError);
+          console.warn(
+            'Failed to reverse geocode current location, using default config:',
+            geocodeError
+          );
           // Instead of using 'unknown', fallback to the default global location (e.g. Pune)
           await applyDefaultLocationFallback();
           return;
@@ -242,7 +243,9 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
         await applyDefaultLocationFallback();
         return;
       } else if (permissionStatus === 'granted' && (!currentLatitude || !currentLongitude)) {
-        console.warn('Location permission granted but coordinates not available. Falling back to default.');
+        console.warn(
+          'Location permission granted but coordinates not available. Falling back to default.'
+        );
         await applyDefaultLocationFallback();
         return;
       } else {
@@ -253,13 +256,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     } catch (e) {
       console.warn('Address initialization failed:', e);
     }
-  }, [
-    selectedAddress,
-    permissionStatus,
-    currentLatitude,
-    currentLongitude,
-    setSelectedAddress,
-  ]);
+  }, [selectedAddress, permissionStatus, currentLatitude, currentLongitude, setSelectedAddress]);
 
   const initializeApp = useCallback(async (): Promise<void> => {
     if (initializationRef.current) return;

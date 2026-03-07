@@ -26,10 +26,13 @@ export const useAddress = () => {
   //   fetchAddresses();
   // }, [fetchAddresses]);
 
-  const handleAddAddress = useCallback(async (newAddress: NewAddress) => {
-    const result = await addAddress(newAddress, authData as AuthSession);
-    return result;
-  }, [addAddress, authData]);
+  const handleAddAddress = useCallback(
+    async (newAddress: NewAddress) => {
+      const result = await addAddress(newAddress, authData as AuthSession);
+      return result;
+    },
+    [addAddress, authData]
+  );
 
   const retryFetch = useCallback(() => {
     clearFetchError();
@@ -42,39 +45,42 @@ export const useAddress = () => {
     return fetchAddresses(authData as AuthSession);
   }, [authData, fetchAddresses]);
 
-  return useMemo(() => ({
-    // State
-    addresses,
-    loading,
-    addingLoading,
-    fetchError,
-    addError,
+  return useMemo(
+    () => ({
+      // State
+      addresses,
+      loading,
+      addingLoading,
+      fetchError,
+      addError,
 
-    // Actions
-    fetchAddresses: stableFetchAddresses,
-    addAddress: handleAddAddress,
-    retryFetch,
-    clearFetchError,
-    clearAddError,
-    setFetchError,
-    setAddError,
-    loadAddressesFromStorage,
-    // Computed values
-    hasAddresses: addresses.length > 0,
-    defaultAddress: addresses.find(addr => addr.tag === 'Home'), // Use tag instead of isDefault
-  }), [
-    addresses,
-    loading,
-    addingLoading,
-    fetchError,
-    addError,
-    stableFetchAddresses,
-    handleAddAddress,
-    retryFetch,
-    clearFetchError,
-    clearAddError,
-    setFetchError,
-    setAddError,
-    loadAddressesFromStorage
-  ]);
+      // Actions
+      fetchAddresses: stableFetchAddresses,
+      addAddress: handleAddAddress,
+      retryFetch,
+      clearFetchError,
+      clearAddError,
+      setFetchError,
+      setAddError,
+      loadAddressesFromStorage,
+      // Computed values
+      hasAddresses: addresses.length > 0,
+      defaultAddress: addresses.find(addr => addr.tag === 'Home'), // Use tag instead of isDefault
+    }),
+    [
+      addresses,
+      loading,
+      addingLoading,
+      fetchError,
+      addError,
+      stableFetchAddresses,
+      handleAddAddress,
+      retryFetch,
+      clearFetchError,
+      clearAddError,
+      setFetchError,
+      setAddError,
+      loadAddressesFromStorage,
+    ]
+  );
 };

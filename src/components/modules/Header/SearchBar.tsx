@@ -35,10 +35,10 @@ const SearchBarContent: React.FC<{ placeholder?: string }> = ({ placeholder }) =
           },
         ]}
       >
-        <Icon name="search" size={22} color={"#9CA3AF"} style={styles.icon} />
+        <Icon name="search" size={22} color={'#9CA3AF'} style={styles.icon} />
         <TextInput
-          placeholder={placeholder || "Search for shops, products etc."}
-          placeholderTextColor={"#9CA3AF"}
+          placeholder={placeholder || 'Search for shops, products etc.'}
+          placeholderTextColor={'#9CA3AF'}
           style={[
             styles.input,
             {

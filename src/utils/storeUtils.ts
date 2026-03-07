@@ -116,7 +116,8 @@ export const isStoreOpen = (config: StoreTimeConfig): StoreStatus => {
 
   try {
     // Validate time format (supports HH:MM AM/PM, HH:MM, and HH.MM.SS)
-    const timeRegex = /^([0-1]?[0-9]|2[0-3])[.:][0-5][0-9]([.:][0-5][0-9])?$|^([0-9]|0[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/;
+    const timeRegex =
+      /^([0-1]?[0-9]|2[0-3])[.:][0-5][0-9]([.:][0-5][0-9])?$|^([0-9]|0[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/;
     if (!timeRegex.test(openingTime) || !timeRegex.test(closingTime)) {
       return {
         isOpen: false,
@@ -373,14 +374,21 @@ export const getNextOpeningTime = (config: StoreTimeConfig): string => {
  * @param lon2 - Longitude of second point
  * @returns Distance in kilometers
  */
-export const getApproxDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+export const getApproxDistanceKm = (
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number => {
   const R = 6371; // Earth's radius in kilometers
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -393,6 +401,11 @@ export const getApproxDistanceKm = (lat1: number, lon1: number, lat2: number, lo
  * @param lon2 - Longitude of second point
  * @returns Distance in meters
  */
-export const getApproxDistanceMeters = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+export const getApproxDistanceMeters = (
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number => {
   return getApproxDistanceKm(lat1, lon1, lat2, lon2) * 1000;
 };

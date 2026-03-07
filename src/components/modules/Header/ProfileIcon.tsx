@@ -15,9 +15,7 @@ export const ProfileIcon = () => {
   };
 
   return (
-    <TouchableOpacity
-      onPress={handleProfilePress}
-    >
+    <TouchableOpacity onPress={handleProfilePress}>
       <Icon name="account-circle" size={40} color="#111827" />
     </TouchableOpacity>
   );

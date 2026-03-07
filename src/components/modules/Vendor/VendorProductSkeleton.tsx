@@ -300,7 +300,7 @@ const VendorProductSkeleton: React.FC<VendorProductSkeletonProps> = ({ showVendo
       <View style={styles.categoryHeader}>
         <View style={styles.categoryHeaderLine} />
         <View style={[styles.categoryHeaderText, { marginHorizontal: 8 }]}>
-           <ShimmerOverlay />
+          <ShimmerOverlay />
         </View>
         <View style={styles.categoryHeaderLine} />
       </View>
@@ -379,10 +379,10 @@ const VendorProductSkeleton: React.FC<VendorProductSkeletonProps> = ({ showVendo
         {/* <View style={styles.sectionDividerText}>
           <ShimmerOverlay />
         </View> */}
-         <View style={[styles.sectionDividerText, { width: '80%', alignSelf: 'center', height: 1 } ]}>
-             {/* Divider Line */}
-             <ShimmerOverlay />
-         </View>
+        <View style={[styles.sectionDividerText, { width: '80%', alignSelf: 'center', height: 1 }]}>
+          {/* Divider Line */}
+          <ShimmerOverlay />
+        </View>
       </View>
 
       {/* Main Content: Sidebar + Product List */}

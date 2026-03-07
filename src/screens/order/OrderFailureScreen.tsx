@@ -54,9 +54,7 @@ const OrderFailureScreen: React.FC<OrderFailureScreenProps> = ({ route }) => {
         </ThemeText>
 
         {errorMessage && (
-          <ThemeText style={[styles.errorDetails, { color: '#6B7280' }]}>
-            {errorMessage}
-          </ThemeText>
+          <ThemeText style={[styles.errorDetails, { color: '#6B7280' }]}>{errorMessage}</ThemeText>
         )}
       </View>
 
@@ -64,18 +62,19 @@ const OrderFailureScreen: React.FC<OrderFailureScreenProps> = ({ route }) => {
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           onPress={handleTryAgain}
-          style={[styles.primaryButton, {
-            backgroundColor: '#FEDB51',
-            shadowColor: '#253EA7',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.4,
-            shadowRadius: 2,
-            elevation: 3
-          }]}
+          style={[
+            styles.primaryButton,
+            {
+              backgroundColor: '#FEDB51',
+              shadowColor: '#253EA7',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.4,
+              shadowRadius: 2,
+              elevation: 3,
+            },
+          ]}
         >
-          <ThemeText style={[styles.primaryButtonText, { color: '#111827' }]}>
-            Try Again
-          </ThemeText>
+          <ThemeText style={[styles.primaryButtonText, { color: '#111827' }]}>Try Again</ThemeText>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleBackToHome} style={styles.secondaryButton}>

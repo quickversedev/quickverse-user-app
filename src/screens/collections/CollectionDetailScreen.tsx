@@ -157,13 +157,22 @@ const CollectionDetailScreen: React.FC = () => {
         limit: 1000,
         filters: {
           collection: collection.id,
-          skus: collection.productIds
-        }
+          skus: collection.productIds,
+        },
       });
     }
 
     fetchCategories(collectionsVendorId);
-  }, [collectionsVendorId, collection.id, collection.productIds, fetchProducts, fetchCategories, isVendorConfigured, resetProducts, setShopId]);
+  }, [
+    collectionsVendorId,
+    collection.id,
+    collection.productIds,
+    fetchProducts,
+    fetchCategories,
+    isVendorConfigured,
+    resetProducts,
+    setShopId,
+  ]);
 
   // Map collection categories to vendor categories using "contains match"
   const mappedCategories: CategoryItem[] = useMemo(() => {
@@ -223,7 +232,8 @@ const CollectionDetailScreen: React.FC = () => {
       const vendorCatNameLower = vendorCat.name.toLowerCase();
       for (const collectionCat of collection.categories) {
         const collectionCatNameLower = collectionCat.name.toLowerCase();
-        let isMatch = vendorCatNameLower.includes(collectionCatNameLower) ||
+        let isMatch =
+          vendorCatNameLower.includes(collectionCatNameLower) ||
           collectionCatNameLower.includes(vendorCatNameLower);
 
         if (!isMatch) {
@@ -308,13 +318,13 @@ const CollectionDetailScreen: React.FC = () => {
       if (uncategorizedProducts.length > 0) {
         rows.push({
           type: 'header',
-          category: { id: 'uncategorized', name: 'More Items', icon: Images.bg1 }
+          category: { id: 'uncategorized', name: 'More Items', icon: Images.bg1 },
         });
 
         for (let i = 0; i < uncategorizedProducts.length; i += NUM_COLUMNS) {
           rows.push({
             type: 'products',
-            products: uncategorizedProducts.slice(i, i + NUM_COLUMNS)
+            products: uncategorizedProducts.slice(i, i + NUM_COLUMNS),
           });
         }
       }
@@ -345,7 +355,9 @@ const CollectionDetailScreen: React.FC = () => {
   // Update selected category when filtered categories change
   useEffect(() => {
     if (categoriesWithProducts.length > 0) {
-      const isCurrentCategoryValid = categoriesWithProducts.some(cat => cat.id === selectedCategory);
+      const isCurrentCategoryValid = categoriesWithProducts.some(
+        cat => cat.id === selectedCategory
+      );
       if (!isCurrentCategoryValid) {
         setSelectedCategory(categoriesWithProducts[0].id);
       }
@@ -358,7 +370,9 @@ const CollectionDetailScreen: React.FC = () => {
 
   // Variants state
   const [variantsModalVisible, setVariantsModalVisible] = useState(false);
-  const [selectedProductForVariants, setSelectedProductForVariants] = useState<Product | null>(null);
+  const [selectedProductForVariants, setSelectedProductForVariants] = useState<Product | null>(
+    null
+  );
   const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
 
@@ -407,7 +421,8 @@ const CollectionDetailScreen: React.FC = () => {
       const firstHeader = viewableItems.find(item => item.item.type === 'header');
       if (
         firstHeader &&
-        selectedCategory !== (firstHeader.item as { type: 'header'; category: CategoryItem }).category.id
+        selectedCategory !==
+          (firstHeader.item as { type: 'header'; category: CategoryItem }).category.id
       ) {
         setSelectedCategory(
           (firstHeader.item as { type: 'header'; category: CategoryItem }).category.id
@@ -437,7 +452,10 @@ const CollectionDetailScreen: React.FC = () => {
         listener: (event: { nativeEvent: { contentOffset: { y: number } } }) => {
           const offsetY = event.nativeEvent.contentOffset.y;
           if (offsetY <= 0) {
-            if (categoriesWithProducts.length > 0 && selectedCategory !== categoriesWithProducts[0].id) {
+            if (
+              categoriesWithProducts.length > 0 &&
+              selectedCategory !== categoriesWithProducts[0].id
+            ) {
               setSelectedCategory(categoriesWithProducts[0].id);
             }
           }
@@ -963,7 +981,7 @@ const CollectionDetailScreen: React.FC = () => {
               <Text style={styles.emptyStateMessage}>
                 {searchQuery
                   ? `No products match "${searchQuery}". Try a different search term.`
-                  : 'This collection doesn\'t have any products available at the moment.'}
+                  : "This collection doesn't have any products available at the moment."}
               </Text>
               {searchQuery && (
                 <TouchableOpacity style={styles.clearSearchButton} onPress={handleSearchClose}>

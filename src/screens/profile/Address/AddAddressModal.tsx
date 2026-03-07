@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -243,7 +243,11 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
         ) : (
           <View style={themedStyles.header}>
             <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
-              <MaterialCommunityIcons name="arrow-left-thick" size={25} color={getColor('primary')} />
+              <MaterialCommunityIcons
+                name="arrow-left-thick"
+                size={25}
+                color={getColor('primary')}
+              />
             </TouchableOpacity>
             <Text style={themedStyles.title}>Add Address Details</Text>
             <View style={themedStyles.placeholder} />
@@ -252,9 +256,7 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
 
         {/* Body */}
         {step === 1 ? (
-          <MapLocationStep
-            onLocationSelect={handleLocationSelect}
-          />
+          <MapLocationStep onLocationSelect={handleLocationSelect} />
         ) : (
           <AddressDetailsStep
             location={location}

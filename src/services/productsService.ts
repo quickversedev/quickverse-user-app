@@ -310,42 +310,45 @@ class ProductsService {
     categoryId: string;
   }): Promise<Product[]> {
     try {
-      const url = 'https://smartpos.amazon.in/api-unauthenticated/resources/external/catalog/products?groupVariants=true';
+      const url =
+        'https://smartpos.amazon.in/api-unauthenticated/resources/external/catalog/products?groupVariants=true';
       const payload = {
         shopId: Number(shopId) || shopId, // Try sending as number if possible, or fallback
         filter: {
           isInStock: true,
-          division: categoryId
+          division: categoryId,
         },
         sortingOption: {
-          alphabetical: "ASCENDING"
+          alphabetical: 'ASCENDING',
         },
         offset: 0,
-        limit: 50
+        limit: 50,
       };
 
-      console.log(`[ProductsService] Fetching collection products for shop ${shopId} (type: ${typeof payload.shopId}), category ${categoryId}`);
+      console.log(
+        `[ProductsService] Fetching collection products for shop ${shopId} (type: ${typeof payload.shopId}), category ${categoryId}`
+      );
       console.log(`[ProductsService] URL: ${url}`);
       console.log(`[ProductsService] Payload:`, JSON.stringify(payload));
 
-      const response = await axios.post(
-        url,
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Host': 'smartpos.amazon.in',
-            'User-Agent': 'Mozilla/5.0'
-          }
-        }
-      );
+      const response = await axios.post(url, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          Host: 'smartpos.amazon.in',
+          'User-Agent': 'Mozilla/5.0',
+        },
+      });
 
       console.log(`[ProductsService] Response status: ${response.status}`);
 
       let rawProducts: unknown[] = [];
       if (Array.isArray(response.data)) {
         rawProducts = response.data;
-      } else if (response.data && typeof response.data === 'object' && Array.isArray((response.data as { products?: unknown[] }).products)) {
+      } else if (
+        response.data &&
+        typeof response.data === 'object' &&
+        Array.isArray((response.data as { products?: unknown[] }).products)
+      ) {
         rawProducts = (response.data as { products: unknown[] }).products;
       }
 
@@ -354,13 +357,25 @@ class ProductsService {
         return [];
       }
 
-      console.log(`[ProductsService] Found ${rawProducts.length} products for category ${categoryId}`);
+      console.log(
+        `[ProductsService] Found ${rawProducts.length} products for category ${categoryId}`
+      );
 
       // Normalize each product to our Product shape; SmartPOS may use different image field names
       const pickImageUrl = (p: Record<string, unknown>): string => {
         const keys = [
-          'imageUrl', 'imageURL', 'image', 'primaryImage', 'primaryImageUrl',
-          'thumbnailUrl', 'thumbnail', 'productImage', 'productImageUrl', 'img', 'photoUrl', 'picture',
+          'imageUrl',
+          'imageURL',
+          'image',
+          'primaryImage',
+          'primaryImageUrl',
+          'thumbnailUrl',
+          'thumbnail',
+          'productImage',
+          'productImageUrl',
+          'img',
+          'photoUrl',
+          'picture',
         ];
         for (const k of keys) {
           const v = p[k];
@@ -392,9 +407,17 @@ class ProductsService {
         const p = (raw && typeof raw === 'object' ? raw : {}) as Product & Record<string, unknown>;
         const imageUrl = p.imageUrl || pickImageUrl(p as Record<string, unknown>);
         // SmartPOS may use different keys for stock; default to true so collection products aren't greyed out
-        const inStock = p.inStock ?? (p as Record<string, unknown>).available ?? (p as Record<string, unknown>).in_stock ?? true;
+        const inStock =
+          p.inStock ??
+          (p as Record<string, unknown>).available ??
+          (p as Record<string, unknown>).in_stock ??
+          true;
         // SmartPOS may omit 'veg' indicator for groceries, so default to true unless explicitly false
-        const isVeg = p.veg ?? (p as Record<string, unknown>).isVeg ?? (p as Record<string, unknown>).is_veg ?? true;
+        const isVeg =
+          p.veg ??
+          (p as Record<string, unknown>).isVeg ??
+          (p as Record<string, unknown>).is_veg ??
+          true;
 
         if (!imageUrl && rawProducts[0] === raw && __DEV__) {
           console.log('[ProductsService] Collection product sample keys:', Object.keys(p));
@@ -403,13 +426,16 @@ class ProductsService {
           ...p,
           imageUrl: typeof imageUrl === 'string' ? imageUrl : '',
           inStock: Boolean(inStock),
-          veg: Boolean(isVeg)
+          veg: Boolean(isVeg),
         } as Product;
       });
 
       return products;
     } catch (error) {
-      console.error(`[ProductsService] Error fetching collection products for category ${categoryId}:`, error);
+      console.error(
+        `[ProductsService] Error fetching collection products for category ${categoryId}:`,
+        error
+      );
       return [];
     }
   }

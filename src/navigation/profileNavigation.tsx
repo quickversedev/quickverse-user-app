@@ -1,7 +1,4 @@
-import {
-  CardStyleInterpolators,
-  createStackNavigator,
-} from '@react-navigation/stack';
+import { CardStyleInterpolators, createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 import AddressScreen from '../screens/profile/Address/AddressScreen';
 import OrdersScreen from '../screens/profile/orders/OrdersScreen';
@@ -31,16 +28,8 @@ const ProfileStack = () => {
       }}
     >
       <Stack.Screen name="ProfileMain" component={ProfileScreen} />
-      <Stack.Screen
-        name="Addresses"
-        component={AddressScreen}
-        options={slideFromRightOptions}
-      />
-      <Stack.Screen
-        name="Orders"
-        component={OrdersScreen}
-        options={slideFromRightOptions}
-      />
+      <Stack.Screen name="Addresses" component={AddressScreen} options={slideFromRightOptions} />
+      <Stack.Screen name="Orders" component={OrdersScreen} options={slideFromRightOptions} />
     </Stack.Navigator>
   );
 };

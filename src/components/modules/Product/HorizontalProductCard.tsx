@@ -1,11 +1,5 @@
 import React, { memo, useState } from 'react';
-import {
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -223,19 +217,11 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
       if (quantity > 0) {
         return (
           <View style={styles.quantitySelector}>
-            <TouchableOpacity
-              style={styles.qtyButton}
-              onPress={onDecrement}
-              disabled={isDisabled}
-            >
+            <TouchableOpacity style={styles.qtyButton} onPress={onDecrement} disabled={isDisabled}>
               <Text style={styles.qtyText}>-</Text>
             </TouchableOpacity>
             <Text style={styles.qtyNumber}>{quantity}</Text>
-            <TouchableOpacity
-              style={styles.qtyButton}
-              onPress={onIncrement}
-              disabled={isDisabled}
-            >
+            <TouchableOpacity style={styles.qtyButton} onPress={onIncrement} disabled={isDisabled}>
               <Text style={styles.qtyText}>+</Text>
             </TouchableOpacity>
           </View>
@@ -251,11 +237,7 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
             activeOpacity={0.7}
           >
             <Text style={styles.addButtonText}>ADD</Text>
-            <MaterialCommunityIcons
-              name="plus"
-              size={16}
-              color={getColor('primary')}
-            />
+            <MaterialCommunityIcons name="plus" size={16} color={getColor('primary')} />
           </TouchableOpacity>
           {showVariantsCount && hasMultipleVariants && (
             <Text style={styles.variantsText}>{numberOfVariants} options</Text>
@@ -306,9 +288,7 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
             </View>
             <View style={styles.priceRow}>
               <VegIcon veg={veg} size="xs" />
-              {hasDiscount && (
-                <Text style={styles.mrpText}>₹{mrp}</Text>
-              )}
+              {hasDiscount && <Text style={styles.mrpText}>₹{mrp}</Text>}
               <Text style={styles.sellingPrice}>₹{sellingPrice}</Text>
             </View>
           </View>

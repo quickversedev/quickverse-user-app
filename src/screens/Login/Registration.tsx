@@ -253,10 +253,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegistrationSuccess }) =>
                     placeholder="Enter your full name"
                     placeholderTextColor={theme.colors.placeholder}
                     autoFocus
-                    style={[
-                      styles.input,
-                      error ? { borderColor: theme.colors.error } : null,
-                    ]}
+                    style={[styles.input, error ? { borderColor: theme.colors.error } : null]}
                   />
                   {error ? (
                     <ThemeText

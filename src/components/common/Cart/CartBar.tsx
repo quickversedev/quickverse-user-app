@@ -270,11 +270,7 @@ const CartBar: React.FC<CartBarProps> = ({
               style={dynamicStyles.closeIconContainer}
               hitSlop={{ left: 6, right: 6, top: 6, bottom: 6 }}
             >
-              <MaterialCommunityIcons
-                name="close"
-                size={14}
-                color={getColor('white')}
-              />
+              <MaterialCommunityIcons name="close" size={14} color={getColor('white')} />
             </TouchableOpacity>
 
             {/* Cart icon */}

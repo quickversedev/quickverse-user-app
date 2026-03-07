@@ -31,8 +31,8 @@ const ForYouContentComponent: React.FC<ForYouContentProps> = ({
   const { promotions: bannerData, hasPromotions } = usePromotions('ForYou');
 
   // Filter out closed stores for home screen
-  const vendors = useMemo(() =>
-    allVendors.filter(vendor => getStoreStatus(vendor).isOpen),
+  const vendors = useMemo(
+    () => allVendors.filter(vendor => getStoreStatus(vendor).isOpen),
     [allVendors]
   );
 

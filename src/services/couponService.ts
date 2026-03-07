@@ -77,8 +77,9 @@ const transformCustomerOffer = (
   id: customerOffer.offerId,
   code: customerOffer.offerCode || '',
   description: customerOffer.offerName,
-  discount: `${customerOffer.discountValue}${customerOffer.offerType.includes('PERCENTAGE') ? '%' : '₹'
-    } OFF`,
+  discount: `${customerOffer.discountValue}${
+    customerOffer.offerType.includes('PERCENTAGE') ? '%' : '₹'
+  } OFF`,
   minOrder: customerOffer.minimumOrderAmount,
   expiryDate: `Valid till ${new Date(customerOffer.endDate).toLocaleDateString('en-IN', {
     day: 'numeric',
@@ -303,15 +304,15 @@ class CouponService {
     // Extract applied coupon from smartBizOffer if it exists
     const appliedCoupon = apiResponse.smartBizOffer
       ? {
-        code: apiResponse.smartBizOffer.offerCode || apiResponse.smartBizOffer.offerId,
-        discount:
-          apiResponse.smartBizOffer.discountValue > 0
-            ? `${apiResponse.smartBizOffer.discountValue}%`
-            : `₹${apiResponse.smartBizOffer.totalBenefit || 0}`,
-        minOrder: 0, // This might need to come from a different field
-        offerId: apiResponse.smartBizOffer.offerId,
-        totalBenefit: apiResponse.smartBizOffer.totalBenefit || 0,
-      }
+          code: apiResponse.smartBizOffer.offerCode || apiResponse.smartBizOffer.offerId,
+          discount:
+            apiResponse.smartBizOffer.discountValue > 0
+              ? `${apiResponse.smartBizOffer.discountValue}%`
+              : `₹${apiResponse.smartBizOffer.totalBenefit || 0}`,
+          minOrder: 0, // This might need to come from a different field
+          offerId: apiResponse.smartBizOffer.offerId,
+          totalBenefit: apiResponse.smartBizOffer.totalBenefit || 0,
+        }
       : null;
 
     return {
@@ -327,13 +328,13 @@ class CouponService {
         apiResponse.totalCartAmountWithDeliveryFeeAndBenefit || 0,
       smartBizOffer: apiResponse.smartBizOffer
         ? {
-          offerId: apiResponse.smartBizOffer.offerId,
-          offerCode: apiResponse.smartBizOffer.offerCode ?? null,
-          offerName: apiResponse.smartBizOffer.offerName,
-          offerType: apiResponse.smartBizOffer.offerType,
-          discountValue: apiResponse.smartBizOffer.discountValue,
-          totalBenefit: apiResponse.smartBizOffer.totalBenefit ?? 0,
-        }
+            offerId: apiResponse.smartBizOffer.offerId,
+            offerCode: apiResponse.smartBizOffer.offerCode ?? null,
+            offerName: apiResponse.smartBizOffer.offerName,
+            offerType: apiResponse.smartBizOffer.offerType,
+            discountValue: apiResponse.smartBizOffer.discountValue,
+            totalBenefit: apiResponse.smartBizOffer.totalBenefit ?? 0,
+          }
         : null,
       appliedCoupon,
       products,

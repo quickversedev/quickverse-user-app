@@ -133,20 +133,13 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({
           return (
             <TouchableOpacity
               key={cat.id}
-              style={[
-                styles.item,
-                isActive && styles.itemActive,
-                disabled && { opacity: 0.5 },
-              ]}
+              style={[styles.item, isActive && styles.itemActive, disabled && { opacity: 0.5 }]}
               onPress={() => onSelect(cat.id)}
               activeOpacity={0.7}
             >
               {isActive && <View style={styles.activeIndicator} />}
               <View style={[styles.iconWrapper, isActive && styles.iconWrapperActive]}>
-                <Animated.Image
-                  source={getIconSource(cat.icon)}
-                  style={styles.icon}
-                />
+                <Animated.Image source={getIconSource(cat.icon)} style={styles.icon} />
               </View>
               <ThemeText
                 variant="small"

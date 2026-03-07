@@ -45,7 +45,12 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-const OrderProgress: React.FC<OrderProgressProps> = ({ status, orderCreationTime, category, preparationTime }) => {
+const OrderProgress: React.FC<OrderProgressProps> = ({
+  status,
+  orderCreationTime,
+  category,
+  preparationTime,
+}) => {
   const { theme } = useTheme();
   const activeIndex = getActiveStepIndex(status);
 

@@ -90,30 +90,20 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
 
   const renderSuggestion = ({ item, index }: { item: SearchSuggestion; index: number }) => (
     <TouchableOpacity
-      style={[
-        styles.suggestionItem,
-        index === suggestions.length - 1 && { borderBottomWidth: 0 },
-      ]}
+      style={[styles.suggestionItem, index === suggestions.length - 1 && { borderBottomWidth: 0 }]}
       onPress={() => onSuggestionPress(item.text)}
       activeOpacity={0.6}
     >
       <View style={styles.iconContainer}>
         <MaterialCommunityIcons
           name={item.type === 'smart' ? 'map-marker-outline' : 'magnify'}
-          style={[
-            styles.icon,
-            item.type === 'smart' && styles.smartIcon,
-          ]}
+          style={[styles.icon, item.type === 'smart' && styles.smartIcon]}
         />
       </View>
       <Text style={styles.suggestionText} numberOfLines={1}>
         {item.text}
       </Text>
-      <MaterialCommunityIcons
-        name="arrow-top-left"
-        size={18}
-        color={getColor('subText')}
-      />
+      <MaterialCommunityIcons name="arrow-top-left" size={18} color={getColor('subText')} />
     </TouchableOpacity>
   );
 

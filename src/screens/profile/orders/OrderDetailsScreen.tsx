@@ -2,29 +2,29 @@ import notifee, { AuthorizationStatus } from '@notifee/react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Linking,
-    Modal,
-    PermissionsAndroid,
-    Platform,
-    RefreshControl,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Linking,
+  Modal,
+  PermissionsAndroid,
+  Platform,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SectionDivider } from '../../../components/common';
 import {
-    BillSummaryCard,
-    HelpCard,
-    OrderHeader,
-    OrderInfoCard,
-    OrderProgress,
+  BillSummaryCard,
+  HelpCard,
+  OrderHeader,
+  OrderInfoCard,
+  OrderProgress,
 } from '../../../components/common/OrderDetails';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useNotifications } from '../../../hooks/useNotifications';
@@ -441,9 +441,18 @@ const OrderDetailsScreen = () => {
     // Calculate total based on these components
     // Note: We are aligning the display with the cart logic, even if the stored total might differ slightly.
     // Ideally, these should be stored in the order object from the backend.
-    const total = Number(subTotal) + deliveryFee + platformFee + packagingCharges + taxes + additionalCharges;
+    const total =
+      Number(subTotal) + deliveryFee + platformFee + packagingCharges + taxes + additionalCharges;
 
-    return { subTotal, deliveryFee, additionalCharges, total, platformFee, packagingCharges, taxes };
+    return {
+      subTotal,
+      deliveryFee,
+      additionalCharges,
+      total,
+      platformFee,
+      packagingCharges,
+      taxes,
+    };
   }, [selectedOrder, derivedItems]);
 
   const [showAllItems, setShowAllItems] = React.useState(false);
@@ -666,12 +675,26 @@ const OrderDetailsScreen = () => {
             onPress={handleViewSummary}
           />
 
-          <View style={[styles.itemsCard, { backgroundColor: getColor('card'), flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+          <View
+            style={[
+              styles.itemsCard,
+              {
+                backgroundColor: getColor('card'),
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              },
+            ]}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <Icon name="headset" size={24} color={getColor('primary')} />
               <View style={{ marginLeft: 12 }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: getColor('text') }}>QuickVerse Support</Text>
-                <Text style={{ fontSize: 12, color: getColor('subText'), marginTop: 2 }}>We are available to help</Text>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: getColor('text') }}>
+                  QuickVerse Support
+                </Text>
+                <Text style={{ fontSize: 12, color: getColor('subText'), marginTop: 2 }}>
+                  We are available to help
+                </Text>
               </View>
             </View>
             <TouchableOpacity

@@ -43,8 +43,8 @@ const GroceryContentComponent: React.FC<GroceryContentProps> = ({
   // Directly use vendor store - filter out closed stores
   const { getVendorsByCategory } = useVendorStore();
   const allGroceryVendors = getVendorsByCategory('Grocery');
-  const groceryVendors = useMemo(() =>
-    allGroceryVendors.filter(vendor => getStoreStatus(vendor).isOpen),
+  const groceryVendors = useMemo(
+    () => allGroceryVendors.filter(vendor => getStoreStatus(vendor).isOpen),
     [allGroceryVendors]
   );
   const hasVendors = groceryVendors.length > 0;

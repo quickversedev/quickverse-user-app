@@ -85,23 +85,23 @@ const ProfileScreen = () => {
   const features: FeatureItem[] = [
     ...(isLoggedIn
       ? [
-        {
-          id: 'addresses',
-          title: 'Addresses',
-          icon: 'map-marker-outline',
-          onPress: () => {
-            navigation.navigate('Address');
+          {
+            id: 'addresses',
+            title: 'Addresses',
+            icon: 'map-marker-outline',
+            onPress: () => {
+              navigation.navigate('Address');
+            },
           },
-        },
-        {
-          id: 'orders',
-          title: 'Orders',
-          icon: 'package-variant',
-          onPress: () => {
-            navigation.navigate('Orders');
+          {
+            id: 'orders',
+            title: 'Orders',
+            icon: 'package-variant',
+            onPress: () => {
+              navigation.navigate('Orders');
+            },
           },
-        },
-      ]
+        ]
       : []),
     {
       id: 'help',

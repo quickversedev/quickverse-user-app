@@ -1,12 +1,12 @@
 import React, { memo, useMemo } from 'react';
 import {
-    Dimensions,
-    Image,
-    ImageSourcePropType,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Image,
+  ImageSourcePropType,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
@@ -121,20 +121,20 @@ const createStyles = (
         size === 'xs'
           ? getTypography('caption') - 3
           : size === 'big'
-            ? getTypography('body')
-            : getTypography('caption') - 2,
+          ? getTypography('body')
+          : getTypography('caption') - 2,
       lineHeight:
         (size === 'xs'
           ? getTypography('caption') - 3
           : size === 'big'
-            ? getTypography('body')
-            : getTypography('caption') - 2) * 1.2,
+          ? getTypography('body')
+          : getTypography('caption') - 2) * 1.2,
       minHeight:
         (size === 'xs'
           ? getTypography('caption') - 3
           : size === 'big'
-            ? getTypography('body')
-            : getTypography('caption') - 2) *
+          ? getTypography('body')
+          : getTypography('caption') - 2) *
         1.2 *
         2,
       fontWeight: 'bold',
@@ -160,8 +160,8 @@ const createStyles = (
         size === 'xs'
           ? getTypography('caption') - 2
           : size === 'big'
-            ? getTypography('body')
-            : getTypography('caption'),
+          ? getTypography('body')
+          : getTypography('caption'),
       textDecorationLine: 'line-through',
       marginRight: size === 'xs' ? 4 : 6,
     },
@@ -171,8 +171,8 @@ const createStyles = (
         size === 'xs'
           ? getTypography('caption') - 2
           : size === 'big'
-            ? getTypography('body')
-            : getTypography('caption'),
+          ? getTypography('body')
+          : getTypography('caption'),
       fontWeight: 'bold',
     },
     disabledOverlay: {
@@ -335,8 +335,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
       <View style={styles.priceRow}>
         <View style={styles.priceLeft}>
-          {showMrp && <Text style={[styles.mrp, isOutOfStock && { opacity: 0.6 }]}>₹{(mrp ?? 0).toFixed(2)}</Text>}
-          <Text style={[styles.price, isOutOfStock && { opacity: 0.6 }]}>₹{(price ?? 0).toFixed(2)}</Text>
+          {showMrp && (
+            <Text style={[styles.mrp, isOutOfStock && { opacity: 0.6 }]}>
+              ₹{(mrp ?? 0).toFixed(2)}
+            </Text>
+          )}
+          <Text style={[styles.price, isOutOfStock && { opacity: 0.6 }]}>
+            ₹{(price ?? 0).toFixed(2)}
+          </Text>
         </View>
         <View style={{ marginRight: 4 }}>
           <VegIcon veg={veg} size="xs" />

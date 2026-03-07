@@ -15,7 +15,12 @@ interface VendorHeaderCardProps {
   containerStyle?: ViewStyle;
 }
 
-const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({ vendor, onPress, style, containerStyle }) => {
+const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({
+  vendor,
+  onPress,
+  style,
+  containerStyle,
+}) => {
   const { getColor, theme } = useTheme();
   const navigation = useNavigation();
   const scale = useRef(new Animated.Value(1)).current;

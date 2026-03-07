@@ -7,9 +7,7 @@ export interface InitialConfigResponse {
     longitude: string;
   };
   deliveryDistance: number;
-
 }
-
 
 export interface InitialConfigParams {
   longitude?: string;

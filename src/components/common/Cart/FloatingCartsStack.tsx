@@ -1,5 +1,15 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, Easing, LayoutAnimation, Platform, StyleSheet, TouchableOpacity, UIManager, View } from 'react-native';
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  LayoutAnimation,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  UIManager,
+  View,
+} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { TabBarVisibilityContext } from '../../../navigation/TabNavigation';
@@ -14,10 +24,7 @@ const ANIMATION_DURATION = 300;
 
 // Enable LayoutAnimation for Android
 // Enable LayoutAnimation for Android
-if (
-  Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 

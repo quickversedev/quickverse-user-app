@@ -58,7 +58,11 @@ const useAddressStore = create<AddressStore>((set, get) => ({
         fetchError: null,
       });
 
-      console.log('[AddressStore] fetchAddresses - Store updated with', addressesWithSavedFlag.length, 'addresses');
+      console.log(
+        '[AddressStore] fetchAddresses - Store updated with',
+        addressesWithSavedFlag.length,
+        'addresses'
+      );
     } catch (err) {
       console.error('[AddressStore] Error fetching addresses:', err);
       set({

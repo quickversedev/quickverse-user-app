@@ -42,7 +42,7 @@ export const COLLECTION_CATEGORIES_MAPPING: { [key: string]: CollectionCategory[
     { id: 'healthy-snacks', name: 'Healthy Snacks' },
     { id: 'namkeens-bhujia-mixtures', name: 'Namkeens, Bhujia & Mixtures' },
   ],
-  'Biscuits': [
+  Biscuits: [
     { id: 'biscuits-cookies', name: 'Biscuits & Cookies' },
     { id: 'glucose-digestives', name: 'Glucose & Digestives' },
   ],
@@ -76,17 +76,13 @@ export const COLLECTION_CATEGORIES_MAPPING: { [key: string]: CollectionCategory[
     { id: 'skin-care', name: 'Skin Care' },
     { id: 'womens-hygiene', name: 'Women’s Hygiene' },
   ],
-  'Instant Mixes': [
-    { id: 'noodles-pasta-other', name: 'Noodles, Pasta, & Other' },
-  ],
+  'Instant Mixes': [{ id: 'noodles-pasta-other', name: 'Noodles, Pasta, & Other' }],
   'Sauces & Spreads': [
     { id: 'mayonnaise-spreads', name: 'Mayonnaise & Spreads' },
     { id: 'spreads-jams', name: 'Spreads & Jams' },
     { id: 'tomato-ketchup-sauces', name: 'Tomato Ketchup & Sauces' },
   ],
-  'Tea & Coffee': [
-    { id: 'tea-coffee', name: 'Tea & Coffee' },
-  ],
+  'Tea & Coffee': [{ id: 'tea-coffee', name: 'Tea & Coffee' }],
   'Cleaning Essentials': [
     { id: 'bathroom-surface-cleaners', name: 'Bathroom & Surface Cleaners' },
     { id: 'cleaning-accessories', name: 'Cleaning Accessories' },
@@ -99,20 +95,14 @@ export const COLLECTION_CATEGORIES_MAPPING: { [key: string]: CollectionCategory[
     { id: 'health-supplements', name: 'Health Supplements' },
     { id: 'sexual-wellness', name: 'Sexual Wellness' },
   ],
-  'Stationery': [
-    { id: 'school-supplies', name: 'School Supplies' },
-  ],
+  Stationery: [{ id: 'school-supplies', name: 'School Supplies' }],
   'Home Furnishing Décor': [
     { id: 'air-fresheners', name: 'Air Fresheners' },
     { id: 'home-fragrance', name: 'Home Fragrance' },
     { id: 'storage-organization', name: 'Storage & Organization' },
   ],
-  'Electronics': [
-    { id: 'mobile-accessories', name: 'Mobile Accessories' },
-  ],
-  'Pan Corner': [
-    { id: 'tobaco-smoking', name: 'Tobaco & Smoking' },
-  ],
+  Electronics: [{ id: 'mobile-accessories', name: 'Mobile Accessories' }],
+  'Pan Corner': [{ id: 'tobaco-smoking', name: 'Tobaco & Smoking' }],
 };
 
 // API Integration
@@ -121,14 +111,19 @@ const API_BASE_URL = `https://api.smartbiz.in/stores/${API_STORE_ID}`;
 
 import productsService from '../services/productsService';
 
-export const fetchCollectionsFromApi = async (storeId: string = API_STORE_ID): Promise<CollectionSection[]> => {
+export const fetchCollectionsFromApi = async (
+  storeId: string = API_STORE_ID
+): Promise<CollectionSection[]> => {
   try {
     const baseUrl = `https://api.smartbiz.in/stores/${storeId}`;
     console.log(`[CollectionsData] Fetching categories from: ${baseUrl}/category`);
     // Fetch all categories from the API
     const apiCategories = await productsService.fetchCategories(storeId);
     console.log(`[CollectionsData] Fetched ${apiCategories.length} categories`);
-    console.log('[CollectionsData] API Response Categories (Sample):', JSON.stringify(apiCategories.slice(0, 5), null, 2));
+    console.log(
+      '[CollectionsData] API Response Categories (Sample):',
+      JSON.stringify(apiCategories.slice(0, 5), null, 2)
+    );
 
     const collections: Collection[] = [];
 
@@ -142,12 +137,13 @@ export const fetchCollectionsFromApi = async (storeId: string = API_STORE_ID): P
       // We also fallback to the map's name if API name differs slightly, but prefer API data
       mappedCategories.forEach(mappedCat => {
         // Find by ID match OR Name match (case-insensitive) OR fuzzy match
-        const apiCat = apiCategories.find(c =>
-          c.id === mappedCat.id ||
-          c.name.toLowerCase() === mappedCat.name.toLowerCase() ||
-          c.id.toLowerCase() === mappedCat.id.toLowerCase() ||
-          // Fuzzy match: if mapped name is contained in api name or vice versa (be careful with this)
-          c.name.toLowerCase().includes(mappedCat.name.toLowerCase())
+        const apiCat = apiCategories.find(
+          c =>
+            c.id === mappedCat.id ||
+            c.name.toLowerCase() === mappedCat.name.toLowerCase() ||
+            c.id.toLowerCase() === mappedCat.id.toLowerCase() ||
+            // Fuzzy match: if mapped name is contained in api name or vice versa (be careful with this)
+            c.name.toLowerCase().includes(mappedCat.name.toLowerCase())
         );
 
         if (apiCat) {
@@ -167,7 +163,8 @@ export const fetchCollectionsFromApi = async (storeId: string = API_STORE_ID): P
       // If no categories found for this collection, skip it (or add empty if desired, but better to skip)
       if (collectionCategories.length > 0) {
         // 2. Determine an image for the collection (use first category's image from API if available)
-        let collectionImage = 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=270/layout-engine/2022-11/Slice-3_9.png'; // Fallback
+        let collectionImage =
+          'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=270/layout-engine/2022-11/Slice-3_9.png'; // Fallback
         const firstCatWithImage = collectionCategories.find(cat => {
           const apiCat = apiCategories.find(c => c.id === cat.id);
           return apiCat && apiCat.imageURLs && apiCat.imageURLs.length > 0;
@@ -197,12 +194,16 @@ export const fetchCollectionsFromApi = async (storeId: string = API_STORE_ID): P
 
     // Sort collections by name or keep mapped order? Mapped order is better.
 
-    console.log(`[CollectionsData] Generated ${collections.length} synthetic collections with real IDs`);
+    console.log(
+      `[CollectionsData] Generated ${collections.length} synthetic collections with real IDs`
+    );
 
-    return [{
-      title: 'Shop by Category',
-      collections: collections,
-    }];
+    return [
+      {
+        title: 'Shop by Category',
+        collections: collections,
+      },
+    ];
   } catch (error) {
     console.error('Error fetching/mapping collections:', error);
     return [];
@@ -214,7 +215,12 @@ export const fetchCollectionsFromApi = async (storeId: string = API_STORE_ID): P
 export const getCollectionsBySection = (): CollectionSection[] => {
   // This function is still syncing, but the UI should prefer the async fetch
   // For now return empty or static data as fallback
-  const sectionOrder = ['Grocery & Kitchen', 'Snacks & Drinks', 'Beauty & Personal Care', 'Home & Cleaning'];
+  const sectionOrder = [
+    'Grocery & Kitchen',
+    'Snacks & Drinks',
+    'Beauty & Personal Care',
+    'Home & Cleaning',
+  ];
   const sectionMap = new Map<string, Collection[]>();
 
   // ... (Original static logic could remain as offline fallback if desired)

@@ -145,7 +145,10 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         })
       );
 
-      console.log('[VendorStore] API Response data length:', Array.isArray(data) ? data.length : 'Not Array');
+      console.log(
+        '[VendorStore] API Response data length:',
+        Array.isArray(data) ? data.length : 'Not Array'
+      );
 
       // Only update state if this is still the current request
       if (requestId === currentRequestId) {
@@ -165,7 +168,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         status: error.status,
         code: error.code,
         endpoint: error.apiEndpoint,
-        responsedata: error.response?.data || 'No data'
+        responsedata: error.response?.data || 'No data',
       });
 
       // Don't update state if request was aborted
@@ -204,11 +207,13 @@ const useVendorStore = create<VendorStore>((set, get) => ({
     try {
       const authHeader = getAuthHeader();
 
-      const data = await apiCall(axiosInstance.get(`${VENDOR_API_URL}/${shopId}`, {
+      const data = await apiCall(
+        axiosInstance.get(`${VENDOR_API_URL}/${shopId}`, {
           headers: {
             Authorization: authHeader,
           },
-      }));
+        })
+      );
       set({ selectedVendor: data, loading: false });
     } catch (err) {
       set({ error: 'Failed to fetch vendor details', loading: false });

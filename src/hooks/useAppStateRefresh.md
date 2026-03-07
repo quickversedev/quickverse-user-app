@@ -170,4 +170,3 @@ useAppStateRefresh({
 - Refresh only triggers if app was in background for longer than threshold
 - Multiple instances of the hook can be used in the same component
 - The hook is safe to use in nested components
-

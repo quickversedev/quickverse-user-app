@@ -16,7 +16,13 @@ interface AddressCardProps {
   onLongPress?: () => void;
 }
 
-const AddressCard = ({ address, size = 'regular', onPress, isSelected, onLongPress }: AddressCardProps) => {
+const AddressCard = ({
+  address,
+  size = 'regular',
+  onPress,
+  isSelected,
+  onLongPress,
+}: AddressCardProps) => {
   const { getColor, getTypography, theme } = useTheme();
 
   const themedStyles = StyleSheet.create({
@@ -229,7 +235,11 @@ const AddressCard = ({ address, size = 'regular', onPress, isSelected, onLongPre
         <View style={themedStyles.smallCard}>
           <View style={themedStyles.smallContent}>
             <View style={themedStyles.houseIcon}>
-              <MaterialCommunityIcons name="home-outline" size={24} color={getColor('background')} />
+              <MaterialCommunityIcons
+                name="home-outline"
+                size={24}
+                color={getColor('background')}
+              />
             </View>
             <View style={{ flex: 1 }}>
               <Text

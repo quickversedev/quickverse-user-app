@@ -23,11 +23,7 @@ import {
   useBlurOnFulfill,
   useClearByFocusCell,
 } from 'react-native-confirmation-code-field';
-import {
-  getHash,
-  removeListener,
-  startOtpListener,
-} from 'react-native-otp-verify';
+import { getHash, removeListener, startOtpListener } from 'react-native-otp-verify';
 import { Images } from '../../assets';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';

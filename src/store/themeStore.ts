@@ -99,8 +99,8 @@ const useThemeStore = create<ThemeStore>()(
     {
       name: 'theme-storage-v2', // Reset storage to clear persisted dark theme
       storage: createJSONStorage(() => mmkvStorage),
-      partialize: (state) => ({ themeMode: state.themeMode }),
-      onRehydrateStorage: () => (state) => {
+      partialize: state => ({ themeMode: state.themeMode }),
+      onRehydrateStorage: () => state => {
         // After rehydration, set the correct theme based on saved mode
         if (state) {
           // state.theme = state.themeMode === 'dark' ? DefaultTheme : LightTheme;

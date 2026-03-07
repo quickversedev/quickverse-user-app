@@ -84,10 +84,8 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
         const existingProducts = get().products;
         const combinedProducts = [...existingProducts, ...newProducts];
         finalProducts = filterUniqueProducts(combinedProducts);
-
       } else {
         finalProducts = filterUniqueProducts(newProducts);
-
       }
 
       set(state => ({
@@ -196,7 +194,8 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       const normalizeImageUrl = (p: Product & Record<string, unknown>): string => {
         if (typeof p.imageUrl === 'string' && p.imageUrl) return p.imageUrl;
         if (typeof p.image === 'string' && p.image) return p.image;
-        if (typeof (p as { primaryImage?: string }).primaryImage === 'string') return (p as { primaryImage: string }).primaryImage;
+        if (typeof (p as { primaryImage?: string }).primaryImage === 'string')
+          return (p as { primaryImage: string }).primaryImage;
         const urls = (p as { imageURL?: string | string[] }).imageURL;
         if (Array.isArray(urls) && urls[0]) return urls[0];
         if (typeof urls === 'string') return urls;
@@ -215,7 +214,8 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
         })
         .map(product => ({
           ...product,
-          imageUrl: product.imageUrl || normalizeImageUrl(product as Product & Record<string, unknown>),
+          imageUrl:
+            product.imageUrl || normalizeImageUrl(product as Product & Record<string, unknown>),
         }));
 
       set({
@@ -223,11 +223,11 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
         loading: false,
         fullyLoaded: true, // Assuming we fetched everything for these categories
         total: uniqueProducts.length,
-        shopId
+        shopId,
       });
     } catch (error) {
       console.error('[ProductsStore] Error fetching collection products:', error);
       set({ loading: false, error: 'Failed to fetch collection products' });
     }
-  }
+  },
 }));

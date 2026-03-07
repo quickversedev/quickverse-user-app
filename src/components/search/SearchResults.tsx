@@ -164,9 +164,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           <ThemeText variant="body" style={styles.noResultsText}>
             No results found
           </ThemeText>
-          <ThemeText style={styles.noResultsSubText}>
-            Try a different search term
-          </ThemeText>
+          <ThemeText style={styles.noResultsSubText}>Try a different search term</ThemeText>
         </View>
         {onRecentSearchPress && <RecentSearches onSearchPress={onRecentSearchPress} />}
       </View>

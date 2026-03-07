@@ -56,73 +56,80 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     outputRange: ['0deg', '180deg'],
   });
 
-  const { subtotal, deliveryFee, platformFee, packagingCharges, taxes, total, totalDiscountOnItems, couponDiscount, finalTotal } =
-    useMemo(() => {
-      if (!cart) {
-        return {
-          subtotal: 0,
-          deliveryFee: 0,
-          total: 0,
-          totalDiscountOnItems: 0,
-          couponDiscount: 0,
-          finalTotal: 0,
-        };
-      }
-
-      const apiSubtotal = cart.totalCartAmount ?? 0;
-
-      const localSubtotal = Object.values(cart.products).reduce(
-        (sum, product) => sum + product.price * product.quantity,
-        0
-      );
-
-      const calculatedSubtotal = apiSubtotal > 0 ? apiSubtotal : localSubtotal;
-      const calculatedDeliveryFee = cart.deliveryFee ?? (calculatedSubtotal > 0 ? 28 : 0);
-      const calculatedCouponDiscount = cart.smartBizOffer?.totalBenefit ?? 0;
-      const calculatedTotalDiscountOnItems = cart.totalDiscountOnItems ?? 0;
-      const apiTotal = cart.totalCartAmountWithDeliveryFeeAndBenefit ?? 0;
-
-      // Use API total if available, otherwise calculate manually
-      // const calculatedTotal =
-      //   apiTotal > 0
-      //     ? apiTotal
-      //     : calculatedSubtotal -
-      //       calculatedTotalDiscountOnItems -
-      //       calculatedCouponDiscount +
-      //       calculatedDeliveryFee;
-
-
-      // New fee structure as per requirements
-      const platformFee = 5;
-      const packagingCharges = 0;
-      const deliveryCharges = 20;
-      const taxes = Math.round(calculatedSubtotal * 0.05);
-
-      const calculatedTotal =
-        calculatedSubtotal +
-        deliveryCharges +
-        platformFee +
-        packagingCharges +
-        taxes -
-        calculatedTotalDiscountOnItems -
-        calculatedCouponDiscount;
-
-
-      // Calculate final total including COD charges if COD is selected
-      const calculatedFinalTotal = calculatedTotal;
-
+  const {
+    subtotal,
+    deliveryFee,
+    platformFee,
+    packagingCharges,
+    taxes,
+    total,
+    totalDiscountOnItems,
+    couponDiscount,
+    finalTotal,
+  } = useMemo(() => {
+    if (!cart) {
       return {
-        subtotal: calculatedSubtotal,
-        deliveryFee: deliveryCharges, // Override efficiently to 20
-        platformFee,
-        packagingCharges,
-        taxes,
-        total: calculatedTotal,
-        totalDiscountOnItems: calculatedTotalDiscountOnItems,
-        couponDiscount: calculatedCouponDiscount,
-        finalTotal: calculatedFinalTotal,
+        subtotal: 0,
+        deliveryFee: 0,
+        total: 0,
+        totalDiscountOnItems: 0,
+        couponDiscount: 0,
+        finalTotal: 0,
       };
-    }, [cart, codCharges, selectedPaymentOption]);
+    }
+
+    const apiSubtotal = cart.totalCartAmount ?? 0;
+
+    const localSubtotal = Object.values(cart.products).reduce(
+      (sum, product) => sum + product.price * product.quantity,
+      0
+    );
+
+    const calculatedSubtotal = apiSubtotal > 0 ? apiSubtotal : localSubtotal;
+    const calculatedDeliveryFee = cart.deliveryFee ?? (calculatedSubtotal > 0 ? 28 : 0);
+    const calculatedCouponDiscount = cart.smartBizOffer?.totalBenefit ?? 0;
+    const calculatedTotalDiscountOnItems = cart.totalDiscountOnItems ?? 0;
+    const apiTotal = cart.totalCartAmountWithDeliveryFeeAndBenefit ?? 0;
+
+    // Use API total if available, otherwise calculate manually
+    // const calculatedTotal =
+    //   apiTotal > 0
+    //     ? apiTotal
+    //     : calculatedSubtotal -
+    //       calculatedTotalDiscountOnItems -
+    //       calculatedCouponDiscount +
+    //       calculatedDeliveryFee;
+
+    // New fee structure as per requirements
+    const platformFee = 5;
+    const packagingCharges = 0;
+    const deliveryCharges = 20;
+    const taxes = Math.round(calculatedSubtotal * 0.05);
+
+    const calculatedTotal =
+      calculatedSubtotal +
+      deliveryCharges +
+      platformFee +
+      packagingCharges +
+      taxes -
+      calculatedTotalDiscountOnItems -
+      calculatedCouponDiscount;
+
+    // Calculate final total including COD charges if COD is selected
+    const calculatedFinalTotal = calculatedTotal;
+
+    return {
+      subtotal: calculatedSubtotal,
+      deliveryFee: deliveryCharges, // Override efficiently to 20
+      platformFee,
+      packagingCharges,
+      taxes,
+      total: calculatedTotal,
+      totalDiscountOnItems: calculatedTotalDiscountOnItems,
+      couponDiscount: calculatedCouponDiscount,
+      finalTotal: calculatedFinalTotal,
+    };
+  }, [cart, codCharges, selectedPaymentOption]);
 
   const styles = StyleSheet.create({
     paymentSummaryBox: {
@@ -239,11 +246,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
 
   return (
     <View style={styles.paymentSummaryBox}>
-      <TouchableOpacity
-        style={styles.paymentSummaryHeader}
-        onPress={onToggle}
-        activeOpacity={0.7}
-      >
+      <TouchableOpacity style={styles.paymentSummaryHeader} onPress={onToggle} activeOpacity={0.7}>
         <View
           style={[
             styles.iconBadge,
@@ -366,8 +369,6 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
               </ThemeText>
             </View>
           </View>
-
-
 
           {/* Packaging Charges */}
           <View style={styles.billRow}>

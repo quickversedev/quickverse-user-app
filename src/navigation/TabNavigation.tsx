@@ -39,17 +39,16 @@ const TabNavigation = () => {
       Object.values(carts).reduce(
         (sum, cart) =>
           sum +
-          Object.values(cart?.products ?? {}).reduce(
-            (s, p) => s + Number(p?.quantity ?? 0),
-            0
-          ),
+          Object.values(cart?.products ?? {}).reduce((s, p) => s + Number(p?.quantity ?? 0), 0),
         0
       ),
     [carts]
   );
 
   return (
-    <TabBarVisibilityContext.Provider value={{ scrollY, tabBarHeight: TAB_BAR_HEIGHT, tabBarTranslateY, fullTabBarHeight }}>
+    <TabBarVisibilityContext.Provider
+      value={{ scrollY, tabBarHeight: TAB_BAR_HEIGHT, tabBarTranslateY, fullTabBarHeight }}
+    >
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
@@ -74,11 +73,12 @@ const TabNavigation = () => {
           name="Home"
           component={HomeStack}
           options={{
-            tabBarIcon: ({ color, focused }) => (
-              focused ?
-                <HomeFilled width={24} height={24} fill={color} /> :
+            tabBarIcon: ({ color, focused }) =>
+              focused ? (
+                <HomeFilled width={24} height={24} fill={color} />
+              ) : (
                 <HomeOutline width={24} height={24} stroke={color} />
-            ),
+              ),
           }}
         />
 
@@ -87,11 +87,12 @@ const TabNavigation = () => {
           component={CartScreen}
           options={{
             tabBarBadge: cartItemCount > 0 ? cartItemCount : undefined,
-            tabBarIcon: ({ color, focused }) => (
-              focused ?
-                <CartFilled width={24} height={24} fill={color} /> :
+            tabBarIcon: ({ color, focused }) =>
+              focused ? (
+                <CartFilled width={24} height={24} fill={color} />
+              ) : (
                 <CartOutline width={24} height={24} stroke={color} />
-            ),
+              ),
           }}
         />
 
@@ -99,11 +100,12 @@ const TabNavigation = () => {
           name="Explore"
           component={ExploreScreen}
           options={{
-            tabBarIcon: ({ color, focused }) => (
-              focused ?
-                <ExploreFilled width={24} height={24} fill={color} /> :
+            tabBarIcon: ({ color, focused }) =>
+              focused ? (
+                <ExploreFilled width={24} height={24} fill={color} />
+              ) : (
                 <ExploreOutline width={24} height={24} stroke={color} />
-            ),
+              ),
           }}
         />
       </Tab.Navigator>

@@ -246,4 +246,3 @@ adb shell input keyevent KEYCODE_APP_SWITCH
 ```
 
 Happy testing! 🚀
-

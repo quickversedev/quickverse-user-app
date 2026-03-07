@@ -173,16 +173,8 @@ export const HomeScreenSkeleton: React.FC = () => {
 
         {/* Category cards (2 cards like CategoryCards) */}
         <View style={styles.cardsContainer}>
-          <SkeletonItem
-            width={CARD_WIDTH}
-            height={140}
-            borderRadius={16}
-          />
-          <SkeletonItem
-            width={CARD_WIDTH}
-            height={140}
-            borderRadius={16}
-          />
+          <SkeletonItem width={CARD_WIDTH} height={140} borderRadius={16} />
+          <SkeletonItem width={CARD_WIDTH} height={140} borderRadius={16} />
         </View>
 
         {/* Bottom illustration area */}

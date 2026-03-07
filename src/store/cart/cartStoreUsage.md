@@ -9,6 +9,7 @@ The cart store now includes helper functions for optimistic updates with automat
 These functions update the local state immediately and then call the API. If the API fails, they automatically revert to the previous state.
 
 #### 1. `addToCartOptimistic`
+
 ```typescript
 import useCartStore from '../store/cart/cartStore';
 
@@ -25,7 +26,7 @@ try {
       price: 100,
       mrp: 120,
       image: 'image_url',
-      veg: true
+      veg: true,
     },
     'jwt_token_here',
     '+1234567890'
@@ -37,17 +38,13 @@ try {
 ```
 
 #### 2. `incrementOptimistic`
+
 ```typescript
 const { incrementOptimistic } = useCartStore();
 
 // Usage
 try {
-  await incrementOptimistic(
-    'vendor_shop123',
-    'PROD001',
-    'jwt_token_here',
-    '+1234567890'
-  );
+  await incrementOptimistic('vendor_shop123', 'PROD001', 'jwt_token_here', '+1234567890');
 } catch (error) {
   // Handle error - state is already reverted
   console.error('Failed to increment:', error);
@@ -55,17 +52,13 @@ try {
 ```
 
 #### 3. `decrementOptimistic`
+
 ```typescript
 const { decrementOptimistic } = useCartStore();
 
 // Usage
 try {
-  await decrementOptimistic(
-    'vendor_shop123',
-    'PROD001',
-    'jwt_token_here',
-    '+1234567890'
-  );
+  await decrementOptimistic('vendor_shop123', 'PROD001', 'jwt_token_here', '+1234567890');
 } catch (error) {
   // Handle error - state is already reverted
   console.error('Failed to decrement:', error);
@@ -73,17 +66,13 @@ try {
 ```
 
 #### 4. `removeFromCartOptimistic`
+
 ```typescript
 const { removeFromCartOptimistic } = useCartStore();
 
 // Usage
 try {
-  await removeFromCartOptimistic(
-    'vendor_shop123',
-    'PROD001',
-    'jwt_token_here',
-    '+1234567890'
-  );
+  await removeFromCartOptimistic('vendor_shop123', 'PROD001', 'jwt_token_here', '+1234567890');
 } catch (error) {
   // Handle error - state is already reverted
   console.error('Failed to remove from cart:', error);
@@ -95,6 +84,7 @@ try {
 These functions automatically debounce rapid clicks (300ms delay) to prevent API spam:
 
 #### 1. `addToCartDebounced`
+
 ```typescript
 const { addToCartDebounced } = useCartStore();
 
@@ -108,7 +98,7 @@ addToCartDebounced(
     price: 100,
     mrp: 120,
     image: 'image_url',
-    veg: true
+    veg: true,
   },
   'jwt_token_here',
   '+1234567890'
@@ -116,42 +106,30 @@ addToCartDebounced(
 ```
 
 #### 2. `incrementDebounced`
+
 ```typescript
 const { incrementDebounced } = useCartStore();
 
 // Usage - rapid clicks are debounced
-incrementDebounced(
-  'vendor_shop123',
-  'PROD001',
-  'jwt_token_here',
-  '+1234567890'
-);
+incrementDebounced('vendor_shop123', 'PROD001', 'jwt_token_here', '+1234567890');
 ```
 
 #### 3. `decrementDebounced`
+
 ```typescript
 const { decrementDebounced } = useCartStore();
 
 // Usage - rapid clicks are debounced
-decrementDebounced(
-  'vendor_shop123',
-  'PROD001',
-  'jwt_token_here',
-  '+1234567890'
-);
+decrementDebounced('vendor_shop123', 'PROD001', 'jwt_token_here', '+1234567890');
 ```
 
 #### 4. `removeFromCartDebounced`
+
 ```typescript
 const { removeFromCartDebounced } = useCartStore();
 
 // Usage - rapid clicks are debounced
-removeFromCartDebounced(
-  'vendor_shop123',
-  'PROD001',
-  'jwt_token_here',
-  '+1234567890'
-);
+removeFromCartDebounced('vendor_shop123', 'PROD001', 'jwt_token_here', '+1234567890');
 ```
 
 ## Key Benefits

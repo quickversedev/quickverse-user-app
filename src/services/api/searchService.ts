@@ -173,24 +173,25 @@ class SearchService {
    * Search for products in a specific collection/store via Smartbiz API
    */
   async searchCollection(storeId: string, query: string): Promise<SearchProduct[]> {
-    console.log(`[SearchService] searchCollection called with storeId: ${storeId}, query: ${query}`);
+    console.log(
+      `[SearchService] searchCollection called with storeId: ${storeId}, query: ${query}`
+    );
     try {
-      const url = `https://api.smartbiz.in/stores/${storeId}/catalog/items?searchString=${encodeURIComponent(query)}&pageSize=100&offset=0`;
+      const url = `https://api.smartbiz.in/stores/${storeId}/catalog/items?searchString=${encodeURIComponent(
+        query
+      )}&pageSize=100&offset=0`;
       console.log(`[SearchService] Fetching: ${url}`);
 
       // Direct call to Smartbiz API
-      const response = await fetch(
-        url,
-        {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Origin': 'https://www.smartbiz.in',
-            'Referer': 'https://www.smartbiz.in/',
-          }
-        }
-      );
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json, text/plain, */*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          Origin: 'https://www.smartbiz.in',
+          Referer: 'https://www.smartbiz.in/',
+        },
+      });
 
       console.log(`[SearchService] Response status: ${response.status}`);
 
@@ -201,14 +202,17 @@ class SearchService {
       }
 
       const data = await response.json();
-      console.log('[SearchService] Raw data received:', JSON.stringify(data).substring(0, 200) + '...');
+      console.log(
+        '[SearchService] Raw data received:',
+        JSON.stringify(data).substring(0, 200) + '...'
+      );
 
       // Map response to SearchProduct
       // API returns a list of items directly or in a wrapper
       // Based on curl response assumption (standard list or paged list)
       const items = Array.isArray(data)
         ? data
-        : (data.searchResultDataDocuments || data.products || data.items || []);
+        : data.searchResultDataDocuments || data.products || data.items || [];
 
       console.log(`[SearchService] Parsed items count: ${items.length}`);
 
@@ -227,7 +231,6 @@ class SearchService {
 
       console.log(`[SearchService] Mapped items count: ${mappedItems.length}`);
       return mappedItems;
-
     } catch (error) {
       console.error('[SearchService] Smartbiz search failed:', error);
       return [];

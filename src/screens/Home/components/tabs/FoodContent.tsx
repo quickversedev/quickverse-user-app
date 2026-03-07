@@ -43,8 +43,8 @@ const FoodContentComponent: React.FC<FoodContentProps> = ({
   // Subscribe to vendor store changes - filter out closed stores
   const { getVendorsByCategory } = useVendorStore();
   const allFoodVendors = getVendorsByCategory('Food');
-  const foodVendors = useMemo(() =>
-    allFoodVendors.filter(vendor => getStoreStatus(vendor).isOpen),
+  const foodVendors = useMemo(
+    () => allFoodVendors.filter(vendor => getStoreStatus(vendor).isOpen),
     [allFoodVendors]
   );
   const hasVendors = foodVendors.length > 0;

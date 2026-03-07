@@ -14,7 +14,11 @@ import {
   ViewStyle,
   ActivityIndicator,
 } from 'react-native';
-import { Collection, getCollectionsBySection, fetchCollectionsFromApi } from '../../../../data/collectionsData';
+import {
+  Collection,
+  getCollectionsBySection,
+  fetchCollectionsFromApi,
+} from '../../../../data/collectionsData';
 import { RootStackParamList } from '../../../../routes/AppStack';
 import { useTheme } from '../../../../theme/ThemeContext';
 
@@ -54,16 +58,9 @@ const CollectionCard: React.FC<CollectionCardProps> = React.memo(
         activeOpacity={0.7}
       >
         <View style={[styles.imageContainer, { backgroundColor: '#F5F5F5' }]}>
-          <Image
-            source={{ uri: collection.image }}
-            style={styles.cardImage}
-            resizeMode="contain"
-          />
+          <Image source={{ uri: collection.image }} style={styles.cardImage} resizeMode="contain" />
         </View>
-        <Text
-          style={[styles.cardTitle, { color: theme.colors.text }]}
-          numberOfLines={2}
-        >
+        <Text style={[styles.cardTitle, { color: theme.colors.text }]} numberOfLines={2}>
           {collection.name}
         </Text>
       </TouchableOpacity>
@@ -83,7 +80,9 @@ const CollectionsContentComponent: React.FC<CollectionsContentProps> = ({
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   // State for dynamic collections
-  const [sections, setSections] = React.useState<{ title: string; collections: Collection[] }[]>([]);
+  const [sections, setSections] = React.useState<{ title: string; collections: Collection[] }[]>(
+    []
+  );
   const [loading, setLoading] = React.useState(true);
 
   // Fetch collections on mount

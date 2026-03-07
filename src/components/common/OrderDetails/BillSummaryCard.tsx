@@ -74,7 +74,9 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
           </View>
           {platformFee > 0 && (
             <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>Platform Fee</Text>
+              <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>
+                Platform Fee
+              </Text>
               <Text style={[styles.summaryValue, { color: getColor('text') }]}>
                 ₹{platformFee.toFixed(2)}
               </Text>

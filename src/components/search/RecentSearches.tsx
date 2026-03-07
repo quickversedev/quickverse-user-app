@@ -90,9 +90,7 @@ const RecentSearches: React.FC<RecentSearchesProps> = ({ onSearchPress }) => {
             activeOpacity={0.7}
           >
             <MaterialCommunityIcons name="history" size={16} color={getColor('subText')} />
-            <ThemeText style={styles.searchTagText}>
-              {item.text}
-            </ThemeText>
+            <ThemeText style={styles.searchTagText}>{item.text}</ThemeText>
           </TouchableOpacity>
         ))}
       </View>

@@ -28,7 +28,12 @@ import { Vendor } from '../types/vendor';
 export type RootStackParamList = {
   MainApp: undefined;
   Profile: undefined;
-  VendorProduct: { vendor?: Vendor; searchQuery?: string; collection?: Collection; shopId?: string }; // Updated params
+  VendorProduct: {
+    vendor?: Vendor;
+    searchQuery?: string;
+    collection?: Collection;
+    shopId?: string;
+  }; // Updated params
   VendorProfile: { vendor: Vendor };
   VendorDetails: { vendor: Vendor };
   // CollectionProduct removed
@@ -99,11 +104,7 @@ export const AppStack = () => {
       }}
     >
       <Stack.Screen name="MainApp" component={TabNavigation} />
-      <Stack.Screen
-        name="Profile"
-        component={ProfileStack}
-        options={slideFromRightOptions}
-      />
+      <Stack.Screen name="Profile" component={ProfileStack} options={slideFromRightOptions} />
       <Stack.Screen
         name="VendorProduct"
         component={VendorProduct}
@@ -180,11 +181,7 @@ export const AppStack = () => {
           cardStyleInterpolator: CardStyleInterpolators.forFadeFromCenter,
         }}
       />
-      <Stack.Screen
-        name="Coupons"
-        component={CouponsScreen}
-        options={slideFromBottomOptions}
-      />
+      <Stack.Screen name="Coupons" component={CouponsScreen} options={slideFromBottomOptions} />
 
       <Stack.Screen
         name="Search"
@@ -214,21 +211,9 @@ export const AppStack = () => {
           }),
         }}
       />
-      <Stack.Screen
-        name="Address"
-        component={AddressScreen}
-        options={slideFromRightOptions}
-      />
-      <Stack.Screen
-        name="HelpDesk"
-        component={HelpDeskScreen}
-        options={slideFromRightOptions}
-      />
-      <Stack.Screen
-        name="AboutUs"
-        component={AboutUsScreen}
-        options={slideFromRightOptions}
-      />
+      <Stack.Screen name="Address" component={AddressScreen} options={slideFromRightOptions} />
+      <Stack.Screen name="HelpDesk" component={HelpDeskScreen} options={slideFromRightOptions} />
+      <Stack.Screen name="AboutUs" component={AboutUsScreen} options={slideFromRightOptions} />
     </Stack.Navigator>
   );
 };
