@@ -8,7 +8,7 @@ const Stack = createStackNavigator();
 
 // Slide from right animation
 const slideFromRightOptions = {
-  animationEnabled: true,
+  animation: 'default' as const,
   gestureEnabled: true,
   gestureDirection: 'horizontal' as const,
   cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
@@ -23,7 +23,7 @@ const ProfileStack = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        animationEnabled: true,
+        animation: 'default',
         gestureEnabled: true,
       }}
     >

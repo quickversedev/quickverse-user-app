@@ -57,7 +57,7 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 // Default screen transition animation
 const defaultScreenOptions = {
-  animationEnabled: true,
+  animation: 'default' as const,
   gestureEnabled: true,
   gestureDirection: 'horizontal' as const,
   cardStyleInterpolator: Platform.select({
@@ -73,7 +73,7 @@ const defaultScreenOptions = {
 
 // Slide from right animation (for most screens)
 const slideFromRightOptions = {
-  animationEnabled: true,
+  animation: 'default' as const,
   gestureEnabled: true,
   gestureDirection: 'horizontal' as const,
   cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
@@ -85,7 +85,7 @@ const slideFromRightOptions = {
 
 // Slide up animation (for Cart, modals)
 const slideFromBottomOptions = {
-  animationEnabled: true,
+  animation: 'default' as const,
   gestureEnabled: true,
   gestureDirection: 'vertical' as const,
   cardStyleInterpolator: CardStyleInterpolators.forVerticalIOS,
@@ -120,7 +120,7 @@ export const AppStack = () => {
         component={VendorDetails}
         options={{
           presentation: 'modal',
-          animationEnabled: true,
+          animation: 'default',
           gestureEnabled: true,
           gestureDirection: 'vertical-inverted',
           cardStyleInterpolator: ({ current, layouts }) => ({
@@ -167,7 +167,7 @@ export const AppStack = () => {
         name="OrderSuccess"
         component={OrderSuccessScreen}
         options={{
-          animationEnabled: true,
+          animation: 'default',
           gestureEnabled: false,
           cardStyleInterpolator: CardStyleInterpolators.forFadeFromCenter,
         }}
@@ -176,7 +176,7 @@ export const AppStack = () => {
         name="OrderFailure"
         component={OrderFailureScreen}
         options={{
-          animationEnabled: true,
+          animation: 'default',
           gestureEnabled: false,
           cardStyleInterpolator: CardStyleInterpolators.forFadeFromCenter,
         }}
@@ -187,7 +187,7 @@ export const AppStack = () => {
         name="Search"
         component={SearchScreen}
         options={{
-          animationEnabled: true,
+          animation: 'default',
           gestureEnabled: true,
           gestureDirection: 'vertical',
           cardStyleInterpolator: Platform.select({

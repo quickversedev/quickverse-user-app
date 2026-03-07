@@ -175,8 +175,8 @@ const CouponCard: React.FC<{
             isApplied
               ? styles.applyButtonApplied
               : isEligible
-              ? styles.applyButton
-              : styles.applyButtonDisabled
+                ? styles.applyButton
+                : styles.applyButtonDisabled
           }
           onPress={() => isEligible && !isApplied && onApply(coupon.code)}
           disabled={!isEligible || isApplied}

@@ -64,21 +64,30 @@ interface NotificationPayload {
 
 // Custom error types for better error handling
 class NotificationError extends Error {
-  constructor(message: string, public readonly code: string) {
+  constructor(
+    message: string,
+    public readonly code: string
+  ) {
     super(message);
     this.name = 'NotificationError';
   }
 }
 
 class PermissionError extends Error {
-  constructor(message: string, public readonly code: string) {
+  constructor(
+    message: string,
+    public readonly code: string
+  ) {
     super(message);
     this.name = 'PermissionError';
   }
 }
 
 class MessagingError extends Error {
-  constructor(message: string, public readonly code: string) {
+  constructor(
+    message: string,
+    public readonly code: string
+  ) {
     super(message);
     this.name = 'MessagingError';
   }

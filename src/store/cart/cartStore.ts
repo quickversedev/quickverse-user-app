@@ -620,7 +620,7 @@ const useCartStore = create<CartStore>()(
             };
           });
         },
-      } as CartStore),
+      }) as CartStore,
     {
       name: 'cart-storage', // unique name for the storage key
       storage: createJSONStorage(() => mmkvStorage),

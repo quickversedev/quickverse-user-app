@@ -194,7 +194,7 @@ const CartBar: React.FC<CartBarProps> = ({
       }).start();
       setIsRevealed(false);
     } else {
-      navigate('Cart', { cartId });
+      navigate('MainApp', { screen: 'Cart', params: { cartId } });
     }
   };
 

@@ -68,14 +68,17 @@ const HelpDeskScreen: React.FC = () => {
   };
 
   // Group FAQs by title for better organization
-  const groupedFAQs = faqs.reduce((acc, faq, index) => {
-    const id = index.toString();
-    if (!acc[faq.title]) {
-      acc[faq.title] = [];
-    }
-    acc[faq.title].push({ ...faq, id });
-    return acc;
-  }, {} as Record<string, FAQItem[]>);
+  const groupedFAQs = faqs.reduce(
+    (acc, faq, index) => {
+      const id = index.toString();
+      if (!acc[faq.title]) {
+        acc[faq.title] = [];
+      }
+      acc[faq.title].push({ ...faq, id });
+      return acc;
+    },
+    {} as Record<string, FAQItem[]>
+  );
 
   const handleShowMore = async () => {
     setShowMoreOrders(true);

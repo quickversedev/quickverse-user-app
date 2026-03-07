@@ -86,7 +86,7 @@ const useFeaturedProductsStore = create<FeaturedProductsStore>((set, get) => ({
         // Normalize to an array of products whether the API returned an object or array
         const productsSource: MockProduct[] = Array.isArray(response)
           ? (response as MockProduct[])
-          : (response as ProductsApiResponse).products ?? [];
+          : ((response as ProductsApiResponse).products ?? []);
 
         // Apply limit to the fetched products
         const limitedProducts = productsSource.slice(0, limit);

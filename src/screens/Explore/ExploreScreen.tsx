@@ -389,10 +389,10 @@ const ExploreScreen = () => {
     isRefreshing || isAutoRefreshing
       ? 'Refreshing vendors...'
       : selectedAddress?.coordinates
-      ? `5km radius from ${selectedAddress.name || 'your saved address'} (${
-          memoizedVendors.length
-        } vendors)`
-      : '5km radius from your location';
+        ? `5km radius from ${selectedAddress.name || 'your saved address'} (${
+            memoizedVendors.length
+          } vendors)`
+        : '5km radius from your location';
 
   return (
     <View style={styles.container}>

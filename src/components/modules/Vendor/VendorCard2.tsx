@@ -69,8 +69,8 @@ const VendorCard2: React.FC<VendorCardProps> = ({
   const imageSource: ImageSourcePropType | undefined = bannerUri
     ? { uri: bannerUri }
     : logoUri
-    ? { uri: logoUri }
-    : undefined;
+      ? { uri: logoUri }
+      : undefined;
 
   // Hardcoded colors to match screenshot aesthetics
   const COLORS = {

@@ -87,8 +87,8 @@ const AddButton: React.FC<AddButtonProps> = ({
         size === 'xs'
           ? getTypography('small') - 8
           : size === 'small'
-          ? getTypography('small') - 6
-          : getTypography('small') - 5,
+            ? getTypography('small') - 6
+            : getTypography('small') - 5,
       fontWeight: '500',
       fontFamily: 'BricolageGrotesque-Regular',
       textAlign: 'center',

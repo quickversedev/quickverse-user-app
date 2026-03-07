@@ -171,8 +171,8 @@ const VendorCard: React.FC<VendorCardProps> = ({
   const imageSource: ImageSourcePropType | undefined = bannerUri
     ? { uri: bannerUri }
     : logoUri
-    ? { uri: logoUri }
-    : undefined;
+      ? { uri: logoUri }
+      : undefined;
   return (
     <TouchableOpacity
       style={[styles.vendorCard, disabled && styles.vendorCardDisabled]}
