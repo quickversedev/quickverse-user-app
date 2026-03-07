@@ -8,6 +8,7 @@ import { Platform } from 'react-native';
 import LoginScreen from '../screens/Login/loginScreen';
 import OTPScreen from '../screens/Login/OTPScreen';
 import Registration from '../screens/Login/Registration';
+import { useTheme } from '../theme/ThemeContext';
 
 export type LoginStackParamList = {
   LoginScreen: undefined;
@@ -18,15 +19,19 @@ export type LoginStackParamList = {
 const Stack = createStackNavigator();
 
 const LoginStackNavigator = () => {
+  const { theme } = useTheme();
+
   return (
     <Stack.Navigator
       initialRouteName="LoginScreen"
       screenOptions={{
         headerShown: false,
+        cardStyle: { backgroundColor: theme.colors.background },
+        detachPreviousScreen: false,
         // Platform-specific animations
         cardStyleInterpolator: Platform.select({
           ios: CardStyleInterpolators.forHorizontalIOS,
-          android: CardStyleInterpolators.forScaleFromCenterAndroid,
+          android: CardStyleInterpolators.forFadeFromBottomAndroid,
         }),
         // Platform-specific transition specs
         transitionSpec: Platform.select({

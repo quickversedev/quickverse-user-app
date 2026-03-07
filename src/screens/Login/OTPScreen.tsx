@@ -1,5 +1,5 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -23,7 +23,7 @@ import {
   useBlurOnFulfill,
   useClearByFocusCell,
 } from 'react-native-confirmation-code-field';
-import { getHash, removeListener, startOtpListener } from 'react-native-otp-verify';
+import { useOtpVerify } from 'react-native-otp-verify';
 import { Images } from '../../assets';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
@@ -75,32 +75,25 @@ const OTPScreen: React.FC = () => {
     };
   }, [canResend, resendTimeout]);
 
-  // OTP Auto-fill for Android
+  // OTP Auto-fill for Android using useOtpVerify hook
+  const { otp: autoOtp, startListener, hash } = useOtpVerify({ numberOfDigits: CELL_COUNT });
+  const hasAutoSubmitted = useRef(false);
+
+  // Log app hash for backend SMS setup
   useEffect(() => {
-    if (Platform.OS === 'android') {
-      // Get app hash for SMS format (log once for backend setup)
-      getHash()
-        .then(hash => console.log('App Hash for SMS:', hash))
-        .catch(() => {});
-
-      // Start listening for SMS
-      startOtpListener(message => {
-        // Extract 4-digit OTP from SMS
-        const otpMatch = message.match(/(\d{4})/);
-        if (otpMatch && otpMatch[1]) {
-          setValue(otpMatch[1]);
-        }
-      });
+    if (Platform.OS === 'android' && hash.length > 0) {
+      console.log('App Hash for SMS:', hash);
     }
+  }, [hash]);
 
-    return () => {
-      if (Platform.OS === 'android') {
-        removeListener();
-      }
-    };
-  }, []);
+  // Sync hook's auto-detected OTP into input state
+  useEffect(() => {
+    if (autoOtp) {
+      setValue(autoOtp);
+    }
+  }, [autoOtp]);
 
-  const verifyOTP = async () => {
+  const verifyOTP = useCallback(async () => {
     if (value.length !== CELL_COUNT) {
       Alert.alert('Invalid OTP', 'Please enter a valid 4-digit OTP');
       return;
@@ -114,7 +107,18 @@ const OTPScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [value, auth, phoneNumber, currentVerificationId]);
+
+  // Auto-submit when all 4 digits are filled
+  useEffect(() => {
+    if (value.length === CELL_COUNT && !hasAutoSubmitted.current && !loading) {
+      hasAutoSubmitted.current = true;
+      verifyOTP();
+    }
+    if (value.length < CELL_COUNT) {
+      hasAutoSubmitted.current = false;
+    }
+  }, [value, loading, verifyOTP]);
 
   const handleResendOtp = async () => {
     if (!canResend) return;
@@ -123,6 +127,11 @@ const OTPScreen: React.FC = () => {
       setLoading(true);
       const newVerificationId = await auth.sendOtp(phoneNumber);
       setCurrentVerificationId(newVerificationId);
+      setValue('');
+      hasAutoSubmitted.current = false;
+      if (Platform.OS === 'android') {
+        startListener();
+      }
       setResendTimeout(60);
       setCanResend(false);
     } catch (error) {
