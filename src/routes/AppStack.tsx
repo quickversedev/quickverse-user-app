@@ -22,11 +22,18 @@ import ProductDetailDemo from '../screens/vendor/ProductDetailDemo';
 import VendorDetails from '../screens/vendor/VendorDetails';
 import VendorProduct from '../screens/vendor/VendorProduct';
 import VendorProfile from '../screens/vendor/VendorProfile';
+import { NavigatorScreenParams } from '@react-navigation/native';
 import { Order } from '../types/order';
 import { Vendor } from '../types/vendor';
 
+export type TabParamList = {
+  Home: undefined;
+  Cart: { cartId: string } | undefined;
+  Explore: undefined;
+};
+
 export type RootStackParamList = {
-  MainApp: undefined;
+  MainApp: NavigatorScreenParams<TabParamList> | undefined;
   Profile: undefined;
   VendorProduct: {
     vendor?: Vendor;
