@@ -1,9 +1,9 @@
 // src/services/storage.service.ts
-import { createMMKV } from 'react-native-mmkv';
+import { MMKV } from 'react-native-mmkv';
 import { PermissionStatus } from 'react-native-permissions';
 
 // Initialize MMKV
-export const storage = createMMKV();
+export const storage = new MMKV();
 
 /**
  * Zustand-compatible storage adapter for MMKV

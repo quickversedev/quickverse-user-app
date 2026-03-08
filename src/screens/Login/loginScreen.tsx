@@ -10,6 +10,7 @@ import {
   Platform,
   SafeAreaView,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
@@ -18,7 +19,7 @@ import {
 
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import CountryPicker, { Country, CountryCode } from 'react-native-country-picker-modal';
+import { Country, CountryCode } from 'react-native-country-picker-modal';
 import { Images } from '../../assets';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
@@ -341,15 +342,17 @@ const LoginScreen: React.FC = () => {
               Phone number
             </ThemeText>
             <View style={[styles.phoneInputWrapper, error && styles.phoneInputError]}>
-              <CountryPicker
+              {/* <CountryPicker
                 countryCode={countryCode}
                 withFilter
+                visible={false}
                 withFlag
                 withCallingCode
                 withEmoji
                 onSelect={onSelect}
                 containerButtonStyle={styles.countryPicker}
-              />
+              /> */}
+              <Text style={{ fontSize: 28, marginRight: 4 }}>🇮🇳</Text>
               <ThemeText variant="body" color={theme.colors.text} style={styles.callingCode}>
                 +{callingCode}
               </ThemeText>
