@@ -18,7 +18,7 @@ export const mmkvStorage = {
     storage.set(name, value);
   },
   removeItem: (name: string): void => {
-    storage.remove(name);
+    storage.delete(name);
   },
 };
 const AUTH_DATA_KEY = '@AuthData';
@@ -85,7 +85,7 @@ export const getAuthSession = (): AuthSession | undefined => {
  * Removes auth session from storage
  */
 export const removeAuthSession = (): void => {
-  storage.remove(AUTH_DATA_KEY);
+  storage.delete(AUTH_DATA_KEY);
 };
 /**
  * Sets skip permission in storage
@@ -107,7 +107,7 @@ export const getSkipPermission = (): boolean | undefined => {
  * Removes auth token from storage
  */
 export const removeSkipPermission = (): void => {
-  storage.remove(SKIP_PERMISSIONS);
+  storage.delete(SKIP_PERMISSIONS);
 };
 
 /**
@@ -130,7 +130,7 @@ export const getNewUser = (): boolean | undefined => {
  * Removes auth token from storage
  */
 export const removeNewUser = (): void => {
-  storage.remove(NEW_USER_key);
+  storage.delete(NEW_USER_key);
 };
 
 /**
@@ -153,7 +153,7 @@ export const getAlreadyLaunched = (): boolean | undefined => {
  * Removes alreadyLaunched flag from storage
  */
 export const removeAlreadyLaunched = (): void => {
-  storage.remove(ALREADY_LAUNCHED_KEY);
+  storage.delete(ALREADY_LAUNCHED_KEY);
 };
 
 /**
@@ -176,7 +176,7 @@ export const getRegionId = (): string | undefined => {
  * Removes RegionId from storage
  */
 export const removeRegionId = (): void => {
-  storage.remove(REGION_ID_KEY);
+  storage.delete(REGION_ID_KEY);
 };
 
 /**
@@ -214,7 +214,7 @@ export const getUserAddresses = (): any[] | undefined => {
  * Removes user addresses from storage
  */
 export const removeUserAddresses = (): void => {
-  storage.remove(USER_ADDRESSES_KEY);
+  storage.delete(USER_ADDRESSES_KEY);
 };
 
 /**
@@ -283,7 +283,7 @@ export const addRecentSearch = (searchText: string, icon: string = 'magnify'): v
  * Removes recent searches from storage
  */
 export const removeRecentSearches = (): void => {
-  storage.remove(RECENT_SEARCHES_KEY);
+  storage.delete(RECENT_SEARCHES_KEY);
 };
 
 export const StorageService = {
@@ -297,7 +297,7 @@ export const StorageService = {
     return storage.getString(key) ?? undefined;
   },
   removeItem: (key: string): void => {
-    storage.remove(key);
+    storage.delete(key);
   },
 };
 
@@ -329,7 +329,7 @@ export const getLocationCoords = (): StoredCoords | undefined => {
 };
 
 export const removeLocationCoords = (): void => {
-  storage.remove(LOCATION_COORDS_KEY);
+  storage.delete(LOCATION_COORDS_KEY);
 };
 
 export const setLocationPermission = (permission: PermissionStatus): void => {
@@ -341,5 +341,5 @@ export const getLocationPermission = (): PermissionStatus | undefined => {
 };
 
 export const removeLocationPermission = (): void => {
-  storage.remove(LOCATION_PERMISSION_KEY);
+  storage.delete(LOCATION_PERMISSION_KEY);
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
 import PromoBanner from '../../../components/common/promo/PromoBanner';
 
@@ -14,7 +14,7 @@ const STATIC_PROMOTIONS = [
     backgroundColor: '#FFFFFF',
     bannerImage: true,
     // @ts-ignore
-    imageURL: require('../../../assets/images/homePromo/qv-homePromo_1.jpg'),
+    imageURL: require('../../../assets/images/homePromo/qv-homePromo_1.png'),
   },
   {
     shopId: 'static_2',
@@ -24,7 +24,17 @@ const STATIC_PROMOTIONS = [
     backgroundColor: '#FFFFFF',
     bannerImage: true,
     // @ts-ignore
-    imageURL: require('../../../assets/images/homePromo/qv-homePromo_2.jpg'),
+    imageURL: require('../../../assets/images/homePromo/qv-homePromo_2.png'),
+  },
+  {
+    shopId: 'static_3',
+    title: '',
+    subtitle: '',
+    size: 'large',
+    backgroundColor: '#FFFFFF',
+    bannerImage: true,
+    // @ts-ignore
+    imageURL: require('../../../assets/images/homePromo/qv-homePromo_3.png'),
   },
 ];
 

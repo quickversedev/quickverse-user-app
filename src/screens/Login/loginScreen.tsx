@@ -40,6 +40,7 @@ const LoginScreen: React.FC = () => {
   const [lastRequestTime, setLastRequestTime] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [lastVerificationId, setLastVerificationId] = useState<string | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const { theme } = useTheme();
 
@@ -90,6 +91,15 @@ const LoginScreen: React.FC = () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setIsKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setIsKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
     };
   }, []);
 
@@ -223,7 +233,7 @@ const LoginScreen: React.FC = () => {
       justifyContent: 'space-between',
     },
     title: {
-      fontWeight: 'bold',
+      fontFamily: 'BricolageGrotesque-Bold',
       textAlign: 'center',
     },
     subtitle: {
@@ -292,7 +302,7 @@ const LoginScreen: React.FC = () => {
     },
     otpText: {
       textAlign: 'center',
-      fontWeight: 'bold',
+      fontFamily: 'BricolageGrotesque-Bold',
     },
     partneredContainer: {
       position: 'absolute',
@@ -407,12 +417,14 @@ const LoginScreen: React.FC = () => {
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
 
-      <View style={styles.partneredContainer}>
-        <ThemeText variant="caption" color={theme.colors.subText}>
-          Partnered With
-        </ThemeText>
-        <Image source={Images.amazonLogo} style={styles.amazonLogo} />
-      </View>
+      {!isKeyboardVisible && (
+        <View style={styles.partneredContainer}>
+          <ThemeText variant="caption" color={theme.colors.subText}>
+            Partnered With
+          </ThemeText>
+          <Image source={Images.amazonLogo} style={styles.amazonLogo} />
+        </View>
+      )}
     </SafeAreaView>
   );
 };

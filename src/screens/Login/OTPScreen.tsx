@@ -42,6 +42,7 @@ const OTPScreen: React.FC = () => {
   const navigation = useNavigation<OTPScreenNavigationProp>();
   const [value, setValue] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   // Resend OTP Timer
   const [resendTimeout, setResendTimeout] = useState(60);
@@ -81,7 +82,7 @@ const OTPScreen: React.FC = () => {
 
   // Log app hash for backend SMS setup
   useEffect(() => {
-    if (Platform.OS === 'android' && hash.length > 0) {
+    if (Platform.OS === 'android' && hash?.length > 0) {
       console.log('App Hash for SMS:', hash);
     }
   }, [hash]);
@@ -92,6 +93,15 @@ const OTPScreen: React.FC = () => {
       setValue(autoOtp);
     }
   }, [autoOtp]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setIsKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setIsKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const verifyOTP = useCallback(async () => {
     if (value.length !== CELL_COUNT) {
@@ -196,7 +206,7 @@ const OTPScreen: React.FC = () => {
       justifyContent: 'space-between',
     },
     title: {
-      fontWeight: 'bold',
+      fontFamily: 'BricolageGrotesque-Bold',
       textAlign: 'center',
     },
     subtitle: {
@@ -244,7 +254,7 @@ const OTPScreen: React.FC = () => {
     },
     otpText: {
       textAlign: 'center',
-      fontWeight: 'bold',
+      fontFamily: 'BricolageGrotesque-Bold',
     },
     resendContainer: {
       flexDirection: 'row',
@@ -362,12 +372,14 @@ const OTPScreen: React.FC = () => {
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
 
-      <View style={styles.partneredContainer}>
-        <ThemeText variant="caption" color={theme.colors.subText}>
-          Partnered With
-        </ThemeText>
-        <Image source={Images.amazonLogo} style={styles.amazonLogo} />
-      </View>
+      {!isKeyboardVisible && (
+        <View style={styles.partneredContainer}>
+          <ThemeText variant="caption" color={theme.colors.subText}>
+            Partnered With
+          </ThemeText>
+          <Image source={Images.amazonLogo} style={styles.amazonLogo} />
+        </View>
+      )}
     </SafeAreaView>
   );
 };
