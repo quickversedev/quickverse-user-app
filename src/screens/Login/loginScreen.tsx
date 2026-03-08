@@ -10,6 +10,7 @@ import {
   Platform,
   SafeAreaView,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
@@ -18,7 +19,7 @@ import {
 
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import CountryPicker, { Country, CountryCode } from 'react-native-country-picker-modal';
+import { Country, CountryCode } from 'react-native-country-picker-modal';
 import { Images } from '../../assets';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
@@ -39,6 +40,7 @@ const LoginScreen: React.FC = () => {
   const [lastRequestTime, setLastRequestTime] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [lastVerificationId, setLastVerificationId] = useState<string | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const { theme } = useTheme();
 
@@ -89,6 +91,15 @@ const LoginScreen: React.FC = () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setIsKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setIsKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
     };
   }, []);
 
@@ -222,7 +233,7 @@ const LoginScreen: React.FC = () => {
       justifyContent: 'space-between',
     },
     title: {
-      fontWeight: 'bold',
+      fontFamily: 'BricolageGrotesque-Bold',
       textAlign: 'center',
     },
     subtitle: {
@@ -291,7 +302,7 @@ const LoginScreen: React.FC = () => {
     },
     otpText: {
       textAlign: 'center',
-      fontWeight: 'bold',
+      fontFamily: 'BricolageGrotesque-Bold',
     },
     partneredContainer: {
       position: 'absolute',
@@ -341,15 +352,17 @@ const LoginScreen: React.FC = () => {
               Phone number
             </ThemeText>
             <View style={[styles.phoneInputWrapper, error && styles.phoneInputError]}>
-              <CountryPicker
+              {/* <CountryPicker
                 countryCode={countryCode}
                 withFilter
+                visible={false}
                 withFlag
                 withCallingCode
                 withEmoji
                 onSelect={onSelect}
                 containerButtonStyle={styles.countryPicker}
-              />
+              /> */}
+              <Text style={{ fontSize: 28, marginRight: 4 }}>🇮🇳</Text>
               <ThemeText variant="body" color={theme.colors.text} style={styles.callingCode}>
                 +{callingCode}
               </ThemeText>
@@ -404,12 +417,14 @@ const LoginScreen: React.FC = () => {
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
 
-      <View style={styles.partneredContainer}>
-        <ThemeText variant="caption" color={theme.colors.subText}>
-          Partnered With
-        </ThemeText>
-        <Image source={Images.amazonLogo} style={styles.amazonLogo} />
-      </View>
+      {!isKeyboardVisible && (
+        <View style={styles.partneredContainer}>
+          <ThemeText variant="caption" color={theme.colors.subText}>
+            Partnered With
+          </ThemeText>
+          <Image source={Images.amazonLogo} style={styles.amazonLogo} />
+        </View>
+      )}
     </SafeAreaView>
   );
 };
