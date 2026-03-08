@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useRef, useState } from 'react';
 import { Animated, Image, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { Images } from '../../assets';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';

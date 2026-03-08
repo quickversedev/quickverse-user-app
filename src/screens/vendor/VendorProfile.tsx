@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
 import { SectionDivider } from '../../components/common';
 import PromoBanner from '../../components/common/promo/PromoBanner';

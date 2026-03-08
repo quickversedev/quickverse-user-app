@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '@react-native-vector-icons/material-design-icons';
 import LoginButton from '../../components/common/LoginButton';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import deleteUserService from '../../services/deleteUserService';

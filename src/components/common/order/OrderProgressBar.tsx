@@ -11,7 +11,7 @@ import {
   ViewStyle,
   useWindowDimensions,
 } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import useOrderStore from '../../../store/cart/orderStore';
 import useVendorStore from '../../../store/vendorStore';

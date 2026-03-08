@@ -19,7 +19,6 @@ import {
 
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { Country, CountryCode } from 'react-native-country-picker-modal';
 import { Images } from '../../assets';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
@@ -31,7 +30,7 @@ type LoginScreenNavigationProp = StackNavigationProp<LoginStackParamList, 'Login
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const [countryCode, setCountryCode] = useState<CountryCode>('IN');
+  const [countryCode, setCountryCode] = useState<string>('IN');
   const [callingCode, setCallingCode] = useState('91');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,7 +43,7 @@ const LoginScreen: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const { theme } = useTheme();
 
-  const onSelect = (country: Country) => {
+  const onSelect = (country: { cca2: string; callingCode: string[] }) => {
     setCountryCode(country.cca2);
     setCallingCode(country.callingCode[0]);
   };
@@ -352,16 +351,6 @@ const LoginScreen: React.FC = () => {
               Phone number
             </ThemeText>
             <View style={[styles.phoneInputWrapper, error && styles.phoneInputError]}>
-              {/* <CountryPicker
-                countryCode={countryCode}
-                withFilter
-                visible={false}
-                withFlag
-                withCallingCode
-                withEmoji
-                onSelect={onSelect}
-                containerButtonStyle={styles.countryPicker}
-              /> */}
               <Text style={{ fontSize: 28, marginRight: 4 }}>🇮🇳</Text>
               <ThemeText variant="body" color={theme.colors.text} style={styles.callingCode}>
                 +{callingCode}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { Icons } from '../../../assets';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Address } from '../../../types/address';

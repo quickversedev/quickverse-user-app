@@ -9,9 +9,9 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AntDesign from '@react-native-vector-icons/ant-design';
+import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import productsService from '../../../services/productsService';
 import useCartStore from '../../../store/cart/cartStore';

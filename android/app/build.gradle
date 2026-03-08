@@ -73,8 +73,6 @@ def enableProguardInReleaseBuilds = true
  * this variant is about 6MiB larger per architecture than default.
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
-apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
-//
 
 android {
     ndkVersion rootProject.ext.ndkVersion

@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { Images } from '../../../assets';
 import { useAppStateRefresh } from '../../../hooks/useAppStateRefresh';
 import { useOrders } from '../../../hooks/useOrders';

@@ -14,7 +14,7 @@
     "format:all": "npm run format && npm run lint:fix",
     "typecheck": "tsc --noEmit",
     "validate": "npm run lint && npm run format:check && npm run typecheck",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "dependencies": {
     "@notifee/react-native": "^9.1.8",
@@ -32,7 +32,6 @@
     "react": "19.2.3",
     "react-native": "^0.84.1",
     "react-native-confirmation-code-field": "^8.0.1",
-    "react-native-country-picker-modal": "^2.0.0",
     "react-native-device-info": "^15.0.2",
     "react-native-gesture-handler": "^2.30.0",
     "react-native-get-random-values": "^2.0.0",
@@ -48,7 +47,11 @@
     "react-native-screens": "^4.24.0",
     "react-native-svg": "^15.15.3",
     "react-native-svg-transformer": "^1.5.3",
-    "react-native-vector-icons": "^10.3.0",
+    "@react-native-vector-icons/ant-design": "^12.4.1",
+    "@react-native-vector-icons/feather": "^12.4.1",
+    "@react-native-vector-icons/fontawesome6": "^12.3.1",
+    "@react-native-vector-icons/material-design-icons": "^12.4.1",
+    "@react-native-vector-icons/material-icons": "^12.4.1",
     "react-native-worklets": "^0.7.4",
     "uuid": "^13.0.0",
     "zustand": "^5.0.11"
@@ -61,13 +64,11 @@
     "@react-native-community/cli-platform-android": "^20.1.2",
     "@react-native-community/cli-platform-ios": "^20.1.2",
     "@react-native/babel-preset": "^0.84.1",
-    "@react-native/eslint-config": "^0.84.1",
     "@react-native/metro-config": "^0.84.1",
     "@react-native/typescript-config": "^0.84.1",
     "@types/jest": "^30.0.0",
     "@types/lodash.debounce": "^4.0.9",
     "@types/react": "^19.2.14",
-    "@types/react-native-vector-icons": "^6.4.18",
     "@types/react-test-renderer": "^19.0.0",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
@@ -94,6 +95,6 @@
     "@humanwhocodes/object-schema": "@eslint/object-schema",
     "@humanwhocodes/config-array": "@eslint/config-array",
     "rimraf": "^4.4.1",
-    "glob": "^9.3.5"
+    "glob": "^13.0.0"
   }
 }

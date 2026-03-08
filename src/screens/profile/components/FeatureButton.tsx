@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '../../../theme/ThemeContext';
 
 export type FeatureItem = {
@@ -23,7 +23,7 @@ const FeatureButton = ({ item }: { item: FeatureItem }) => {
       onPress={item.onPress}
     >
       <View style={styles.featureContent}>
-        <Icon name={item.icon} size={24} color={iconColor} />
+        <Icon name={item.icon as any} size={24} color={iconColor} />
         <Text style={[styles.featureText, { color: textColor }]}>{item.title}</Text>
       </View>
       <Icon name="chevron-right" size={24} color={iconColor} />
