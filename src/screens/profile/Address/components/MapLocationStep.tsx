@@ -272,7 +272,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     },
     searchBarContainer: {
       position: 'absolute',
-      top: insets.top + 56,
+      top: Platform.OS === 'ios' ? Math.max(insets.top + 12, 16) : insets.top + 12,
       left: 64,
       right: 16,
       zIndex: 90,
@@ -350,7 +350,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     },
     currentLocationButtonContainer: {
       position: 'absolute',
-      bottom: 16,
+      bottom: 36,
       right: 16,
       zIndex: 10,
     },

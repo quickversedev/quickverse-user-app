@@ -133,7 +133,7 @@ const AddAddressScreen = () => {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: Math.max(16, width * 0.04),
-      paddingTop: Platform.OS === 'ios' ? Math.max(insets.top + 4, 8) : Math.max(16, width * 0.04),
+      paddingTop: Platform.OS === 'ios' ? Math.max(insets.top + 12, 16) : insets.top + 12,
       paddingBottom: Math.max(8, width * 0.02),
       backgroundColor: 'transparent',
     },
