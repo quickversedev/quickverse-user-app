@@ -208,6 +208,19 @@ const AddressCard = ({
       color: getColor('primary'),
       fontWeight: '600',
     },
+    defaultBadge: {
+      backgroundColor: `${getColor('primary')}20`,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 4,
+      marginLeft: 8,
+    },
+    defaultBadgeText: {
+      fontSize: 10,
+      color: getColor('primary'),
+      fontWeight: '700',
+      includeFontPadding: false,
+    },
   });
 
   // const handleEdit = () => {
@@ -242,14 +255,21 @@ const AddressCard = ({
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text
-                style={themedStyles.addressType}
-                accessible={true}
-                accessibilityRole="text"
-                accessibilityLabel={`Address type: ${getAddressTag(address)}`}
-              >
-                {getAddressTag(address)}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text
+                  style={themedStyles.addressType}
+                  accessible={true}
+                  accessibilityRole="text"
+                  accessibilityLabel={`Address type: ${getAddressTag(address)}`}
+                >
+                  {getAddressTag(address)}
+                </Text>
+                {address.isDefaultAddress && (
+                  <View style={themedStyles.defaultBadge}>
+                    <Text style={themedStyles.defaultBadgeText}>Default</Text>
+                  </View>
+                )}
+              </View>
               <Text
                 style={themedStyles.smallAddress}
                 accessible={true}
@@ -294,6 +314,11 @@ const AddressCard = ({
             >
               {getAddressTag(address)}
             </Text>
+            {address.isDefaultAddress && (
+              <View style={themedStyles.defaultBadge}>
+                <Text style={themedStyles.defaultBadgeText}>Default</Text>
+              </View>
+            )}
           </View>
 
           <View style={themedStyles.nameSection}>

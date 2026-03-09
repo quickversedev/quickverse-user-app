@@ -31,6 +31,7 @@ export type Address = {
     latitude: number;
   };
   isSavedAddress?: boolean;
+  isDefaultAddress?: boolean;
 };
 
 export type NewAddress = AddressDetails & { isDefaultAddress: boolean };
@@ -41,6 +42,7 @@ export type AddressState = {
   addingLoading: boolean;
   fetchError: string | null;
   addError: string | null;
+  pendingOpenAddressModal: boolean;
 };
 
 export type AddressActions = {
@@ -57,6 +59,7 @@ export type AddressActions = {
   setAddError: (error: string | null) => void;
   clearFetchError: () => void;
   clearAddError: () => void;
+  setPendingOpenAddressModal: (value: boolean) => void;
 };
 
 export type AddressStore = AddressState & AddressActions;

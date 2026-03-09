@@ -14,6 +14,7 @@ import CollectionDetailScreen from '../screens/collections/CollectionDetailScree
 import OrderFailureScreen from '../screens/order/OrderFailureScreen';
 import OrderSuccessScreen from '../screens/order/OrderSuccessScreen';
 import AboutUsScreen from '../screens/profile/AboutUsScreen';
+import AddAddressScreen from '../screens/profile/Address/AddAddressScreen';
 import AddressScreen from '../screens/profile/Address/AddressScreen';
 import HelpDeskScreen from '../screens/profile/HelpDeskScreen';
 import OrderDetailsScreen from '../screens/profile/orders/OrderDetailsScreen';
@@ -55,6 +56,7 @@ export type RootStackParamList = {
 
   Search: undefined;
   Address: undefined;
+  AddAddress: { source?: 'modal' } | undefined;
   HelpDesk: undefined;
   AboutUs: undefined;
   Category: { categoryName: string };
@@ -219,6 +221,11 @@ export const AppStack = () => {
         }}
       />
       <Stack.Screen name="Address" component={AddressScreen} options={slideFromRightOptions} />
+      <Stack.Screen
+        name="AddAddress"
+        component={AddAddressScreen}
+        options={slideFromBottomOptions}
+      />
       <Stack.Screen name="HelpDesk" component={HelpDeskScreen} options={slideFromRightOptions} />
       <Stack.Screen name="AboutUs" component={AboutUsScreen} options={slideFromRightOptions} />
     </Stack.Navigator>

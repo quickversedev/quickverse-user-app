@@ -37,8 +37,6 @@ interface MapLocationStepProps {
 
 const PIN_SIZE = Math.max(48, width * 0.12);
 
-const MAP_HEIGHT = height * 0.54;
-
 const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const { getColor, getTypography, theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -249,26 +247,23 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       flex: 1,
     },
     mapContainer: {
+      flex: 1,
       overflow: 'hidden',
-      height: MAP_HEIGHT,
       width: '100%',
       backgroundColor: getColor('card'),
     },
     map: {
       ...StyleSheet.absoluteFillObject,
-      borderTopLeftRadius: theme.borderRadius.md,
-      borderTopRightRadius: theme.borderRadius.md,
     },
     centerPinContainer: {
-      position: 'absolute',
-      left: width / 2 - PIN_SIZE / 2,
-      top: MAP_HEIGHT / 2 - PIN_SIZE,
-      width: PIN_SIZE,
-      height: PIN_SIZE,
+      ...StyleSheet.absoluteFillObject,
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 20,
       pointerEvents: 'none',
+    },
+    centerPinOffset: {
+      marginTop: -PIN_SIZE / 2,
     },
     centerPin: {
       width: PIN_SIZE,
@@ -277,7 +272,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     },
     searchBarContainer: {
       position: 'absolute',
-      top: Platform.OS === 'ios' ? Math.max(insets.top + 4, 8) : Math.max(16, width * 0.04),
+      top: insets.top + 56,
       left: 64,
       right: 16,
       zIndex: 90,
@@ -355,7 +350,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     },
     currentLocationButtonContainer: {
       position: 'absolute',
-      bottom: 40,
+      bottom: 16,
       right: 16,
       zIndex: 10,
     },
@@ -374,12 +369,11 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       borderColor: getColor('border'),
     },
     bottomSheet: {
-      flex: 1,
       backgroundColor: getColor('card'),
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
       paddingTop: 16,
-      paddingBottom: 24,
+      paddingBottom: insets.bottom + 16,
       paddingHorizontal: 20,
       shadowColor: theme.colors.shadow.color,
       shadowOffset: { width: 0, height: -4 },
@@ -391,7 +385,6 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     bottomSheetContent: {
       width: '100%',
       alignItems: 'center',
-      flex: 1,
     },
     buttonContainer: {
       width: '100%',
@@ -509,7 +502,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   return (
     <View style={{ flex: 1 }}>
       <View
-        style={[themedStyles.outerContainer, { paddingBottom: insets.bottom }]}
+        style={themedStyles.outerContainer}
         accessible={true}
         accessibilityLabel="Map location selection screen"
       >
@@ -560,7 +553,10 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
           {/* Center Pin Overlay - Only show when no search results */}
           {searchResults.length === 0 && (
             <View pointerEvents="none" style={themedStyles.centerPinContainer}>
-              <Image source={Images.mapLocation} style={themedStyles.centerPin} />
+              <Image
+                source={Images.mapLocation}
+                style={[themedStyles.centerPin, themedStyles.centerPinOffset]}
+              />
             </View>
           )}
           {/* Search Bar Overlay */}

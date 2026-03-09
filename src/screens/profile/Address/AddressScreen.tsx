@@ -1,5 +1,6 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import React, { useCallback } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -15,23 +16,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icons } from '../../../assets';
 import { useAddress } from '../../../hooks/useAddress';
+import { RootStackParamList } from '../../../routes/AppStack';
 import { useTheme } from '../../../theme/ThemeContext';
-import AddAddressModal from './AddAddressModal';
 import AddressCard from './AddressCard';
 
 const { width, height } = Dimensions.get('window');
 
 const AddressScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { getColor, getTypography, theme } = useTheme();
   const { addresses, loading, fetchError, retryFetch, fetchAddresses } = useAddress();
-  const [showAddModal, setShowAddModal] = useState(false);
   const insets = useSafeAreaInsets();
 
-  const handleAddAddressSuccess = async () => {
-    // Explicitly refresh addresses after adding new one
-    await fetchAddresses();
-  };
+  // Refresh addresses when screen comes into focus (e.g. after adding new address)
+  useFocusEffect(
+    useCallback(() => {
+      fetchAddresses();
+    }, [fetchAddresses])
+  );
 
   const themedStyles = StyleSheet.create({
     container: {
@@ -194,7 +196,7 @@ const AddressScreen = () => {
       </Text>
       <TouchableOpacity
         style={themedStyles.addButton}
-        onPress={() => setShowAddModal(true)}
+        onPress={() => navigation.navigate('AddAddress')}
         accessible={true}
         accessibilityRole="button"
         accessibilityLabel="Add new address"
@@ -276,7 +278,7 @@ const AddressScreen = () => {
             />
             <TouchableOpacity
               style={themedStyles.fab}
-              onPress={() => setShowAddModal(true)}
+              onPress={() => navigation.navigate('AddAddress')}
               accessible={true}
               accessibilityRole="button"
               accessibilityLabel="Add new address"
@@ -288,12 +290,6 @@ const AddressScreen = () => {
           </>
         )}
       </View>
-
-      <AddAddressModal
-        visible={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSave={handleAddAddressSuccess}
-      />
     </View>
   );
 };

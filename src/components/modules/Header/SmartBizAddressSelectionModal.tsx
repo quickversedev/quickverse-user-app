@@ -13,8 +13,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../../contexts/login/AuthProvider';
-import AddAddressModal from '../../../screens/profile/Address/AddAddressModal';
+import { RootStackParamList } from '../../../routes/AppStack';
 import {
   SmartBizAddress,
   smartBizAddressService,
@@ -48,8 +50,8 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const isLoggedIn = Boolean(authData?.jwt);
-  const [showAddModal, setShowAddModal] = useState(false);
 
   const fetchAddresses = async () => {
     console.log('[SmartBizModal] fetchAddresses called, vendorId:', vendorId);
@@ -102,18 +104,8 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
   };
 
   const handleAddNewAddress = () => {
-    setShowAddModal(true);
-  };
-
-  const handleAddAddressSuccess = async () => {
-    console.log('[SmartBizModal] handleAddAddressSuccess called');
-    setShowAddModal(false);
-    // Clear cache and refresh addresses after adding new one
-    console.log('[SmartBizModal] Clearing cache for vendorId:', vendorId);
-    smartBizAddressService.clearCache(vendorId);
-    console.log('[SmartBizModal] Fetching addresses...');
-    await fetchAddresses();
-    console.log('[SmartBizModal] Fetch complete, addresses count:', addresses.length);
+    onClose();
+    navigation.navigate('AddAddress', { source: 'modal' });
   };
 
   const defaultAddress = smartBizAddressService.getDefaultAddress(vendorId);
@@ -615,12 +607,6 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
           </View>
         </View>
 
-        {/* Add Address Modal */}
-        <AddAddressModal
-          visible={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          onSave={handleAddAddressSuccess}
-        />
       </View>
     </Modal>
   );

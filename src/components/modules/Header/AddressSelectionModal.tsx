@@ -1,5 +1,5 @@
 import debounce from 'lodash.debounce';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -18,10 +18,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useLocation } from '../../../hooks/Permissions/useLocation';
 import { useAddress } from '../../../hooks/useAddress';
-import AddAddressModal from '../../../screens/profile/Address/AddAddressModal';
+import { RootStackParamList } from '../../../routes/AppStack';
 import AddressCard from '../../../screens/profile/Address/AddressCard';
 import {
   getAddressFromCoordinates,
@@ -45,6 +47,7 @@ interface AddressSelectionModalProps {
   onAddressSelect: (address: Address) => void;
   selectedAddress?: Address | null;
   needCompulsoryAddress?: boolean;
+  scrollToNewest?: boolean;
 }
 
 export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
@@ -53,14 +56,16 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   onAddressSelect,
   selectedAddress,
   needCompulsoryAddress = false,
+  scrollToNewest = false,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { addresses, loading, fetchAddresses } = useAddress();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { setSelectedAddress, authData } = useAuth();
   const { getCurrentLocation, checkLocationPermission, requestLocationPermission } = useLocation();
+  const addressScrollRef = useRef<ScrollView>(null);
   const isLoggedIn = Boolean(authData?.jwt);
-  const [showAddModal, setShowAddModal] = React.useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -94,13 +99,8 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   };
 
   const handleAddNewAddress = () => {
-    setShowAddModal(true);
-  };
-
-  const handleAddAddressSuccess = async () => {
-    setShowAddModal(false);
-    // Refresh addresses after adding new one
-    await fetchAddresses();
+    onClose();
+    navigation.navigate('AddAddress', { source: 'modal' });
   };
 
   // Debounced search function
@@ -254,6 +254,16 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
 
   // Always show all saved addresses - no filtering
   const filteredAddresses = addresses;
+
+  // Scroll to newest address when requested
+  useEffect(() => {
+    if (visible && scrollToNewest && !loading && filteredAddresses.length > 0) {
+      const timer = setTimeout(() => {
+        addressScrollRef.current?.scrollToEnd({ animated: true });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [visible, scrollToNewest, loading, filteredAddresses.length]);
 
   // Calculate dynamic height for addresses container
   const addressCount = filteredAddresses.length;
@@ -622,6 +632,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                       </View>
                     ) : (
                       <ScrollView
+                        ref={addressScrollRef}
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={{ paddingBottom: 8, paddingHorizontal: 4 }}
                         style={{ flex: 1 }}
@@ -696,12 +707,6 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
             </View>
           </View>
 
-          {/* Add Address Modal */}
-          <AddAddressModal
-            visible={showAddModal}
-            onClose={() => setShowAddModal(false)}
-            onSave={handleAddAddressSuccess}
-          />
         </View>
       </TouchableWithoutFeedback>
     </Modal>

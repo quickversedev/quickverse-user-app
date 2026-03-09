@@ -1,7 +1,8 @@
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useState } from 'react';
 import {
   Dimensions,
-  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -11,7 +12,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import { RootStackParamList } from '../../../routes/AppStack';
 import { AddressComponents } from '../../../services/api/olaLocationService';
+import useAddressStore from '../../../store/address/addressStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import AddressDetailsStep from './AddressDetailsStep';
 import MapLocationStep from './components/MapLocationStep';
@@ -36,15 +39,11 @@ interface AddressDetails {
   isDefaultAddress: boolean;
 }
 
-interface AddAddressModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onSave: (address: AddressDetails) => void | Promise<void>;
-}
-
-const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => {
+const AddAddressScreen = () => {
   const { getColor, getTypography, theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'AddAddress'>>();
   const [step, setStep] = useState(1);
   const [location, setLocation] = useState<Location | null>(null);
   const [selectedAddressDescription, setSelectedAddressDescription] = useState<AddressComponents>({
@@ -80,59 +79,28 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
   const handleSaveAddress = async (_details: AddressDetails) => {
     setApiError(null);
     // The API call is now handled by AddressDetailsStep internally
-    // This function is kept for any additional logic if needed
   };
 
   const handleAddressSaveSuccess = async () => {
-    console.log('[AddAddressModal] handleAddressSaveSuccess called');
-    // Call parent's onSave callback to trigger refresh (before reset)
-    console.log('[AddAddressModal] Calling onSave...');
-    await onSave(addressDetails);
-    // Close the modal when address is successfully saved
-    console.log('[AddAddressModal] Calling resetForm and onClose...');
-    resetForm();
-    onClose();
-  };
-
-  const resetForm = () => {
-    setStep(1);
-    setLocation(null);
-    setSelectedAddressDescription({
-      country: '',
-      state: '',
-      city: '',
-      postalCode: '',
-      formatted_address: '',
-    });
-    setAddressDetails({
-      name: '',
-      addressLine1: '',
-      addressLine2: '',
-      city: '',
-      state: '',
-      pincode: '',
-      phoneNumber: '',
-      addressLine3: '',
-      tag: '',
-      isDefaultAddress: false,
-    });
-    setApiError(null);
+    if (route.params?.source === 'modal') {
+      // Came from a header modal — go back to Home and auto-open the address selection modal
+      useAddressStore.getState().setPendingOpenAddressModal(true);
+      navigation.goBack();
+    } else {
+      // Came from AddressScreen — go back to it (useFocusEffect refreshes the list)
+      navigation.goBack();
+    }
   };
 
   const handleBack = () => {
     if (step === 1) {
-      resetForm();
-      onClose();
+      navigation.goBack();
     } else {
       setStep(1);
     }
   };
 
   const themedStyles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: getColor('background'),
-    },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -169,16 +137,6 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
       paddingBottom: Math.max(8, width * 0.02),
       backgroundColor: 'transparent',
     },
-    backButton: {
-      fontSize: getTypography('body'),
-      fontWeight: 'bold',
-      color: getColor('primary'),
-      minHeight: 44,
-      justifyContent: 'center',
-      paddingHorizontal: 8,
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-    },
     backButtonRound: {
       width: 40,
       height: 40,
@@ -212,65 +170,56 @@ const AddAddressModal = ({ visible, onClose, onSave }: AddAddressModalProps) => 
     },
   });
 
-  // We rely on resetForm to reset the modal state when closing.
-
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      onRequestClose={handleBack}
-      presentationStyle="fullScreen"
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: getColor('background'),
+        paddingTop: step === 2 ? insets.top : 0,
+        paddingBottom: step === 2 ? insets.bottom : 0,
+      }}
     >
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: getColor('background'),
-          // paddingTop: insets.top,     // ✅ handles notch/status bar
-          paddingBottom: insets.bottom, // ✅ handles iPhone home indicator
-        }}
-      >
-        {/* Header - Transparent for step 1, regular for step 2 */}
-        {step === 1 ? (
-          <View style={themedStyles.headerTransparent} pointerEvents="box-none">
-            <TouchableOpacity
-              onPress={handleBack}
-              activeOpacity={0.7}
-              style={themedStyles.backButtonRound}
-            >
-              <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={themedStyles.header}>
-            <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
-              <MaterialCommunityIcons
-                name="arrow-left-thick"
-                size={25}
-                color={getColor('primary')}
-              />
-            </TouchableOpacity>
-            <Text style={themedStyles.title}>Add Address Details</Text>
-            <View style={themedStyles.placeholder} />
-          </View>
-        )}
+      {/* Header - Transparent for step 1, regular for step 2 */}
+      {step === 1 ? (
+        <View style={themedStyles.headerTransparent} pointerEvents="box-none">
+          <TouchableOpacity
+            onPress={handleBack}
+            activeOpacity={0.7}
+            style={themedStyles.backButtonRound}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={themedStyles.header}>
+          <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
+            <MaterialCommunityIcons
+              name="arrow-left-thick"
+              size={25}
+              color={getColor('primary')}
+            />
+          </TouchableOpacity>
+          <Text style={themedStyles.title}>Add Address Details</Text>
+          <View style={themedStyles.placeholder} />
+        </View>
+      )}
 
-        {/* Body */}
-        {step === 1 ? (
-          <MapLocationStep onLocationSelect={handleLocationSelect} />
-        ) : (
-          <AddressDetailsStep
-            location={location}
-            selectedAddressDescription={selectedAddressDescription}
-            details={addressDetails}
-            onDetailsChange={setAddressDetails}
-            onSave={handleSaveAddress}
-            onSuccess={handleAddressSaveSuccess}
-            apiError={apiError}
-          />
-        )}
-      </View>
-    </Modal>
+      {/* Body */}
+      {step === 1 ? (
+        <MapLocationStep onLocationSelect={handleLocationSelect} />
+      ) : (
+        <AddressDetailsStep
+          location={location}
+          selectedAddressDescription={selectedAddressDescription}
+          details={addressDetails}
+          onDetailsChange={setAddressDetails}
+          onSave={handleSaveAddress}
+          onSuccess={handleAddressSaveSuccess}
+          apiError={apiError}
+        />
+      )}
+    </View>
   );
 };
 
-export default AddAddressModal;
+export default AddAddressScreen;

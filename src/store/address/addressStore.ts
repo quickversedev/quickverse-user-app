@@ -16,6 +16,7 @@ const useAddressStore = create<AddressStore>((set, get) => ({
   addingLoading: false, // This is for add operations (not used by AppInitializer)
   fetchError: null, // Error for fetch operations
   addError: null, // Error for add operations
+  pendingOpenAddressModal: false,
 
   // Actions
   setLoading: (loading: boolean) => set({ loading }),
@@ -24,6 +25,7 @@ const useAddressStore = create<AddressStore>((set, get) => ({
   setAddError: (error: string | null) => set({ addError: error }),
   clearFetchError: () => set({ fetchError: null }),
   clearAddError: () => set({ addError: null }),
+  setPendingOpenAddressModal: (value: boolean) => set({ pendingOpenAddressModal: value }),
 
   fetchAddresses: async (authSession?: AuthSession) => {
     try {
@@ -123,6 +125,7 @@ const useAddressStore = create<AddressStore>((set, get) => ({
       };
 
       console.log('[AddressStore] Saving address:', addressData);
+      console.log('[AddressStore] isDefaultAddress:', addressData.isDefaultAddress);
 
       // Use apiCall wrapper for proper error handling
       const response = await apiCall(

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
+import useAddressStore from '../../../store/address/addressStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import type { Address } from '../../../types/address';
 import { ThemeText } from '../../common/theme/ThemeText';
@@ -12,6 +13,18 @@ export const LocationSelector = () => {
   const { theme } = useTheme();
   const { selectedAddress, setSelectedAddress, authData } = useAuth();
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [scrollToNewest, setScrollToNewest] = useState(false);
+  const pendingOpenAddressModal = useAddressStore(s => s.pendingOpenAddressModal);
+  const setPendingOpenAddressModal = useAddressStore(s => s.setPendingOpenAddressModal);
+
+  // Auto-open modal when a new address was just added from AddAddressScreen
+  useEffect(() => {
+    if (pendingOpenAddressModal) {
+      setPendingOpenAddressModal(false);
+      setScrollToNewest(true);
+      setShowAddressModal(true);
+    }
+  }, [pendingOpenAddressModal, setPendingOpenAddressModal]);
   // Selected address is managed by AuthProvider (initialized in AppInitializer and user selection)
 
   const handleAddressSelect = (address: Address) => {
@@ -88,9 +101,13 @@ export const LocationSelector = () => {
 
       <AddressSelectionModal
         visible={showAddressModal}
-        onClose={() => setShowAddressModal(false)}
+        onClose={() => {
+          setShowAddressModal(false);
+          setScrollToNewest(false);
+        }}
         onAddressSelect={handleAddressSelect}
         selectedAddress={selectedAddress}
+        scrollToNewest={scrollToNewest}
       />
     </>
   );

@@ -65,7 +65,7 @@ export const useAddress = () => {
       loadAddressesFromStorage,
       // Computed values
       hasAddresses: addresses.length > 0,
-      defaultAddress: addresses.find(addr => addr.tag === 'Home'), // Use tag instead of isDefault
+      defaultAddress: addresses.find(addr => addr.isDefaultAddress) || addresses[0]
     }),
     [
       addresses,
