@@ -252,18 +252,30 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     }
   };
 
-  // Always show all saved addresses - no filtering
-  const filteredAddresses = addresses;
+  // Show all saved addresses - newest first
+  const filteredAddresses = useMemo(() => [...addresses].reverse(), [addresses]);
 
-  // Scroll to newest address when requested
+  // Scroll to selected address (or newest) when modal opens
   useEffect(() => {
-    if (visible && scrollToNewest && !loading && filteredAddresses.length > 0) {
+    if (visible && !loading && filteredAddresses.length > 0) {
       const timer = setTimeout(() => {
-        addressScrollRef.current?.scrollToEnd({ animated: true });
+        if (scrollToNewest) {
+          addressScrollRef.current?.scrollTo({ y: 0, animated: true });
+        } else if (selectedAddress) {
+          const selectedIndex = filteredAddresses.findIndex(
+            a => a.addressID === selectedAddress.addressID
+          );
+          if (selectedIndex > 0) {
+            addressScrollRef.current?.scrollTo({
+              y: selectedIndex * ADDRESS_CARD_HEIGHT,
+              animated: true,
+            });
+          }
+        }
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [visible, scrollToNewest, loading, filteredAddresses.length]);
+  }, [visible, scrollToNewest, loading, filteredAddresses.length, selectedAddress]);
 
   // Calculate dynamic height for addresses container
   const addressCount = filteredAddresses.length;

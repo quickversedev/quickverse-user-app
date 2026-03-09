@@ -7,12 +7,13 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Switch,
+
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useAddress } from '../../../hooks/useAddress';
 
@@ -73,6 +74,7 @@ const AddressDetailsStep = ({
 }: AddressDetailsStepProps & { apiError?: string | null }) => {
   const { getColor, getTypography, getButtonColor } = useTheme();
   const _navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const { addAddress, addingLoading } = useAddress(); // Use addingLoading from store
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -337,7 +339,7 @@ const AddressDetailsStep = ({
     },
     contentContainer: {
       padding: Math.max(20, width * 0.05),
-      paddingBottom: Math.max(40, height * 0.05),
+      paddingBottom: 16,
     },
 
     inputContainer: {
@@ -357,18 +359,13 @@ const AddressDetailsStep = ({
     input: {
       height: Math.max(50, height * 0.065),
       paddingHorizontal: Math.max(18, width * 0.045),
-      borderRadius: 12, // Use fixed value instead of theme.borderRadius.md
-      borderWidth: 1.5,
+      borderRadius: 12,
+      borderWidth: 1,
       backgroundColor: getColor('card'),
       color: getColor('text'),
       fontSize: getTypography('body'),
       includeFontPadding: false,
       textAlignVertical: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
-      shadowRadius: 2,
-      elevation: 1,
     },
     floatingLabel: {
       position: 'absolute',
@@ -381,9 +378,7 @@ const AddressDetailsStep = ({
     },
     inputError: {
       borderColor: getColor('error'),
-      borderWidth: 2,
-      shadowColor: getColor('error'),
-      shadowOpacity: 0.3,
+      borderWidth: 1.5,
     },
 
     errorText: {
@@ -407,7 +402,7 @@ const AddressDetailsStep = ({
       marginTop: 4,
     },
     tagContainer: {
-      marginBottom: 28,
+      marginBottom: 24,
     },
     tagLabel: {
       color: getColor('text'),
@@ -418,87 +413,77 @@ const AddressDetailsStep = ({
       marginBottom: 12,
     },
     tagButton: {
-      paddingHorizontal: Math.max(20, width * 0.05),
-      paddingVertical: 8,
-      borderRadius: 20, // Use fixed value instead of theme.borderRadius.full
-      borderWidth: 1.5,
-      marginRight: 12,
-      marginBottom: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 24,
+      borderWidth: 1,
+      marginRight: 10,
+      marginBottom: 10,
       borderColor: getColor('border'),
-      minHeight: 44,
-      justifyContent: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
-      shadowRadius: 2,
-      elevation: 1,
+      backgroundColor: getColor('card'),
+    },
+    tagButtonSelected: {
+      backgroundColor: `${getColor('primary')}12`,
+      borderColor: getColor('primary'),
+      borderWidth: 1.5,
+    },
+    tagIcon: {
+      marginRight: 6,
     },
     tagButtonText: {
-      fontSize: getTypography('body'),
+      fontSize: getTypography('caption'),
       fontWeight: '500',
       includeFontPadding: false,
-      textAlignVertical: 'center',
+      color: getColor('text'),
+    },
+    tagButtonTextSelected: {
+      color: getColor('primary'),
+      fontWeight: '700',
+    },
+    saveButtonContainer: {
+      paddingHorizontal: Math.max(20, width * 0.05),
+      paddingTop: 12,
+      paddingBottom: Math.max(insets.bottom, 16),
+      backgroundColor: getColor('background'),
+      borderTopWidth: 1,
+      borderTopColor: getColor('border'),
     },
     saveButton: {
-      padding: 16,
-      borderRadius: 8, // Use fixed value instead of theme.borderRadius.sm
+      paddingVertical: 16,
+      borderRadius: 12,
       alignItems: 'center',
+      justifyContent: 'center',
       backgroundColor:
         isFormValid() && !addingLoading
           ? getColor('primary')
           : getButtonColor('disabled', 'background'),
-      minHeight: 26,
-      justifyContent: 'center',
-
       opacity: addingLoading ? 0.7 : 1,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      elevation: 3,
     },
     saveButtonText: {
-      fontWeight: 'bold',
+      fontWeight: '700',
       color:
         isFormValid() && !addingLoading
           ? getColor('background') || '#111827'
-          : getColor('text') || '#F3F4F6',
+          : getColor('subText') || '#9CA3AF',
       fontSize: getTypography('body'),
       includeFontPadding: false,
       textAlignVertical: 'center',
-      letterSpacing: 0.5,
-    },
-    defaultContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-
-      minHeight: 48,
-      paddingHorizontal: 4,
-    },
-    defaultLabel: {
-      color: getColor('text'),
-      fontSize: getTypography('body'),
-      fontWeight: '500',
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-      flex: 1,
+      letterSpacing: 0.3,
     },
     apiErrorContainer: {
-      backgroundColor: getColor('error'),
-      padding: Math.max(16, width * 0.04),
-      borderRadius: 12, // Use fixed value instead of theme.borderRadius.md
+      backgroundColor: `${getColor('error')}15`,
+      borderWidth: 1,
+      borderColor: getColor('error'),
+      padding: Math.max(14, width * 0.035),
+      borderRadius: 12,
       marginBottom: 20,
       flexDirection: 'row',
       alignItems: 'center',
-      shadowColor: getColor('error'),
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      elevation: 3,
     },
     apiErrorText: {
-      color: getColor('white'),
+      color: getColor('error'),
       fontSize: getTypography('body'),
       flex: 1,
       includeFontPadding: false,
@@ -511,7 +496,7 @@ const AddressDetailsStep = ({
       justifyContent: 'center',
     },
     loadingText: {
-      color: getColor('white'),
+      color: getColor('background') || '#111827',
       fontSize: getTypography('body'),
       fontWeight: '600',
       marginLeft: 10,
@@ -783,12 +768,16 @@ const AddressDetailsStep = ({
         })}
         {renderInputRow('city', 'City', 'state', 'State', { required1: true, required2: true })}
 
-        {/* custom tag selector */}
+        {/* Tag selector */}
         {(() => {
-          const presetTags = ['Home', 'Work', 'Other'];
+          const presetTags: { label: string; icon: 'home-outline' | 'briefcase-outline' | 'tag-outline' }[] = [
+            { label: 'Home', icon: 'home-outline' },
+            { label: 'Work', icon: 'briefcase-outline' },
+            { label: 'Other', icon: 'tag-outline' },
+          ];
           const currentTag = details.tag;
           const isPreset = presetTags.some(
-            t => t.toLowerCase() === currentTag.toLowerCase() && currentTag.length > 0
+            t => t.label.toLowerCase() === currentTag.toLowerCase() && currentTag.length > 0
           );
           const isOtherSelected = isCustomTagMode || (!isPreset && touched.tag);
           const hasError = touched.tag && errors.tag;
@@ -796,35 +785,26 @@ const AddressDetailsStep = ({
           return (
             <View style={themedStyles.tagContainer}>
               <Text style={themedStyles.tagLabel}>Tag Address As *</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
-                {presetTags.map(option => {
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                {presetTags.map(({ label, icon }) => {
                   const isSelected =
-                    option === 'Other'
+                    label === 'Other'
                       ? isOtherSelected
-                      : currentTag.toLowerCase() === option.toLowerCase();
+                      : currentTag.toLowerCase() === label.toLowerCase();
                   return (
                     <TouchableOpacity
-                      key={option}
+                      key={label}
                       style={[
                         themedStyles.tagButton,
-                        {
-                          paddingVertical: 6,
-                          paddingHorizontal: 16,
-                          minHeight: 36,
-                        },
-                        isSelected && {
-                          backgroundColor: `${getColor('primary')}15`,
-                          borderColor: getColor('primary'),
-                          borderWidth: 2,
-                        },
+                        isSelected && themedStyles.tagButtonSelected,
                       ]}
                       onPress={() => {
-                        if (option === 'Other') {
+                        if (label === 'Other') {
                           setIsCustomTagMode(true);
                           handleChange('tag', '');
                         } else {
                           setIsCustomTagMode(false);
-                          handleChange('tag', option);
+                          handleChange('tag', label);
                         }
                         if (!touched.tag) {
                           setTouched(prev => ({ ...prev, tag: true }));
@@ -832,17 +812,19 @@ const AddressDetailsStep = ({
                       }}
                       activeOpacity={0.7}
                     >
+                      <MaterialCommunityIcons
+                        name={icon}
+                        size={16}
+                        color={isSelected ? getColor('primary') : getColor('subText')}
+                        style={themedStyles.tagIcon}
+                      />
                       <Text
                         style={[
                           themedStyles.tagButtonText,
-                          {
-                            color: isSelected ? getColor('primary') : getColor('text'),
-                            fontWeight: isSelected ? '700' : '500',
-                            fontSize: getTypography('caption'),
-                          },
+                          isSelected && themedStyles.tagButtonTextSelected,
                         ]}
                       >
-                        {option}
+                        {label}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -853,7 +835,7 @@ const AddressDetailsStep = ({
                   style={[
                     themedStyles.input,
                     {
-                      marginTop: 12,
+                      marginTop: 10,
                       borderColor: hasError ? getColor('error') : getColor('border'),
                     },
                     hasError && themedStyles.inputError,
@@ -872,30 +854,10 @@ const AddressDetailsStep = ({
           );
         })()}
 
-        <View style={themedStyles.defaultContainer}>
-          <Text
-            style={themedStyles.defaultLabel}
-            accessible={true}
-            accessibilityRole="text"
-            accessibilityLabel="Set as default address"
-          >
-            Set as default address
-          </Text>
-          <Switch
-            value={details.isDefaultAddress}
-            onValueChange={value => handleChange('isDefaultAddress', value)}
-            trackColor={{ false: getColor('border'), true: getColor('primary') }}
-            thumbColor={getColor('white')}
-            ios_backgroundColor={getColor('border')}
-            disabled={addingLoading}
-            accessible={true}
-            accessibilityRole="switch"
-            accessibilityLabel="Set as default address"
-            accessibilityHint="Toggles whether this address should be your default address"
-            accessibilityState={{ checked: details.isDefaultAddress, disabled: addingLoading }}
-          />
-        </View>
 
+      </ScrollView>
+
+      <View style={themedStyles.saveButtonContainer}>
         <TouchableOpacity
           style={themedStyles.saveButton}
           disabled={!isFormValid() || addingLoading}
@@ -913,14 +875,14 @@ const AddressDetailsStep = ({
         >
           {addingLoading ? (
             <View style={themedStyles.loadingContainer}>
-              <ActivityIndicator size="small" color={getColor('white')} />
+              <ActivityIndicator size="small" color={getColor('background')} />
               <Text style={themedStyles.loadingText}>Saving Address...</Text>
             </View>
           ) : (
             <Text style={themedStyles.saveButtonText}>Save Address</Text>
           )}
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 };
