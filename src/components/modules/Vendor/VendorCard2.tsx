@@ -48,6 +48,8 @@ const VendorCard2: React.FC<VendorCardProps> = ({
     [vendor.openingTime, vendor.closingTime, vendor.storeActive]
   );
 
+  const isStoreClosed = disabled || !storeStatus.isOpen;
+
   const getCardWidth = (): number => {
     switch (size) {
       case 'small':
@@ -113,15 +115,22 @@ const VendorCard2: React.FC<VendorCardProps> = ({
     },
     disabledOverlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.5)',
+      backgroundColor: 'rgba(0,0,0,0.55)',
       zIndex: 10,
       justifyContent: 'center',
       alignItems: 'center',
     },
     closedText: {
       color: '#fff',
-      fontWeight: 'bold',
+      fontWeight: '800',
+      fontSize: 16,
+      letterSpacing: 3,
       textTransform: 'uppercase',
+    },
+    closedTimingOverlay: {
+      color: 'rgba(255,255,255,0.8)',
+      fontSize: 11,
+      marginTop: 4,
     },
     favoriteButton: {
       position: 'absolute',
@@ -182,19 +191,27 @@ const VendorCard2: React.FC<VendorCardProps> = ({
       color: COLORS.metaText,
       fontSize: 10,
     },
+    closedCard: {
+      opacity: 0.6,
+    },
   });
 
   return (
     <TouchableOpacity
-      activeOpacity={0.9}
-      style={styles.cardContainer}
-      onPress={() => onPress(vendor)}
+      activeOpacity={isStoreClosed ? 1 : 0.9}
+      style={[styles.cardContainer, isStoreClosed && styles.closedCard]}
+      onPress={() => !isStoreClosed && onPress(vendor)}
     >
       <View style={styles.innerContainer}>
         <View style={styles.imageWrapper}>
-          {disabled && (
+          {isStoreClosed && (
             <View style={styles.disabledOverlay}>
               <ThemeText style={styles.closedText}>CLOSED</ThemeText>
+              {vendor.openingTime && vendor.closingTime && (
+                <ThemeText style={styles.closedTimingOverlay}>
+                  {vendor.openingTime} - {vendor.closingTime}
+                </ThemeText>
+              )}
             </View>
           )}
           {imageSource && <Image source={imageSource} style={styles.vendorImage} />}
@@ -235,6 +252,7 @@ const VendorCard2: React.FC<VendorCardProps> = ({
             <ThemeText style={styles.dot}>•</ThemeText>
             <ThemeText style={styles.metaText}>{vendor.shopAddress?.city || 'Location'}</ThemeText>
           </View>
+
         </View>
       </View>
     </TouchableOpacity>

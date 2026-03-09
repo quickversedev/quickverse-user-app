@@ -379,12 +379,24 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
         </View>
       </View>
 
+      {/* Store Closed Banner */}
+      {!isStoreActive && (
+        <View style={styles.closedBanner}>
+          <ThemeText style={styles.closedText}>WE ARE CLOSED</ThemeText>
+          {vendor.openingTime && vendor.closingTime && (
+            <ThemeText style={styles.closedTimingText}>
+              {vendor.openingTime} - {vendor.closingTime}
+            </ThemeText>
+          )}
+        </View>
+      )}
+
       {isLoading ? (
         <View style={{ height: 200, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="small" color={COLORS.primaryGreen} />
         </View>
       ) : (
-        <>
+        <View style={!isStoreActive ? styles.disabledContent : undefined} pointerEvents={!isStoreActive ? 'none' : 'auto'}>
           {/* Categories */}
           <FlatList
             horizontal
@@ -419,7 +431,7 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
               removeClippedSubviews={true}
             />
           )}
-        </>
+        </View>
       )}
 
       {/* Footer */}
@@ -643,14 +655,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#FEDB51',
-    shadowColor: '#253EA7',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.48,
-    shadowRadius: 2,
-    elevation: 2,
+    elevation: 0,
   },
   quantityContainer: {
     flexDirection: 'row',
@@ -660,14 +665,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     borderWidth: 1,
     borderColor: '#FEDB51',
-    shadowColor: '#253EA7',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.48,
-    shadowRadius: 2,
-    elevation: 2,
+    elevation: 0,
   },
   qtyBtnMinus: {
     padding: 4,
@@ -683,6 +681,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   // Footer
+  closedBanner: {
+    marginBottom: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 0, 0, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closedText: {
+    color: '#EF4444',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 4,
+    fontSize: 13,
+  },
+  closedTimingText: {
+    color: '#6B7280',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  disabledContent: {
+    opacity: 0.5,
+  },
   exploreButton: {
     backgroundColor: '#E5E7EB', // Light grey bg
     paddingVertical: 12,
