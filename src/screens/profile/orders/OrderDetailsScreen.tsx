@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Dimensions,
   Image,
   Linking,
   Modal,
@@ -34,6 +36,149 @@ import createPaymentService, { PaymentTender } from '../../../services/createPay
 import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AppNavigationProp } from '../../../types/navigation';
+
+const { width: screenWidth } = Dimensions.get('window');
+
+// Shimmer skeleton block
+const SkeletonBlock = ({
+  w,
+  h,
+  borderRadius = 8,
+  style,
+  shimmer,
+  baseColor,
+  highlightColor,
+}: {
+  w: number | string;
+  h: number;
+  borderRadius?: number;
+  style?: object;
+  shimmer: Animated.Value;
+  baseColor: string;
+  highlightColor: string;
+}) => {
+  const translateX = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-screenWidth, screenWidth],
+  });
+  return (
+    <View
+      style={[
+        { width: w as any, height: h, borderRadius, backgroundColor: baseColor, overflow: 'hidden' },
+        style,
+      ]}
+    >
+      <Animated.View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: highlightColor,
+          transform: [{ translateX }],
+          opacity: 0.4,
+        }}
+      />
+    </View>
+  );
+};
+
+const OrderDetailsSkeleton = ({ getColor }: { getColor: (key: string) => string }) => {
+  const shimmer = React.useRef(new Animated.Value(0)).current;
+  React.useEffect(() => {
+    const anim = Animated.loop(
+      Animated.timing(shimmer, { toValue: 1, duration: 1200, useNativeDriver: true })
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [shimmer]);
+
+  const base = getColor('border');
+  const highlight = getColor('card');
+  const S = (props: { w: number | string; h: number; borderRadius?: number; style?: object }) => (
+    <SkeletonBlock {...props} shimmer={shimmer} baseColor={base} highlightColor={highlight} />
+  );
+
+  return (
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
+      {/* Order Info Card */}
+      <View style={{ backgroundColor: getColor('card'), borderRadius: 12, padding: 16, marginBottom: 16 }}>
+        {/* Address */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+          <S w={36} h={36} borderRadius={18} />
+          <View style={{ marginLeft: 12, flex: 1 }}>
+            <S w={140} h={14} borderRadius={4} />
+            <S w={100} h={12} borderRadius={4} style={{ marginTop: 6 }} />
+            <S w={180} h={12} borderRadius={4} style={{ marginTop: 4 }} />
+          </View>
+        </View>
+        {/* Date + Status */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <S w={160} h={14} borderRadius={4} />
+          <S w={90} h={28} borderRadius={14} />
+        </View>
+        {/* Customer + Phone */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <View>
+            <S w={70} h={10} borderRadius={3} />
+            <S w={90} h={14} borderRadius={4} style={{ marginTop: 4 }} />
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <S w={50} h={10} borderRadius={3} />
+            <S w={110} h={14} borderRadius={4} style={{ marginTop: 4 }} />
+          </View>
+        </View>
+      </View>
+
+      {/* Shop Details Divider */}
+      <View style={{ alignItems: 'center', marginBottom: 12 }}>
+        <S w={120} h={12} borderRadius={4} />
+      </View>
+
+      {/* Shop Details Card */}
+      <View style={{ backgroundColor: getColor('card'), borderRadius: 12, padding: 16, marginBottom: 16 }}>
+        <S w={180} h={16} borderRadius={4} />
+        <S w={screenWidth - 96} h={12} borderRadius={4} style={{ marginTop: 8 }} />
+        <S w={screenWidth - 120} h={12} borderRadius={4} style={{ marginTop: 4 }} />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+          <S w={140} h={14} borderRadius={4} />
+          <S w={90} h={32} borderRadius={16} />
+        </View>
+        <S w={screenWidth - 96} h={12} borderRadius={4} style={{ marginTop: 10 }} />
+      </View>
+
+      {/* Order Items Divider */}
+      <View style={{ alignItems: 'center', marginBottom: 12 }}>
+        <S w={100} h={12} borderRadius={4} />
+      </View>
+
+      {/* Order Item rows */}
+      <View style={{ backgroundColor: getColor('card'), borderRadius: 12, padding: 16, marginBottom: 16 }}>
+        {[0, 1].map(i => (
+          <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }}>
+            <S w={48} h={48} borderRadius={8} />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <S w={120} h={14} borderRadius={4} />
+              <S w={50} h={10} borderRadius={3} style={{ marginTop: 6 }} />
+            </View>
+            <S w={60} h={14} borderRadius={4} />
+          </View>
+        ))}
+      </View>
+
+      {/* Bill Summary */}
+      <View style={{ backgroundColor: getColor('card'), borderRadius: 12, padding: 16, marginBottom: 16 }}>
+        {[0, 1, 2, 3].map(i => (
+          <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+            <S w={100 + i * 10} h={12} borderRadius={4} />
+            <S w={50} h={12} borderRadius={4} />
+          </View>
+        ))}
+        <View style={{ borderTopWidth: 1, borderTopColor: getColor('border'), paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+          <S w={80} h={14} borderRadius={4} />
+          <S w={60} h={14} borderRadius={4} />
+        </View>
+      </View>
+    </ScrollView>
+  );
+};
 
 const OrderDetailsScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
@@ -464,11 +609,7 @@ const OrderDetailsScreen = () => {
       <SafeAreaView style={[styles.safeArea, { backgroundColor: getColor('background') }]}>
         <View style={[styles.container, { backgroundColor: getColor('background') }]}>
           <OrderHeader orderId="Loading..." onBackPress={handleBackPress} />
-          <View style={styles.loadingContainer}>
-            <Text style={[styles.loadingText, { color: getColor('text') }]}>
-              Loading order details...
-            </Text>
-          </View>
+          <OrderDetailsSkeleton getColor={getColor} />
         </View>
       </SafeAreaView>
     );
@@ -819,7 +960,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 0 : 25,
+    paddingTop: 0,
   },
   content: {
     flex: 1,
@@ -827,16 +968,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 16,
     paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'BricolageGrotesque-Regular',
   },
   emptyText: {
     marginTop: 8,

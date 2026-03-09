@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  Animated,
   Image,
   ImageStyle,
-  Platform,
+
   StyleProp,
   StyleSheet,
   Text,
@@ -118,6 +120,13 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
       height: '100%',
       borderRadius: theme.borderRadius.sm,
     },
+    loadingPlaceholder: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: getColor('border'),
+      borderRadius: theme.borderRadius.sm,
+    },
     image: {
       borderRadius: theme.borderRadius.sm,
       marginRight: 16, // Will be overridden by dynamic pad
@@ -186,16 +195,17 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
     },
   });
 
-  const bannerShadow =
-    Platform.OS === 'ios'
-      ? {
-          shadowColor: theme.colors.shadow.color,
-          shadowOpacity: theme.colors.shadow.opacity,
-          shadowRadius: theme.colors.shadow.radius,
-        }
-      : {
-          elevation: 2,
-        };
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const fadeAnim = useState(new Animated.Value(0))[0];
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
 
   if (isBannerImage) {
     if (!imageUrl) {
@@ -206,15 +216,24 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
       <View
         style={[
           styles.container,
-          bannerShadow,
-          { aspectRatio: currentAspectRatio }, // Apply dynamic aspect ratio to container
+          {
+            aspectRatio: currentAspectRatio,
+            backgroundColor: getColor('border'),
+            overflow: 'hidden',
+          },
           style,
         ]}
       >
-        <Image
+        {!imageLoaded && (
+          <View style={styles.loadingPlaceholder}>
+            <ActivityIndicator size="small" color={getColor('subText')} />
+          </View>
+        )}
+        <Animated.Image
           source={typeof imageUrl === 'string' ? { uri: imageUrl } : imageUrl}
-          style={[styles.bannerImage, imageStyle]}
+          style={[styles.bannerImage, imageStyle, { opacity: fadeAnim }]}
           resizeMode="cover"
+          onLoad={handleImageLoad}
         />
       </View>
     );
@@ -224,7 +243,6 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
     <View
       style={[
         styles.container,
-        bannerShadow,
         { padding: s.pad, backgroundColor: backgroundColor },
         style,
       ]}
