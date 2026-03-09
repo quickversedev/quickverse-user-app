@@ -312,6 +312,7 @@ const OTPScreen: React.FC = () => {
               rootStyle={styles.codeFieldRoot}
               keyboardType="number-pad"
               textContentType="oneTimeCode"
+              autoFocus={true}
               renderCell={({ index, symbol, isFocused }) => (
                 <View
                   key={index}

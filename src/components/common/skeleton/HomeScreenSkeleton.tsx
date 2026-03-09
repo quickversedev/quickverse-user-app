@@ -2,8 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Dimensions,
-  Platform,
-  StatusBar,
   StyleSheet,
   View,
 } from 'react-native';
@@ -11,81 +9,92 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../../theme/ThemeContext';
 
 const { width } = Dimensions.get('window');
-
-// Match CategoryCards layout: 2 columns, (width - 48) / 2, height 140
 const CARD_WIDTH = (width - 48) / 2;
 const CAROUSEL_BANNER_HEIGHT = 178;
 
-interface SkeletonProps {
+// Shared shimmer animation value for all skeleton items
+const useShimmer = () => {
+  const shimmerValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.timing(shimmerValue, {
+        toValue: 1,
+        duration: 1200,
+        useNativeDriver: true,
+      })
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [shimmerValue]);
+
+  return shimmerValue;
+};
+
+interface SkeletonBlockProps {
   width: number | string;
   height: number;
   borderRadius?: number;
   style?: object;
+  shimmerValue: Animated.Value;
+  baseColor: string;
+  highlightColor: string;
 }
 
-const SkeletonItem: React.FC<SkeletonProps> = ({
-  width: itemWidth,
+const SkeletonBlock: React.FC<SkeletonBlockProps> = ({
+  width: blockWidth,
   height,
   borderRadius = 8,
   style,
+  shimmerValue,
+  baseColor,
+  highlightColor,
 }) => {
-  const animatedValue = useRef(new Animated.Value(0)).current;
-  const { getColor } = useTheme();
-
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(animatedValue, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(animatedValue, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    animation.start();
-
-    return () => animation.stop();
-  }, [animatedValue]);
-
-  const opacity = animatedValue.interpolate({
+  const translateX = shimmerValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
+    outputRange: [-width, width],
   });
 
   return (
-    <Animated.View
+    <View
       style={[
         {
-          width: itemWidth as number | 'auto',
+          width: blockWidth as number | 'auto',
           height,
           borderRadius,
-          backgroundColor: getColor('border'),
-          opacity,
+          backgroundColor: baseColor,
+          overflow: 'hidden',
         },
         style,
       ]}
-    />
+    >
+      <Animated.View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: highlightColor,
+          transform: [{ translateX }],
+          opacity: 0.4,
+        }}
+      />
+    </View>
   );
 };
 
 export const HomeScreenSkeleton: React.FC = () => {
   const { getColor, theme } = useTheme();
+  const shimmerValue = useShimmer();
+
+  const baseColor = getColor('border');
+  const highlightColor = getColor('card');
 
   const styles = StyleSheet.create({
     safeArea: {
       flex: 1,
-      paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     container: {
       flex: 1,
       backgroundColor: getColor('background'),
     },
-    // Header – matches HomeHeader (LocationSelector + ProfileIcon)
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -97,25 +106,20 @@ export const HomeScreenSkeleton: React.FC = () => {
     locationSection: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: 10,
     },
-    // Carousel – matches HomePromotionCarousel (marginVertical 16, carouselContainer marginBottom 24)
+    locationText: {
+      gap: 6,
+    },
     carouselContainer: {
-      marginVertical: 16,
       marginBottom: 24,
+      paddingHorizontal: 16,
+      marginTop: 8,
     },
-    carouselBanner: {
-      width: width - 32,
-      height: CAROUSEL_BANNER_HEIGHT,
-      marginHorizontal: 16,
-      marginRight: 28, // 16 + 12
-    },
-    // Search – matches SearchBar container (paddingHorizontal 16, marginBottom 24)
     searchContainer: {
       paddingHorizontal: 16,
       marginBottom: 24,
     },
-    // Category cards – matches CategoryCards (paddingHorizontal 16, 2 cards, height 140)
     cardsContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -123,61 +127,80 @@ export const HomeScreenSkeleton: React.FC = () => {
       marginTop: 8,
       marginBottom: 24,
     },
-    categoryCard: {
+    // Category card skeleton with inner content
+    cardSkeleton: {
       width: CARD_WIDTH,
       height: 140,
       borderRadius: 16,
+      backgroundColor: baseColor,
       overflow: 'hidden',
+      padding: 16,
+      justifyContent: 'space-between',
     },
-    // Bottom illustration area placeholder
     bottomPlaceholder: {
       position: 'absolute',
       bottom: 0,
       left: 0,
       right: 0,
       height: width * 0.48,
-      backgroundColor: getColor('border'),
-      opacity: 0.2,
+      backgroundColor: baseColor,
+      opacity: 0.15,
     },
   });
 
+  const S = (props: Omit<SkeletonBlockProps, 'shimmerValue' | 'baseColor' | 'highlightColor'>) => (
+    <SkeletonBlock
+      {...props}
+      shimmerValue={shimmerValue}
+      baseColor={baseColor}
+      highlightColor={highlightColor}
+    />
+  );
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        {/* Header: Location + Profile */}
+      <View style={styles.container}>
+        {/* Header: greeting + location + profile avatar */}
         <View style={styles.header}>
           <View style={styles.locationSection}>
-            <SkeletonItem width={20} height={20} borderRadius={4} />
-            <View>
-              <SkeletonItem width={80} height={12} borderRadius={4} />
-              <SkeletonItem width={120} height={16} borderRadius={4} style={{ marginTop: 4 }} />
+            <S width={24} height={24} borderRadius={6} />
+            <View style={styles.locationText}>
+              <S width={100} height={12} borderRadius={4} />
+              <S width={150} height={14} borderRadius={4} />
             </View>
           </View>
-          <SkeletonItem width={40} height={40} borderRadius={20} />
+          <S width={40} height={40} borderRadius={20} />
         </View>
 
         {/* Promotion carousel banner */}
         <View style={styles.carouselContainer}>
-          <SkeletonItem
-            width={width - 32}
-            height={CAROUSEL_BANNER_HEIGHT}
-            borderRadius={12}
-            style={{ marginHorizontal: 16 }}
-          />
+          <S width={width - 32} height={CAROUSEL_BANNER_HEIGHT} borderRadius={12} />
         </View>
 
         {/* Search bar */}
         <View style={styles.searchContainer}>
-          <SkeletonItem width="100%" height={48} borderRadius={24} />
+          <S width={width - 32} height={48} borderRadius={24} />
         </View>
 
-        {/* Category cards (2 cards like CategoryCards) */}
+        {/* Category cards with inner text placeholders */}
         <View style={styles.cardsContainer}>
-          <SkeletonItem width={CARD_WIDTH} height={140} borderRadius={16} />
-          <SkeletonItem width={CARD_WIDTH} height={140} borderRadius={16} />
+          <View style={styles.cardSkeleton}>
+            <View>
+              <S width={CARD_WIDTH * 0.6} height={14} borderRadius={4} />
+              <S width={CARD_WIDTH * 0.75} height={10} borderRadius={3} style={{ marginTop: 6 }} />
+            </View>
+            <S width={60} height={60} borderRadius={12} style={{ alignSelf: 'flex-end' }} />
+          </View>
+          <View style={styles.cardSkeleton}>
+            <View>
+              <S width={CARD_WIDTH * 0.65} height={14} borderRadius={4} />
+              <S width={CARD_WIDTH * 0.7} height={10} borderRadius={3} style={{ marginTop: 6 }} />
+            </View>
+            <S width={60} height={60} borderRadius={12} style={{ alignSelf: 'flex-end' }} />
+          </View>
         </View>
 
-        {/* Bottom illustration area */}
+        {/* Bottom illustration placeholder */}
         <View style={styles.bottomPlaceholder} />
       </View>
     </SafeAreaView>
