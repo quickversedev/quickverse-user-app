@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -109,6 +109,28 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
   };
 
   const defaultAddress = smartBizAddressService.getDefaultAddress(vendorId);
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Show newest first
+  const sortedAddresses = useMemo(() => [...addresses].reverse(), [addresses]);
+
+  const ADDRESS_CARD_HEIGHT = 82;
+
+  // Scroll to selected address when modal opens
+  useEffect(() => {
+    if (visible && !loading && sortedAddresses.length > 0 && selectedAddress) {
+      const timer = setTimeout(() => {
+        const selectedIndex = sortedAddresses.findIndex(a => a.id === selectedAddress.id);
+        if (selectedIndex > 0) {
+          scrollRef.current?.scrollTo({
+            y: selectedIndex * ADDRESS_CARD_HEIGHT,
+            animated: true,
+          });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [visible, loading, sortedAddresses.length, selectedAddress]);
 
   const themedStyles = StyleSheet.create({
     backdrop: {
@@ -517,10 +539,11 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
 
     return (
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 12 }}
       >
-        {addresses.map(renderAddressCard)}
+        {sortedAddresses.map(renderAddressCard)}
       </ScrollView>
     );
   };

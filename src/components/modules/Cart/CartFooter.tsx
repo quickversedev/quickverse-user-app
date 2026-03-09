@@ -14,6 +14,7 @@ import { TabBarVisibilityContext } from '../../../navigation/TabNavigation';
 
 interface CartFooterProps {
   address: string;
+  addressTag?: string;
   onSelectAddress: () => void;
   onCheckout: () => void;
   disabled?: boolean;
@@ -22,6 +23,7 @@ interface CartFooterProps {
 
 const CartFooter: React.FC<CartFooterProps> = ({
   address,
+  addressTag,
   onSelectAddress,
   onCheckout,
   disabled = false,
@@ -171,7 +173,9 @@ const CartFooter: React.FC<CartFooterProps> = ({
           />
         </View>
         <View style={styles.addressContent}>
-          <Text style={styles.addressLabel}>Deliver to</Text>
+          <Text style={styles.addressLabel}>
+            Deliver to{addressTag ? ` • ${addressTag}` : ''}
+          </Text>
           <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="tail">
             {address}
           </Text>

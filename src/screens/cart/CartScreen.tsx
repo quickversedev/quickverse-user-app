@@ -513,10 +513,9 @@ const CartScreen: React.FC = () => {
       return 'Select delivery address';
     }
 
-    const { addressLine1, city, state } = selectedSmartBizAddress?.address;
-    const parts = [addressLine1, city, state].filter(Boolean);
-    const base = parts.join(', ');
-    return distanceText ? `${base} • ${distanceText}` : base;
+    const { name, addressLine1, city, state } = selectedSmartBizAddress?.address;
+    const parts = [name, addressLine1, city, state].filter(Boolean).join(', ');
+    return distanceText ? `${parts} • ${distanceText}` : parts;
   }, [selectedSmartBizAddress, distanceText]);
 
   const isCheckoutDisabled = useMemo(() => {
@@ -779,6 +778,7 @@ const CartScreen: React.FC = () => {
 
       <CartFooter
         address={getFormattedAddress()}
+        addressTag={selectedSmartBizAddress?.address?.tag || selectedSmartBizAddress?.address?.name}
         onSelectAddress={() => setShowSmartBizAddressModal(true)}
         onCheckout={handleCheckout}
         disabled={isCheckoutDisabled}
