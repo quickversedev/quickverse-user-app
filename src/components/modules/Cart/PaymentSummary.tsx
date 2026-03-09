@@ -11,6 +11,7 @@ interface PaymentSummaryProps {
   cart?: Cart;
   codCharges?: number;
   selectedPaymentOption?: string | undefined;
+  vendorCategory?: string;
 }
 
 const PaymentSummary: React.FC<PaymentSummaryProps> = ({
@@ -19,6 +20,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   cart,
   codCharges = 0,
   selectedPaymentOption,
+  vendorCategory,
 }) => {
   const { getColor, theme, getButtonColor } = useTheme();
 
@@ -59,8 +61,11 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   const {
     subtotal,
     deliveryFee,
+    deliveryFeeOriginal,
     platformFee,
+    platformFeeOriginal,
     packagingCharges,
+    packagingChargesOriginal,
     taxes,
     total,
     totalDiscountOnItems,
@@ -100,11 +105,12 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     //       calculatedCouponDiscount +
     //       calculatedDeliveryFee;
 
-    // New fee structure as per requirements
-    const platformFee = 5;
-    const packagingCharges = 0;
-    const deliveryCharges = 20;
-    const taxes = Math.round(calculatedSubtotal * 0.05);
+    // Fee structure: different for Grocery vs Food
+    const isGrocery = vendorCategory?.toLowerCase().includes('grocery');
+    const platformFee = isGrocery ? 3 : 5;
+    const packagingCharges = isGrocery ? 0 : 0;
+    const deliveryCharges = isGrocery ? 17 : 20;
+    const taxes = isGrocery ? 0 : Math.round(calculatedSubtotal * 0.05);
 
     const calculatedTotal =
       calculatedSubtotal +
@@ -120,16 +126,19 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
 
     return {
       subtotal: calculatedSubtotal,
-      deliveryFee: deliveryCharges, // Override efficiently to 20
+      deliveryFee: deliveryCharges,
+      deliveryFeeOriginal: isGrocery ? 39 : 39,
       platformFee,
+      platformFeeOriginal: isGrocery ? 12 : 12,
       packagingCharges,
+      packagingChargesOriginal: isGrocery ? 4 : 8,
       taxes,
       total: calculatedTotal,
       totalDiscountOnItems: calculatedTotalDiscountOnItems,
       couponDiscount: calculatedCouponDiscount,
       finalTotal: calculatedFinalTotal,
     };
-  }, [cart, codCharges, selectedPaymentOption]);
+  }, [cart, codCharges, selectedPaymentOption, vendorCategory]);
 
   const styles = StyleSheet.create({
     paymentSummaryBox: {
@@ -347,7 +356,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
             </ThemeText>
             <View style={styles.feeRow}>
               <ThemeText variant="body" color={getColor('text')} style={styles.crossedText}>
-                ₹39
+                ₹{deliveryFeeOriginal}
               </ThemeText>
               <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
                 ₹{(deliveryFee ?? 0).toFixed(2)}
@@ -362,7 +371,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
             </ThemeText>
             <View style={styles.feeRow}>
               <ThemeText variant="body" color={getColor('text')} style={styles.crossedText}>
-                ₹12
+                ₹{platformFeeOriginal}
               </ThemeText>
               <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
                 ₹{(platformFee ?? 0).toFixed(2)}
@@ -377,7 +386,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
             </ThemeText>
             <View style={styles.feeRow}>
               <ThemeText variant="body" color={getColor('text')} style={styles.crossedText}>
-                ₹8
+                ₹{packagingChargesOriginal}
               </ThemeText>
               <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
                 ₹{(packagingCharges ?? 0).toFixed(2)}
@@ -385,15 +394,17 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
             </View>
           </View>
 
-          {/* Taxes (GST & Services) */}
-          <View style={styles.billRow}>
-            <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
-              Taxes (GST & Services)
-            </ThemeText>
-            <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-              ₹{(taxes ?? 0).toFixed(2)}
-            </ThemeText>
-          </View>
+          {/* Taxes (GST & Services) - hidden for Grocery */}
+          {taxes > 0 && (
+            <View style={styles.billRow}>
+              <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+                Taxes (GST & Services)
+              </ThemeText>
+              <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
+                ₹{(taxes ?? 0).toFixed(2)}
+              </ThemeText>
+            </View>
+          )}
 
           <View style={styles.dottedLine} />
           <View style={styles.billRowLast}>

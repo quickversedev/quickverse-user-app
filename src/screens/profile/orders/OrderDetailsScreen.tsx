@@ -570,16 +570,12 @@ const OrderDetailsScreen = () => {
     // Calculate subTotal from items to match Cart logic
     const subTotal = derivedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-    // Fee structure matching PaymentSummary.tsx
-    // Delivery Fee: 20
-    // Platform Fee: 5
-    // Packaging Charges: 0
-    // Taxes: 5% of subTotal
-
-    const deliveryFee = 20; // Hardcoded to match PaymentSummary
-    const platformFee = 5;
-    const packagingCharges = 0;
-    const taxes = Math.round(Number(subTotal) * 0.05);
+    // Fee structure matching PaymentSummary.tsx (different for Grocery vs Food)
+    const isGrocery = vendorDetails?.category?.toLowerCase().includes('grocery');
+    const deliveryFee = isGrocery ? 17 : 20;
+    const platformFee = isGrocery ? 3 : 5;
+    const packagingCharges = isGrocery ? 0 : 0;
+    const taxes = isGrocery ? 0 : Math.round(Number(subTotal) * 0.05);
 
     const additionalCharges = Number(selectedOrder.additionalPaymentCharges ?? 0);
 
@@ -598,7 +594,7 @@ const OrderDetailsScreen = () => {
       packagingCharges,
       taxes,
     };
-  }, [selectedOrder, derivedItems]);
+  }, [selectedOrder, derivedItems, vendorDetails]);
 
   const [showAllItems, setShowAllItems] = React.useState(false);
   const displayedItems = showAllItems ? derivedItems : derivedItems.slice(0, 2);

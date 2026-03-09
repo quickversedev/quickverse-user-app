@@ -762,6 +762,7 @@ const CartScreen: React.FC = () => {
             cart={cart}
             codCharges={codCharges}
             selectedPaymentOption={selectedPaymentOption}
+            vendorCategory={vendor?.category}
           />
         </AnimatedCard>
 
