@@ -4,10 +4,8 @@ import {
   Dimensions,
   Easing,
   LayoutAnimation,
-  Platform,
   StyleSheet,
   TouchableOpacity,
-  UIManager,
   View,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -22,11 +20,6 @@ import CartBar from './CartBar';
 const { width } = Dimensions.get('window');
 const ANIMATION_DURATION = 300;
 
-// Enable LayoutAnimation for Android
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const FloatingCartsStack: React.FC = () => {
   const { authData } = useAuth();

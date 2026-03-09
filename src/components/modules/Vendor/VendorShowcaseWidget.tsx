@@ -359,6 +359,7 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
           <View style={styles.metaRow}>
             <FontAwesome6
               name="bolt-lightning"
+              iconType="solid"
               size={10}
               color="#9CA3AF"
               style={{ marginRight: 4 }}

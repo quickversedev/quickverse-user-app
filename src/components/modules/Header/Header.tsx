@@ -5,11 +5,11 @@ import {
   Image,
   ImageBackground,
   Platform,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Images } from '../../../assets';
 import { NavigationItems } from '../../../screens/Home/components/NavigationItems';
 import { useTheme } from '../../../theme/ThemeContext';

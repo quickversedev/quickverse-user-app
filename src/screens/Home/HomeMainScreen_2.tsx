@@ -1,6 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useCallback, useContext } from 'react';
-import { Image, Platform, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import { Image, Platform, StatusBar, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Images } from '../../assets';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import { TabBarVisibilityContext } from '../../navigation/TabNavigation';
@@ -16,7 +17,6 @@ import HomeHeader from './components/HomeHeader';
 import HomePromotionCarousel from './components/HomePromotionCarousel';
 // @ts-ignore
 import { Dimensions } from 'react-native';
-
 const { width } = Dimensions.get('window');
 
 const HomeMainScreen_2 = React.memo(() => {

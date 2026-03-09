@@ -5,12 +5,12 @@ import {
   Dimensions,
   Image,
   Linking,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 

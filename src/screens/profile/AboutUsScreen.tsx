@@ -3,12 +3,12 @@ import React from 'react';
 import {
   Image,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useTheme } from '../../theme/ThemeContext';

@@ -226,6 +226,7 @@ const VendorCard2: React.FC<VendorCardProps> = ({
           <View style={styles.metaRow}>
             <FontAwesome6
               name="bolt-lightning"
+              iconType="solid"
               size={14}
               color={COLORS.metaIcon}
               style={{ marginRight: 4 }}

@@ -5,13 +5,13 @@ import {
   FlatList,
   Image,
   Platform,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Feather from '@react-native-vector-icons/feather';
 import { Images } from '../../assets';

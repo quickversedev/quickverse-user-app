@@ -3,13 +3,13 @@ import React from 'react';
 import {
   Alert,
   Platform,
-  SafeAreaView,
   StyleSheet,
   Switch,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import LoginButton from '../../components/common/LoginButton';
 import { useAuth } from '../../contexts/login/AuthProvider';

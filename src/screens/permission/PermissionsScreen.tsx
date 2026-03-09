@@ -6,12 +6,12 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Images } from '../../assets';
 import { useNotifications } from '../../hooks';
 import { useLocation } from '../../hooks/Permissions/useLocation';

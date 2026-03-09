@@ -3,11 +3,11 @@ import {
   Animated,
   Dimensions,
   Platform,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../../theme/ThemeContext';
 
 const { width } = Dimensions.get('window');
