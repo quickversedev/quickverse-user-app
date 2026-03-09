@@ -432,7 +432,7 @@ const CartScreen: React.FC = () => {
       }
 
       const errorMessage =
-        error instanceof Error ? error.message : 'Order creation failed. Please try again.';
+        (error as any)?.message || (error instanceof Error ? error.message : 'Order creation failed. Please try again.');
 
       // Navigate to failure screen with error message
       navigation.navigate('OrderFailure', {

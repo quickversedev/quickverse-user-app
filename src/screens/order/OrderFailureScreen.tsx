@@ -20,13 +20,15 @@ const OrderFailureScreen: React.FC<OrderFailureScreenProps> = ({ route }) => {
   const { getColor } = useTheme();
   const navigation = useNavigation<OrderFailureScreenNavigationProp>();
   const { errorMessage } = route.params;
+  // Only auto-redirect if there's no error message to read
   useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.navigate('MainApp');
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [navigation]);
+    if (!errorMessage) {
+      const timer = setTimeout(() => {
+        navigation.navigate('MainApp');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [navigation, errorMessage]);
   const handleBackToHome = () => {
     navigation.navigate('MainApp');
   };
