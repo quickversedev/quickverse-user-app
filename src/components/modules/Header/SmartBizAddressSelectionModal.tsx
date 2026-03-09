@@ -218,17 +218,6 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
       borderColor: getColor('border'),
       flexDirection: 'row',
       alignItems: 'center',
-      ...Platform.select({
-        ios: {
-          shadowColor: theme.colors.shadow.color,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 4,
-        },
-        android: {
-          elevation: 2,
-        },
-      }),
     },
     selectedAddressCard: {
       borderColor: getColor('primary'),
@@ -436,12 +425,9 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
         <View style={themedStyles.addressContent}>
           <View style={themedStyles.addressHeader}>
             <Text style={themedStyles.addressName} numberOfLines={1}>
-              {address.address.name}
+              {address.address.tag || address.address.name}
             </Text>
             <View style={themedStyles.addressTagsContainer}>
-              {address.address.tag && (
-                <Text style={themedStyles.addressTag}>{address.address.tag}</Text>
-              )}
               {isDefault && (
                 <View style={themedStyles.defaultBadge}>
                   <Text style={themedStyles.defaultBadgeText}>Default</Text>
