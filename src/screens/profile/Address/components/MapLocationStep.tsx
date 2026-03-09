@@ -136,22 +136,12 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
 
   const handleGetCurrentLocation = async () => {
     try {
-      // Always request a fresh GPS fix when user explicitly presses the button
-      let coords;
-      try {
-        coords = await getCurrentLocation({
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0,
-        });
-      } catch {
-        // Fallback: try without high accuracy (uses network/cell instead of GPS)
-        coords = await getCurrentLocation({
-          enableHighAccuracy: false,
-          timeout: 10000,
-          maximumAge: 60000,
-        });
-      }
+      // Race both high-accuracy GPS and network location in parallel
+      // Whichever resolves first wins — avoids slow sequential fallback
+      const coords = await Promise.any([
+        getCurrentLocation({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }),
+        getCurrentLocation({ enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }),
+      ]);
 
       const { latitude, longitude } = coords;
 

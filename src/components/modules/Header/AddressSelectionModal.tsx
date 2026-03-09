@@ -196,22 +196,11 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
         return;
       }
 
-      // Always request a fresh GPS fix with longer timeout for real devices
-      let location;
-      try {
-        location = await getCurrentLocation({
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0,
-        });
-      } catch {
-        // Fallback: try without high accuracy (uses network/cell instead of GPS)
-        location = await getCurrentLocation({
-          enableHighAccuracy: false,
-          timeout: 10000,
-          maximumAge: 60000,
-        });
-      }
+      // Race both high-accuracy GPS and network location in parallel
+      const location = await Promise.any([
+        getCurrentLocation({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }),
+        getCurrentLocation({ enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }),
+      ]);
 
       if (!location.latitude || !location.longitude) {
         throw new Error('Could not get current location coordinates');
