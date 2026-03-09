@@ -44,6 +44,7 @@ const CategoryScreen = () => {
 
   const vendors = useVendorStore(state => state.vendors);
   const getVendorsByCategory = useVendorStore(state => state.getVendorsByCategory);
+  const getVendorById = useVendorStore(state => state.getVendorById);
   const categoryVendors = React.useMemo(() => {
     const list = getVendorsByCategory(categoryName);
     return list;
@@ -86,6 +87,22 @@ const CategoryScreen = () => {
     // @ts-ignore - Assuming VendorProduct exists in stack but might not be typed yet in this file
     navigation.navigate('VendorProduct', { vendor });
   };
+
+  const handleBannerPress = React.useCallback(
+    (promo: { shopId: string }) => {
+      if (!promo.shopId || promo.shopId === 'mock-shop') return;
+      // Try exact match first, then loose match across all vendors
+      const shopId = String(promo.shopId);
+      let vendor = getVendorById(shopId);
+      if (!vendor) {
+        vendor = vendors.find(v => String(v.shopId) === shopId) || null;
+      }
+      if (vendor) {
+        navigation.navigate('VendorProduct', { vendor });
+      }
+    },
+    [getVendorById, vendors, navigation]
+  );
 
   const handleSearchPress = React.useCallback(() => {
     navigation.navigate('Search');
@@ -138,7 +155,7 @@ const CategoryScreen = () => {
 
       {/* Promo Banners */}
       <View style={styles.promoContainer}>
-        <PromotionCarousel category={categoryName as 'Food' | 'Grocery'} />
+        <PromotionCarousel category={categoryName as 'Food' | 'Grocery'} onBannerPress={handleBannerPress} />
       </View>
 
       {/* Conditional Content if Vendors Exist */}

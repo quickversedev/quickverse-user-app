@@ -8,6 +8,7 @@ import {
   StyleProp,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
   ViewStyle,
 } from 'react-native';
@@ -26,6 +27,7 @@ interface PromoBannerProps {
   };
   imageStyle?: StyleProp<ImageStyle>;
   aspectRatio?: number; // width:height ratio for custom sizes (predefined sizes have their own ratios)
+  onPress?: (promo: Promotion) => void;
 }
 
 const sizeMap = {
@@ -63,6 +65,7 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
   style,
   imageStyle,
   aspectRatio = 16 / 9, // Default for custom sizes
+  onPress,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
 
@@ -212,8 +215,12 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
       return null;
     }
 
+    const Wrapper = onPress ? TouchableOpacity : View;
+    const wrapperProps = onPress ? { onPress: () => onPress(promo), activeOpacity: 0.8 } : {};
+
     return (
-      <View
+      <Wrapper
+        {...wrapperProps}
         style={[
           styles.container,
           {
@@ -235,7 +242,7 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
           resizeMode="cover"
           onLoad={handleImageLoad}
         />
-      </View>
+      </Wrapper>
     );
   }
 

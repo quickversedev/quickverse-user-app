@@ -2,8 +2,14 @@ import React from 'react';
 import { View } from 'react-native';
 import AutoScrollBanner from '../../../components/common/promo/AutoScrollBanner';
 import { usePromotions } from '../../../hooks/usePromotions';
+import { Promotion } from '../../../types/pages';
 
-const PromotionCarousel = ({ category = 'Food' }: { category?: 'Food' | 'Grocery' }) => {
+interface PromotionCarouselProps {
+  category?: 'Food' | 'Grocery';
+  onBannerPress?: (promo: Promotion) => void;
+}
+
+const PromotionCarousel = ({ category = 'Food', onBannerPress }: PromotionCarouselProps) => {
   // Can use 'Food' or 'Grocery' or a new category 'Home'
   const { promotions } = usePromotions(category);
 
@@ -28,7 +34,7 @@ const PromotionCarousel = ({ category = 'Food' }: { category?: 'Food' | 'Grocery
 
   return (
     <View style={{ marginVertical: 10 }}>
-      <AutoScrollBanner bannerData={finalPromotions} />
+      <AutoScrollBanner bannerData={finalPromotions} onBannerPress={onBannerPress} />
     </View>
   );
 };

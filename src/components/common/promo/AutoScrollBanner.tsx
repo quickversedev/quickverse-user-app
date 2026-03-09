@@ -8,9 +8,10 @@ const { width } = Dimensions.get('window');
 interface AutoScrollBannerProps {
   bannerData: Promotion[];
   interval?: number;
+  onBannerPress?: (promo: Promotion) => void;
 }
 
-const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interval = 3000 }) => {
+const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interval = 3000, onBannerPress }) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const [_currentIndex, setCurrentIndex] = useState(0);
 
@@ -40,7 +41,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interva
       scrollEventThrottle={16}
     >
       {bannerData.map((banner, index) => (
-        <PromoBanner key={index} promo={banner} size="medium" style={styles.bannerContainer} />
+        <PromoBanner key={index} promo={banner} size="medium" style={styles.bannerContainer} onPress={onBannerPress} />
       ))}
     </ScrollView>
   );
