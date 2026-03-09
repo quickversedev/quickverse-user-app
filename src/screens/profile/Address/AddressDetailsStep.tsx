@@ -76,6 +76,7 @@ const AddressDetailsStep = ({
   const { addAddress, addingLoading } = useAddress(); // Use addingLoading from store
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [isCustomTagMode, setIsCustomTagMode] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null); // Keep local error state
 
   // Auto-fill city, state, and pincode from selectedAddressDescription
@@ -784,35 +785,47 @@ const AddressDetailsStep = ({
 
         {/* custom tag selector */}
         {(() => {
-          const options = ['Home', 'Work', 'Other'];
+          const presetTags = ['Home', 'Work', 'Other'];
           const currentTag = details.tag;
+          const isPreset = presetTags.some(
+            t => t.toLowerCase() === currentTag.toLowerCase() && currentTag.length > 0
+          );
+          const isOtherSelected = isCustomTagMode || (!isPreset && touched.tag);
           const hasError = touched.tag && errors.tag;
 
           return (
             <View style={themedStyles.tagContainer}>
               <Text style={themedStyles.tagLabel}>Tag Address As *</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                {options.map(option => {
-                  const isSelected = currentTag.toLowerCase() === option.toLowerCase();
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
+                {presetTags.map(option => {
+                  const isSelected =
+                    option === 'Other'
+                      ? isOtherSelected
+                      : currentTag.toLowerCase() === option.toLowerCase();
                   return (
                     <TouchableOpacity
                       key={option}
                       style={[
                         themedStyles.tagButton,
                         {
-                          paddingVertical: 6, // Smaller vertical padding
-                          paddingHorizontal: 16, // Smaller horizontal padding
-                          minHeight: 36, // Smaller min height
+                          paddingVertical: 6,
+                          paddingHorizontal: 16,
+                          minHeight: 36,
                         },
                         isSelected && {
                           backgroundColor: `${getColor('primary')}15`,
                           borderColor: getColor('primary'),
-                          borderWidth: 2, // Thicker border for selected
+                          borderWidth: 2,
                         },
                       ]}
                       onPress={() => {
-                        handleChange('tag', option);
-                        // Also trigger blur to validate
+                        if (option === 'Other') {
+                          setIsCustomTagMode(true);
+                          handleChange('tag', '');
+                        } else {
+                          setIsCustomTagMode(false);
+                          handleChange('tag', option);
+                        }
                         if (!touched.tag) {
                           setTouched(prev => ({ ...prev, tag: true }));
                         }
@@ -825,17 +838,35 @@ const AddressDetailsStep = ({
                           {
                             color: isSelected ? getColor('primary') : getColor('text'),
                             fontWeight: isSelected ? '700' : '500',
-                            fontSize: getTypography('caption'), // Slightly smaller text
+                            fontSize: getTypography('caption'),
                           },
                         ]}
                       >
                         {option}
                       </Text>
-                      {/* Dot removed as requested */}
                     </TouchableOpacity>
                   );
                 })}
               </View>
+              {isOtherSelected && (
+                <TextInput
+                  style={[
+                    themedStyles.input,
+                    {
+                      marginTop: 12,
+                      borderColor: hasError ? getColor('error') : getColor('border'),
+                    },
+                    hasError && themedStyles.inputError,
+                  ]}
+                  placeholder="Enter custom tag (e.g. Mom's House)"
+                  placeholderTextColor={getColor('placeholder')}
+                  value={currentTag}
+                  onChangeText={text => handleChange('tag', text)}
+                  onBlur={() => handleBlur('tag')}
+                  maxLength={20}
+                  autoFocus
+                />
+              )}
               {hasError && <Text style={themedStyles.errorText}>{errors.tag}</Text>}
             </View>
           );
