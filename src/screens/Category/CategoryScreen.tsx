@@ -250,16 +250,14 @@ const CategoryScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   scrollContent: {
     paddingBottom: 40,
   },
   header: {
-    alignItems: 'center', // Center content horizontally
-    marginTop: 20,
+    alignItems: 'center',
+    marginTop: 4,
     position: 'relative',
-    // marginBottom: 100,
   },
   headerTopBar: {
     width: '100%',
@@ -268,7 +266,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
     zIndex: 10,
-    height: 60, // Fixed height for alignment
+    height: 48,
   },
   backButton: {
     position: 'absolute',
@@ -304,16 +302,16 @@ const styles = StyleSheet.create({
     marginLeft: 8, // Space between "Food" and "for you"
   },
   imageContainer: {
-    width: 280,
-    height: 238, // Cropped height (250 * 0.85) for 15% crop
-    marginTop: -60,
+    width: 240,
+    height: 190,
+    marginTop: -50,
     zIndex: 100,
-    overflow: 'hidden', // Crop the bottom
+    overflow: 'hidden',
     position: 'relative',
   },
   headerImage: {
-    width: 280,
-    height: 280, // Original height
+    width: 240,
+    height: 240,
   },
   headerBlur: {
     position: 'absolute',
@@ -325,8 +323,8 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: 20,
-    marginBottom: 20,
-    marginTop: -20,
+    marginBottom: 16,
+    marginTop: -16,
     zIndex: 1000,
   },
   promoContainer: {

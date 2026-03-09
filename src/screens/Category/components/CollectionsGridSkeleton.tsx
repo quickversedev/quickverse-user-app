@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Dimensions, Animated } from 'react-native';
 import SectionDivider from '../../../components/common/SectionDivider';
+import { useTheme } from '../../../theme/ThemeContext';
 
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 4;
@@ -8,29 +9,44 @@ const SPACING = 16;
 const GAP = 8;
 const ITEM_WIDTH = (width - SPACING * (COLUMN_COUNT + 1)) / COLUMN_COUNT;
 const GRID_WIDTH = COLUMN_COUNT * ITEM_WIDTH + (COLUMN_COUNT - 1) * GAP;
-const SKELETON_ITEMS = 8; // 2 rows of 4
+const SKELETON_ITEMS = 8;
 
 const CollectionsGridSkeleton: React.FC = () => {
-  const opacity = useRef(new Animated.Value(0.4)).current;
+  const shimmer = useRef(new Animated.Value(0)).current;
+  const { getColor } = useTheme();
 
   useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 0.7,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0.4,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ])
+    const anim = Animated.loop(
+      Animated.timing(shimmer, {
+        toValue: 1,
+        duration: 1200,
+        useNativeDriver: true,
+      })
     );
-    pulse.start();
-    return () => pulse.stop();
-  }, [opacity]);
+    anim.start();
+    return () => anim.stop();
+  }, [shimmer]);
+
+  const translateX = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-width, width],
+  });
+
+  const baseColor = getColor('border');
+  const highlightColor = getColor('card');
+
+  const ShimmerBlock = ({ w, h, borderRadius = 8, style }: { w: number; h: number; borderRadius?: number; style?: object }) => (
+    <View style={[{ width: w, height: h, borderRadius, backgroundColor: baseColor, overflow: 'hidden' }, style]}>
+      <Animated.View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: highlightColor,
+          transform: [{ translateX }],
+          opacity: 0.4,
+        }}
+      />
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -38,8 +54,8 @@ const CollectionsGridSkeleton: React.FC = () => {
       <View style={styles.grid}>
         {Array.from({ length: SKELETON_ITEMS }).map((_, index) => (
           <View key={index} style={styles.itemContainer}>
-            <Animated.View style={[styles.imagePlaceholder, { opacity }]} />
-            <Animated.View style={[styles.textPlaceholder, { opacity }]} />
+            <ShimmerBlock w={ITEM_WIDTH} h={ITEM_WIDTH} borderRadius={12} />
+            <ShimmerBlock w={ITEM_WIDTH * 0.85} h={14} borderRadius={4} style={{ marginTop: 8 }} />
           </View>
         ))}
       </View>
@@ -67,19 +83,6 @@ const styles = StyleSheet.create({
     width: ITEM_WIDTH,
     marginBottom: 20,
     alignItems: 'center',
-  },
-  imagePlaceholder: {
-    width: ITEM_WIDTH,
-    height: ITEM_WIDTH,
-    borderRadius: 12,
-    backgroundColor: '#E5E7EB',
-    marginBottom: 8,
-  },
-  textPlaceholder: {
-    width: ITEM_WIDTH * 0.85,
-    height: 14,
-    borderRadius: 4,
-    backgroundColor: '#E5E7EB',
   },
 });
 
