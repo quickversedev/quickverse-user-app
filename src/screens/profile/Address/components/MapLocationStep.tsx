@@ -136,14 +136,24 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
 
   const handleGetCurrentLocation = async () => {
     try {
-      let latitude = currentLocation.latitude;
-      let longitude = currentLocation.longitude;
-
-      if (!latitude || !longitude) {
-        const coords = await getCurrentLocation();
-        latitude = coords.latitude;
-        longitude = coords.longitude;
+      // Always request a fresh GPS fix when user explicitly presses the button
+      let coords;
+      try {
+        coords = await getCurrentLocation({
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        });
+      } catch {
+        // Fallback: try without high accuracy (uses network/cell instead of GPS)
+        coords = await getCurrentLocation({
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 60000,
+        });
       }
+
+      const { latitude, longitude } = coords;
 
       if (!latitude || !longitude) {
         console.warn('Could not get current location');
