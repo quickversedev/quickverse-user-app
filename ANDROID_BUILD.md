@@ -32,6 +32,8 @@ cd android
 
 ## Build Release AAB (for Play Store)
 
+**Important:** Before each release build, bump `versionCode` in `android/app/build.gradle` → `defaultConfig` block. The Play Store rejects uploads with a previously used version code.
+
 ```bash
 cd android
 ./gradlew bundleRelease
