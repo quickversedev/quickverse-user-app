@@ -202,6 +202,8 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
         getCurrentLocation({ enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }),
       ]);
 
+      console.log('🔵 [AddressModal] Got location:', location.latitude, location.longitude);
+
       if (!location.latitude || !location.longitude) {
         throw new Error('Could not get current location coordinates');
       }
@@ -213,6 +215,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
           latitude: location.latitude,
           longitude: location.longitude,
         });
+        console.log('🔵 [AddressModal] Geocode result:', JSON.stringify(addressComponents));
       } catch (geocodeError) {
         console.warn('Reverse geocoding failed, using coordinates only:', geocodeError);
         // Fallback to empty components if reverse geocoding fails
@@ -247,6 +250,11 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       };
 
       // Set as selected address
+      console.log('🔵 [AddressModal] Setting address:', JSON.stringify({
+        city: currentLocationAddress.city,
+        state: currentLocationAddress.state,
+        addressLine1: currentLocationAddress.addressLine1,
+      }));
       setSelectedAddress(currentLocationAddress);
       handleClose();
     } catch (error) {
@@ -620,12 +628,45 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
 
               {/* Addresses Section or Login Prompt */}
               {!isLoggedIn ? (
-                <View style={themedStyles.emptyContainer}>
-                  <Text style={themedStyles.emptyText}>
-                    Please log in to manage your addresses.
-                  </Text>
-                  <LoginButton />
-                </View>
+                <>
+                  {/* Use Current Location Button for non-logged-in users */}
+                  <TouchableOpacity
+                    style={themedStyles.currentLocationButton}
+                    onPress={handleUseCurrentLocation}
+                    disabled={currentLocationLoading}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      currentLocationLoading ? 'Getting location...' : 'Use current location'
+                    }
+                    activeOpacity={0.8}
+                  >
+                    {currentLocationLoading ? (
+                      <ActivityIndicator
+                        size="small"
+                        color={getColor('primary')}
+                        style={{ marginRight: 10 }}
+                      />
+                    ) : (
+                      <MaterialCommunityIcons
+                        name="crosshairs-gps"
+                        size={20}
+                        color={getColor('text')}
+                        style={{ marginRight: 10 }}
+                      />
+                    )}
+                    <Text style={themedStyles.currentLocationButtonText}>
+                      {currentLocationLoading ? 'Getting Location...' : 'Use Current Location'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View style={themedStyles.emptyContainer}>
+                    <Text style={themedStyles.emptyText}>
+                      Log in to save addresses.
+                    </Text>
+                    <LoginButton />
+                  </View>
+                </>
               ) : (
                 <>
                   {/* Addresses Container */}

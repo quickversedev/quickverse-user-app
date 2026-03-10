@@ -36,17 +36,34 @@ export const LocationSelector = () => {
     if (selectedAddress) {
       let displayText = '';
 
+      const city = selectedAddress.city;
+      const isGenericCity = !city || city === 'Current Location' || city === 'Default';
+
+      if (isGenericCity) {
+        // Try extracting a meaningful location name from available fields
+        const addr = selectedAddress.addressLine1 || '';
+        const state = selectedAddress.state || '';
+
+        if (state) {
+          displayText = state;
+        } else if (addr && !addr.includes('GPS') && !addr.match(/^\d+\.\d+/)) {
+          // Use formatted address if it's not just coordinates
+          displayText = addr.split(',').slice(0, 2).join(',').trim();
+        } else {
+          displayText = 'Current Location';
+        }
+      }
       // For searched addresses, show city and state if available
-      if (selectedAddress.city && selectedAddress.state) {
-        displayText = `${selectedAddress.city}, ${selectedAddress.state}`;
+      else if (city && selectedAddress.state) {
+        displayText = `${city}, ${selectedAddress.state}`;
       }
       // Fallback to city and postal code
-      else if (selectedAddress.city && selectedAddress.postalCode) {
-        displayText = `${selectedAddress.city} - ${selectedAddress.postalCode}`;
+      else if (city && selectedAddress.postalCode) {
+        displayText = `${city} - ${selectedAddress.postalCode}`;
       }
       // Just show city if available
       else {
-        displayText = selectedAddress.city;
+        displayText = city;
       }
       // Fallback to address
 

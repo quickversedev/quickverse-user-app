@@ -60,6 +60,9 @@ const extractAddressComponents = (
     formatted_address: formattedAddress || '',
   };
 
+  let locality = '';
+  let sublocality = '';
+
   addressComponents.forEach(component => {
     const types = component.types || [];
 
@@ -69,10 +72,27 @@ const extractAddressComponents = (
       components.state = component.long_name || '';
     } else if (types.includes('administrative_area_level_2')) {
       components.city = component.long_name || '';
+    } else if (types.includes('locality')) {
+      locality = component.long_name || '';
+    } else if (types.includes('sublocality') || types.includes('sublocality_level_1')) {
+      sublocality = component.long_name || '';
     } else if (types.includes('postal_code')) {
       components.postalCode = component.long_name || '';
     }
   });
+
+  // Use locality or sublocality as city fallback
+  if (!components.city) {
+    components.city = locality || sublocality || '';
+  }
+
+  // Last resort: extract from formatted address (first meaningful segment)
+  if (!components.city && formattedAddress) {
+    const parts = formattedAddress.split(',').map(p => p.trim());
+    if (parts.length >= 2) {
+      components.city = parts[parts.length - 3] || parts[0] || '';
+    }
+  }
 
   return components;
 };
