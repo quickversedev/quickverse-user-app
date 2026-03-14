@@ -41,12 +41,14 @@
 			</dict>
 		</dict>
 	</dict>
-  <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-  <string>We need your location to provide accurate delivery services, show nearby vendors, and personalize your experience.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We need your location to provide accurate delivery services, show nearby vendors, and personalize your experience.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We need your location to provide accurate delivery services, show nearby vendors, and personalize your experience.</string>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>We need to send you notifications about your orders, promotions, and important updates.</string>
+	<key>RCTNewArchEnabled</key>
+	<true/>
 	<key>UIAppFonts</key>
 	<array>
 		<string>BricolageGrotesque.ttf</string>
@@ -54,6 +56,7 @@
 		<string>BricolageGrotesque-Bold.ttf</string>
 		<string>BricolageGrotesque-Medium.ttf</string>
 		<string>MaterialCommunityIcons.ttf</string>
+		<string>MaterialDesignIcons.ttf</string>
 		<string>MaterialIcons.ttf</string>
 		<string>AntDesign.ttf</string>
 		<string>Feather.ttf</string>
