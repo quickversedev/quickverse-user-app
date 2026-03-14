@@ -25,6 +25,7 @@ import { RootStackParamList } from '../../routes/AppStack';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
+import { getStoreStatus } from '../../utils/storeUtils';
 import PromotionCarousel from '../Home/components/PromotionCarousel';
 import CollectionsGrid from './components/CollectionsGrid';
 import CollectionsGridSkeleton from './components/CollectionsGridSkeleton';
@@ -46,8 +47,9 @@ const CategoryScreen = () => {
   const getVendorsByCategory = useVendorStore(state => state.getVendorsByCategory);
   const getVendorById = useVendorStore(state => state.getVendorById);
   const categoryVendors = React.useMemo(() => {
-    const list = getVendorsByCategory(categoryName);
-    return list;
+    return getVendorsByCategory(categoryName).filter(
+      vendor => vendor.storeEnabled !== false && vendor.storeActive !== false
+    );
   }, [categoryName, getVendorsByCategory, vendors]);
 
   // Cart Logic
