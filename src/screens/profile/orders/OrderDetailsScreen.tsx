@@ -554,44 +554,47 @@ const OrderDetailsScreen = () => {
   }, [selectedOrder]);
 
   // Payment summary derived from items + order delivery details
+  // Fee structure must match Cart's PaymentSummary.tsx exactly
   const summary = useMemo(() => {
     if (!selectedOrder)
       return {
         subTotal: 0,
         deliveryFee: 0,
+        deliveryFeeOriginal: 0,
         additionalCharges: 0,
         total: 0,
         platformFee: 0,
+        platformFeeOriginal: 0,
         packagingCharges: 0,
+        packagingChargesOriginal: 0,
         taxes: 0,
       };
 
-    const apiOrder = selectedOrder as unknown as ApiOrderShape;
-    // Calculate subTotal from items to match Cart logic
-    const subTotal = derivedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    // Calculate subTotal from items — item.price is already the line total (unit price × quantity)
+    const subTotal = derivedItems.reduce((sum, item) => sum + item.price, 0);
 
     // Fee structure matching PaymentSummary.tsx (different for Grocery vs Food)
     const isGrocery = vendorDetails?.category?.toLowerCase().includes('grocery');
     const deliveryFee = isGrocery ? 17 : 20;
+    const deliveryFeeOriginal = 39;
     const platformFee = isGrocery ? 3 : 5;
-    const packagingCharges = isGrocery ? 0 : 0;
+    const platformFeeOriginal = 12;
+    const packagingCharges = 0;
+    const packagingChargesOriginal = isGrocery ? 4 : 8;
     const taxes = isGrocery ? 0 : Math.round(Number(subTotal) * 0.05);
 
-    const additionalCharges = Number(selectedOrder.additionalPaymentCharges ?? 0);
-
-    // Calculate total based on these components
-    // Note: We are aligning the display with the cart logic, even if the stored total might differ slightly.
-    // Ideally, these should be stored in the order object from the backend.
     const total =
-      Number(subTotal) + deliveryFee + platformFee + packagingCharges + taxes + additionalCharges;
+      Number(subTotal) + deliveryFee + platformFee + packagingCharges + taxes;
 
     return {
       subTotal,
       deliveryFee,
-      additionalCharges,
+      deliveryFeeOriginal,
       total,
       platformFee,
+      platformFeeOriginal,
       packagingCharges,
+      packagingChargesOriginal,
       taxes,
     };
   }, [selectedOrder, derivedItems, vendorDetails]);
@@ -804,11 +807,12 @@ const OrderDetailsScreen = () => {
             totalAmount={summary.total}
             subtotal={summary.subTotal}
             deliveryFee={summary.deliveryFee}
+            deliveryFeeOriginal={summary.deliveryFeeOriginal}
             platformFee={summary.platformFee}
+            platformFeeOriginal={summary.platformFeeOriginal}
             packagingCharges={summary.packagingCharges}
+            packagingChargesOriginal={summary.packagingChargesOriginal}
             taxes={summary.taxes}
-            additionalPaymentCharges={summary.additionalCharges}
-            paymentMethod={selectedOrder.paymentMethod}
             onPress={handleViewSummary}
           />
 

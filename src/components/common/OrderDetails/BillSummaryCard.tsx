@@ -7,11 +7,12 @@ interface BillSummaryCardProps {
   totalAmount: number;
   subtotal: number;
   deliveryFee: number;
+  deliveryFeeOriginal?: number;
   platformFee?: number;
+  platformFeeOriginal?: number;
   packagingCharges?: number;
+  packagingChargesOriginal?: number;
   taxes?: number;
-  additionalPaymentCharges?: number;
-  paymentMethod?: string;
   onPress: () => void;
 }
 
@@ -19,11 +20,12 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
   totalAmount,
   subtotal,
   deliveryFee,
+  deliveryFeeOriginal,
   platformFee = 0,
+  platformFeeOriginal,
   packagingCharges = 0,
+  packagingChargesOriginal,
   taxes = 0,
-  additionalPaymentCharges = 0,
-  paymentMethod,
   onPress,
 }) => {
   const { getColor } = useTheme();
@@ -60,58 +62,66 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
 
       {isExpanded && (
         <View style={styles.expandedContent}>
+          <Text style={[styles.sectionTitle, { color: getColor('text') }]}>BILL DETAILS</Text>
           <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>Subtotal</Text>
+            <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>Sub Total</Text>
             <Text style={[styles.summaryValue, { color: getColor('text') }]}>
               ₹{subtotal.toFixed(2)}
             </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>Delivery Fee</Text>
-            <Text style={[styles.summaryValue, { color: getColor('text') }]}>
-              ₹{deliveryFee.toFixed(2)}
-            </Text>
-          </View>
-          {platformFee > 0 && (
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>
-                Platform Fee
+            <View style={styles.feeRow}>
+              {deliveryFeeOriginal != null && deliveryFeeOriginal !== deliveryFee && (
+                <Text style={[styles.crossedText, { color: getColor('subText') }]}>
+                  ₹{deliveryFeeOriginal}
+                </Text>
+              )}
+              <Text style={[styles.summaryValue, { color: getColor('text') }]}>
+                ₹{deliveryFee.toFixed(2)}
               </Text>
+            </View>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>Platform Fee</Text>
+            <View style={styles.feeRow}>
+              {platformFeeOriginal != null && platformFeeOriginal !== platformFee && (
+                <Text style={[styles.crossedText, { color: getColor('subText') }]}>
+                  ₹{platformFeeOriginal}
+                </Text>
+              )}
               <Text style={[styles.summaryValue, { color: getColor('text') }]}>
                 ₹{platformFee.toFixed(2)}
               </Text>
             </View>
-          )}
-          {packagingCharges > 0 && (
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>
-                Packaging Charges
-              </Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>
+              Packaging Charges
+            </Text>
+            <View style={styles.feeRow}>
+              {packagingChargesOriginal != null && packagingChargesOriginal !== packagingCharges && (
+                <Text style={[styles.crossedText, { color: getColor('subText') }]}>
+                  ₹{packagingChargesOriginal}
+                </Text>
+              )}
               <Text style={[styles.summaryValue, { color: getColor('text') }]}>
                 ₹{packagingCharges.toFixed(2)}
               </Text>
             </View>
-          )}
+          </View>
           {taxes > 0 && (
             <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>Taxes (5%)</Text>
+              <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>
+                Taxes (GST & Services)
+              </Text>
               <Text style={[styles.summaryValue, { color: getColor('text') }]}>
                 ₹{taxes.toFixed(2)}
               </Text>
             </View>
           )}
-          {additionalPaymentCharges > 0 && (
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>
-                {paymentMethod === 'cash' ? 'COD Charges' : 'Additional Charges'}
-              </Text>
-              <Text style={[styles.summaryValue, { color: getColor('text') }]}>
-                ₹{additionalPaymentCharges.toFixed(2)}
-              </Text>
-            </View>
-          )}
           <View style={[styles.summaryRow, styles.summaryTotalRow]}>
-            <Text style={[styles.summaryTotalLabel, { color: getColor('text') }]}>Total</Text>
+            <Text style={[styles.summaryTotalLabel, { color: getColor('text') }]}>Total Pay</Text>
             <Text style={[styles.summaryTotalValue, { color: getColor('text') }]}>
               ₹{totalAmount.toFixed(2)}
             </Text>
@@ -165,6 +175,12 @@ const styles = StyleSheet.create({
     borderTopColor: '#E0E0E0',
     gap: 8,
   },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
   summaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -176,6 +192,15 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  feeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  crossedText: {
+    fontSize: 13,
+    textDecorationLine: 'line-through',
   },
   summaryTotalRow: {
     borderTopWidth: StyleSheet.hairlineWidth,
