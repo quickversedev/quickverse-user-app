@@ -370,13 +370,6 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
           </View>
         </View>
 
-        <View style={styles.ratingContainer}>
-          <View style={styles.ratingBadge}>
-            <AntDesign name="star" size={10} color="#fff" />
-            <ThemeText style={styles.ratingText}>{vendor.rating || 4.3}</ThemeText>
-          </View>
-          <ThemeText style={styles.ratingCount}>(242)</ThemeText>
-        </View>
       </View>
 
       {/* Store Closed Banner */}

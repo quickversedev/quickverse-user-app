@@ -232,14 +232,6 @@ const VendorCard2: React.FC<VendorCardProps> = ({
             {vendor.name}
           </ThemeText>
 
-          <View style={styles.ratingRow}>
-            <View style={styles.ratingBadge}>
-              <AntDesign name="star" size={12} color="#fff" />
-              <ThemeText style={styles.ratingText}>{vendor.rating || 4.3}</ThemeText>
-            </View>
-            <ThemeText style={styles.reviewCount}>(242)</ThemeText>
-          </View>
-
           <View style={styles.metaRow}>
             <FontAwesome6
               name="bolt-lightning"

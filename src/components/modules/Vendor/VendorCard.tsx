@@ -212,9 +212,6 @@ const VendorCard: React.FC<VendorCardProps> = ({
         >
           {vendor.name}
         </ThemeText>
-        <View style={styles.vendorRating}>
-          <RatingBadge rating={vendor.rating || 0} size="small" />
-        </View>
         <View style={styles.vendorMeta}>
           <MaterialCommunityIcons name="flash" size={18} color={getColor('primary')} />
           <ThemeText
