@@ -1,6 +1,6 @@
 # QuickVerse Customer App (Frontend)
 
-React Native food delivery customer app (v3.0.1, Android versionCode 42, versionName 3.0.3).
+React Native food delivery customer app (v4.0.3, Android versionCode 43, versionName 4.0.3).
 
 ## Tech Stack
 
