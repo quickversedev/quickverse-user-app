@@ -1,10 +1,23 @@
 import React from 'react';
-import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { Icons } from '../../../assets';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Address } from '../../../types/address';
 import { getAddressDisplayName, getAddressTag, getConcatenatedAddress } from './utils/addressUtils';
+
+/** Returns the appropriate MaterialCommunityIcons name for a given address tag. */
+const getTagIcon = (tag: string): string => {
+  switch (tag.toLowerCase()) {
+    case 'home':
+      return 'home-outline';
+    case 'work':
+      return 'briefcase-outline';
+    case 'hotel':
+      return 'bed-outline';
+    default:
+      return 'map-marker-outline';
+  }
+};
 
 type AddressCardSize = 'regular' | 'small';
 
@@ -249,7 +262,7 @@ const AddressCard = ({
           <View style={themedStyles.smallContent}>
             <View style={themedStyles.houseIcon}>
               <MaterialCommunityIcons
-                name="home-outline"
+                name={getTagIcon(getAddressTag(address))}
                 size={24}
                 color={getColor('background')}
               />
@@ -302,7 +315,11 @@ const AddressCard = ({
     >
       <View style={themedStyles.addressContainer}>
         <View style={themedStyles.houseIcon}>
-          <Image source={Icons.home} />
+          <MaterialCommunityIcons
+            name={getTagIcon(getAddressTag(address))}
+            size={26}
+            color={getColor('background')}
+          />
         </View>
         <View>
           <View style={themedStyles.header}>

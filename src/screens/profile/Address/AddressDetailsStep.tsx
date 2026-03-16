@@ -770,9 +770,10 @@ const AddressDetailsStep = ({
 
         {/* Tag selector */}
         {(() => {
-          const presetTags: { label: string; icon: 'home-outline' | 'briefcase-outline' | 'tag-outline' }[] = [
+          const presetTags: { label: string; icon: 'home-outline' | 'briefcase-outline' | 'bed-outline' | 'tag-outline' }[] = [
             { label: 'Home', icon: 'home-outline' },
             { label: 'Work', icon: 'briefcase-outline' },
+            { label: 'Hotel', icon: 'bed-outline' },
             { label: 'Other', icon: 'tag-outline' },
           ];
           const currentTag = details.tag;

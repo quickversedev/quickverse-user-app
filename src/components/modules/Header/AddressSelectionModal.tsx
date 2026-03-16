@@ -673,7 +673,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                   <View style={themedStyles.addressesContainer}>
                     {loading ? (
                       <View style={themedStyles.loadingContainer}>
-                        <Text style={themedStyles.emptyText}>Loading addresses...</Text>
+                        <ActivityIndicator size="small" color={getColor('primary')} />
                       </View>
                     ) : filteredAddresses.length === 0 ? (
                       <View style={themedStyles.emptyContainer}>

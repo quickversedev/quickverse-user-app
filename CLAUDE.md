@@ -1,15 +1,15 @@
 # QuickVerse Customer App (Frontend)
 
-React Native food delivery customer app (v3.0.1).
+React Native food delivery customer app (v3.0.1, Android versionCode 42, versionName 3.0.3).
 
 ## Tech Stack
 
-- **Framework:** React Native 0.79.2 (bare workflow, NOT Expo)
-- **Language:** TypeScript 5.0.4 (strict mode)
-- **State:** Zustand 5.0.6 with MMKV persistence
-- **Navigation:** React Navigation 6.x
-- **HTTP:** Axios 1.9.0
-- **Notifications:** Firebase Messaging + Notifee
+- **Framework:** React Native 0.84.1 (bare workflow, NOT Expo)
+- **Language:** TypeScript 5.9.3 (strict mode)
+- **State:** Zustand 5.0.11 with MMKV persistence
+- **Navigation:** React Navigation 7.x (stack 7.8.4, bottom-tabs 7.15.5)
+- **HTTP:** Axios 1.13.6
+- **Notifications:** Firebase Messaging 23.8.6 + Notifee 9.1.8
 - **Maps:** React Native Maps + Ola Maps (geocoding)
 - **Fonts:** BricolageGrotesque (custom)
 
@@ -51,7 +51,7 @@ src/
 ├── services/       # API services + localStorage
 ├── hooks/          # Custom hooks (+ Permissions/ subdirectory)
 ├── contexts/       # Auth, Tab contexts
-├── navigation/     # Navigation config
+├── navigation/     # Navigation config (HomeStack, TabNavigation, LoginNavigation, profileNavigation)
 ├── routes/         # Stack/tab route definitions
 ├── types/          # TypeScript interfaces
 ├── config/         # Axios config
@@ -65,7 +65,7 @@ src/
 
 - **Base URL:** `http://prd.quickverse.in/quickVerse`
 - **Config file:** `src/config/api/axios.config.ts`
-- **Auth header:** `SessionKey: <jwt_token>`
+- **Auth header:** `SessionKey: <jwt_token>` (added per-request, not in default headers)
 - **Request header:** `Request-Origin: CUSTOMER`
 - **Timeout:** 15 seconds
 - **Error codes:** Session expiry on 1047/1042 triggers auto-logout
@@ -103,6 +103,11 @@ All stores persist to MMKV encrypted storage via Zustand persist middleware.
 | `createOrderService.ts`           | Order creation                                  |
 | `createPaymentService.ts`         | Payment initiation                              |
 | `paymentService.ts`               | Available payment methods                       |
+| `deleteUserService.ts`            | Account deletion                                |
+| `deviceInfoService.ts`            | Device info registration with backend           |
+| `faqService.ts`                   | FAQ content fetching                            |
+| `supportService.ts`               | Customer support / help desk                    |
+| `smartBizAddressService.ts`       | SmartBiz vendor address operations              |
 | `localStorage/storage.service.ts` | MMKV storage wrapper for auth, addresses, etc.  |
 
 ## Authentication Flow
@@ -110,7 +115,7 @@ All stores persist to MMKV encrypted storage via Zustand persist middleware.
 1. Enter phone -> POST /v1/requestOtp
 2. Enter OTP -> POST /v1/login -> Get JWT
 3. New user -> POST /v1/register/customer
-4. JWT stored in MMKV, used in SessionKey header
+4. JWT stored in MMKV, used in `SessionKey` header per-request
 5. Session expiry (codes 1047/1042) -> Auto logout
 6. Auth state managed in `src/contexts/login/AuthProvider.tsx`
 
@@ -127,7 +132,8 @@ All stores persist to MMKV encrypted storage via Zustand persist middleware.
 | LoginScreen            | `screens/Login/`          | Phone + OTP login flow                       |
 | ProfileScreen          | `screens/profile/`        | User profile, help, about                    |
 | CollectionDetailScreen | `screens/collections/`    | Featured collections                         |
-| CategoryScreen         | `screens/Category/`       | Category browsing                            |
+| CategoryScreen         | `screens/Category/`       | Category browsing (nested in HomeStack)       |
+| AddAddressScreen       | `screens/profile/Address/`| Map-based address creation (standalone screen)|
 | PermissionsScreen      | `screens/permission/`     | Location permission request                  |
 
 ## Navigation Structure
@@ -137,16 +143,18 @@ Route.tsx (auth check)
 ├── LoginStack (loginScreen -> OTP -> Registration)
 └── AppStack
     ├── TabNavigation
-    │   ├── HomeStack (HomeScreen)
+    │   ├── HomeStack
+    │   │   ├── HomeMain (HomeScreen)
+    │   │   └── Category
     │   ├── ExploreScreen
     │   └── CartScreen (with badge)
     ├── VendorProduct, VendorDetails, VendorProfile
     ├── Cart, Coupons
     ├── Orders, OrderDetails, OrderSuccess, OrderFailure
     ├── Search
-    ├── Profile, Address, HelpDesk, AboutUs
+    ├── Profile, Address, AddAddress (slide-up), HelpDesk, AboutUs
     ├── CollectionDetail
-    └── Category
+    └── Category (also accessible from AppStack)
 ```
 
 ## Context API
@@ -162,7 +170,7 @@ Route.tsx (auth check)
 | useAddress           | Fetch and manage user addresses                                    |
 | useConfig            | App configuration from store                                       |
 | useDeviceInfo        | Device ID, OS, app version                                         |
-| useFAQs              | FAQ content                                                        |
+| useFAQs             | FAQ content                                                        |
 | useFeaturedProducts  | Featured/recommended products                                      |
 | useFetchUpdateData   | Force app update check                                             |
 | useHeaderAnimation   | Animated header scroll handling                                    |
@@ -183,7 +191,19 @@ Route.tsx (auth check)
 
 ```
 components/
-├── common/           # Shared: ErrorState, LoginPromptModal, LocationRequiredModal, skeletons
+├── common/           # Shared UI components
+│   ├── skeleton/     # Loading skeleton shimmer components
+│   ├── badges/       # Badge components
+│   ├── Cart/         # Cart-related common components
+│   ├── featuredProducts/ # Featured products components
+│   ├── order/        # Order-related components
+│   ├── OrderDetails/ # Order details components
+│   ├── promo/        # Promotional components
+│   ├── search/       # Search-related common components
+│   ├── theme/        # Theme-related components
+│   ├── ErrorState, LoginPromptModal, LocationRequiredModal
+│   ├── ForceUpdate, AppInitializer, AppBootstrap
+│   └── VegIcon, SectionDivider, TruncatedText, CategoryLogo
 ├── modules/
 │   ├── Cart/         # CartItem, CartFooter, PaymentSummary, CouponSection, DeliveryEstimateCard
 │   ├── Header/       # Header, SearchBar, LocationSelector, AddressSelectionModal
@@ -198,9 +218,9 @@ components/
 - **Cart:** Multi-vendor support (one cart per vendor), optimistic updates, request deduplication
 - **Storage:** MMKV encrypted storage via Zustand persist middleware
 - **Loading:** Skeleton components in `src/components/common/skeleton/`
-- **Location:** Geolocation API + Ola Maps reverse geocoding, fallback to Beed
-- **Search:** Local suggestions + API search, recent searches persisted to MMKV
-- **Error Handling:** Centralized in axios.config with ApiError interface, per-platform alerts
+- **Location:** Geolocation API + Ola Maps reverse geocoding, races GPS & network in parallel
+- **Search:** Local suggestions + API search (`v3/search`), SmartBiz search for collections, recent searches persisted to MMKV
+- **Error Handling:** Centralized in axios.config with ApiError interface, per-platform alerts (Toast on Android, Alert on iOS)
 
 ## Theme System
 
@@ -210,7 +230,9 @@ components/
 - Remote theme fetching via `themeApi.ts`
 - Always use theme context for colors; avoid hardcoded values
 
-## Environment Variables (.env)
+## Environment Variables
+
+Configured via `react-native-dotenv` (`@env` module). Type declarations in `src/types/env.d.ts`.
 
 ```
 API_URL=http://prd.quickverse.in/quickVerse

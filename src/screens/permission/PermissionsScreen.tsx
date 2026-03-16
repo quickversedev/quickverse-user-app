@@ -103,7 +103,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
     permissionCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#232B38',
+      backgroundColor: theme.colors.border,
       borderRadius: 12,
       padding: 16,
       marginBottom: 16,
@@ -113,7 +113,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
       width: 36,
       height: 36,
       borderRadius: 18,
-      backgroundColor: '#232B38',
+      backgroundColor: 'transparent',
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 12,
@@ -126,12 +126,12 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
       flex: 1,
     },
     permissionTitle: {
-      color: '#FFFFFF',
+      color: theme.colors.text,
       fontWeight: 'bold',
       fontSize: theme.typography.subtitle,
     },
     permissionDesc: {
-      color: '#D1D5DB',
+      color: theme.colors.subText,
       fontSize: theme.typography.caption,
       marginTop: 2,
     },
