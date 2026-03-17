@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -19,6 +19,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
 import { getStoreStatus } from '../../../utils/storeUtils';
+import LoginPromptModal from '../../common/LoginPromptModal';
 import { ThemeText } from '../../common/theme/ThemeText';
 
 const { width } = Dimensions.get('window');
@@ -188,6 +189,7 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   const { addToCart, increment, decrement, carts, setActiveCart } = useCartStore();
   const { authData } = useAuth();
   const hasAuth = React.useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const storeStatus = React.useMemo(() => getStoreStatus(vendor), [vendor]);
   const isStoreActive = React.useMemo(() => storeStatus.isOpen, [storeStatus.isOpen]);
 
@@ -249,7 +251,11 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   // Cart Handlers
   const handleAddToCart = useCallback(
     (product: Product) => {
-      if (!isStoreActive || !hasAuth || !product.inStock) return;
+      if (!isStoreActive || !product.inStock) return;
+      if (!hasAuth) {
+        setShowLoginModal(true);
+        return;
+      }
 
       // Ensure active cart is set
       setActiveCart(cartId);
@@ -274,7 +280,11 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
 
   const handleIncrement = useCallback(
     (sku: string) => {
-      if (!isStoreActive || !hasAuth) return;
+      if (!isStoreActive) return;
+      if (!hasAuth) {
+        setShowLoginModal(true);
+        return;
+      }
       increment(cartId, sku, authData!.jwt, authData!.phone);
     },
     [isStoreActive, hasAuth, cartId, increment, authData]
@@ -282,7 +292,11 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
 
   const handleDecrement = useCallback(
     (sku: string) => {
-      if (!isStoreActive || !hasAuth) return;
+      if (!isStoreActive) return;
+      if (!hasAuth) {
+        setShowLoginModal(true);
+        return;
+      }
       decrement(cartId, sku, authData!.jwt, authData!.phone);
     },
     [isStoreActive, hasAuth, cartId, decrement, authData]
@@ -432,6 +446,13 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
         <ThemeText style={styles.exploreText}>Explore More</ThemeText>
         <MaterialCommunityIcons name="chevron-right" size={20} color="#003F66" />
       </TouchableOpacity>
+
+      <LoginPromptModal
+        visible={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        title="Login required"
+        message="Please log in to add items to your cart."
+      />
     </View>
   );
 };
