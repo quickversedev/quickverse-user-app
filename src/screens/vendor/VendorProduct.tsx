@@ -729,9 +729,7 @@ const VendorProductComponent: React.FC = () => {
           backgroundColor: getColor('card'),
           borderRadius: 12,
           marginHorizontal: 16,
-          marginTop: 8,
           paddingHorizontal: 12,
-          paddingVertical: 8,
           borderWidth: 1,
           borderColor: getColor('border'),
         },
@@ -1168,7 +1166,7 @@ const VendorProductComponent: React.FC = () => {
   return (
     <>
       <SafeAreaView
-        style={{ flex: 1, backgroundColor: getColor('background'), paddingTop: safeAreaTop }}
+        style={{ flex: 1, backgroundColor: getColor('background') }}
       >
         <View style={styles.container}>
           {/* Header with Search and Back Button */}
@@ -1194,7 +1192,15 @@ const VendorProductComponent: React.FC = () => {
                 opacity: searchBarOpacity,
                 maxHeight: searchBarHeight.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0, 60], // Adjust based on your search container height
+                  outputRange: [0, 60],
+                }),
+                marginTop: searchBarHeight.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 8],
+                }),
+                paddingVertical: searchBarHeight.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 8],
                 }),
                 overflow: 'hidden',
               },

@@ -28,35 +28,30 @@ const useFetchUpdateData = () => {
   const [retryCount, setRetryCount] = useState(0); // Track retry attempts
 
   const fetchUpdateData = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await apiCall<ApiResponse>(
-        axiosInstance.get('/v3/appConfig', {
-          headers: {
-            Authorization: getAuthHeader(),
-          },
-        })
-      );
-      // const data = {
-      //   minVersion: '1.0.0',
-      //   appStoreURL: 'https://itunes.apple.com/app/id1542005830',
-      //   playStoreURL: 'https://play.google.com/store/apps/details?id=com.example.app',
-      //   latestVersion: '1.0.0',
-      // };
-      setUpdateData({
-        min_required_version: data.minVersion,
-        ios_url: data.appStoreURL,
-        android_url: data.playStoreURL,
-        latest_version: data.latestVersion,
-      });
-    } catch (err) {
-      setError(err);
-      console.error('Error fetching update data:', err);
-    } finally {
-      setLoading(false);
-    }
+    // API endpoint /v3/appConfig does not exist yet (returns 404)
+    // Uncomment when the backend implements this endpoint
+    // setLoading(true);
+    // setError(null);
+    // try {
+    //   const data = await apiCall<ApiResponse>(
+    //     axiosInstance.get('/v3/appConfig', {
+    //       headers: {
+    //         Authorization: getAuthHeader(),
+    //       },
+    //     })
+    //   );
+    //   setUpdateData({
+    //     min_required_version: data.minVersion,
+    //     ios_url: data.appStoreURL,
+    //     android_url: data.playStoreURL,
+    //     latest_version: data.latestVersion,
+    //   });
+    // } catch (err) {
+    //   setError(err);
+    //   console.error('Error fetching update data:', err);
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   const retry = () => {

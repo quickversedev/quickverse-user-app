@@ -39,7 +39,7 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({
       paddingVertical: 12,
       paddingHorizontal: 16,
       marginHorizontal: 16,
-      marginTop: 12,
+      marginTop: 4,
       borderRadius: theme.borderRadius.md,
       position: 'relative',
       zIndex: 2,
@@ -156,10 +156,6 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({
               <ThemeText variant="caption" color={getColor('subText')} style={{ marginRight: 8 }}>
                 • {formatAddress()}
               </ThemeText>
-              <View style={styles.ratingBox}>
-                <MaterialCommunityIcons name="star" size={14} color="#fff" />
-                {renderRating()}
-              </View>
             </View>
           </View>
           <View style={styles.chevronContainer}>

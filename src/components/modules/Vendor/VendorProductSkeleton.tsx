@@ -39,11 +39,6 @@ const VendorProductSkeleton: React.FC<VendorProductSkeletonProps> = ({ showVendo
     container: {
       flex: 1,
       backgroundColor: getColor('background'),
-      paddingTop: Platform.select({
-        ios: 0,
-        android: StatusBar.currentHeight || 0,
-        default: 0,
-      }),
     },
     header: {
       flexDirection: 'row',
@@ -81,10 +76,9 @@ const VendorProductSkeleton: React.FC<VendorProductSkeletonProps> = ({ showVendo
       alignItems: 'center',
       backgroundColor: getColor('card'),
       borderRadius: 16,
-      margin: 16,
+      marginHorizontal: 16,
+      marginTop: 4,
       padding: 12,
-      borderWidth: 1,
-      borderColor: getColor('border'),
     },
     vendorLogo: {
       width: 48,
@@ -361,9 +355,6 @@ const VendorProductSkeleton: React.FC<VendorProductSkeletonProps> = ({ showVendo
                 <ShimmerOverlay />
               </View>
               <View style={styles.vendorMetaItem}>
-                <ShimmerOverlay />
-              </View>
-              <View style={styles.vendorMetaRating}>
                 <ShimmerOverlay />
               </View>
             </View>

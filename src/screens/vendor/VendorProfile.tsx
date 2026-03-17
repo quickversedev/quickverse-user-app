@@ -381,7 +381,7 @@ const VendorProfileComponent: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Banner */}
         <View style={{ position: 'relative' }}>
