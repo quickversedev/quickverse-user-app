@@ -10,9 +10,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import SectionDivider from '../../../components/common/SectionDivider';
 import { Collection } from '../../../data/collectionsData';
 import { useTheme } from '../../../theme/ThemeContext';
+import { isStoreOpen, formatTimeToAMPM } from '../../../utils/storeUtils';
 
 interface CollectionsGridProps {
   collections: Collection[];
@@ -32,6 +34,17 @@ const CollectionsGrid: React.FC<CollectionsGridProps> = ({ collections, shopId }
   const { getColor, getTypography } = useTheme();
   const [showAgeModal, setShowAgeModal] = useState(false);
   const [pendingCollection, setPendingCollection] = useState<Collection | null>(null);
+
+  // Static collections timing: 8 AM - 11 PM
+  const storeStatus = React.useMemo(
+    () =>
+      isStoreOpen({
+        storeActive: true,
+        openingTime: '08:00 AM',
+        closingTime: '11:00 PM',
+      }),
+    []
+  );
 
   const handlePress = (collection: Collection) => {
     // Navigate to a screen where we can show products for this collection
@@ -84,16 +97,40 @@ const CollectionsGrid: React.FC<CollectionsGridProps> = ({ collections, shopId }
   return (
     <View style={styles.container}>
       <SectionDivider text="Collections" style={styles.sectionDivider} />
+      {!storeStatus.isOpen && (
+        <View style={styles.closedBanner}>
+          <MaterialCommunityIcons name="clock-outline" size={18} color="#B91C1C" />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.closedBannerText}>{storeStatus.reason}</Text>
+            {storeStatus.nextOpeningTime && (
+              <Text style={styles.closedBannerSub}>
+                Opens at {formatTimeToAMPM(storeStatus.nextOpeningTime)}
+                {storeStatus.timeUntilOpen ? ` (in ${storeStatus.timeUntilOpen})` : ''}
+              </Text>
+            )}
+          </View>
+        </View>
+      )}
       <View style={styles.grid}>
         {collections.map((collection, index) => {
           const isLastItem = index === collections.length - 1;
           return (
             <TouchableOpacity
               key={collection.id}
-              style={[styles.itemContainer, isLastItem && { marginBottom: 54 }]}
+              style={[
+                styles.itemContainer,
+                isLastItem && { marginBottom: 54 },
+                !storeStatus.isOpen && { opacity: 0.5 },
+              ]}
               onPress={() => handlePress(collection)}
+              disabled={!storeStatus.isOpen}
             >
-              <View style={styles.imageContainer}>
+              <View
+                style={[
+                  styles.imageContainer,
+                  !storeStatus.isOpen && { elevation: 0, shadowOpacity: 0 },
+                ]}
+              >
                 <Image
                   source={{ uri: collection.image }}
                   style={styles.image}
@@ -156,6 +193,30 @@ const styles = StyleSheet.create({
   },
   sectionDivider: {
     marginBottom: 16,
+  },
+  closedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    width: '100%',
+  },
+  closedBannerText: {
+    marginLeft: 10,
+    color: '#991B1B',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  closedBannerSub: {
+    marginLeft: 10,
+    color: '#B91C1C',
+    fontSize: 12,
+    marginTop: 2,
   },
   grid: {
     flexDirection: 'row',
