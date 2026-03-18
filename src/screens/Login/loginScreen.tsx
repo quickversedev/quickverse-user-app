@@ -319,7 +319,7 @@ const LoginScreen: React.FC = () => {
   });
 
   const isCooldownActive = timeRemaining > 0 && phoneNumber === lastRequestedPhone;
-  const isButtonDisabled = loading || !phoneNumber || phoneNumber.length !== 10;
+  const isButtonDisabled = loading || !phoneNumber || phoneNumber.length !== 10 || isCooldownActive;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -382,11 +382,7 @@ const LoginScreen: React.FC = () => {
             )}
 
             <TouchableOpacity
-              style={[
-                styles.otpButton,
-                isButtonDisabled && styles.otpButtonDisabled,
-                loading && { opacity: 0.7 },
-              ]}
+              style={[styles.otpButton, (loading || isCooldownActive) && { opacity: 0.5 }]}
               onPress={handleLogin}
               disabled={isButtonDisabled}
             >
@@ -395,7 +391,7 @@ const LoginScreen: React.FC = () => {
               ) : (
                 <ThemeText
                   variant="body"
-                  color={isButtonDisabled ? theme.colors.text : theme.colors.background}
+                  color={theme.colors.background}
                   style={styles.otpText}
                 >
                   Get OTP
