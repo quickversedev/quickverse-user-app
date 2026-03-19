@@ -163,6 +163,95 @@ const useAddressStore = create<AddressStore>((set, get) => ({
       };
     }
   },
+  updateAddress: async (
+    addressId: string,
+    updatedAddress: NewAddress,
+    authSession?: AuthSession
+  ) => {
+    try {
+      set({ addingLoading: true, addError: null });
+
+      if (!authSession?.jwt) {
+        throw new Error('Authentication required. Please login again.');
+      }
+
+      const addressData = {
+        name: updatedAddress.name,
+        phone: updatedAddress.phoneNumber,
+        city: updatedAddress.city,
+        state: updatedAddress.state,
+        tag: updatedAddress.tag,
+        addressLine1: updatedAddress.addressLine1,
+        addressLine2: updatedAddress.addressLine2,
+        addressLine3: updatedAddress.addressLine3 || '',
+        longitude: updatedAddress.longitude && parseFloat(updatedAddress.longitude),
+        latitude: updatedAddress.latitude && parseFloat(updatedAddress.latitude),
+        postalCode: updatedAddress.pincode,
+      };
+
+      console.log('[AddressStore] Updating address:', addressId, addressData);
+
+      await apiCall(
+        axiosInstance.put(`/v2/addresses/${addressId}`, addressData, {
+          headers: {
+            SessionKey: authSession.jwt,
+            phone: authSession.phone,
+          },
+        })
+      );
+
+      // Refresh addresses after updating
+      await get().fetchAddresses(authSession);
+      set({ addingLoading: false });
+
+      return { success: true };
+    } catch (err) {
+      const apiError = err as ApiError;
+      console.error('Error updating address:', apiError);
+
+      set({
+        addError: apiError.message || 'Failed to update address. Please try again.',
+        addingLoading: false,
+      });
+
+      return { success: false, error: apiError };
+    }
+  },
+  deleteAddress: async (addressId: string, authSession?: AuthSession) => {
+    try {
+      set({ addingLoading: true, addError: null });
+
+      if (!authSession?.jwt) {
+        throw new Error('Authentication required. Please login again.');
+      }
+
+      console.log('[AddressStore] Deleting address:', addressId);
+
+      await apiCall(
+        axiosInstance.delete(`/v2/addresses/${addressId}`, {
+          headers: {
+            SessionKey: authSession.jwt,
+            phone: authSession.phone,
+          },
+        })
+      );
+
+      await get().fetchAddresses(authSession);
+      set({ addingLoading: false });
+
+      return { success: true };
+    } catch (err) {
+      const apiError = err as ApiError;
+      console.error('Error deleting address:', apiError);
+
+      set({
+        addError: apiError.message || 'Failed to delete address. Please try again.',
+        addingLoading: false,
+      });
+
+      return { success: false, error: apiError };
+    }
+  },
 }));
 
 export default useAddressStore;

@@ -14,6 +14,8 @@ export const useAddress = () => {
     addError,
     fetchAddresses,
     addAddress,
+    updateAddress,
+    deleteAddress,
     loadAddressesFromStorage,
     setFetchError,
     setAddError,
@@ -32,6 +34,22 @@ export const useAddress = () => {
       return result;
     },
     [addAddress, authData]
+  );
+
+  const handleUpdateAddress = useCallback(
+    async (addressId: string, updatedAddress: NewAddress) => {
+      const result = await updateAddress(addressId, updatedAddress, authData as AuthSession);
+      return result;
+    },
+    [updateAddress, authData]
+  );
+
+  const handleDeleteAddress = useCallback(
+    async (addressId: string) => {
+      const result = await deleteAddress(addressId, authData as AuthSession);
+      return result;
+    },
+    [deleteAddress, authData]
   );
 
   const retryFetch = useCallback(() => {
@@ -57,6 +75,8 @@ export const useAddress = () => {
       // Actions
       fetchAddresses: stableFetchAddresses,
       addAddress: handleAddAddress,
+      updateAddress: handleUpdateAddress,
+      deleteAddress: handleDeleteAddress,
       retryFetch,
       clearFetchError,
       clearAddError,
@@ -75,6 +95,8 @@ export const useAddress = () => {
       addError,
       stableFetchAddresses,
       handleAddAddress,
+      handleUpdateAddress,
+      handleDeleteAddress,
       retryFetch,
       clearFetchError,
       clearAddError,

@@ -3,6 +3,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -25,8 +26,31 @@ const { width, height } = Dimensions.get('window');
 const AddressScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { getColor, getTypography, theme } = useTheme();
-  const { addresses, loading, fetchError, retryFetch, fetchAddresses } = useAddress();
+  const { addresses, loading, fetchError, retryFetch, fetchAddresses, deleteAddress } = useAddress();
   const insets = useSafeAreaInsets();
+
+  const handleDelete = useCallback(
+    (addr: import('../../../types/address').Address) => {
+      Alert.alert(
+        'Delete Address',
+        `Are you sure you want to delete "${addr.tag}" address?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              const result = await deleteAddress(addr.addressID);
+              if (!result.success) {
+                Alert.alert('Error', result.error?.message || 'Failed to delete address.');
+              }
+            },
+          },
+        ]
+      );
+    },
+    [deleteAddress]
+  );
 
   // Refresh addresses when screen comes into focus (e.g. after adding new address)
   useFocusEffect(
@@ -270,7 +294,13 @@ const AddressScreen = () => {
             <FlatList
               data={addresses}
               keyExtractor={(item, index) => item.addressID || `address-${index}`}
-              renderItem={({ item }) => <AddressCard address={item} />}
+              renderItem={({ item }) => (
+                <AddressCard
+                  address={item}
+                  onEdit={(addr) => navigation.navigate('EditAddress', { address: addr })}
+                  onDelete={handleDelete}
+                />
+              )}
               contentContainerStyle={themedStyles.listContainer}
               showsVerticalScrollIndicator={false}
               accessible={true}

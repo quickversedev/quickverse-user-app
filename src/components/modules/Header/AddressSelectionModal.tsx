@@ -759,6 +759,27 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                     <MaterialCommunityIcons name="plus" size={20} color={getColor('primary')} />
                     <Text style={themedStyles.addButtonText}>Add Address Details</Text>
                   </TouchableOpacity>
+
+                  {/* Manage Addresses Button */}
+                  <TouchableOpacity
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      paddingVertical: 12,
+                      marginTop: 4,
+                    }}
+                    onPress={() => {
+                      onClose();
+                      navigation.navigate('Address');
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <MaterialCommunityIcons name="cog-outline" size={18} color={getColor('subText')} />
+                    <Text style={{ color: getColor('subText'), fontSize: 13, fontWeight: '600', marginLeft: 6 }}>
+                      Manage Saved Addresses
+                    </Text>
+                  </TouchableOpacity>
                 </>
               )}
             </View>

@@ -51,6 +51,15 @@ export type AddressActions = {
     newAddress: NewAddress,
     authSession: AuthSession
   ) => Promise<{ success: boolean; error?: any }>;
+  updateAddress: (
+    addressId: string,
+    updatedAddress: NewAddress,
+    authSession: AuthSession
+  ) => Promise<{ success: boolean; error?: any }>;
+  deleteAddress: (
+    addressId: string,
+    authSession: AuthSession
+  ) => Promise<{ success: boolean; error?: any }>;
   loadAddressesFromStorage: () => Address[];
   clearAddressesFromStorage: () => void;
   setLoading: (loading: boolean) => void;

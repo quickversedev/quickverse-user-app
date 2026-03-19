@@ -25,6 +25,8 @@ interface AddressCardProps {
   address: Address;
   size?: AddressCardSize;
   onPress?: () => void;
+  onEdit?: (address: Address) => void;
+  onDelete?: (address: Address) => void;
   isSelected?: boolean;
   onLongPress?: () => void;
 }
@@ -33,6 +35,8 @@ const AddressCard = ({
   address,
   size = 'regular',
   onPress,
+  onEdit,
+  onDelete,
   isSelected,
   onLongPress,
 }: AddressCardProps) => {
@@ -236,13 +240,9 @@ const AddressCard = ({
     },
   });
 
-  // const handleEdit = () => {
-  //   // TODO: Implement edit functionality
-  // };
-
-  // const handleDelete = () => {
-  //   // TODO: Implement delete functionality
-  // };
+  const handleEdit = () => {
+    if (onEdit) onEdit(address);
+  };
 
   // Small size variant
   if (size === 'small') {
@@ -340,7 +340,7 @@ const AddressCard = ({
 
           <View style={themedStyles.nameSection}>
             <View style={themedStyles.personIcon}>
-              <Image source={Icons.man} />
+              <MaterialCommunityIcons name="account-outline" size={18} color={getColor('subText')} />
             </View>
             <Text
               style={themedStyles.name}
@@ -366,34 +366,55 @@ const AddressCard = ({
           </View>
         </View>
       </View>
-      {/* <View style={themedStyles.actions}>
-        <TouchableOpacity
-          style={themedStyles.editButton}
-          onPress={handleEdit}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Edit address"
-          accessibilityHint="Opens the edit address form"
-          activeOpacity={0.7}
+      {(onEdit || onDelete) && size === 'regular' && (
+        <View
+          style={{
+            flexDirection: 'row',
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: getColor('border'),
+          }}
         >
-          <Text style={themedStyles.editText}>Edit Address {'>'}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={themedStyles.deleteButton}
-          onPress={handleDelete}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Delete address"
-          accessibilityHint="Removes this address from your saved addresses"
-          activeOpacity={0.7}
-        >
-          <Text style={themedStyles.deleteText}>Delete Address</Text>
-          <View style={themedStyles.deleteIcon}>
-            <Text style={themedStyles.deleteIconText}>✕</Text>
-          </View>
-        </TouchableOpacity>
-      </View> */}
+          {onEdit && (
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 10,
+              }}
+              onPress={handleEdit}
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons name="pencil-outline" size={16} color={getColor('primary')} />
+              <Text style={{ color: getColor('primary'), fontWeight: '600', fontSize: 13, marginLeft: 6 }}>
+                Edit
+              </Text>
+            </TouchableOpacity>
+          )}
+          {onEdit && onDelete && (
+            <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: getColor('border') }} />
+          )}
+          {onDelete && (
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 10,
+              }}
+              onPress={() => onDelete(address)}
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons name="trash-can-outline" size={16} color={getColor('error')} />
+              <Text style={{ color: getColor('error'), fontWeight: '600', fontSize: 13, marginLeft: 6 }}>
+                Delete
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   );
 };
