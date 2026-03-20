@@ -145,14 +145,6 @@ const FloatingCartsStack: React.FC = () => {
         },
         cartBarWrapperMain: {
           borderRadius: theme.borderRadius.md,
-          shadowColor: theme.colors.shadow.color,
-          shadowOpacity: theme.colors.shadow.opacity,
-          shadowOffset: {
-            width: theme.colors.shadow.offset_width,
-            height: theme.colors.shadow.offset_height,
-          },
-          shadowRadius: theme.colors.shadow.radius,
-          elevation: 4,
           zIndex: 1,
         },
         cartSecondBehind: {
