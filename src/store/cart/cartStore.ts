@@ -120,13 +120,14 @@ const useCartStore = create<CartStore>()(
 
           // optimistic update
           set(s => {
-            const cart = s.carts[cartId] || { products: {} };
+            const cart = s.carts[cartId] || { cartId, products: {} };
 
             return {
               carts: {
                 ...s.carts,
                 [cartId]: {
                   ...cart,
+                  cartId,
                   products: {
                     ...cart.products,
                     [product.sku]: {

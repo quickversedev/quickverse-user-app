@@ -39,7 +39,26 @@ const CartBar: React.FC<CartBarProps> = ({
 }) => {
   const { getColor, isDarkMode } = useTheme();
   const translateX = useRef(new Animated.Value(0)).current;
+  const slideUpAnim = useRef(new Animated.Value(60)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const [isRevealed, setIsRevealed] = React.useState(false);
+
+  // Slide-up entrance animation on mount
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.spring(slideUpAnim, {
+        toValue: 0,
+        tension: 80,
+        friction: 12,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [slideUpAnim, fadeAnim]);
   const getVendorById = useVendorStore(state => state.getVendorById);
   const vendor = getVendorById(shopId);
   const vendorName = vendor?.name || shopId;
@@ -219,7 +238,13 @@ const CartBar: React.FC<CartBarProps> = ({
   }
 
   return (
-    <View style={[styles.stickyContainer, style]}>
+    <Animated.View
+      style={[
+        styles.stickyContainer,
+        style,
+        { transform: [{ translateY: slideUpAnim }], opacity: fadeAnim },
+      ]}
+    >
       {/* Delete button (hidden behind cart) */}
       <Animated.View
         style={[
@@ -331,7 +356,7 @@ const CartBar: React.FC<CartBarProps> = ({
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 };
 
