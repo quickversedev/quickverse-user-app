@@ -715,9 +715,18 @@ const CartScreen: React.FC = () => {
       edges={['top', 'bottom']}
     >
       <CartHeader
-        onBack={() =>
-          navigation.canGoBack() ? navigation.goBack() : navigation.navigate('MainApp')
-        }
+        onBack={() => {
+          // Try parent stack navigator first (when Cart is a tab),
+          // then fall back to tab goBack, then Home
+          const parent = navigation.getParent();
+          if (parent?.canGoBack()) {
+            parent.goBack();
+          } else if (navigation.canGoBack()) {
+            navigation.goBack();
+          } else {
+            navigation.navigate('MainApp');
+          }
+        }}
         onClearCart={handleClearCart}
       />
 
