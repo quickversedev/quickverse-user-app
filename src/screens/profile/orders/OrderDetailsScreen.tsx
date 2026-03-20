@@ -581,7 +581,9 @@ const OrderDetailsScreen = () => {
     const platformFeeOriginal = 12;
     const packagingCharges = 0;
     const packagingChargesOriginal = isGrocery ? 4 : 8;
-    const taxes = isGrocery ? 0 : Math.round(Number(subTotal) * 0.05);
+    const taxes = isGrocery
+      ? Math.round(0.18 * (0.02 * Number(subTotal) + deliveryFee + platformFee))
+      : Math.round(0.18 * (0.10 * Number(subTotal) + deliveryFee + platformFee));
 
     const total =
       Number(subTotal) + deliveryFee + platformFee + packagingCharges + taxes;

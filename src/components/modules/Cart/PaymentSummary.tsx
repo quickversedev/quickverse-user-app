@@ -110,7 +110,9 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     const platformFee = isGrocery ? 3 : 5;
     const packagingCharges = isGrocery ? 0 : 0;
     const deliveryCharges = isGrocery ? 17 : 20;
-    const taxes = isGrocery ? 0 : Math.round(calculatedSubtotal * 0.05);
+    const taxes = isGrocery
+      ? Math.round(0.18 * (0.02 * calculatedSubtotal + deliveryCharges + platformFee))
+      : Math.round(0.18 * (0.10 * calculatedSubtotal + deliveryCharges + platformFee));
 
     const calculatedTotal =
       calculatedSubtotal +
