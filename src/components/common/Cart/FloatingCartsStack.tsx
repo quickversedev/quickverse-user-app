@@ -20,7 +20,6 @@ import CartBar from './CartBar';
 const { width } = Dimensions.get('window');
 const ANIMATION_DURATION = 300;
 
-
 const FloatingCartsStack: React.FC = () => {
   const { authData } = useAuth();
   const carts = useCartStore(state => state.carts);
@@ -285,7 +284,7 @@ const FloatingCartsStack: React.FC = () => {
           })}
         </View>
         {/* Show the in-progress order bar below cart bars */}
-        <View>
+        <View style={{ paddingHorizontal: 4 }}>
           <OrderProgressBar />
         </View>
       </Animated.View>
