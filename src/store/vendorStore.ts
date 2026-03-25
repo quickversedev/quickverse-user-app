@@ -46,41 +46,6 @@ const sortVendorsByActiveStatus = (vendors: Vendor[]): Vendor[] => {
   });
 };
 
-// Combined sorting function: open stores first, then by distance
-const sortVendorsByDistanceAndActiveStatus = (
-  vendors: Vendor[],
-  location?: LocationFilter
-): Vendor[] => {
-  if (!location) {
-    return sortVendorsByActiveStatus(vendors);
-  }
-
-  const { latitude, longitude } = location;
-  return [...vendors]
-    .map(v => {
-      const { lat, lon } = getVendorCoords(v);
-      const distance =
-        lat != null && lon != null
-          ? getDistanceInKm(latitude, longitude, lat, lon)
-          : Number.POSITIVE_INFINITY;
-
-      // Check if store is open
-      const storeStatus = isStoreOpen({
-        openingTime: v.openingTime,
-        closingTime: v.closingTime,
-        storeActive: v.storeActive,
-      });
-
-      return { v, distance, isOpen: storeStatus.isOpen };
-    })
-    .sort((a, b) => {
-      // Keep closed stores at the end; sort by distance within each group
-      if (a.isOpen && !b.isOpen) return -1;
-      if (!a.isOpen && b.isOpen) return 1;
-      return a.distance - b.distance;
-    })
-    .map(x => x.v);
-};
 
 const useVendorStore = create<VendorStore>((set, get) => ({
   // Initial state
@@ -113,7 +78,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
       setTimeout(() => {
         // Only update if this is still the current request
         if (requestId === currentRequestId) {
-          const sortedVendors = sortVendorsByDistanceAndActiveStatus(mockVendors, location);
+          const sortedVendors = sortVendorsByActiveStatus(mockVendors);
           console.log('[VendorStore] Mock vendors sorted:', sortedVendors.length);
           set({ vendors: sortedVendors, loading: false, userLocation: location || null });
         }
@@ -152,7 +117,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
 
       // Only update state if this is still the current request
       if (requestId === currentRequestId) {
-        const sortedVendors = sortVendorsByDistanceAndActiveStatus(data, location);
+        const sortedVendors = sortVendorsByActiveStatus(data);
         console.log('[VendorStore] Setting vendors in state:', sortedVendors.length);
         set({
           vendors: sortedVendors,
@@ -222,7 +187,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
 
   setVendors: (vendors: Vendor[]) => {
     const loc = get().userLocation;
-    const sorted = sortVendorsByDistanceAndActiveStatus(vendors, loc || undefined);
+    const sorted = sortVendorsByActiveStatus(vendors);
     set({ vendors: sorted });
   },
   setSelectedVendor: (vendor: Vendor | null) => set({ selectedVendor: vendor }),
