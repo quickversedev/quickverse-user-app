@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { Cart } from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -23,6 +23,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   vendorCategory,
 }) => {
   const { getColor, theme, getButtonColor } = useTheme();
+  const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
 
   // Animation values
   const animatedHeight = useRef(new Animated.Value(0)).current;
@@ -67,6 +68,8 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     packagingCharges,
     packagingChargesOriginal,
     taxes,
+    commission,
+    taxableAmount,
     total,
     totalDiscountOnItems,
     couponDiscount,
@@ -80,6 +83,9 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
         totalDiscountOnItems: 0,
         couponDiscount: 0,
         finalTotal: 0,
+        taxes: 0,
+        commission: 0,
+        taxableAmount: 0,
       };
     }
 
@@ -110,9 +116,10 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     const platformFee = isGrocery ? 3 : 5;
     const packagingCharges = isGrocery ? 0 : 0;
     const deliveryCharges = isGrocery ? 17 : 20;
-    const taxes = isGrocery
-      ? Math.round(0.18 * (0.02 * calculatedSubtotal + deliveryCharges + platformFee))
-      : Math.round(0.18 * (0.10 * calculatedSubtotal + deliveryCharges + platformFee));
+    const commissionRate = isGrocery ? 0.02 : 0.10;
+    const commission = commissionRate * calculatedSubtotal;
+    const taxableAmount = commission + deliveryCharges + platformFee;
+    const taxes = Math.round(0.18 * taxableAmount);
 
     const calculatedTotal =
       calculatedSubtotal +
@@ -135,6 +142,8 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
       packagingCharges,
       packagingChargesOriginal: isGrocery ? 4 : 8,
       taxes,
+      commission,
+      taxableAmount,
       total: calculatedTotal,
       totalDiscountOnItems: calculatedTotalDiscountOnItems,
       couponDiscount: calculatedCouponDiscount,
@@ -396,15 +405,57 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
             </View>
           </View>
 
-          {/* Taxes (GST & Services) - hidden for Grocery */}
+          {/* Taxes (GST & Services) with breakdown tooltip */}
           {taxes > 0 && (
-            <View style={styles.billRow}>
-              <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
-                Taxes (GST & Services)
-              </ThemeText>
-              <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
-                ₹{(taxes ?? 0).toFixed(2)}
-              </ThemeText>
+            <View>
+              <Pressable
+                style={styles.billRow}
+                onPress={() => setShowTaxBreakdown(prev => !prev)}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <ThemeText variant="body" color={getColor('text')} style={styles.billLabel}>
+                    Taxes (GST & Services)
+                  </ThemeText>
+                  <MaterialCommunityIcons
+                    name="information-outline"
+                    size={14}
+                    color={getColor('text')}
+                    style={{ marginLeft: 4 }}
+                  />
+                </View>
+                <ThemeText variant="body" color={getColor('text')} style={styles.billAmount}>
+                  ₹{(taxes ?? 0).toFixed(2)}
+                </ThemeText>
+              </Pressable>
+              {showTaxBreakdown && (
+                <View
+                  style={{
+                    backgroundColor: getColor('background'),
+                    borderWidth: 1,
+                    borderColor: getColor('border'),
+                    borderRadius: theme.borderRadius.sm,
+                    padding: 10,
+                    marginBottom: 8,
+                  }}
+                >
+                  <ThemeText variant="caption" color={getColor('text')}>
+                    Commission ({vendorCategory?.toLowerCase().includes('grocery') ? '2%' : '10%'}): ₹{commission.toFixed(2)}
+                  </ThemeText>
+                  <ThemeText variant="caption" color={getColor('text')}>
+                    Delivery Fee: ₹{(deliveryFee ?? 0).toFixed(2)}
+                  </ThemeText>
+                  <ThemeText variant="caption" color={getColor('text')}>
+                    Platform Fee: ₹{(platformFee ?? 0).toFixed(2)}
+                  </ThemeText>
+                  <View style={{ borderTopWidth: 1, borderTopColor: getColor('border'), marginVertical: 4 }} />
+                  <ThemeText variant="caption" color={getColor('text')}>
+                    Taxable Amount: ₹{taxableAmount.toFixed(2)}
+                  </ThemeText>
+                  <ThemeText variant="caption" color={getColor('text')} style={{ fontWeight: '600' }}>
+                    GST (18%): ₹{(taxes ?? 0).toFixed(2)}
+                  </ThemeText>
+                </View>
+              )}
             </View>
           )}
 

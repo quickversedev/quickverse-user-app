@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '../../../theme/ThemeContext';
 
@@ -13,6 +13,9 @@ interface BillSummaryCardProps {
   packagingCharges?: number;
   packagingChargesOriginal?: number;
   taxes?: number;
+  commission?: number;
+  taxableAmount?: number;
+  isGrocery?: boolean;
   onPress: () => void;
 }
 
@@ -26,10 +29,14 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
   packagingCharges = 0,
   packagingChargesOriginal,
   taxes = 0,
+  commission = 0,
+  taxableAmount = 0,
+  isGrocery = false,
   onPress,
 }) => {
   const { getColor } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
 
   const handlePress = useCallback(() => {
     setIsExpanded(!isExpanded);
@@ -111,13 +118,46 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
             </View>
           </View>
           {taxes > 0 && (
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>
-                Taxes (GST & Services)
-              </Text>
-              <Text style={[styles.summaryValue, { color: getColor('text') }]}>
-                ₹{taxes.toFixed(2)}
-              </Text>
+            <View>
+              <Pressable
+                style={styles.summaryRow}
+                onPress={() => setShowTaxBreakdown(prev => !prev)}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={[styles.summaryLabel, { color: getColor('subText') }]}>
+                    Taxes (GST & Services)
+                  </Text>
+                  <Icon
+                    name="information-outline"
+                    size={14}
+                    color={getColor('subText')}
+                    style={{ marginLeft: 4 }}
+                  />
+                </View>
+                <Text style={[styles.summaryValue, { color: getColor('text') }]}>
+                  ₹{taxes.toFixed(2)}
+                </Text>
+              </Pressable>
+              {showTaxBreakdown && (
+                <View style={styles.taxBreakdown}>
+                  <Text style={[styles.taxBreakdownText, { color: getColor('subText') }]}>
+                    Commission ({isGrocery ? '2%' : '10%'}): ₹{commission.toFixed(2)}
+                  </Text>
+                  <Text style={[styles.taxBreakdownText, { color: getColor('subText') }]}>
+                    Delivery Fee: ₹{deliveryFee.toFixed(2)}
+                  </Text>
+                  <Text style={[styles.taxBreakdownText, { color: getColor('subText') }]}>
+                    Platform Fee: ₹{platformFee.toFixed(2)}
+                  </Text>
+                  <View style={styles.taxBreakdownDivider} />
+                  <Text style={[styles.taxBreakdownText, { color: getColor('subText') }]}>
+                    Taxable Amount: ₹{taxableAmount.toFixed(2)}
+                  </Text>
+                  <Text style={[styles.taxBreakdownText, { color: getColor('text'), fontWeight: '600' }]}>
+                    GST (18%): ₹{taxes.toFixed(2)}
+                  </Text>
+                </View>
+              )}
             </View>
           )}
           <View style={[styles.summaryRow, styles.summaryTotalRow]}>
@@ -214,6 +254,23 @@ const styles = StyleSheet.create({
   summaryTotalValue: {
     fontSize: 15,
     fontWeight: '700',
+  },
+  taxBreakdown: {
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 6,
+  },
+  taxBreakdownText: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  taxBreakdownDivider: {
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    marginVertical: 4,
   },
 });
 

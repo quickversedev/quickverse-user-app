@@ -568,6 +568,9 @@ const OrderDetailsScreen = () => {
         packagingCharges: 0,
         packagingChargesOriginal: 0,
         taxes: 0,
+        commission: 0,
+        taxableAmount: 0,
+        isGrocery: false,
       };
 
     // Calculate subTotal from items — item.price is already the line total (unit price × quantity)
@@ -581,9 +584,10 @@ const OrderDetailsScreen = () => {
     const platformFeeOriginal = 12;
     const packagingCharges = 0;
     const packagingChargesOriginal = isGrocery ? 4 : 8;
-    const taxes = isGrocery
-      ? Math.round(0.18 * (0.02 * Number(subTotal) + deliveryFee + platformFee))
-      : Math.round(0.18 * (0.10 * Number(subTotal) + deliveryFee + platformFee));
+    const commissionRate = isGrocery ? 0.02 : 0.10;
+    const commission = commissionRate * Number(subTotal);
+    const taxableAmount = commission + deliveryFee + platformFee;
+    const taxes = Math.round(0.18 * taxableAmount);
 
     const total =
       Number(subTotal) + deliveryFee + platformFee + packagingCharges + taxes;
@@ -598,6 +602,9 @@ const OrderDetailsScreen = () => {
       packagingCharges,
       packagingChargesOriginal,
       taxes,
+      commission,
+      taxableAmount,
+      isGrocery,
     };
   }, [selectedOrder, derivedItems, vendorDetails]);
 
@@ -815,6 +822,9 @@ const OrderDetailsScreen = () => {
             packagingCharges={summary.packagingCharges}
             packagingChargesOriginal={summary.packagingChargesOriginal}
             taxes={summary.taxes}
+            commission={summary.commission}
+            taxableAmount={summary.taxableAmount}
+            isGrocery={summary.isGrocery}
             onPress={handleViewSummary}
           />
 
