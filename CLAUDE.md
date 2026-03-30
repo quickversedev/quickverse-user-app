@@ -115,6 +115,10 @@ Route.tsx (auth check)
 Configured via `react-native-dotenv` (`@env` module). Type declarations in `src/types/env.d.ts`.
 Restart Metro after `.env` changes: `npm start -- --reset-cache`
 
+## Important Rules
+
+- **Backend is read-only.** The `/backend` directory may be added as a working directory for reference, but NEVER modify, edit, or write files there. Only read backend files for context.
+
 ## Branch & Commit Conventions
 
 - Branch: `feature/name`, `bugfix/name`, `hotfix/name`
