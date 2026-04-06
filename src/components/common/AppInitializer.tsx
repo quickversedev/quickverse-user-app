@@ -7,6 +7,7 @@ import { getAddressFromCoordinates } from '../../services/api/olaLocationService
 import { getUserAddresses } from '../../services/localStorage/storage.service';
 import useAddressStore from '../../store/address/addressStore';
 import useOrderStore from '../../store/cart/orderStore';
+import usePricingStore from '../../store/pricingStore';
 import useThemeStore from '../../store/themeStore';
 import useVendorStore from '../../store/vendorStore';
 import { Address } from '../../types/address';
@@ -66,6 +67,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   const { fetchTheme } = useThemeStore();
   const { fetchPages, loading: pagesLoading } = usePages();
   const { fetchOrders } = useOrderStore();
+  const { fetchPricing } = usePricingStore();
 
   // Authentication and address selection
   const { setSelectedAddress, selectedAddress, authData } = useAuth();
@@ -90,6 +92,8 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
         }),
         fetchTheme(),
         fetchPages(),
+        fetchPricing('FOOD'),
+        fetchPricing('GROCERY'),
         authData?.jwt && authData?.phone
           ? fetchOrders(authData.jwt, authData.phone, null, 5)
           : Promise.resolve(),
@@ -104,6 +108,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     fetchInitialConfig,
     fetchTheme,
     fetchPages,
+    fetchPricing,
     fetchOrders,
     locationData?.location?.longitude,
     locationData?.location?.latitude,
@@ -342,8 +347,8 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
 
       await Promise.allSettled([configPromise, addressPromise]);
 
-      // Step 4: Fetch theme and pages
-      await Promise.allSettled([fetchTheme(), fetchPages()]);
+      // Step 4: Fetch theme, pages, and pricing configs
+      await Promise.allSettled([fetchTheme(), fetchPages(), fetchPricing('FOOD'), fetchPricing('GROCERY')]);
 
       // Step 5: Initialize selected address
       await initializeSelectedAddress();
@@ -363,6 +368,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     fetchAddresses,
     fetchTheme,
     fetchPages,
+    fetchPricing,
     fetchOrders,
     initializeSelectedAddress,
     isLoggedIn,

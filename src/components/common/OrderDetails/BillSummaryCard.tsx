@@ -16,6 +16,8 @@ interface BillSummaryCardProps {
   commission?: number;
   taxableAmount?: number;
   isGrocery?: boolean;
+  commissionRate?: number;
+  gstRate?: number;
   onPress: () => void;
 }
 
@@ -32,6 +34,8 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
   commission = 0,
   taxableAmount = 0,
   isGrocery = false,
+  commissionRate,
+  gstRate,
   onPress,
 }) => {
   const { getColor } = useTheme();
@@ -141,7 +145,7 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
               {showTaxBreakdown && (
                 <View style={styles.taxBreakdown}>
                   <Text style={[styles.taxBreakdownText, { color: getColor('subText') }]}>
-                    Commission ({isGrocery ? '2%' : '10%'}): ₹{commission.toFixed(2)}
+                    Commission ({commissionRate != null ? `${(commissionRate * 100).toFixed(0)}%` : isGrocery ? '2%' : '10%'}): ₹{commission.toFixed(2)}
                   </Text>
                   <Text style={[styles.taxBreakdownText, { color: getColor('subText') }]}>
                     Delivery Fee: ₹{deliveryFee.toFixed(2)}
@@ -154,7 +158,7 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
                     Taxable Amount: ₹{taxableAmount.toFixed(2)}
                   </Text>
                   <Text style={[styles.taxBreakdownText, { color: getColor('text'), fontWeight: '600' }]}>
-                    GST (18%): ₹{taxes.toFixed(2)}
+                    GST ({gstRate != null ? `${(gstRate * 100).toFixed(0)}%` : '18%'}): ₹{taxes.toFixed(2)}
                   </Text>
                 </View>
               )}

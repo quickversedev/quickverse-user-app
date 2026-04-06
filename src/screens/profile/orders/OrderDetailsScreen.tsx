@@ -33,6 +33,7 @@ import { useNotifications } from '../../../hooks/useNotifications';
 import { useOrders } from '../../../hooks/useOrders';
 import orderService from '../../../services/createOrderService';
 import createPaymentService, { PaymentTender } from '../../../services/createPaymentService';
+import usePricingStore from '../../../store/pricingStore';
 import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AppNavigationProp } from '../../../types/navigation';
@@ -216,6 +217,10 @@ const OrderDetailsScreen = () => {
     if (!selectedOrder?.shopId) return null;
     return getVendorById(selectedOrder.shopId);
   }, [selectedOrder?.shopId, getVendorById]);
+
+  const isGrocery = vendorDetails?.category?.toLowerCase().includes('grocery');
+  const serviceType = isGrocery ? 'GROCERY' as const : 'FOOD' as const;
+  const pricing = usePricingStore(state => state.getPricingValues(serviceType));
 
   // Load order and setup polling
   useEffect(() => {
@@ -576,37 +581,29 @@ const OrderDetailsScreen = () => {
     // Calculate subTotal from items — item.price is already the line total (unit price × quantity)
     const subTotal = derivedItems.reduce((sum, item) => sum + item.price, 0);
 
-    // Fee structure matching PaymentSummary.tsx (different for Grocery vs Food)
-    const isGrocery = vendorDetails?.category?.toLowerCase().includes('grocery');
-    const deliveryFee = isGrocery ? 17 : 20;
-    const deliveryFeeOriginal = 39;
-    const platformFee = isGrocery ? 3 : 5;
-    const platformFeeOriginal = 12;
-    const packagingCharges = 0;
-    const packagingChargesOriginal = isGrocery ? 4 : 8;
-    const commissionRate = isGrocery ? 0.02 : 0.10;
-    const commission = commissionRate * Number(subTotal);
-    const taxableAmount = commission + deliveryFee + platformFee;
-    const taxes = Math.round(0.18 * taxableAmount);
+    // Fee structure from dynamic pricing config
+    const commission = pricing.commissionRate * Number(subTotal);
+    const taxableAmount = commission + pricing.deliveryFee + pricing.platformFee;
+    const taxes = Math.round(pricing.gstRate * taxableAmount);
 
     const total =
-      Number(subTotal) + deliveryFee + platformFee + packagingCharges + taxes;
+      Number(subTotal) + pricing.deliveryFee + pricing.platformFee + pricing.packagingCharges + taxes;
 
     return {
       subTotal,
-      deliveryFee,
-      deliveryFeeOriginal,
+      deliveryFee: pricing.deliveryFee,
+      deliveryFeeOriginal: pricing.deliveryFeeOriginal,
       total,
-      platformFee,
-      platformFeeOriginal,
-      packagingCharges,
-      packagingChargesOriginal,
+      platformFee: pricing.platformFee,
+      platformFeeOriginal: pricing.platformFeeOriginal,
+      packagingCharges: pricing.packagingCharges,
+      packagingChargesOriginal: pricing.packagingChargesOriginal,
       taxes,
       commission,
       taxableAmount,
-      isGrocery,
+      isGrocery: !!isGrocery,
     };
-  }, [selectedOrder, derivedItems, vendorDetails]);
+  }, [selectedOrder, derivedItems, pricing, isGrocery]);
 
   const [showAllItems, setShowAllItems] = React.useState(false);
   const displayedItems = showAllItems ? derivedItems : derivedItems.slice(0, 2);
@@ -825,6 +822,8 @@ const OrderDetailsScreen = () => {
             commission={summary.commission}
             taxableAmount={summary.taxableAmount}
             isGrocery={summary.isGrocery}
+            commissionRate={pricing.commissionRate}
+            gstRate={pricing.gstRate}
             onPress={handleViewSummary}
           />
 

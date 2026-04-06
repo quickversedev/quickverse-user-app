@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { Cart } from '../../../store/cart/cartStore';
+import usePricingStore from '../../../store/pricingStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { ThemeText } from '../../common/theme/ThemeText';
 
@@ -24,6 +25,9 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
 }) => {
   const { getColor, theme, getButtonColor } = useTheme();
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
+  const isGrocery = vendorCategory?.toLowerCase().includes('grocery');
+  const serviceType = isGrocery ? 'GROCERY' : 'FOOD';
+  const pricing = usePricingStore(state => state.getPricingValues(serviceType));
 
   // Animation values
   const animatedHeight = useRef(new Animated.Value(0)).current;
@@ -111,45 +115,37 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     //       calculatedCouponDiscount +
     //       calculatedDeliveryFee;
 
-    // Fee structure: different for Grocery vs Food
-    const isGrocery = vendorCategory?.toLowerCase().includes('grocery');
-    const platformFee = isGrocery ? 3 : 5;
-    const packagingCharges = isGrocery ? 0 : 0;
-    const deliveryCharges = isGrocery ? 17 : 20;
-    const commissionRate = isGrocery ? 0.02 : 0.10;
-    const commission = commissionRate * calculatedSubtotal;
-    const taxableAmount = commission + deliveryCharges + platformFee;
-    const taxes = Math.round(0.18 * taxableAmount);
+    // Fee structure from dynamic pricing config
+    const commission = pricing.commissionRate * calculatedSubtotal;
+    const taxableAmount = commission + pricing.deliveryFee + pricing.platformFee;
+    const taxes = Math.round(pricing.gstRate * taxableAmount);
 
     const calculatedTotal =
       calculatedSubtotal +
-      deliveryCharges +
-      platformFee +
-      packagingCharges +
+      pricing.deliveryFee +
+      pricing.platformFee +
+      pricing.packagingCharges +
       taxes -
       calculatedTotalDiscountOnItems -
       calculatedCouponDiscount;
 
-    // Calculate final total including COD charges if COD is selected
-    const calculatedFinalTotal = calculatedTotal;
-
     return {
       subtotal: calculatedSubtotal,
-      deliveryFee: deliveryCharges,
-      deliveryFeeOriginal: isGrocery ? 39 : 39,
-      platformFee,
-      platformFeeOriginal: isGrocery ? 12 : 12,
-      packagingCharges,
-      packagingChargesOriginal: isGrocery ? 4 : 8,
+      deliveryFee: pricing.deliveryFee,
+      deliveryFeeOriginal: pricing.deliveryFeeOriginal,
+      platformFee: pricing.platformFee,
+      platformFeeOriginal: pricing.platformFeeOriginal,
+      packagingCharges: pricing.packagingCharges,
+      packagingChargesOriginal: pricing.packagingChargesOriginal,
       taxes,
       commission,
       taxableAmount,
       total: calculatedTotal,
       totalDiscountOnItems: calculatedTotalDiscountOnItems,
       couponDiscount: calculatedCouponDiscount,
-      finalTotal: calculatedFinalTotal,
+      finalTotal: calculatedTotal,
     };
-  }, [cart, codCharges, selectedPaymentOption, vendorCategory]);
+  }, [cart, codCharges, selectedPaymentOption, vendorCategory, pricing]);
 
   const styles = StyleSheet.create({
     paymentSummaryBox: {
@@ -439,7 +435,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
                   }}
                 >
                   <ThemeText variant="caption" color={getColor('text')}>
-                    Commission ({vendorCategory?.toLowerCase().includes('grocery') ? '2%' : '10%'}): ₹{commission.toFixed(2)}
+                    Commission ({(pricing.commissionRate * 100).toFixed(0)}%): ₹{commission.toFixed(2)}
                   </ThemeText>
                   <ThemeText variant="caption" color={getColor('text')}>
                     Delivery Fee: ₹{(deliveryFee ?? 0).toFixed(2)}
@@ -452,7 +448,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
                     Taxable Amount: ₹{taxableAmount.toFixed(2)}
                   </ThemeText>
                   <ThemeText variant="caption" color={getColor('text')} style={{ fontWeight: '600' }}>
-                    GST (18%): ₹{(taxes ?? 0).toFixed(2)}
+                    GST ({(pricing.gstRate * 100).toFixed(0)}%): ₹{(taxes ?? 0).toFixed(2)}
                   </ThemeText>
                 </View>
               )}
