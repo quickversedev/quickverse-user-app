@@ -220,7 +220,14 @@ const OrderDetailsScreen = () => {
 
   const isGrocery = vendorDetails?.category?.toLowerCase().includes('grocery');
   const serviceType = isGrocery ? 'GROCERY' as const : 'FOOD' as const;
-  const pricing = usePricingStore(state => state.getPricingValues(serviceType));
+  
+  // Select the stable array to trigger re-renders only when it changes.
+  // Using getPricingValues directly in the selector returns a new object every time,
+  // causing useSyncExternalStore to throw an infinite loop warning/error.
+  const pricingConfig = usePricingStore(state => state.configs[serviceType]);
+  const pricing = useMemo(() => {
+    return usePricingStore.getState().getPricingValues(serviceType);
+  }, [pricingConfig, serviceType]);
 
   // Load order and setup polling
   useEffect(() => {

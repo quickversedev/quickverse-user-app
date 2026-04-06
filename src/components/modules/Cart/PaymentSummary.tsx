@@ -27,7 +27,14 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
   const isGrocery = vendorCategory?.toLowerCase().includes('grocery');
   const serviceType = isGrocery ? 'GROCERY' : 'FOOD';
-  const pricing = usePricingStore(state => state.getPricingValues(serviceType));
+  
+  // Select the stable array to trigger re-renders only when it changes.
+  // We avoid selecting via getPricingValues directly as it returns a new object
+  // each time, violating useSyncExternalStore expectations and causing infinite loops.
+  const pricingConfig = usePricingStore(state => state.configs[serviceType]);
+  const pricing = useMemo(() => {
+    return usePricingStore.getState().getPricingValues(serviceType);
+  }, [pricingConfig, serviceType]);
 
   // Animation values
   const animatedHeight = useRef(new Animated.Value(0)).current;
