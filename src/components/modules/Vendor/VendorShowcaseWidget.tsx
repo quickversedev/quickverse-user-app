@@ -1,7 +1,7 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
+  Animated,
   FlatList,
   Image,
   StyleSheet,
@@ -18,11 +18,10 @@ import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
+import { triggerAddToCartHaptic } from '../../../utils/haptics';
 import { getStoreStatus } from '../../../utils/storeUtils';
 import LoginPromptModal from '../../common/LoginPromptModal';
 import { ThemeText } from '../../common/theme/ThemeText';
-
-const { width } = Dimensions.get('window');
 
 interface CategoryItem {
   id: string;
@@ -111,9 +110,6 @@ const ProductRenderItem = React.memo(
             <ThemeText style={styles.discountText}>{item.discount}% OFF</ThemeText>
           </View>
         )}
-        <View style={[styles.vegIcon, !item.veg && { borderColor: '#EF4444' }]}>
-          <View style={[styles.vegDot, !item.veg && { backgroundColor: '#EF4444' }]} />
-        </View>
       </View>
 
       <View style={styles.productContent}>
@@ -164,6 +160,42 @@ const ProductRenderItem = React.memo(
   )
 );
 
+// Pagination dots — one dot per visible "page", not per item
+interface ScrollDotsProps {
+  scrollX: Animated.Value;
+  itemWidth: number;
+  itemCount: number;
+  visibleCount: number;
+}
+
+const ScrollDotsBase: React.FC<ScrollDotsProps> = ({
+  scrollX,
+  itemWidth,
+  itemCount,
+  visibleCount,
+}) => {
+  const pageCount = Math.ceil(itemCount / visibleCount);
+  if (pageCount <= 1) return null;
+
+  const pageWidth = itemWidth * visibleCount;
+
+  return (
+    <View style={styles.dotsRow}>
+      {Array.from({ length: pageCount }).map((_, i) => {
+        const inputRange = [(i - 1) * pageWidth, i * pageWidth, (i + 1) * pageWidth];
+        const opacity = scrollX.interpolate({
+          inputRange,
+          outputRange: [0.25, 1, 0.25],
+          extrapolate: 'clamp',
+        });
+        return <Animated.View key={i} style={[styles.dot, { opacity }]} />;
+      })}
+    </View>
+  );
+};
+
+const ScrollDots = React.memo(ScrollDotsBase);
+
 const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   vendor = MOCK_VENDOR,
   products,
@@ -171,7 +203,7 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   onPressProduct,
   onPressExplore,
 }) => {
-  const { getColor } = useTheme();
+  const _theme = useTheme(); // kept for potential future use
   const [isLoading, setIsLoading] = React.useState(true);
   const [fetchedProducts, setFetchedProducts] = React.useState<Product[]>([]);
   const [fetchedCategories, setFetchedCategories] = React.useState<CategoryItem[]>([]);
@@ -179,6 +211,33 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   // UI State for category switching
   const [isSwitchingCat, setIsSwitchingCat] = React.useState(false);
   const productsListRef = React.useRef<FlatList>(null);
+
+  // Scroll indicators + haptic feedback on page change
+  const catScrollX = useRef(new Animated.Value(0)).current;
+  const prodScrollX = useRef(new Animated.Value(0)).current;
+  const catPageRef = useRef(0);
+  const prodPageRef = useRef(0);
+
+  React.useEffect(() => {
+    const catId = catScrollX.addListener(({ value }) => {
+      const page = Math.round(value / (76 * 4));
+      if (page !== catPageRef.current) {
+        catPageRef.current = page;
+        triggerAddToCartHaptic();
+      }
+    });
+    const prodId = prodScrollX.addListener(({ value }) => {
+      const page = Math.round(value / (152 * 2));
+      if (page !== prodPageRef.current) {
+        prodPageRef.current = page;
+        triggerAddToCartHaptic();
+      }
+    });
+    return () => {
+      catScrollX.removeListener(catId);
+      prodScrollX.removeListener(prodId);
+    };
+  }, [catScrollX, prodScrollX]);
 
   const activeProducts = products || fetchedProducts;
   const activeCategories = categories || fetchedCategories;
@@ -383,7 +442,6 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
             <ThemeText style={styles.metaText}>{vendor.shopAddress?.city || 'Location'}</ThemeText>
           </View>
         </View>
-
       </View>
 
       {/* Store Closed Banner */}
@@ -403,7 +461,10 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
           <ActivityIndicator size="small" color={COLORS.primaryGreen} />
         </View>
       ) : (
-        <View style={!isStoreActive ? styles.disabledContent : undefined} pointerEvents={!isStoreActive ? 'none' : 'auto'}>
+        <View
+          style={!isStoreActive ? styles.disabledContent : undefined}
+          pointerEvents={!isStoreActive ? 'none' : 'auto'}
+        >
           {/* Categories */}
           <FlatList
             horizontal
@@ -413,6 +474,16 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
             showsHorizontalScrollIndicator={false}
             style={styles.categoriesContainer}
             contentContainerStyle={{ paddingRight: 20 }}
+            onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: catScrollX } } }], {
+              useNativeDriver: false,
+            })}
+            scrollEventThrottle={16}
+          />
+          <ScrollDots
+            scrollX={catScrollX}
+            itemWidth={76}
+            itemCount={activeCategories.length}
+            visibleCount={4}
           />
 
           {/* Products */}
@@ -423,20 +494,32 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
               <ActivityIndicator size="small" color={COLORS.primaryGreen} />
             </View>
           ) : (
-            <FlatList
-              ref={productsListRef}
-              horizontal
-              data={displayedProducts}
-              renderItem={renderProductItem}
-              keyExtractor={(item, index) => `${item.sku}-${index}`}
-              showsHorizontalScrollIndicator={false}
-              style={styles.productsContainer}
-              contentContainerStyle={{ paddingRight: 10 }}
-              initialNumToRender={4}
-              maxToRenderPerBatch={4}
-              windowSize={3}
-              removeClippedSubviews={true}
-            />
+            <>
+              <FlatList
+                ref={productsListRef}
+                horizontal
+                data={displayedProducts}
+                renderItem={renderProductItem}
+                keyExtractor={(item, index) => `${item.sku}-${index}`}
+                showsHorizontalScrollIndicator={false}
+                style={styles.productsContainer}
+                contentContainerStyle={{ paddingRight: 10 }}
+                initialNumToRender={4}
+                maxToRenderPerBatch={4}
+                windowSize={3}
+                removeClippedSubviews={true}
+                onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: prodScrollX } } }], {
+                  useNativeDriver: false,
+                })}
+                scrollEventThrottle={16}
+              />
+              <ScrollDots
+                scrollX={prodScrollX}
+                itemWidth={152}
+                itemCount={displayedProducts.length}
+                visibleCount={2}
+              />
+            </>
           )}
         </View>
       )}
@@ -472,17 +555,18 @@ const COLORS = {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 16,
     marginVertical: 10,
-    // Box Shadow: 0px 1px 9.3px 0px #0000001A
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1, // 1A is approx 10%
-    shadowRadius: 9.3,
-    elevation: 2, // Android approximation
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
     width: '100%',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   header: {
     flexDirection: 'row',
@@ -580,13 +664,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   productCard: {
-    width: 140, // Fixed width for horizontal items
-    // marginRight: 12, // Moved to wrapper view in renderItem
+    width: 140,
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#EAECF0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   productImageWrapper: {
     width: '100%',
@@ -721,17 +809,34 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   exploreButton: {
-    backgroundColor: '#E5E7EB', // Light grey bg
+    backgroundColor: '#F0F4F8',
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   exploreText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#003F66', // Dark blue
+    color: '#003F66',
+  },
+  // Pagination dots
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: -6,
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#D97706',
   },
 });
 

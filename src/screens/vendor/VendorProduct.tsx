@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import { Images } from '../../assets';
 import CartBar from '../../components/common/Cart/CartBar';
-import SectionDivider from '../../components/common/SectionDivider';
+import _SectionDivider from '../../components/common/SectionDivider';
 import HorizontalProductCard from '../../components/modules/Product/HorizontalProductCard';
 import ProductDetailModal from '../../components/modules/Product/ProductDetailModal';
 import VariantsModal from '../../components/modules/Product/VariantsModal';
@@ -366,7 +366,8 @@ const VendorProductComponent: React.FC = () => {
   const categoryScrollRef = useRef<ScrollView>(null);
 
   // Animated value for timing section opacity
-  const timingOpacity = useMemo(
+  // Store timing animations — hidden for now
+  const _timingOpacity = useMemo(
     () =>
       scrollY.interpolate({
         inputRange: [0, 50],
@@ -376,8 +377,7 @@ const VendorProductComponent: React.FC = () => {
     [scrollY]
   );
 
-  // Animated value for timing section height
-  const timingHeight = useMemo(
+  const _timingHeight = useMemo(
     () =>
       scrollY.interpolate({
         inputRange: [0, 50],
@@ -1280,23 +1280,7 @@ const VendorProductComponent: React.FC = () => {
           {/* Main Content: Categories + Products - Only show when products exist */}
           {products.length > 0 && (
             <View style={styles.mainContent}>
-              {/* Category List (absolute overlay with animation) - hide time range in collection mode or when vendor has no times */}
-              {!collection && vendor.openingTime && vendor.closingTime && (
-                <Animated.View
-                  style={{
-                    opacity: timingOpacity,
-                    height: timingHeight,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <SectionDivider
-                    text={`${formatTimeToAMPM(vendor.openingTime)} - ${formatTimeToAMPM(
-                      vendor.closingTime
-                    )}`}
-                    textStyle={{ fontSize: 14, fontWeight: 'normal' }}
-                  />
-                </Animated.View>
-              )}
+              {/* Category List (absolute overlay with animation) - store timing hidden for now */}
 
               {/* Horizontal layout: Categories on left, Products on right */}
               <View style={styles.categoryProductContainer}>

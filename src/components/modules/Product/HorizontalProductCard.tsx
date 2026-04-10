@@ -7,7 +7,7 @@ import { Product } from '../../../types/product';
 import { triggerAddToCartHaptic, triggerErrorHaptic } from '../../../utils/haptics';
 import LoginPromptModal from '../../common/LoginPromptModal';
 import { ThemeText } from '../../common/theme/ThemeText';
-import VegIcon from '../../common/VegIcon';
+import _VegIcon from '../../common/VegIcon';
 
 const IMAGE_SIZE = 70;
 
@@ -42,7 +42,7 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
       name,
       mrp,
       sellingPrice,
-      veg,
+      veg: _veg,
       imageUrl,
       numberOfVariants = 1,
       inStock = true,
@@ -287,7 +287,6 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
               </ThemeText>
             </View>
             <View style={styles.priceRow}>
-              <VegIcon veg={veg} size="xs" />
               {hasDiscount && <Text style={styles.mrpText}>₹{mrp}</Text>}
               <Text style={styles.sellingPrice}>₹{sellingPrice}</Text>
             </View>
