@@ -240,9 +240,27 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   }, [catScrollX, prodScrollX]);
 
   const activeProducts = products || fetchedProducts;
-  const activeCategories = categories || fetchedCategories;
+  const allCategories = categories || fetchedCategories;
+
+  // Only show categories that have at least one product
+  const activeCategories = React.useMemo(
+    () => allCategories.filter(cat => activeProducts.some(p => p.division === cat.id)),
+    [allCategories, activeProducts]
+  );
 
   const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
+
+  // Auto-select first category if current selection has no products
+  React.useEffect(() => {
+    if (activeCategories.length > 0) {
+      const isValid =
+        selectedCategory === 'all' ||
+        activeCategories.some(c => c.id === selectedCategory);
+      if (!isValid) {
+        setSelectedCategory(activeCategories[0].id);
+      }
+    }
+  }, [activeCategories, selectedCategory]);
 
   // Cart Integration
   const { addToCart, increment, decrement, carts, setActiveCart } = useCartStore();
@@ -293,9 +311,12 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
         setFetchedCategories(mappedCategories);
         setFetchedProducts(prods);
 
-        // Select first category by default if available
-        if (mappedCategories.length > 0) {
-          setSelectedCategory(mappedCategories[0].id);
+        // Select first category that has products
+        const firstWithProducts = mappedCategories.find(cat =>
+          prods.some((p: Product) => p.division === cat.id)
+        );
+        if (firstWithProducts) {
+          setSelectedCategory(firstWithProducts.id);
         }
       } catch (err) {
         console.error('Failed to load vendor showcase data', err);
@@ -422,6 +443,9 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
     ),
     [getProductQuantity, handlePressProduct, handleAddToCart, handleIncrement, handleDecrement]
   );
+
+  // Hide widget entirely if no categories have products
+  if (!isLoading && activeCategories.length === 0) return null;
 
   return (
     <View style={styles.container}>
