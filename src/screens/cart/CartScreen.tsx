@@ -3,6 +3,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -27,6 +28,7 @@ import {
   SmartBizAddressSelectionModal,
 } from '../../components/modules/Header';
 import { useAuth } from '../../contexts/login/AuthProvider';
+import { useOrders } from '../../hooks/useOrders';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { RootStackParamList } from '../../routes/AppStack';
 import orderService, { CreateOrderRequest } from '../../services/createOrderService';
@@ -40,6 +42,7 @@ import useFeaturedProductsStore from '../../store/products/featuredProductsStore
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Address } from '../../types/address';
+import { Order } from '../../types/order';
 import { Product } from '../../types/product';
 import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
 import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
@@ -101,6 +104,7 @@ const CartScreen: React.FC = () => {
 
   // Theme
   const { getColor } = useTheme();
+  const { orders, loading: ordersLoading, loadMoreOrders, hasMoreOrders } = useOrders();
   const { getFeaturedProducts } = useFeaturedProductsStore();
   const [featuredProducts, setFeaturedProducts] = React.useState<Product[]>([]);
   // const [smartBizAddressId, setSmartBizAddressId] = React.useState<string | null>(null);
@@ -432,7 +436,8 @@ const CartScreen: React.FC = () => {
       }
 
       const errorMessage =
-        (error as any)?.message || (error instanceof Error ? error.message : 'Order creation failed. Please try again.');
+        (error as any)?.message ||
+        (error instanceof Error ? error.message : 'Order creation failed. Please try again.');
 
       // Navigate to failure screen with error message
       navigation.navigate('OrderFailure', {
@@ -675,36 +680,71 @@ const CartScreen: React.FC = () => {
 
   if (!cart || !vendor || cartItems.length === 0) {
     return (
-      <SafeAreaView
-        style={{
-          flex: 1,
-          backgroundColor: getColor('background'),
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: 20,
-        }}
-      >
-        <MaterialCommunityIcons name="cart-off" size={80} color={getColor('subText')} />
-        <Text style={{ fontSize: 20, fontWeight: '700', color: getColor('text'), marginTop: 20 }}>
-          Your cart is empty
-        </Text>
-        <Text
-          style={{ fontSize: 16, color: getColor('subText'), textAlign: 'center', marginTop: 10 }}
-        >
-          Looks like you haven't added anything to your cart yet.
-        </Text>
-        <TouchableOpacity
-          style={{
-            marginTop: 30,
-            backgroundColor: getColor('primary'),
-            paddingHorizontal: 30,
-            paddingVertical: 12,
-            borderRadius: 25,
-          }}
-          onPress={() => navigation.navigate('MainApp', { screen: 'Home' } as any)}
-        >
-          <Text style={{ color: '#fff', fontWeight: '700' }}>Start Shopping</Text>
-        </TouchableOpacity>
+      <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background') }}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, paddingBottom: 100 }}>
+          {/* Empty cart section */}
+          <View style={styles.emptyCartSection}>
+            <MaterialCommunityIcons name="cart-off" size={80} color={getColor('subText')} />
+            <Text
+              style={{ fontSize: 20, fontWeight: '700', color: getColor('text'), marginTop: 20 }}
+            >
+              Your cart is empty
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                color: getColor('subText'),
+                textAlign: 'center',
+                marginTop: 10,
+              }}
+            >
+              Looks like you haven&apos;t added anything to your cart yet.
+            </Text>
+            <TouchableOpacity
+              style={[styles.startShoppingBtn, { backgroundColor: getColor('primary') }]}
+              onPress={() => navigation.navigate('MainApp', { screen: 'Home' } as any)}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700' }}>Start Shopping</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Previous Orders section */}
+          {ordersLoading && orders.length === 0 ? (
+            <ActivityIndicator size="small" color={getColor('primary')} style={{ marginTop: 32 }} />
+          ) : orders.length > 0 ? (
+            <View style={[styles.prevOrdersSection, { backgroundColor: '#FFF8F0' }]}>
+              <Text style={[styles.prevOrdersTitle, { color: getColor('text') }]}>
+                Previous Orders
+              </Text>
+              {orders.map(order => (
+                <PreviousOrderCard
+                  key={order.orderId}
+                  order={order}
+                  getColor={getColor}
+                  onPress={() =>
+                    navigation.navigate('OrderDetails', { orderId: order.orderId, order })
+                  }
+                />
+              ))}
+              {hasMoreOrders && (
+                <TouchableOpacity
+                  style={[styles.loadMoreBtn, { borderColor: getColor('primary') }]}
+                  onPress={() => loadMoreOrders()}
+                  activeOpacity={0.7}
+                  disabled={ordersLoading}
+                >
+                  {ordersLoading ? (
+                    <ActivityIndicator size="small" color={getColor('primary')} />
+                  ) : (
+                    <Text style={[styles.loadMoreBtnText, { color: getColor('primary') }]}>
+                      Load more
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : null}
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -955,6 +995,143 @@ const CartScreen: React.FC = () => {
   );
 };
 
+// ============================================================================
+// PREVIOUS ORDER CARD (used in empty cart state)
+// ============================================================================
+
+const ORDER_STATUS_COLORS: Record<string, { background: string; text: string }> = {
+  payment_pending: { background: '#FFA726', text: '#FFFFFF' },
+  processing: { background: '#42A5F5', text: '#FFFFFF' },
+  confirmed: { background: '#2196F3', text: '#FFFFFF' },
+  shipped: { background: '#7E57C2', text: '#FFFFFF' },
+  ready: { background: '#26A69A', text: '#FFFFFF' },
+  delivered: { background: '#66BB6A', text: '#FFFFFF' },
+  cancelled: { background: '#EF5350', text: '#FFFFFF' },
+};
+
+interface PreviousOrderCardProps {
+  order: Order;
+  getColor: ReturnType<typeof useTheme>['getColor'];
+  onPress: () => void;
+}
+
+const PreviousOrderCardBase: React.FC<PreviousOrderCardProps> = ({ order, getColor, onPress }) => {
+  const statusColors = ORDER_STATUS_COLORS[order.status] || {
+    background: '#78909C',
+    text: '#FFFFFF',
+  };
+  const statusText = order.status === 'delivered' ? 'SUCCESSFUL' : order.status.toUpperCase();
+  const items = order.items || [];
+  const displayItems = items.slice(0, 4);
+  const remainingCount = items.length - 4;
+
+  return (
+    <TouchableOpacity
+      style={[styles.orderCard, { backgroundColor: getColor('card') }]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      {/* Image grid */}
+      <View style={styles.orderImageGrid}>
+        {displayItems.length === 1 ? (
+          <View style={styles.orderGridFull}>
+            {displayItems[0].image ? (
+              <Image source={{ uri: displayItems[0].image }} style={styles.orderGridImg} />
+            ) : (
+              <View
+                style={[styles.orderGridPlaceholder, { backgroundColor: getColor('border') }]}
+              />
+            )}
+          </View>
+        ) : displayItems.length === 2 ? (
+          <View style={styles.orderGridRow}>
+            {displayItems.map((di, i) => (
+              <View key={i} style={styles.orderGridHalf}>
+                {di.image ? (
+                  <Image source={{ uri: di.image }} style={styles.orderGridImg} />
+                ) : (
+                  <View
+                    style={[styles.orderGridPlaceholder, { backgroundColor: getColor('border') }]}
+                  />
+                )}
+              </View>
+            ))}
+          </View>
+        ) : (
+          <>
+            <View style={styles.orderGridRow}>
+              {displayItems.slice(0, 2).map((di, i) => (
+                <View key={i} style={styles.orderGridQuarter}>
+                  {di.image ? (
+                    <Image source={{ uri: di.image }} style={styles.orderGridImg} />
+                  ) : (
+                    <View
+                      style={[styles.orderGridPlaceholder, { backgroundColor: getColor('border') }]}
+                    />
+                  )}
+                </View>
+              ))}
+            </View>
+            <View style={styles.orderGridRow}>
+              {displayItems.slice(2, 4).map((di, i) => (
+                <View key={i} style={styles.orderGridQuarter}>
+                  {di.image ? (
+                    <Image source={{ uri: di.image }} style={styles.orderGridImg} />
+                  ) : (
+                    <View
+                      style={[styles.orderGridPlaceholder, { backgroundColor: getColor('border') }]}
+                    />
+                  )}
+                </View>
+              ))}
+              {remainingCount > 0 && (
+                <View style={[styles.orderGridQuarter, { backgroundColor: getColor('border') }]}>
+                  <Text style={[styles.orderGridPlusText, { color: getColor('text') }]}>
+                    +{remainingCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </>
+        )}
+      </View>
+
+      {/* Order info */}
+      <View style={styles.orderCardInfo}>
+        <Text style={[styles.orderCardId, { color: getColor('text') }]} numberOfLines={1}>
+          Order: #{order.orderId}
+        </Text>
+        <Text style={[styles.orderCardDate, { color: getColor('subText') }]}>
+          {new Date(order.orderDate).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })}
+          {' \u2022 '}
+          {new Date(order.orderDate).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          })}
+        </Text>
+        <View style={[styles.orderStatusTag, { backgroundColor: statusColors.background }]}>
+          <Text style={[styles.orderStatusText, { color: statusColors.text }]}>{statusText}</Text>
+        </View>
+      </View>
+
+      {/* Amount + chevron */}
+      <View style={styles.orderCardRight}>
+        <Text style={[styles.orderCardAmount, { color: getColor('text') }]}>
+          {'\u20B9'} {order.totalAmount.toFixed(0)}
+        </Text>
+        <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('primary')} />
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const PreviousOrderCard = React.memo(PreviousOrderCardBase);
+
 export default React.memo(CartScreen);
 
 const styles = StyleSheet.create({
@@ -1045,6 +1222,124 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   storeClosedBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Empty cart + previous orders
+  emptyCartSection: {
+    alignItems: 'center',
+    paddingTop: 40,
+    paddingBottom: 10,
+  },
+  startShoppingBtn: {
+    marginTop: 30,
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 25,
+  },
+  prevOrdersSection: {
+    marginTop: 32,
+    borderRadius: 16,
+    padding: 16,
+  },
+  prevOrdersTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  loadMoreBtn: {
+    borderWidth: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  loadMoreBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Order card styles
+  orderCard: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  orderImageGrid: {
+    width: 60,
+    height: 60,
+    marginRight: 12,
+  },
+  orderGridFull: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  orderGridRow: {
+    flexDirection: 'row',
+    flex: 1,
+    gap: 2,
+  },
+  orderGridHalf: {
+    flex: 1,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  orderGridQuarter: {
+    flex: 1,
+    borderRadius: 4,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  orderGridImg: {
+    width: '100%',
+    height: '100%',
+  },
+  orderGridPlaceholder: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 4,
+  },
+  orderGridPlusText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  orderCardInfo: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  orderCardId: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  orderCardDate: {
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  orderStatusTag: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  orderStatusText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  orderCardRight: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginLeft: 12,
+  },
+  orderCardAmount: {
     fontSize: 16,
     fontWeight: '600',
   },
