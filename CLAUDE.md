@@ -17,6 +17,8 @@ npm run lint                 # ESLint only
 npm run format:check         # Prettier check only
 npm run typecheck            # tsc --noEmit only
 npm run format:all           # Auto-fix formatting (prettier + eslint --fix)
+npm test                     # Run Jest tests
+npm test -- --testPathPattern=<pattern>  # Run single test file
 npm start -- --reset-cache   # Clear cache (required after .env changes)
 cd ios && pod install        # iOS CocoaPods
 ```
@@ -90,6 +92,8 @@ Route.tsx (auth check)
 - **Request header:** `Request-Origin: CUSTOMER`
 - **Timeout:** 15 seconds
 - **Session expiry:** Error codes 1047/1042 trigger auto-logout via AuthProvider
+- **Error normalization:** All axios errors are converted to `ApiError` format (`status`, `message`, `code`, `isCancelled`, `apiEndpoint`)
+- **Per-request headers:** Use `withHeaders()` or `createRequestWithHeaders()` helpers — don't set defaults globally
 
 ### Authentication Flow
 
@@ -97,13 +101,17 @@ Route.tsx (auth check)
 2. OTP -> `POST /v1/login` -> JWT
 3. New user -> `POST /v1/register/customer`
 4. JWT stored in MMKV, sent as `SessionKey` header per-request
-5. Session expiry (1047/1042) -> auto-logout
+5. Session expiry (1047/1042) -> auto-logout via global `setSessionExpiredCallback` in axios config
 6. Auth state managed in `src/contexts/login/AuthProvider.tsx`
+7. **Logout resets all stores atomically** — `resetAuthState()` in AuthProvider clears MMKV + resets every Zustand store via `setState()`
 
 ### Key Patterns
 
-- **Cart:** Multi-vendor support (one cart per vendor), optimistic updates, request deduplication
+- **Cart:** Multi-vendor carts keyed by `vendor_<shopId>`. Uses `latestRequestIdPerCart` for request deduplication to avoid stale responses. Optimistic UI updates with rollback on API error. Cart auto-removes when all products reach quantity 0.
+- **Store persistence:** Stores use Zustand `persist` middleware with a custom MMKV adapter from `src/services/localStorage/storage.service.ts`. Use `partialize` to persist only essential state (exclude `loading`, `error`, etc.).
+- **Cache expiry:** Some stores (e.g., `featuredProductsStore`) implement time-based cache expiry (5-minute TTL).
 - **Tax formula:** 18% GST on (commission + delivery + platform fees). Food: 10% commission, Grocery: 2%. Identical logic in `PaymentSummary.tsx` and `OrderDetailsScreen.tsx` — keep them in sync.
+- **API services:** Thin wrappers around the `apiCall()` helper in axios config. Some services (e.g., `cartApiService`) include response-to-local format transformation logic.
 - **Loading states:** Skeleton shimmer components in `src/components/common/skeleton/`
 - **Location:** Geolocation API + Ola Maps reverse geocoding, races GPS & network in parallel
 - **Search:** Local suggestions + API search (`v3/search`), recent searches persisted to MMKV
@@ -113,7 +121,15 @@ Route.tsx (auth check)
 ### Environment Variables
 
 Configured via `react-native-dotenv` (`@env` module). Type declarations in `src/types/env.d.ts`.
+Available vars: `API_URL`, `API_KEY`, `AUTHORIZATION_KEY`, `ENVIRONMENT`.
 Restart Metro after `.env` changes: `npm start -- --reset-cache`
+
+## Code Style Rules
+
+- **`no-console`:** Only `console.warn` and `console.error` are allowed — `console.log` is an ESLint error.
+- **Unused vars:** Prefix with `_` to suppress the `no-unused-vars` error (e.g., `_unusedParam`).
+- **Prettier:** 100-char line width, single quotes, 2-space indent, no trailing commas in arrow parens.
+- **Lint-staged** (`.lintstagedrc.js`): Pre-commit hook runs `eslint --fix` + `prettier --write` on staged TS/JS files.
 
 ## Important Rules
 

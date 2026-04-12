@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet } from 'react-native';
 import { Promotion } from '../../../types/pages';
 import PromoBanner from './PromoBanner';
@@ -15,10 +15,18 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interva
   const scrollViewRef = useRef<ScrollView>(null);
   const [_currentIndex, setCurrentIndex] = useState(0);
 
+  // Only show promotions that are actual banner images
+  const bannerItems = useMemo(
+    () => bannerData.filter(item => item.bannerImage),
+    [bannerData],
+  );
+
   useEffect(() => {
+    if (bannerItems.length === 0) return;
+
     const timer = setInterval(() => {
       setCurrentIndex(prevIndex => {
-        const nextIndex = (prevIndex + 1) % bannerData.length;
+        const nextIndex = (prevIndex + 1) % bannerItems.length;
         const bannerWidth = width - 32 + 12; // Full width minus padding plus margin
         scrollViewRef.current?.scrollTo({
           x: nextIndex * bannerWidth,
@@ -29,7 +37,9 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interva
     }, interval);
 
     return () => clearInterval(timer);
-  }, [bannerData.length, interval]);
+  }, [bannerItems.length, interval]);
+
+  if (bannerItems.length === 0) return null;
 
   return (
     <ScrollView
@@ -40,7 +50,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interva
       pagingEnabled
       scrollEventThrottle={16}
     >
-      {bannerData.map((banner, index) => (
+      {bannerItems.map((banner, index) => (
         <PromoBanner key={index} promo={banner} size="medium" style={styles.bannerContainer} onPress={onBannerPress} />
       ))}
     </ScrollView>
