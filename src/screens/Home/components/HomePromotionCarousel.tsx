@@ -103,6 +103,12 @@ const styles = StyleSheet.create({
   bannerContainer: {
     width: width - 32, // Full width minus padding
     marginRight: 12,
+    marginBottom: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
   },
 });
 

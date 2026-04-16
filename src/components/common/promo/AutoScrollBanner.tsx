@@ -65,6 +65,11 @@ const styles = StyleSheet.create({
     width: width - 32, // Full width minus padding
     marginVertical: 8,
     marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
   },
 });
 

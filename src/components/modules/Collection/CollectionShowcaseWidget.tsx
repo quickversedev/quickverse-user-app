@@ -15,68 +15,40 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import productsService from '../../../services/productsService';
 import useCartStore from '../../../store/cart/cartStore';
-import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
 import { triggerAddToCartHaptic } from '../../../utils/haptics';
-import { getStoreStatus } from '../../../utils/storeUtils';
 import LoginPromptModal from '../../common/LoginPromptModal';
 import { ThemeText } from '../../common/theme/ThemeText';
 
 interface CategoryItem {
   id: string;
   name: string;
-  image: any; // Using any for require() images or string for URIs
+  image: string | number | { uri: string };
 }
 
-interface VendorShowcaseWidgetProps {
-  vendor?: Vendor;
-  products?: Product[];
-  categories?: CategoryItem[];
+interface CollectionShowcaseWidgetProps {
+  vendor: Vendor;
   onPressProduct?: (product: Product) => void;
   onPressExplore?: () => void;
 }
 
-// Mock Data to match screenshot if no props provided
-const MOCK_VENDOR: Vendor = {
-  shopId: 'mock-1',
-  name: 'Night Nescafe',
-  rating: 4.3,
-  preparationTime: '30 mins',
-  shopAddress: {
-    city: 'FC Road',
-    address: '',
-    state: '',
-    postalCode: '',
-  },
-  logo: '',
-  banner: '',
-  owner: '',
-  phone: '',
-  openingTime: '',
-  closingTime: '',
-  description: '',
-  category: 'Food',
-  storeEnabled: true,
-  storeActive: true,
-};
-
-const MOCK_IMAGE = 'https://loremflickr.com/320/240/pizza';
+const PLACEHOLDER_IMAGE = 'https://loremflickr.com/320/240/food';
 
 // --- Extracted & Memoized Components ---
 
-interface CategoryRenderItemProps {
+interface CategoryChipProps {
   item: CategoryItem;
   isSelected: boolean;
   onPress: (id: string) => void;
 }
 
-const CategoryRenderItem = React.memo(({ item, isSelected, onPress }: CategoryRenderItemProps) => (
+const CategoryChipBase = ({ item, isSelected, onPress }: CategoryChipProps) => (
   <TouchableOpacity style={styles.categoryItem} onPress={() => onPress(item.id)}>
     <View
       style={[
         styles.categoryImageContainer,
-        isSelected && { borderColor: '#003F66', borderWidth: 1.5 },
+        isSelected && { borderColor: '#1E6B50', borderWidth: 1.5 },
       ]}
     >
       <Image
@@ -85,17 +57,19 @@ const CategoryRenderItem = React.memo(({ item, isSelected, onPress }: CategoryRe
       />
     </View>
     <ThemeText
-      style={[styles.categoryName, isSelected && { color: '#003F66', fontWeight: '700' }]}
+      style={[styles.categoryName, isSelected && { color: '#1E6B50', fontWeight: '700' }]}
       numberOfLines={1}
     >
       {item.name}
     </ThemeText>
     {isSelected && <View style={styles.activeBar} />}
   </TouchableOpacity>
-));
-CategoryRenderItem.displayName = 'CategoryRenderItem';
+);
 
-interface ProductRenderItemProps {
+const CategoryChip = React.memo(CategoryChipBase);
+CategoryChip.displayName = 'CategoryChip';
+
+interface ProductCardProps {
   item: Product;
   quantity: number;
   onPress: (product: Product) => void;
@@ -104,66 +78,109 @@ interface ProductRenderItemProps {
   onDecrement: (sku: string) => void;
 }
 
-const ProductRenderItem = React.memo(
-  ({ item, quantity, onPress, onAddToCart, onIncrement, onDecrement }: ProductRenderItemProps) => (
-    <TouchableOpacity style={styles.productCard} onPress={() => onPress(item)}>
-      <View style={styles.productImageWrapper}>
-        <Image source={{ uri: item.imageUrl || MOCK_IMAGE }} style={styles.productImage} />
-        {item.discount > 0 && (
-          <View style={styles.discountBadge}>
-            <ThemeText style={styles.discountText}>{item.discount}% OFF</ThemeText>
+const ProductCardBase: React.FC<ProductCardProps> = ({
+  item,
+  quantity,
+  onPress,
+  onAddToCart,
+  onIncrement,
+  onDecrement,
+}) => (
+  <TouchableOpacity style={styles.productCard} onPress={() => onPress(item)}>
+    <View style={styles.productImageWrapper}>
+      <Image source={{ uri: item.imageUrl || PLACEHOLDER_IMAGE }} style={styles.productImage} />
+      {item.discount > 0 && (
+        <View style={styles.discountBadge}>
+          <ThemeText style={styles.discountText}>{item.discount}% OFF</ThemeText>
+        </View>
+      )}
+    </View>
+
+    <View style={styles.productContent}>
+      <ThemeText style={styles.productName} numberOfLines={1}>
+        {item.name}
+      </ThemeText>
+
+      <View style={styles.priceRow}>
+        <View style={styles.prices}>
+          {item.mrp > item.sellingPrice && (
+            <ThemeText style={styles.mrpText}>₹{item.mrp}</ThemeText>
+          )}
+          <ThemeText style={styles.sellingPriceText}>₹{item.sellingPrice}</ThemeText>
+        </View>
+
+        {quantity > 0 ? (
+          <View>
+            <LinearGradient
+              colors={['#A7F3D0', '#6EE7B7']}
+              style={styles.quantityContainer}
+              useAngle={true}
+              angle={180}
+            >
+              <TouchableOpacity style={styles.qtyBtnMinus} onPress={() => onDecrement(item.sku)}>
+                <AntDesign name="minus" size={12} color="#065F46" />
+              </TouchableOpacity>
+              <ThemeText style={styles.qtyText}>{quantity}</ThemeText>
+              <TouchableOpacity style={styles.qtyBtnPlus} onPress={() => onIncrement(item.sku)}>
+                <AntDesign name="plus" size={12} color="#065F46" />
+              </TouchableOpacity>
+            </LinearGradient>
           </View>
+        ) : (
+          <TouchableOpacity onPress={() => onAddToCart(item)}>
+            <LinearGradient
+              colors={['#A7F3D0', '#6EE7B7']}
+              style={styles.addButton}
+              useAngle={true}
+              angle={180}
+            >
+              <AntDesign name="plus" size={16} color="#065F46" />
+            </LinearGradient>
+          </TouchableOpacity>
         )}
       </View>
-
-      <View style={styles.productContent}>
-        <ThemeText style={styles.productName} numberOfLines={1}>
-          {item.name}
-        </ThemeText>
-
-        <View style={styles.priceRow}>
-          <View style={styles.prices}>
-            {item.mrp > item.sellingPrice && (
-              <ThemeText style={styles.mrpText}>₹{item.mrp}</ThemeText>
-            )}
-            <ThemeText style={styles.sellingPriceText}>₹{item.sellingPrice}</ThemeText>
-          </View>
-
-          {quantity > 0 ? (
-            <View>
-              <LinearGradient
-                colors={['#FFE566', '#FEDB51']} // Lighter yellow top to standard yellow bottom
-                style={styles.quantityContainer}
-                useAngle={true}
-                angle={180}
-              >
-                <TouchableOpacity style={styles.qtyBtnMinus} onPress={() => onDecrement(item.sku)}>
-                  <AntDesign name="minus" size={12} color="#1F2937" />
-                </TouchableOpacity>
-                <ThemeText style={styles.qtyText}>{quantity}</ThemeText>
-                <TouchableOpacity style={styles.qtyBtnPlus} onPress={() => onIncrement(item.sku)}>
-                  <AntDesign name="plus" size={12} color="#1F2937" />
-                </TouchableOpacity>
-              </LinearGradient>
-            </View>
-          ) : (
-            <TouchableOpacity onPress={() => onAddToCart(item)}>
-              <LinearGradient
-                colors={['#FFE566', '#FEDB51']} // Lighter yellow top to standard yellow bottom
-                style={styles.addButton}
-                useAngle={true}
-                angle={180}
-              >
-                <AntDesign name="plus" size={16} color="#1F2937" />
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    </TouchableOpacity>
-  )
+    </View>
+  </TouchableOpacity>
 );
-ProductRenderItem.displayName = 'ProductRenderItem';
+
+const ProductCard = React.memo(ProductCardBase);
+ProductCard.displayName = 'ProductCard';
+
+// Pagination dots
+interface ScrollDotsProps {
+  scrollX: Animated.Value;
+  itemWidth: number;
+  itemCount: number;
+  visibleCount: number;
+}
+
+const ScrollDotsBase: React.FC<ScrollDotsProps> = ({
+  scrollX,
+  itemWidth,
+  itemCount,
+  visibleCount,
+}) => {
+  const pageCount = Math.ceil(itemCount / visibleCount);
+  if (pageCount <= 1) return null;
+
+  const pageWidth = itemWidth * visibleCount;
+
+  return (
+    <View style={styles.dotsRow}>
+      {Array.from({ length: pageCount }).map((_, i) => {
+        const inputRange = [(i - 1) * pageWidth, i * pageWidth, (i + 1) * pageWidth];
+        const opacity = scrollX.interpolate({
+          inputRange,
+          outputRange: [0.25, 1, 0.25],
+          extrapolate: 'clamp',
+        });
+        return <Animated.View key={i} style={[styles.dot, { opacity }]} />;
+      })}
+    </View>
+  );
+};
+
+const ScrollDots = React.memo(ScrollDotsBase);
 
 // --- Shimmer Skeleton ---
 const screenWidth = Dimensions.get('window').width;
@@ -204,37 +221,37 @@ const ShimmerBlock = ({
   return (
     <View
       style={[
-        { width: w, height: h, borderRadius, backgroundColor: '#F3F4F6', overflow: 'hidden' },
+        { width: w, height: h, borderRadius, backgroundColor: '#E5F5ED', overflow: 'hidden' },
         style,
       ]}
     >
       <Animated.View
         style={{
           ...StyleSheet.absoluteFillObject,
-          backgroundColor: '#E5E7EB',
+          backgroundColor: '#D1FAE5',
           transform: [{ translateX }],
-          opacity: 0.4,
+          opacity: 0.5,
         }}
       />
     </View>
   );
 };
 
-const ShowcaseSkeleton = () => {
+const CollectionSkeleton = () => {
   const shimmer = useShimmer();
   return (
     <View>
       {/* Category row skeleton */}
-      <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-        {[1, 2, 3, 4].map(i => (
-          <View key={i} style={{ alignItems: 'center', marginRight: 20 }}>
-            <ShimmerBlock width={56} height={56} borderRadius={28} shimmerValue={shimmer} />
+      <View style={{ flexDirection: 'row', marginBottom: 12 }}>
+        {[1, 2, 3, 4, 5].map(i => (
+          <View key={i} style={{ alignItems: 'center', marginRight: 16 }}>
+            <ShimmerBlock width={42} height={42} borderRadius={21} shimmerValue={shimmer} />
             <ShimmerBlock
-              width={48}
-              height={10}
+              width={40}
+              height={8}
               borderRadius={4}
               shimmerValue={shimmer}
-              style={{ marginTop: 6 }}
+              style={{ marginTop: 4 }}
             />
           </View>
         ))}
@@ -244,17 +261,17 @@ const ShowcaseSkeleton = () => {
         {[1, 2].map(i => (
           <View
             key={i}
-            style={{ width: 140, marginRight: 12, borderRadius: 14, overflow: 'hidden' }}
+            style={{ width: 120, marginRight: 12, borderRadius: 12, overflow: 'hidden' }}
           >
-            <ShimmerBlock width={140} height={110} borderRadius={0} shimmerValue={shimmer} />
-            <View style={{ padding: 8 }}>
-              <ShimmerBlock width={100} height={12} borderRadius={4} shimmerValue={shimmer} />
+            <ShimmerBlock width={120} height={85} borderRadius={0} shimmerValue={shimmer} />
+            <View style={{ padding: 6 }}>
+              <ShimmerBlock width={80} height={10} borderRadius={4} shimmerValue={shimmer} />
               <ShimmerBlock
-                width={60}
-                height={14}
+                width={50}
+                height={12}
                 borderRadius={4}
                 shimmerValue={shimmer}
-                style={{ marginTop: 8 }}
+                style={{ marginTop: 6 }}
               />
             </View>
           </View>
@@ -264,21 +281,21 @@ const ShowcaseSkeleton = () => {
   );
 };
 
-const ProductRowSkeleton = () => {
+const CollectionProductRowSkeleton = () => {
   const shimmer = useShimmer();
   return (
     <View style={{ flexDirection: 'row' }}>
       {[1, 2, 3].map(i => (
-        <View key={i} style={{ width: 140, marginRight: 12, borderRadius: 14, overflow: 'hidden' }}>
-          <ShimmerBlock width={140} height={110} borderRadius={0} shimmerValue={shimmer} />
-          <View style={{ padding: 8 }}>
-            <ShimmerBlock width={100} height={12} borderRadius={4} shimmerValue={shimmer} />
+        <View key={i} style={{ width: 120, marginRight: 12, borderRadius: 12, overflow: 'hidden' }}>
+          <ShimmerBlock width={120} height={85} borderRadius={0} shimmerValue={shimmer} />
+          <View style={{ padding: 6 }}>
+            <ShimmerBlock width={80} height={10} borderRadius={4} shimmerValue={shimmer} />
             <ShimmerBlock
-              width={60}
-              height={14}
+              width={50}
+              height={12}
               borderRadius={4}
               shimmerValue={shimmer}
-              style={{ marginTop: 8 }}
+              style={{ marginTop: 6 }}
             />
           </View>
         </View>
@@ -287,50 +304,11 @@ const ProductRowSkeleton = () => {
   );
 };
 
-// Pagination dots — one dot per visible "page", not per item
-interface ScrollDotsProps {
-  scrollX: Animated.Value;
-  itemWidth: number;
-  itemCount: number;
-  visibleCount: number;
-}
-
-const ScrollDotsBase: React.FC<ScrollDotsProps> = ({
-  scrollX,
-  itemWidth,
-  itemCount,
-  visibleCount,
-}) => {
-  const pageCount = Math.ceil(itemCount / visibleCount);
-  if (pageCount <= 1) return null;
-
-  const pageWidth = itemWidth * visibleCount;
-
-  return (
-    <View style={styles.dotsRow}>
-      {Array.from({ length: pageCount }).map((_, i) => {
-        const inputRange = [(i - 1) * pageWidth, i * pageWidth, (i + 1) * pageWidth];
-        const opacity = scrollX.interpolate({
-          inputRange,
-          outputRange: [0.25, 1, 0.25],
-          extrapolate: 'clamp',
-        });
-        return <Animated.View key={i} style={[styles.dot, { opacity }]} />;
-      })}
-    </View>
-  );
-};
-
-const ScrollDots = React.memo(ScrollDotsBase);
-
-const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
-  vendor = MOCK_VENDOR,
-  products,
-  categories,
+const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
+  vendor,
   onPressProduct,
   onPressExplore,
 }) => {
-  const _theme = useTheme(); // kept for potential future use
   const [isLoading, setIsLoading] = React.useState(true);
   const [fetchedProducts, setFetchedProducts] = React.useState<Product[]>([]);
   const [fetchedCategories, setFetchedCategories] = React.useState<CategoryItem[]>([]);
@@ -347,14 +325,14 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
 
   React.useEffect(() => {
     const catId = catScrollX.addListener(({ value }) => {
-      const page = Math.round(value / (76 * 4));
+      const page = Math.round(value / (58 * 4));
       if (page !== catPageRef.current) {
         catPageRef.current = page;
         triggerAddToCartHaptic();
       }
     });
     const prodId = prodScrollX.addListener(({ value }) => {
-      const page = Math.round(value / (152 * 2));
+      const page = Math.round(value / (132 * 2));
       if (page !== prodPageRef.current) {
         prodPageRef.current = page;
         triggerAddToCartHaptic();
@@ -366,13 +344,12 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
     };
   }, [catScrollX, prodScrollX]);
 
-  const activeProducts = products || fetchedProducts;
-  const allCategories = categories || fetchedCategories;
+  const allCategories = fetchedCategories;
 
   // Only show categories that have at least one product
   const activeCategories = React.useMemo(
-    () => allCategories.filter(cat => activeProducts.some(p => p.division === cat.id)),
-    [allCategories, activeProducts]
+    () => allCategories.filter(cat => fetchedProducts.some(p => p.division === cat.id)),
+    [allCategories, fetchedProducts]
   );
 
   const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
@@ -393,34 +370,24 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   const { authData } = useAuth();
   const hasAuth = React.useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const storeStatus = React.useMemo(() => getStoreStatus(vendor), [vendor]);
-  const isStoreActive = React.useMemo(() => storeStatus.isOpen, [storeStatus.isOpen]);
 
   const cartId = React.useMemo(() => `vendor_${vendor.shopId}`, [vendor.shopId]);
   const cart = carts[cartId];
 
   // Filter products
   const displayedProducts = React.useMemo(() => {
-    if (selectedCategory === 'all') return activeProducts;
-    return activeProducts.filter(p => p.division === selectedCategory);
-  }, [activeProducts, selectedCategory]);
+    if (selectedCategory === 'all') return fetchedProducts;
+    return fetchedProducts.filter(p => p.division === selectedCategory);
+  }, [fetchedProducts, selectedCategory]);
 
+  // Fetch data using collection-specific API
   React.useEffect(() => {
-    // If props are provided, don't fetch
-    if (products && categories) {
-      setIsLoading(false);
-      return;
-    }
+    if (!vendor?.shopId) return;
 
     const loadData = async () => {
-      if (!vendor?.shopId) return;
-
       setIsLoading(true);
       try {
-        const [cats, prodsResponse] = await Promise.all([
-          productsService.fetchCategories(vendor.shopId),
-          productsService.fetchAllProducts({ shopId: vendor.shopId, limit: 100 }),
-        ]);
+        const cats = await productsService.fetchCategories(vendor.shopId);
 
         // Map API categories to UI model
         const mappedCategories = cats.map(c => ({
@@ -429,41 +396,57 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
           image:
             c.imageURLs && c.imageURLs.length > 0
               ? { uri: c.imageURLs[0] }
-              : { uri: 'https://loremflickr.com/320/240/food' },
+              : { uri: PLACEHOLDER_IMAGE },
         }));
 
-        const prods = Array.isArray(prodsResponse) ? prodsResponse : prodsResponse.products || [];
+        // Fetch products for each category in parallel using collection API
+        const categoryIds = cats.map(c => c.id);
+        const productPromises = categoryIds.map(categoryId =>
+          productsService
+            .fetchProductsForCollection({ shopId: vendor.shopId, categoryId })
+            .catch(() => [] as Product[])
+        );
+
+        const results = await Promise.all(productPromises);
+        const allProducts = results.flat();
+
+        // Deduplicate by SKU
+        const seenSkus = new Set<string>();
+        const uniqueProducts = allProducts.filter(p => {
+          if (seenSkus.has(p.sku)) return false;
+          seenSkus.add(p.sku);
+          return true;
+        });
 
         setFetchedCategories(mappedCategories);
-        setFetchedProducts(prods);
+        setFetchedProducts(uniqueProducts);
 
         // Select first category that has products
         const firstWithProducts = mappedCategories.find(cat =>
-          prods.some((p: Product) => p.division === cat.id)
+          uniqueProducts.some((p: Product) => p.division === cat.id)
         );
         if (firstWithProducts) {
           setSelectedCategory(firstWithProducts.id);
         }
       } catch (err) {
-        console.error('Failed to load vendor showcase data', err);
+        console.error('Failed to load collection showcase data', err);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadData();
-  }, [vendor?.shopId, products, categories]);
+  }, [vendor.shopId]);
 
   // Cart Handlers
   const handleAddToCart = useCallback(
     (product: Product) => {
-      if (!isStoreActive || !product.inStock) return;
+      if (!product.inStock) return;
       if (!hasAuth) {
         setShowLoginModal(true);
         return;
       }
 
-      // Ensure active cart is set
       setActiveCart(cartId);
 
       addToCart(
@@ -481,31 +464,29 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
         authData!.phone
       );
     },
-    [isStoreActive, hasAuth, cartId, vendor.shopId, addToCart, setActiveCart, authData]
+    [hasAuth, cartId, vendor.shopId, addToCart, setActiveCart, authData]
   );
 
   const handleIncrement = useCallback(
     (sku: string) => {
-      if (!isStoreActive) return;
       if (!hasAuth) {
         setShowLoginModal(true);
         return;
       }
       increment(cartId, sku, authData!.jwt, authData!.phone);
     },
-    [isStoreActive, hasAuth, cartId, increment, authData]
+    [hasAuth, cartId, increment, authData]
   );
 
   const handleDecrement = useCallback(
     (sku: string) => {
-      if (!isStoreActive) return;
       if (!hasAuth) {
         setShowLoginModal(true);
         return;
       }
       decrement(cartId, sku, authData!.jwt, authData!.phone);
     },
-    [isStoreActive, hasAuth, cartId, decrement, authData]
+    [hasAuth, cartId, decrement, authData]
   );
 
   const getProductQuantity = useCallback(
@@ -523,12 +504,10 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
       setIsSwitchingCat(true);
       setSelectedCategory(categoryId);
 
-      // Reset scroll position
       if (productsListRef.current) {
         productsListRef.current.scrollToOffset({ offset: 0, animated: false });
       }
 
-      // Brief delay to show loading state
       setTimeout(() => {
         setIsSwitchingCat(false);
       }, 500);
@@ -545,7 +524,7 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
 
   const renderCategoryItem = useCallback(
     ({ item }: { item: CategoryItem }) => (
-      <CategoryRenderItem
+      <CategoryChip
         item={item}
         isSelected={selectedCategory === item.id}
         onPress={handleCategorySelect}
@@ -557,7 +536,7 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   const renderProductItem = useCallback(
     ({ item }: { item: Product }) => (
       <View style={{ marginRight: 12 }}>
-        <ProductRenderItem
+        <ProductCard
           item={item}
           quantity={getProductQuantity(item.sku)}
           onPress={handlePressProduct}
@@ -594,29 +573,14 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
         </View>
         <TouchableOpacity style={styles.exploreButtonSmall} onPress={onPressExplore}>
           <ThemeText style={styles.exploreTextSmall}>Explore</ThemeText>
-          <MaterialCommunityIcons name="chevron-right" size={16} color="#003F66" />
+          <MaterialCommunityIcons name="chevron-right" size={16} color="#1E6B50" />
         </TouchableOpacity>
       </View>
 
-      {/* Store Closed Banner */}
-      {!isStoreActive && (
-        <View style={styles.closedBanner}>
-          <ThemeText style={styles.closedText}>WE ARE CLOSED</ThemeText>
-          {vendor.openingTime && vendor.closingTime && (
-            <ThemeText style={styles.closedTimingText}>
-              {vendor.openingTime} - {vendor.closingTime}
-            </ThemeText>
-          )}
-        </View>
-      )}
-
       {isLoading ? (
-        <ShowcaseSkeleton />
+        <CollectionSkeleton />
       ) : (
-        <View
-          style={!isStoreActive ? styles.disabledContent : undefined}
-          pointerEvents={!isStoreActive ? 'none' : 'auto'}
-        >
+        <View>
           {/* Categories */}
           <FlatList
             horizontal
@@ -633,15 +597,15 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
           />
           <ScrollDots
             scrollX={catScrollX}
-            itemWidth={76}
+            itemWidth={58}
             itemCount={activeCategories.length}
-            visibleCount={4}
+            visibleCount={5}
           />
 
           {/* Products */}
           {isSwitchingCat ? (
             <View style={{ paddingTop: 8 }}>
-              <ProductRowSkeleton />
+              <CollectionProductRowSkeleton />
             </View>
           ) : (
             <>
@@ -665,7 +629,7 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
               />
               <ScrollDots
                 scrollX={prodScrollX}
-                itemWidth={152}
+                itemWidth={132}
                 itemCount={displayedProducts.length}
                 visibleCount={2}
               />
@@ -684,39 +648,36 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   );
 };
 
-// Color constants from design
+// Color constants — collection-themed (greenish tones vs vendor's blue)
 const COLORS = {
-  background: '#F9FAFB',
-  textDark: '#003F66', // Adjusted dark blue/slate
+  background: '#F0FDF4',
+  textDark: '#1E3A2F',
   textGrey: '#6B7280',
-  primaryGreen: '#12A58C',
-  greenDot: '#10B981',
-  redDot: '#EF4444',
-  yellowBtn: '#FCD34D',
+  accent: '#059669',
+  border: '#D1FAE5',
   discountRed: '#DC2626',
-  border: '#E5E7EB',
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFCF5',
-    borderRadius: 16,
+    backgroundColor: '#F6FEFB',
+    borderRadius: 18,
     padding: 16,
     marginVertical: 10,
-    shadowColor: '#000',
+    shadowColor: '#064E3B',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
     elevation: 3,
     width: '100%',
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E5F5ED',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   vendorInfo: {
     flex: 1,
@@ -737,54 +698,25 @@ const styles = StyleSheet.create({
     color: COLORS.textGrey,
     fontWeight: '500',
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primaryGreen,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  ratingText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-    marginLeft: 4,
-  },
-  ratingCount: {
-    color: COLORS.textGrey,
-    fontSize: 12,
-    marginLeft: 4,
-  },
-  dividerLine: {
-    height: 1,
-    backgroundColor: '#E5E7EB', // Light grey divider
-    marginVertical: 16,
-    width: '100%',
-  },
   // Categories
   categoriesContainer: {
-    marginBottom: 20,
+    marginBottom: 2,
   },
   categoryItem: {
     alignItems: 'center',
-    marginRight: 20,
+    marginRight: 16,
   },
   categoryImageContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 6,
+    borderColor: '#D1FAE5',
+    marginBottom: 4,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#F0FDF4',
   },
   categoryImage: {
     width: '100%',
@@ -792,32 +724,32 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   categoryName: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     color: '#1F2937',
-    maxWidth: 64,
+    maxWidth: 56,
     textAlign: 'center',
   },
   activeBar: {
-    marginTop: 6,
+    marginTop: 4,
     width: '100%',
-    height: 3,
-    backgroundColor: '#003F66', // Deep Blue
+    height: 2,
+    backgroundColor: '#1E6B50',
     borderRadius: 2,
   },
   // Products
   productsContainer: {
-    marginBottom: 20,
+    marginBottom: 10,
     paddingBottom: 4,
   },
   productCard: {
-    width: 140,
+    width: 120,
     backgroundColor: '#fff',
-    borderRadius: 14,
+    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#EAECF0',
-    shadowColor: '#000',
+    borderColor: '#E5F5ED',
+    shadowColor: '#064E3B',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -825,7 +757,7 @@ const styles = StyleSheet.create({
   },
   productImageWrapper: {
     width: '100%',
-    height: 110,
+    height: 85,
     backgroundColor: '#E5E7EB',
     position: 'relative',
   },
@@ -848,51 +780,32 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
-  vegIcon: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 16,
-    height: 16,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: COLORS.greenDot,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  vegDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.greenDot,
-  },
   productContent: {
-    padding: 8,
+    padding: 6,
   },
   productName: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
     color: '#1F2937',
-    marginBottom: 4,
-    height: 20, // limit to 1 line approx
+    marginBottom: 3,
+    height: 16,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
     justifyContent: 'space-between',
   },
   prices: {
     flexDirection: 'column',
   },
   mrpText: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#9CA3AF',
     textDecorationLine: 'line-through',
   },
   sellingPriceText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     color: '#1F2937',
   },
@@ -903,7 +816,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#FEDB51',
+    borderColor: '#6EE7B7',
     elevation: 0,
   },
   quantityContainer: {
@@ -913,7 +826,7 @@ const styles = StyleSheet.create({
     height: 28,
     paddingHorizontal: 4,
     borderWidth: 1,
-    borderColor: '#FEDB51',
+    borderColor: '#6EE7B7',
     elevation: 0,
   },
   qtyBtnMinus: {
@@ -925,66 +838,42 @@ const styles = StyleSheet.create({
   qtyText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#065F46',
     minWidth: 16,
     textAlign: 'center',
   },
-  // Footer
-  closedBanner: {
-    marginBottom: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: '#EF4444',
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 0, 0, 0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closedText: {
-    color: '#EF4444',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 4,
-    fontSize: 13,
-  },
-  closedTimingText: {
-    color: '#6B7280',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  disabledContent: {
-    opacity: 0.5,
-  },
+  // Explore button (top-right)
   exploreButtonSmall: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#ECFDF5',
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#D1FAE5',
   },
   exploreTextSmall: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#003F66',
+    color: '#1E6B50',
   },
   // Pagination dots
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    alignSelf: 'stretch',
     marginBottom: 12,
-    marginTop: -6,
-    gap: 6,
+    marginTop: 4,
+    gap: 5,
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#D97706',
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#059669',
   },
 });
 
-export default React.memo(VendorShowcaseWidget);
+export default React.memo(CollectionShowcaseWidget);

@@ -1,43 +1,27 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import {
-  Dimensions,
-  FlatList,
-  Image,
-  Platform,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import LinearGradient from 'react-native-linear-gradient';
 import Feather from '@react-native-vector-icons/feather';
-import { Images } from '../../assets';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import SectionDivider from '../../components/common/SectionDivider';
+import CollectionShowcaseWidget from '../../components/modules/Collection/CollectionShowcaseWidget';
 import { SearchBar } from '../../components/modules/Header/SearchBar';
 import VendorCard2 from '../../components/modules/Vendor/VendorCard2'; // Updated to V2
 import VendorShowcaseWidget from '../../components/modules/Vendor/VendorShowcaseWidget';
 import { Collection, fetchCollectionsFromApi } from '../../data/collectionsData';
 import { RootStackParamList } from '../../routes/AppStack';
 import useVendorStore from '../../store/vendorStore';
-import { useTheme } from '../../theme/ThemeContext';
 import { Vendor } from '../../types/vendor';
-import { getStoreStatus } from '../../utils/storeUtils';
 import PromotionCarousel from '../Home/components/PromotionCarousel';
 import CollectionsGrid from './components/CollectionsGrid';
 import CollectionsGridSkeleton from './components/CollectionsGridSkeleton';
 
 type CategoryScreenRouteProp = RouteProp<RootStackParamList, 'Category'>;
 
-const { width } = Dimensions.get('window');
-
 const CategoryScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<CategoryScreenRouteProp>();
-  const { theme } = useTheme();
 
   // Default to Food if no params (for testing/safety)
   const categoryName = route.params?.categoryName || 'Food';
@@ -115,54 +99,46 @@ const CategoryScreen = () => {
     navigation.navigate('Category', { categoryName: otherCategory });
   }, [navigation, isGrocery]);
 
-  const headerImage = isGrocery
-    ? Images.groceryCategoryIllustration
-    : Images.foodCategoryIllustration;
-
   const hasNoVendors = categoryVendors.length === 0;
   const otherCategoryLabel = isGrocery ? 'Food' : 'Grocery';
 
   const renderHeader = () => (
     <View>
-      {/* Header Section */}
-      <View style={styles.header}>
-        <View style={styles.headerTopBar}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Feather name="arrow-left" size={24} color="#000" />
-          </TouchableOpacity>
-
-          <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitleMain}>{categoryName}</Text>
-            <Text style={styles.headerTitleSub}>for you</Text>
-          </View>
-        </View>
-
-        <View style={styles.imageContainer}>
-          <Image source={headerImage} style={styles.headerImage} resizeMode="contain" />
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0)', '#FFFFFF', '#FFFFFF']}
-            locations={[0, 0.4, 1]}
-            style={styles.headerBlur}
+      {/* Back Button + Search Bar */}
+      <View style={styles.headerRow}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Feather name="arrow-left" size={24} color="#000" />
+        </TouchableOpacity>
+        <View style={styles.searchFlex}>
+          <SearchBar
+            onPress={handleSearchPress}
+            placeholder={isGrocery ? "Search for 'Milk'" : "Search for 'Shawarma'"}
           />
         </View>
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <SearchBar
-          onPress={handleSearchPress}
-          placeholder={isGrocery ? "Search for 'Milk'" : "Search for 'Shawarma'"}
-        />
-      </View>
-
       {/* Promo Banners */}
       <View style={styles.promoContainer}>
-        <PromotionCarousel category={categoryName as 'Food' | 'Grocery'} onBannerPress={handleBannerPress} />
+        <PromotionCarousel
+          category={categoryName as 'Food' | 'Grocery'}
+          onBannerPress={handleBannerPress}
+        />
       </View>
 
       {/* Conditional Content if Vendors Exist */}
       {!hasNoVendors && (
         <>
+          {/* Collection Showcase Widgets (Grocery vendors) */}
+          {isGrocery &&
+            categoryVendors.map(v => (
+              <View
+                key={v.shopId}
+                style={{ paddingHorizontal: 20, marginTop: 8, marginBottom: 8 }}
+              >
+                <CollectionShowcaseWidget vendor={v} onPressExplore={() => handleVendorPress(v)} />
+              </View>
+            ))}
+
           {/* Collections Grid (Grocery Only) */}
           {isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
           {isGrocery && !collectionsLoading && collections.length > 0 && (
@@ -273,24 +249,17 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 40,
   },
-  header: {
-    alignItems: 'center',
-    marginTop: 4,
-    position: 'relative',
-  },
-  headerTopBar: {
-    width: '100%',
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    zIndex: 10,
-    height: 48,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 10,
+  },
+  searchFlex: {
+    flex: 1,
   },
   backButton: {
-    position: 'absolute',
-    left: 20,
-    // top is removed, centered by flex/absolute vertical center
     padding: 8,
     backgroundColor: '#fff',
     borderRadius: 20,
@@ -299,52 +268,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
-    zIndex: 10,
-  },
-  headerTitleContainer: {
-    flexDirection: 'row', // Single line
-    alignItems: 'baseline',
-    paddingTop: 0, // Removed padding
-    zIndex: 1,
-  },
-  headerTitleMain: {
-    fontSize: 38,
-    fontWeight: '700',
-    color: '#6B7280',
-  },
-  headerTitleSub: {
-    fontSize: 38,
-    fontWeight: '400',
-    fontStyle: 'italic',
-    fontFamily: 'serif',
-    color: '#9CA3AF',
-    marginLeft: 8, // Space between "Food" and "for you"
-  },
-  imageContainer: {
-    width: 240,
-    height: 190,
-    marginTop: -50,
-    zIndex: 100,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  headerImage: {
-    width: 240,
-    height: 240,
-  },
-  headerBlur: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 60,
-    zIndex: 101,
-  },
-  searchContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
-    marginTop: -16,
-    zIndex: 1000,
   },
   promoContainer: {
     // marginBottom: 24,
