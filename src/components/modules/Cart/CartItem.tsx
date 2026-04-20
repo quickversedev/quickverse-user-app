@@ -13,7 +13,7 @@ interface CartItemProps extends CartProduct {
 }
 
 const CartItem: React.FC<CartItemProps> = React.memo(
-  ({ name, price, mrp, quantity, tag, onInc, onDec, image, veg }) => {
+  ({ name, price, mrp, quantity, tag, onInc, onDec, image }) => {
     const { getColor, theme, getButtonColor } = useTheme();
 
     const styles = StyleSheet.create({
@@ -64,21 +64,6 @@ const CartItem: React.FC<CartItemProps> = React.memo(
       cartItemTagText: {
         color: getButtonColor('default', 'background'),
       },
-      vegIndicator: {
-        width: 14,
-        height: 14,
-        borderRadius: 2,
-        borderWidth: 1.5,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 6,
-        marginTop: 3,
-      },
-      vegDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-      },
     });
 
     const handleIncrement = useCallback(() => {
@@ -105,23 +90,6 @@ const CartItem: React.FC<CartItemProps> = React.memo(
         <Image source={imageSource} style={styles.cartItemImg} />
         <View style={{ flex: 1, minWidth: 120, justifyContent: 'center' }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}>
-            <View
-              style={[
-                styles.vegIndicator,
-                {
-                  borderColor: veg ? '#22C55E' : '#EF4444',
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.vegDot,
-                  {
-                    backgroundColor: veg ? '#22C55E' : '#EF4444',
-                  },
-                ]}
-              />
-            </View>
             <ThemeText
               variant="body"
               color={getColor('text')}

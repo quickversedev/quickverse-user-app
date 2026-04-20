@@ -3,7 +3,6 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '../../../theme/ThemeContext';
 import { cleanHtmlText } from '../../../utils/htmlUtils';
-import VegIcon from '../../common/VegIcon';
 
 interface Variant {
   id: string;
@@ -17,7 +16,6 @@ interface ProductInfoProps {
   selectedVariantId: string;
   onVariantSelect: (variantId: string) => void;
   onProductInfoPress: () => void;
-  veg?: boolean;
   attributes?: {
     color: string | null;
     size: string | null;
@@ -34,7 +32,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
   selectedVariantId,
   onVariantSelect,
   onProductInfoPress,
-  veg,
   attributes,
 }) => {
   const { getColor, getTypography } = useTheme();
@@ -217,7 +214,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
     <View style={styles.container}>
       <View style={styles.productNameContainer}>
         <Text style={styles.productName}>{productName}</Text>
-        {veg !== undefined && <VegIcon veg={veg} size="regular" />}
       </View>
       {variants.length > 1 && (
         <View style={styles.variantsContainer}>

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
-import { BadgeTag, VegIcon } from '../../common';
+import { BadgeTag } from '../../common';
 import RatingBadge from '../../common/badges/RatingBadge';
 import AddButton from './AddButton';
 import QuantitySelector from './QuantitySelector';
@@ -343,9 +343,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <Text style={[styles.price, isOutOfStock && { opacity: 0.6 }]}>
             ₹{(price ?? 0).toFixed(2)}
           </Text>
-        </View>
-        <View style={{ marginRight: 4 }}>
-          <VegIcon veg={veg} size="xs" />
         </View>
       </View>
     </View>
