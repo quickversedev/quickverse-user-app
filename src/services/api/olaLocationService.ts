@@ -148,7 +148,7 @@ export const getAddressFromCoordinates = async (
  */
 export const getAutocompleteSuggestions = async (
   query: string,
-  location: Location
+  location?: Location
 ): Promise<SearchResult[]> => {
   if (!query.trim()) {
     return [];
@@ -156,12 +156,15 @@ export const getAutocompleteSuggestions = async (
 
   try {
     const requestId = uuidv4();
+    const params: Record<string, string> = {
+      input: query,
+      api_key: OLA_API_KEY,
+    };
+    if (location) {
+      params.location = `${location.latitude},${location.longitude}`;
+    }
     const response = await axios.get(OLA_MAPS_AUTOCOMPLETE_ENDPOINT, {
-      params: {
-        input: query,
-        api_key: OLA_API_KEY,
-        location: `${location.latitude},${location.longitude}`,
-      },
+      params,
       headers: {
         Accept: 'application/json',
         'X-Request-Id': requestId,

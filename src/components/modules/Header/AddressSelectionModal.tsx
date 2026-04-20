@@ -28,7 +28,6 @@ import AddressCard from '../../../screens/profile/Address/AddressCard';
 import {
   getAddressFromCoordinates,
   getAutocompleteSuggestions,
-  type Location,
   type SearchResult,
 } from '../../../services/api/olaLocationService';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -79,12 +78,6 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     }
   }, [visible, isLoggedIn]);
 
-  // Default location (Pune, India)
-  const defaultLocation: Location = {
-    latitude: 18.5204,
-    longitude: 73.8567,
-  };
-
   const handleClose = () => {
     // Prevent closing if address is compulsory and no address is selected
     if (needCompulsoryAddress && !selectedAddress) {
@@ -118,7 +111,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
         setShowSearchResults(true);
 
         try {
-          const results = await getAutocompleteSuggestions(currentSearchQuery, defaultLocation);
+          const results = await getAutocompleteSuggestions(currentSearchQuery);
           setSearchResults(results);
         } catch (err: unknown) {
           const error = err as { response?: { data?: unknown }; message?: string };
