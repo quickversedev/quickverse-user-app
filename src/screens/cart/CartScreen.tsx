@@ -39,6 +39,7 @@ import useCartStore from '../../store/cart/cartStore';
 import useCouponStore from '../../store/cart/couponStore';
 import useConfigStore from '../../store/configStore';
 import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
+import usePricingStore from '../../store/pricingStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Address } from '../../types/address';
@@ -105,6 +106,33 @@ const CartScreen: React.FC = () => {
   // Theme
   const { getColor } = useTheme();
   const { orders, loading: ordersLoading, loadMoreOrders, hasMoreOrders } = useOrders();
+  const getVendorById = useVendorStore(state => state.getVendorById);
+  // Subscribe to pricing configs so totals re-render when configs load
+  const pricingConfigs = usePricingStore(state => state.configs);
+
+  // Compute the final billed total for a previous order (matches OrderDetailsScreen formula)
+  const computePreviousOrderTotal = useCallback(
+    (order: Order): number => {
+      const subTotal = (order.items || []).reduce(
+        (sum, it) => sum + Number(it.totalPrice ?? it.price ?? 0),
+        0
+      );
+      if (subTotal <= 0) return Number(order.totalAmount || 0);
+
+      const vendor = getVendorById(order.shopId);
+      const isGrocery = vendor?.category?.toLowerCase().includes('grocery');
+      const serviceType = isGrocery ? 'GROCERY' : 'FOOD';
+      const pricing = usePricingStore.getState().getPricingValues(serviceType);
+
+      const commission = pricing.commissionRate * subTotal;
+      const taxableAmount = commission + pricing.deliveryFee + pricing.platformFee;
+      const taxes = Math.round(pricing.gstRate * taxableAmount);
+      return (
+        subTotal + pricing.deliveryFee + pricing.platformFee + pricing.packagingCharges + taxes
+      );
+    },
+    [getVendorById, pricingConfigs]
+  );
   const { getFeaturedProducts } = useFeaturedProductsStore();
   const [featuredProducts, setFeaturedProducts] = React.useState<Product[]>([]);
   // const [smartBizAddressId, setSmartBizAddressId] = React.useState<string | null>(null);
@@ -721,6 +749,7 @@ const CartScreen: React.FC = () => {
                   key={order.orderId}
                   order={order}
                   getColor={getColor}
+                  total={computePreviousOrderTotal(order)}
                   onPress={() =>
                     navigation.navigate('OrderDetails', { orderId: order.orderId, order })
                   }
@@ -1013,9 +1042,15 @@ interface PreviousOrderCardProps {
   order: Order;
   getColor: ReturnType<typeof useTheme>['getColor'];
   onPress: () => void;
+  total: number;
 }
 
-const PreviousOrderCardBase: React.FC<PreviousOrderCardProps> = ({ order, getColor, onPress }) => {
+const PreviousOrderCardBase: React.FC<PreviousOrderCardProps> = ({
+  order,
+  getColor,
+  onPress,
+  total,
+}) => {
   const statusColors = ORDER_STATUS_COLORS[order.status] || {
     background: '#78909C',
     text: '#FFFFFF',
@@ -1122,7 +1157,7 @@ const PreviousOrderCardBase: React.FC<PreviousOrderCardProps> = ({ order, getCol
       {/* Amount + chevron */}
       <View style={styles.orderCardRight}>
         <Text style={[styles.orderCardAmount, { color: getColor('text') }]}>
-          {'\u20B9'} {order.totalAmount.toFixed(0)}
+          {'\u20B9'} {total.toFixed(0)}
         </Text>
         <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('primary')} />
       </View>

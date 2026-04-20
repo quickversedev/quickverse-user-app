@@ -13,6 +13,8 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { Images } from '../../../assets';
 import { useAppStateRefresh } from '../../../hooks/useAppStateRefresh';
 import { useOrders } from '../../../hooks/useOrders';
+import usePricingStore from '../../../store/pricingStore';
+import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AppNavigationProp } from '../../../types/navigation';
 import { Order } from '../../../types/order';
@@ -31,6 +33,33 @@ const OrderList: React.FC<OrderListProps> = ({
   // Theme and data hooks
   const { getColor } = useTheme();
   const { orders, loading, error, loadMoreOrders, refreshOrders, hasMoreOrders } = useOrders();
+  const getVendorById = useVendorStore(state => state.getVendorById);
+  // Subscribe to pricing configs so totals re-render when configs load
+  const pricingConfigs = usePricingStore(state => state.configs);
+
+  // Compute the final billed total for an order (matches OrderDetailsScreen formula)
+  const computeOrderTotal = useCallback(
+    (order: Order): number => {
+      const subTotal = (order.items || []).reduce(
+        (sum, it) => sum + Number(it.totalPrice ?? it.price ?? 0),
+        0
+      );
+      if (subTotal <= 0) return Number(order.totalAmount || 0);
+
+      const vendor = getVendorById(order.shopId);
+      const isGrocery = vendor?.category?.toLowerCase().includes('grocery');
+      const serviceType = isGrocery ? 'GROCERY' : 'FOOD';
+      const pricing = usePricingStore.getState().getPricingValues(serviceType);
+
+      const commission = pricing.commissionRate * subTotal;
+      const taxableAmount = commission + pricing.deliveryFee + pricing.platformFee;
+      const taxes = Math.round(pricing.gstRate * taxableAmount);
+      return (
+        subTotal + pricing.deliveryFee + pricing.platformFee + pricing.packagingCharges + taxes
+      );
+    },
+    [getVendorById, pricingConfigs]
+  );
 
   // State hooks
   const [refreshing, setRefreshing] = useState(false);
@@ -281,14 +310,14 @@ const OrderList: React.FC<OrderListProps> = ({
           {/* Right Side */}
           <View style={styles.orderAmount}>
             <Text style={[styles.amountText, { color: getColor('text') }]}>
-              ₹ {item.totalAmount.toFixed(0)}
+              ₹ {computeOrderTotal(item).toFixed(0)}
             </Text>
             <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('primary')} />
           </View>
         </TouchableOpacity>
       );
     },
-    [getColor, getStatusColor, handleOrderPress]
+    [getColor, getStatusColor, handleOrderPress, computeOrderTotal]
   );
 
   // Memoize the error component
