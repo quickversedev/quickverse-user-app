@@ -100,15 +100,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   carouselContainer: {
-    marginBottom: 24,
+    marginTop: 10,
+    marginBottom: 18,
   },
   searchContainer: {
     paddingHorizontal: 16,
     marginBottom: 24,
   },
-  cardsContainer: {
-    marginTop: 8,
-  },
+  cardsContainer: {},
   bottomIllustrationContainer: {
     position: 'absolute',
     bottom: 0,

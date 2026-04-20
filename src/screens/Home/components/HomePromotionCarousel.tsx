@@ -95,7 +95,7 @@ const HomePromotionCarousel = () => {
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 16,
+    paddingVertical: 6,
   },
   bannerScrollContainer: {
     paddingHorizontal: 16,
@@ -103,7 +103,6 @@ const styles = StyleSheet.create({
   bannerContainer: {
     width: width - 32, // Full width minus padding
     marginRight: 12,
-    marginBottom: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
