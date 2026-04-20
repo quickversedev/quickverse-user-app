@@ -376,7 +376,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
     searchResultsContainer: {
       backgroundColor: getColor('card'),
       borderRadius: 12,
-      maxHeight: 200,
+      maxHeight: 400,
       marginTop: 8,
       ...Platform.select({
         android: {
@@ -608,7 +608,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                       </Text>
                     </TouchableOpacity>
                   )}
-                  style={{ maxHeight: 200 }}
+                  style={{ maxHeight: 400 }}
                   contentContainerStyle={{ paddingVertical: 4 }}
                   keyboardShouldPersistTaps="handled"
                   nestedScrollEnabled={true}
