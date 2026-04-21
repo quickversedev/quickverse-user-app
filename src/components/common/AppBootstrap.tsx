@@ -28,6 +28,9 @@ const AppBootstrap: React.FC = () => {
   const { getPermissionAndLocation } = useLocation();
   const [permissionData, setLocalPermissionData] = useState<PermissionAndLocation | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
+  // Set to true only after the post-PermissionsScreen location re-fetch has
+  // completed. Gates AppInitializer mount so locationData is never stale.
+  const [locationRefreshed, setLocationRefreshed] = useState(false);
   const { setPermissionDataInAuth } = useAuth();
   const [bootError, setBootError] = useState<string | null>(null);
   const { updateDeviceInfo } = useDeviceInfo();
@@ -60,6 +63,26 @@ const AppBootstrap: React.FC = () => {
     bootstrap();
   }, []);
 
+  // After the PermissionsScreen reports completion, re-fetch permission
+  // status + GPS fix so the downstream AppInitializer receives fresh
+  // locationData (otherwise it sees the cold-boot snapshot taken before
+  // the user granted permission, and briefly shows LocationRequiredModal).
+  useEffect(() => {
+    if (!permissionsCompleted) return;
+    (async () => {
+      try {
+        const result = await getPermissionAndLocation();
+        setLocalPermissionData(result as PermissionAndLocation);
+        setPermissionDataInAuth(result as PermissionAndLocation);
+      } catch (error) {
+        console.warn('Failed to re-fetch location after permissions:', error);
+      } finally {
+        setLocationRefreshed(true);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [permissionsCompleted]);
+
   // Note: Notifications are set up in PermissionsScreen.handlePermission when user grants permissions
   // If user skips, notifications are not set up
 
@@ -88,6 +111,14 @@ const AppBootstrap: React.FC = () => {
 
   // CASE 2.5: While bootstrapping location/permission data, avoid mounting children
   if (!bootstrapped) {
+    return <HomeScreenSkeleton />;
+  }
+
+  // CASE 2.55: Permissions just completed but the post-permission location
+  // re-fetch hasn't finished yet. Hold on the skeleton so AppInitializer
+  // doesn't mount with stale permissionData (which would flash the
+  // LocationRequiredModal for a split second).
+  if (permissionsCompleted && !locationRefreshed) {
     return <HomeScreenSkeleton />;
   }
 

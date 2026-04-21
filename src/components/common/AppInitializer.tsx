@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAddress, useAppStateRefresh, useConfig, usePages } from '../../hooks';
 import { PermissionAndLocation } from '../../hooks/Permissions/useLocation';
-import { findClosestAddressWithinRadius } from '../../screens/profile/Address/utils/addressUtils';
 import { getAddressFromCoordinates } from '../../services/api/olaLocationService';
 import { getUserAddresses } from '../../services/localStorage/storage.service';
 import useAddressStore from '../../store/address/addressStore';
@@ -42,11 +41,10 @@ interface AppInitializerProps {
  *
  * Address Selection Priority:
  * 1. Existing selected address (don't override)
- * 2. Closest saved address within 200m of current location
- * 3. Reverse geocoded current location
- * 4. Default address from auth data (using defaultAddressId)
- * 5. First saved address (if no defaultAddressId)
- * 6. No location set → open LocationRequiredModal (user must select; no default Pune/fallback)
+ * 2. Reverse geocoded current location (if permission granted + GPS available)
+ * 3. Default address from auth data (using defaultAddressId) when no GPS
+ * 4. First saved address (if no defaultAddressId)
+ * 5. No location set → open LocationRequiredModal (user must select; no default Pune/fallback)
  */
 const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData }) => {
   // UI state
@@ -222,22 +220,10 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       };
 
       if (permissionStatus === 'granted' && currentLatitude && currentLongitude) {
-        if (addresses && addresses.length > 0) {
-          const closest = findClosestAddressWithinRadius(
-            {
-              latitude: currentLatitude,
-              longitude: currentLongitude,
-            },
-            addresses as unknown as Array<{ [key: string]: unknown }>,
-            200
-          );
-          if (closest?.address) {
-            setSelectedAddress(closest.address as unknown as Address);
-            return;
-          }
-        }
-
-        // Either no saved addresses, or no saved address was close enough. Use current GPS location.
+        // Always default to reverse-geocoded current GPS location on launch
+        // when permission is granted. Saved addresses are never auto-selected
+        // over the user's actual current location — the user can explicitly
+        // switch to a saved one from the address selection modal.
         try {
           console.log('🔵 [AppInitializer] Reverse geocoding for:', currentLatitude, currentLongitude);
           const components = await getAddressFromCoordinates({
@@ -397,6 +383,71 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     initializeApp();
   }, [initializeApp]);
 
+  // Reactively set the current GPS location as the selected address the
+  // moment location permission is granted and coordinates become available.
+  // This handles the case where initializeApp ran before locationData was
+  // populated (async permission + GPS lookup), which would otherwise leave
+  // selectedAddress null and pop the LocationRequiredModal.
+  useEffect(() => {
+    if (selectedAddress) return;
+    if (permissionStatus !== 'granted') return;
+    if (!currentLatitude || !currentLongitude) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const components = await getAddressFromCoordinates({
+          latitude: currentLatitude,
+          longitude: currentLongitude,
+        });
+        if (cancelled) return;
+        const currentAddress: Address = {
+          addressID: 'current-location',
+          name: components.postalCode || 'Current Location',
+          phone: '',
+          city: components.city || 'Current Location',
+          state: components.state || '',
+          tag: 'QV_Current_Location',
+          addressLine1: components.formatted_address || 'Current Location',
+          addressLine2: '',
+          addressLine3: '',
+          postalCode: components.postalCode || '',
+          coordinates: {
+            longitude: currentLongitude,
+            latitude: currentLatitude,
+          },
+          isSavedAddress: false,
+        };
+        setSelectedAddress(currentAddress);
+      } catch (err) {
+        if (cancelled) return;
+        console.warn('Reverse geocode for current location failed:', err);
+        const gpsAddress: Address = {
+          addressID: 'current-location',
+          name: 'Current Location',
+          phone: '',
+          city: 'Current Location',
+          state: '',
+          tag: 'QV_Current_Location',
+          addressLine1: `${currentLatitude.toFixed(4)}, ${currentLongitude.toFixed(4)}`,
+          addressLine2: '',
+          addressLine3: '',
+          postalCode: '',
+          coordinates: {
+            longitude: currentLongitude,
+            latitude: currentLatitude,
+          },
+          isSavedAddress: false,
+        };
+        setSelectedAddress(gpsAddress);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedAddress, permissionStatus, currentLatitude, currentLongitude, setSelectedAddress]);
+
   useEffect(() => {
     const prev = prevAddressRef.current;
     const curr = selectedAddress;
@@ -452,14 +503,24 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     );
   }
 
-  // Location not configured: show app and open location modal so user can select (avoids stuck skeleton)
-  if (initComplete && !selectedAddress) {
+  // Location not configured: show the location-required modal only if we
+  // genuinely can't auto-resolve a current location. Whenever permission
+  // is 'granted' we stay optimistic — coords may still be propagating from
+  // the permission re-fetch — and let the reactive effect above set
+  // selectedAddress as soon as coords arrive. This avoids the split-second
+  // modal flash between initComplete flipping and the effect completing.
+  const canAutoResolveCurrentLocation = permissionStatus === 'granted';
+  if (initComplete && !selectedAddress && !canAutoResolveCurrentLocation) {
     return (
       <>
         {children}
         <LocationRequiredModal />
       </>
     );
+  }
+  if (initComplete && !selectedAddress && canAutoResolveCurrentLocation) {
+    // Auto-resolve in flight — render children without the modal.
+    return <>{children}</>;
   }
 
   // Show main app content when initialization successful and location is set
