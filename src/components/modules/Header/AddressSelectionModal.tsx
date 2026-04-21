@@ -61,7 +61,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   const insets = useSafeAreaInsets();
   const { addresses, loading, fetchAddresses } = useAddress();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const { setSelectedAddress, authData } = useAuth();
+  const { setSelectedAddress, authData, permissionDataInAuth } = useAuth();
   const { getCurrentLocation, checkLocationPermission, requestLocationPermission } = useLocation();
   const addressScrollRef = useRef<ScrollView>(null);
   const isLoggedIn = Boolean(authData?.jwt);
@@ -189,17 +189,43 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
         return;
       }
 
-      // Race both high-accuracy GPS and network location in parallel
-      const location = await Promise.any([
-        getCurrentLocation({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }),
-        getCurrentLocation({ enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }),
-      ]);
+      // Try to get a location using a resilient cascade so the first tap
+      // doesn't fail while GPS is still warming up:
+      //  1. Race high-accuracy GPS + network location (fastest path)
+      //  2. Fall back to the cached location from app boot (already in memory)
+      //  3. Final fallback: a slower low-accuracy retry with generous timeout
+      let location: { latitude: number; longitude: number } | null = null;
+      try {
+        location = await Promise.any([
+          getCurrentLocation({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }),
+          getCurrentLocation({ enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }),
+        ]);
+      } catch (raceError) {
+        console.warn(
+          '[AddressModal] Initial GPS race failed, trying cached / slower fallback:',
+          raceError
+        );
+        const cached = permissionDataInAuth?.location;
+        if (cached?.latitude && cached?.longitude) {
+          location = { latitude: cached.latitude, longitude: cached.longitude };
+        } else {
+          try {
+            location = await getCurrentLocation({
+              enableHighAccuracy: false,
+              timeout: 15000,
+              maximumAge: 60000,
+            });
+          } catch (retryError) {
+            console.warn('[AddressModal] Low-accuracy retry also failed:', retryError);
+          }
+        }
+      }
 
-      console.log('🔵 [AddressModal] Got location:', location.latitude, location.longitude);
-
-      if (!location.latitude || !location.longitude) {
+      if (!location?.latitude || !location?.longitude) {
         throw new Error('Could not get current location coordinates');
       }
+
+      console.log('🔵 [AddressModal] Got location:', location.latitude, location.longitude);
 
       let addressComponents;
       try {

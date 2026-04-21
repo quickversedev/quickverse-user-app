@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   Image,
   ImageBackground,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   StyleSheet,
   Text,
@@ -170,30 +172,22 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
     },
   });
 
-  const {
-    isLoading,
-    isGranted,
-    isDenied,
-    requestLocationPermission,
-    hasSkippedLocation,
-    skipLocationPermission,
-    getCurrentLocation,
-  } = useLocation();
+  const { isLoading, isGranted, isDenied, requestLocationPermission, getCurrentLocation } =
+    useLocation();
 
   useEffect(() => {
     if (!isLoading && !isDenied) {
       getCurrentLocation({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
     }
-  }, [isDenied, hasSkippedLocation, isLoading, getCurrentLocation]);
+  }, [isDenied, isLoading, getCurrentLocation]);
 
   useEffect(() => {
-    if (isGranted || hasSkippedLocation) {
-      // Complete permissions without setting up notifications here
-      // Notifications will be set up when user clicks "Allow Permissions" button
-      // or skipped entirely if user skips permissions
+    if (isGranted) {
+      // Location permission is mandatory — only complete once it's granted.
+      // Notification permission is requested alongside but may be declined.
       onPermissionsComplete();
     }
-  }, [isGranted, hasSkippedLocation, onPermissionsComplete]);
+  }, [isGranted, onPermissionsComplete]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -212,16 +206,32 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
       </View>
     );
   }
-  const handlePermission = async () => {
-    try {
-      // Request both location and notification permissions
-      await requestLocationPermission();
-      const notificationResult = await requestPermissions();
-      //console.log('notificationResult', notificationResult);
+  const promptLocationRequired = () => {
+    Alert.alert(
+      'Location access required',
+      'We need your location to show nearby stores and deliver your orders. Please enable location permission to continue.',
+      [
+        { text: 'Retry', onPress: () => requestLocationPermission() },
+        {
+          text: 'Open Settings',
+          onPress: () =>
+            Linking.openSettings().catch(err => console.warn('Cannot open settings:', err)),
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+  // `handlePermissionRef` kept above `promptLocationRequired` is intentional —
+  // Retry only re-prompts for location (notifications were already asked in
+  // step 2 of handlePermission and should not re-prompt on every retry).
 
-      // Setup notifications if notification permission was granted
+  const handlePermission = async () => {
+    // Step 1: ask for notifications first (optional). Always prompted so
+    // the user has a chance to accept/deny regardless of what happens with
+    // location afterwards.
+    try {
+      const notificationResult = await requestPermissions();
       if (notificationResult) {
-        //console.log('notificationResult', notificationResult);
         try {
           const cleanup = await setupNotifications();
           if (cleanup) {
@@ -229,23 +239,28 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
           }
         } catch (notificationError) {
           console.warn('Notification setup failed:', notificationError);
-          // Continue without notifications but inform user
         }
       }
-
-      // Complete permissions
-      onPermissionsComplete();
-    } catch (error) {
-      console.warn('Permission request failed:', error);
-      // Still complete permissions even if some fail
-      onPermissionsComplete();
+    } catch (notifError) {
+      console.warn('Notification permission request failed:', notifError);
     }
-  };
 
-  const handleSkip = () => {
-    // Skip without requesting any permissions - just mark as skipped and proceed
-    skipLocationPermission();
-    onPermissionsComplete();
+    // Step 2: ask for location (mandatory).
+    let locationGranted = false;
+    try {
+      const locationResult = await requestLocationPermission();
+      locationGranted = locationResult === 'granted' || isGranted;
+    } catch (error) {
+      console.warn('Location permission request failed:', error);
+    }
+
+    // Step 3: gate progression on location only.
+    if (!locationGranted) {
+      promptLocationRequired();
+      return;
+    }
+
+    // Location granted → the `isGranted` useEffect completes the flow.
   };
 
   return (
@@ -259,9 +274,6 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
           <Image style={styles.topLogo} source={Images.logoQv} />
         </View>
         <View style={styles.card}>
-          <TouchableOpacity style={styles.skipContainer} onPress={handleSkip}>
-            <Text style={styles.skipText}>Skip</Text>
-          </TouchableOpacity>
           <Text style={styles.title}>Allow Permissions</Text>
           <Text style={styles.subtitle}>We need access to give you the{'\n'}best experience.</Text>
           <View style={styles.permissionCard}>
