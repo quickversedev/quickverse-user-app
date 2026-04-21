@@ -9,7 +9,7 @@ import CollectionShowcaseWidget from '../../components/modules/Collection/Collec
 import { SearchBar } from '../../components/modules/Header/SearchBar';
 import VendorCard2 from '../../components/modules/Vendor/VendorCard2'; // Updated to V2
 import VendorShowcaseWidget from '../../components/modules/Vendor/VendorShowcaseWidget';
-import { Collection, fetchCollectionsFromApi } from '../../data/collectionsData';
+import { API_STORE_ID, Collection, fetchCollectionsFromApi } from '../../data/collectionsData';
 import { RootStackParamList } from '../../routes/AppStack';
 import useVendorStore from '../../store/vendorStore';
 import { Vendor } from '../../types/vendor';
@@ -30,11 +30,21 @@ const CategoryScreen = () => {
   const vendors = useVendorStore(state => state.vendors);
   const getVendorsByCategory = useVendorStore(state => state.getVendorsByCategory);
   const getVendorById = useVendorStore(state => state.getVendorById);
+
   const categoryVendors = React.useMemo(() => {
     return getVendorsByCategory(categoryName).filter(
       vendor => vendor.storeEnabled !== false && vendor.storeActive !== false
     );
   }, [categoryName, getVendorsByCategory, vendors]);
+
+  // Show the showcase widget for Shree Samarth Foods (94728). Falls back to
+  // the first grocery vendor if 94728 isn't in the list.
+  const showcaseVendors = React.useMemo(() => {
+    if (!isGrocery) return categoryVendors;
+    const preferred = categoryVendors.find(v => String(v.shopId) === '94728');
+    if (preferred) return [preferred];
+    return categoryVendors.slice(0, 1);
+  }, [isGrocery, categoryVendors]);
 
   // Cart Logic
   // Collections Logic (Grocery Only)
@@ -43,21 +53,20 @@ const CategoryScreen = () => {
 
   useEffect(() => {
     const loadCollections = async () => {
-      if (!isGrocery || categoryVendors.length === 0) {
+      if (!isGrocery) {
         setCollectionsLoading(false);
         return;
       }
       setCollectionsLoading(true);
       try {
-        const storeId = categoryVendors[0].shopId;
-        const sections = await fetchCollectionsFromApi(storeId);
+        // Collections grid is statically sourced from API_STORE_ID (68246)
+        const sections = await fetchCollectionsFromApi(API_STORE_ID);
         if (sections.length > 0) {
           setCollections(sections[0].collections);
         } else {
           setCollections([]);
         }
-      } catch (error) {
-        console.error('[CategoryScreen] Failed to load collections:', error);
+      } catch {
         setCollections([]);
       } finally {
         setCollectionsLoading(false);
@@ -65,7 +74,7 @@ const CategoryScreen = () => {
     };
 
     loadCollections();
-  }, [isGrocery, categoryVendors]);
+  }, [isGrocery]);
 
   // Cart Logic
 
@@ -130,11 +139,8 @@ const CategoryScreen = () => {
         <>
           {/* Collection Showcase Widgets (Grocery vendors) */}
           {isGrocery &&
-            categoryVendors.map(v => (
-              <View
-                key={v.shopId}
-                style={{ paddingHorizontal: 20, marginTop: 8, marginBottom: 8 }}
-              >
+            showcaseVendors.map(v => (
+              <View key={v.shopId} style={styles.showcaseWrapper}>
                 <CollectionShowcaseWidget vendor={v} onPressExplore={() => handleVendorPress(v)} />
               </View>
             ))}
@@ -142,7 +148,7 @@ const CategoryScreen = () => {
           {/* Collections Grid (Grocery Only) */}
           {isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
           {isGrocery && !collectionsLoading && collections.length > 0 && (
-            <CollectionsGrid collections={collections} shopId={categoryVendors[0]?.shopId} />
+            <CollectionsGrid collections={collections} shopId={API_STORE_ID} />
           )}
 
           {/* Horizontal list of store cards */}
@@ -271,6 +277,11 @@ const styles = StyleSheet.create({
   },
   promoContainer: {
     // marginBottom: 24,
+  },
+  showcaseWrapper: {
+    paddingHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 8,
   },
   horizontalList: {
     paddingLeft: 20,
