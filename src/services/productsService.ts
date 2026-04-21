@@ -235,8 +235,14 @@ class ProductsService {
       // Real API call
       const authHeader = getAuthHeader();
 
+      const endpoint = `/v3/${shopId}/category`;
+      const fullUrl = `${axiosInstance.defaults.baseURL ?? ''}${endpoint}`;
+      console.warn(
+        `[CollectionsGrid] GET categories → ${fullUrl} (QuickVerse backend, shopId=${shopId})`
+      );
+
       const response = await apiCall(
-        axiosInstance.get<CategoryApiResponse>(`/v3/${shopId}/category`, {
+        axiosInstance.get<CategoryApiResponse>(endpoint, {
           headers: {
             Authorization: authHeader,
           },
@@ -325,11 +331,11 @@ class ProductsService {
         limit: 50,
       };
 
-      console.log(
-        `[ProductsService] Fetching collection products for shop ${shopId} (type: ${typeof payload.shopId}), category ${categoryId}`
-      );
-      console.log(`[ProductsService] URL: ${url}`);
-      console.log(`[ProductsService] Payload:`, JSON.stringify(payload));
+      // console.log(
+      //   `[ProductsService] Fetching collection products for shop ${shopId} (type: ${typeof payload.shopId}), category ${categoryId}`
+      // );
+      // console.log(`[ProductsService] URL: ${url}`);
+      // console.log(`[ProductsService] Payload:`, JSON.stringify(payload));
 
       const response = await axios.post(url, payload, {
         headers: {
@@ -339,7 +345,7 @@ class ProductsService {
         },
       });
 
-      console.log(`[ProductsService] Response status: ${response.status}`);
+      // console.log(`[ProductsService] Response status: ${response.status}`);
 
       let rawProducts: unknown[] = [];
       if (Array.isArray(response.data)) {
@@ -353,13 +359,14 @@ class ProductsService {
       }
 
       if (rawProducts.length === 0) {
-        console.log(`[ProductsService] No products found in response for category ${categoryId}`);
+        // console.log(`[ProductsService] No products found in response for category ${categoryId}`);
         return [];
       }
 
-      console.log(
-        `[ProductsService] Found ${rawProducts.length} products for category ${categoryId}`
-      );
+      console
+        .log
+        // `[ProductsService] Found ${rawProducts.length} products for category ${categoryId}`
+        ();
 
       // Normalize each product to our Product shape; SmartPOS may use different image field names
       const pickImageUrl = (p: Record<string, unknown>): string => {
@@ -420,7 +427,7 @@ class ProductsService {
           true;
 
         if (!imageUrl && rawProducts[0] === raw && __DEV__) {
-          console.log('[ProductsService] Collection product sample keys:', Object.keys(p));
+          // console.log('[ProductsService] Collection product sample keys:', Object.keys(p));
         }
         return {
           ...p,

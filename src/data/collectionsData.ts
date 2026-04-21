@@ -107,7 +107,6 @@ export const COLLECTION_CATEGORIES_MAPPING: { [key: string]: CollectionCategory[
 
 // API Integration
 export const API_STORE_ID = '68246';
-const API_BASE_URL = `https://api.smartbiz.in/stores/${API_STORE_ID}`;
 
 import productsService from '../services/productsService';
 
@@ -115,15 +114,8 @@ export const fetchCollectionsFromApi = async (
   storeId: string = API_STORE_ID
 ): Promise<CollectionSection[]> => {
   try {
-    const baseUrl = `https://api.smartbiz.in/stores/${storeId}`;
-    console.log(`[CollectionsData] Fetching categories from: ${baseUrl}/category`);
     // Fetch all categories from the API
     const apiCategories = await productsService.fetchCategories(storeId);
-    console.log(`[CollectionsData] Fetched ${apiCategories.length} categories`);
-    console.log(
-      '[CollectionsData] API Response Categories (Sample):',
-      JSON.stringify(apiCategories.slice(0, 5), null, 2)
-    );
 
     const collections: Collection[] = [];
 
@@ -192,12 +184,6 @@ export const fetchCollectionsFromApi = async (
       }
     });
 
-    // Sort collections by name or keep mapped order? Mapped order is better.
-
-    console.log(
-      `[CollectionsData] Generated ${collections.length} synthetic collections with real IDs`
-    );
-
     return [
       {
         title: 'Shop by Category',
@@ -205,7 +191,7 @@ export const fetchCollectionsFromApi = async (
       },
     ];
   } catch (error) {
-    console.error('Error fetching/mapping collections:', error);
+    console.warn('[CollectionsGrid] fetch failed:', error);
     return [];
   }
 };

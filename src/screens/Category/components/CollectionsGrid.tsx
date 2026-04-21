@@ -47,21 +47,6 @@ const CollectionsGrid: React.FC<CollectionsGridProps> = ({ collections, shopId }
   );
 
   const handlePress = (collection: Collection) => {
-    // Navigate to a screen where we can show products for this collection
-    // Since the prompt didn't specify exactly where, we'll try 'CollectionDetails' or similar if it exists in your app,
-    // otherwise fallback to something generic or just log.
-    // For now, let's assume we might want to go to a product listing.
-    // The user mentioned "collections will be list of various category grouped", so effectively a filter.
-    console.log('Pressed collection:', collection.name);
-    console.log(
-      'Collection Categories:',
-      JSON.stringify(
-        collection.categories.map(c => ({ name: c.name, id: c.id })),
-        null,
-        2
-      )
-    );
-
     const isPanCorner = collection.name.toLowerCase().includes('pan corner');
     if (isPanCorner) {
       setPendingCollection(collection);

@@ -48,17 +48,30 @@ class SmartBizAddressService {
       now - cachedData.lastFetched < this.CACHE_DURATION &&
       cachedData.addresses.length > 0
     ) {
+      console.warn(
+        `[DeliveryAddress] cache hit shopId=${vendorId} addressCount=${cachedData.addresses.length} (skipping network)`
+      );
       return cachedData.addresses;
     }
 
     try {
+      const endpoint = `/v2/listAddresses?shopId=${vendorId}`;
+      const fullUrl = `${axiosInstance.defaults.baseURL ?? ''}${endpoint}`;
+      console.warn(
+        `[DeliveryAddress] GET addresses → ${fullUrl} (QuickVerse backend, per-shop, shopId=${vendorId})`
+      );
+
       const data: SmartBizAddressResponse = await apiCall(
-        axiosInstance.get(`/v2/listAddresses?shopId=${vendorId}`, {
+        axiosInstance.get(endpoint, {
           headers: {
             SessionKey: sessionKey,
             phone: phone,
           },
         })
+      );
+
+      console.warn(
+        `[DeliveryAddress] response shopId=${vendorId} addressCount=${data.addresses.length} defaultAddressId=${data.defaultAddressId || 'none'}`
       );
 
       // Cache the data for this specific vendor
@@ -70,6 +83,10 @@ class SmartBizAddressService {
 
       return data.addresses;
     } catch (error) {
+      console.warn(
+        `[DeliveryAddress] fetch failed shopId=${vendorId}:`,
+        error instanceof Error ? error.message : error
+      );
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch addresses';
       throw new Error(errorMessage);
     }
