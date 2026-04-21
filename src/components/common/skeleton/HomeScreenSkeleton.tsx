@@ -1,10 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  Animated,
-  Dimensions,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Animated, Dimensions, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../../theme/ThemeContext';
 
@@ -95,6 +90,7 @@ export const HomeScreenSkeleton: React.FC = () => {
       flex: 1,
       backgroundColor: getColor('background'),
     },
+    // Match HomeHeader paddingTop: 16, paddingBottom: 8
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -111,10 +107,27 @@ export const HomeScreenSkeleton: React.FC = () => {
     locationText: {
       gap: 6,
     },
+    // Match HomeMainScreen_2 carouselContainer marginTop:10, marginBottom:18
+    // plus HomePromotionCarousel inner paddingVertical:6 → visual 24px gaps
     carouselContainer: {
-      marginBottom: 24,
+      marginTop: 10,
+      marginBottom: 18,
       paddingHorizontal: 16,
-      marginTop: 8,
+    },
+    bannerShadowWrap: {
+      borderRadius: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+      elevation: 4,
+    },
+    dotsRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 10,
     },
     searchContainer: {
       paddingHorizontal: 16,
@@ -124,8 +137,7 @@ export const HomeScreenSkeleton: React.FC = () => {
       flexDirection: 'row',
       justifyContent: 'space-between',
       paddingHorizontal: 16,
-      marginTop: 8,
-      marginBottom: 24,
+      gap: 16,
     },
     // Category card skeleton with inner content
     cardSkeleton: {
@@ -172,9 +184,16 @@ export const HomeScreenSkeleton: React.FC = () => {
           <S width={40} height={40} borderRadius={20} />
         </View>
 
-        {/* Promotion carousel banner */}
+        {/* Promotion carousel banner with page dots */}
         <View style={styles.carouselContainer}>
-          <S width={width - 32} height={CAROUSEL_BANNER_HEIGHT} borderRadius={12} />
+          <View style={styles.bannerShadowWrap}>
+            <S width={width - 32} height={CAROUSEL_BANNER_HEIGHT} borderRadius={12} />
+          </View>
+          <View style={styles.dotsRow}>
+            <S width={16} height={6} borderRadius={3} />
+            <S width={6} height={6} borderRadius={3} />
+            <S width={6} height={6} borderRadius={3} />
+          </View>
         </View>
 
         {/* Search bar */}
