@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import Icon from '@react-native-vector-icons/material-design-icons';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { PermissionAndLocation, useLocation } from '../../hooks/Permissions/useLocation';
 import { useDeviceInfo } from '../../hooks/useDeviceInfo';
@@ -8,6 +10,19 @@ import PermissionsScreen from '../../screens/permission/PermissionsScreen';
 import AppInitializer from './AppInitializer';
 import ErrorState from './ErrorState';
 import { HomeScreenSkeleton } from './skeleton';
+
+const LocationResolvingIndicator: React.FC = () => (
+  <View style={styles.locationOverlay}>
+    <View style={styles.locationCard}>
+      <View style={styles.locationIconWrap}>
+        <Icon name="map-marker-radius" size={36} color="#D97706" />
+      </View>
+      <Text style={styles.locationTitle}>Detecting your location</Text>
+      <Text style={styles.locationSubtitle}>Setting your delivery area…</Text>
+      <ActivityIndicator size="small" color="#D97706" style={styles.locationSpinner} />
+    </View>
+  </View>
+);
 
 /**
  * AppBootstrap Component
@@ -25,7 +40,7 @@ import { HomeScreenSkeleton } from './skeleton';
 const AppBootstrap: React.FC = () => {
   const { isNewUser, authData } = useAuth();
   const [permissionsCompleted, setPermissionsCompleted] = useState(false);
-  const { getPermissionAndLocation } = useLocation();
+  const { getPermissionAndLocation, isGranted, hasSkippedLocation } = useLocation();
   const [permissionData, setLocalPermissionData] = useState<PermissionAndLocation | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
   // Set to true only after the post-PermissionsScreen location re-fetch has
@@ -115,10 +130,14 @@ const AppBootstrap: React.FC = () => {
   }
 
   // CASE 2.55: Permissions just completed but the post-permission location
-  // re-fetch hasn't finished yet. Hold on the skeleton so AppInitializer
-  // doesn't mount with stale permissionData (which would flash the
-  // LocationRequiredModal for a split second).
+  // re-fetch hasn't finished yet. Hold AppInitializer mount so it doesn't
+  // see stale permissionData. Only show the "Detecting your location"
+  // indicator when permission was actually granted — if the user denied or
+  // skipped, there's nothing to detect, so fall through to the skeleton.
   if (permissionsCompleted && !locationRefreshed) {
+    if (isGranted && !hasSkippedLocation) {
+      return <LocationResolvingIndicator />;
+    }
     return <HomeScreenSkeleton />;
   }
 
@@ -134,5 +153,45 @@ const AppBootstrap: React.FC = () => {
     </AppInitializer>
   );
 };
+
+const styles = StyleSheet.create({
+  locationOverlay: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  locationCard: {
+    alignItems: 'center',
+    paddingVertical: 28,
+    paddingHorizontal: 32,
+  },
+  locationIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#FFF7ED',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  locationTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  locationSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 18,
+    textAlign: 'center',
+  },
+  locationSpinner: {
+    marginTop: 4,
+  },
+});
 
 export default AppBootstrap;
