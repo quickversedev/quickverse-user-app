@@ -4,6 +4,10 @@ import { Promotion } from '../../../types/pages';
 import PromoBanner from './PromoBanner';
 
 const { width } = Dimensions.get('window');
+const SIDE_PADDING = 16;
+const BANNER_GAP = 12;
+const BANNER_WIDTH = width - SIDE_PADDING * 2;
+const SNAP_INTERVAL = BANNER_WIDTH + BANNER_GAP;
 
 interface AutoScrollBannerProps {
   bannerData: Promotion[];
@@ -11,9 +15,13 @@ interface AutoScrollBannerProps {
   onBannerPress?: (promo: Promotion) => void;
 }
 
+const PAUSE_AFTER_INTERACTION_MS = 5000;
+
 const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interval = 3000, onBannerPress }) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const [_currentIndex, setCurrentIndex] = useState(0);
+  const currentIndexRef = useRef(0);
+  const pauseUntilRef = useRef(0);
 
   // Only show promotions that are actual banner images
   const bannerItems = useMemo(
@@ -25,14 +33,13 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interva
     if (bannerItems.length === 0) return;
 
     const timer = setInterval(() => {
-      setCurrentIndex(prevIndex => {
-        const nextIndex = (prevIndex + 1) % bannerItems.length;
-        const bannerWidth = width - 32 + 12; // Full width minus padding plus margin
-        scrollViewRef.current?.scrollTo({
-          x: nextIndex * bannerWidth,
-          animated: true,
-        });
-        return nextIndex;
+      if (Date.now() < pauseUntilRef.current) return;
+      const nextIndex = (currentIndexRef.current + 1) % bannerItems.length;
+      currentIndexRef.current = nextIndex;
+      setCurrentIndex(nextIndex);
+      scrollViewRef.current?.scrollTo({
+        x: nextIndex * SNAP_INTERVAL,
+        animated: true,
       });
     }, interval);
 
@@ -47,8 +54,20 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interva
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.bannerScrollContainer}
-      pagingEnabled
+      snapToInterval={SNAP_INTERVAL}
+      snapToAlignment="start"
+      decelerationRate="fast"
+      disableIntervalMomentum
       scrollEventThrottle={16}
+      onScrollBeginDrag={() => {
+        pauseUntilRef.current = Date.now() + PAUSE_AFTER_INTERACTION_MS;
+      }}
+      onMomentumScrollEnd={e => {
+        const idx = Math.round(e.nativeEvent.contentOffset.x / SNAP_INTERVAL);
+        currentIndexRef.current = idx;
+        setCurrentIndex(idx);
+        pauseUntilRef.current = Date.now() + PAUSE_AFTER_INTERACTION_MS;
+      }}
     >
       {bannerItems.map((banner, index) => (
         <PromoBanner key={index} promo={banner} size="medium" style={styles.bannerContainer} onPress={onBannerPress} />
@@ -59,12 +78,12 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interva
 
 const styles = StyleSheet.create({
   bannerScrollContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: SIDE_PADDING,
   },
   bannerContainer: {
-    width: width - 32, // Full width minus padding
+    width: BANNER_WIDTH,
     marginVertical: 8,
-    marginRight: 12,
+    marginRight: BANNER_GAP,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
