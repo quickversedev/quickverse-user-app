@@ -82,8 +82,18 @@ const AppBootstrap: React.FC = () => {
   // status + GPS fix so the downstream AppInitializer receives fresh
   // locationData (otherwise it sees the cold-boot snapshot taken before
   // the user granted permission, and briefly shows LocationRequiredModal).
+  // If bootstrap already captured a valid location (permission was granted
+  // before this launch), skip the re-fetch entirely so the indicator
+  // doesn't flash on every cold start. Re-runs when permissionData.location
+  // appears so a slow bootstrap that resolves AFTER permissionsCompleted
+  // still short-circuits the indicator.
   useEffect(() => {
     if (!permissionsCompleted) return;
+    if (locationRefreshed) return;
+    if (permissionData?.location) {
+      setLocationRefreshed(true);
+      return;
+    }
     (async () => {
       try {
         const result = await getPermissionAndLocation();
@@ -96,7 +106,7 @@ const AppBootstrap: React.FC = () => {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [permissionsCompleted]);
+  }, [permissionsCompleted, permissionData?.location, locationRefreshed]);
 
   // Note: Notifications are set up in PermissionsScreen.handlePermission when user grants permissions
   // If user skips, notifications are not set up
@@ -132,10 +142,12 @@ const AppBootstrap: React.FC = () => {
   // CASE 2.55: Permissions just completed but the post-permission location
   // re-fetch hasn't finished yet. Hold AppInitializer mount so it doesn't
   // see stale permissionData. Only show the "Detecting your location"
-  // indicator when permission was actually granted — if the user denied or
-  // skipped, there's nothing to detect, so fall through to the skeleton.
+  // indicator when we genuinely don't have a location yet — if bootstrap
+  // already captured one (cold launch with prior permission), skip the
+  // indicator entirely. If the user denied or skipped, there's nothing to
+  // detect, so fall through to the skeleton.
   if (permissionsCompleted && !locationRefreshed) {
-    if (isGranted && !hasSkippedLocation) {
+    if (isGranted && !hasSkippedLocation && !permissionData?.location) {
       return <LocationResolvingIndicator />;
     }
     return <HomeScreenSkeleton />;
