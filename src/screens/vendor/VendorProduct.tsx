@@ -185,15 +185,19 @@ const VendorProductComponent: React.FC = () => {
     setShopId(shopId);
     resetProducts();
 
-    // Logic branch: Collection Mode vs Normal Vendor Mode
+    // Logic branch: Collection Mode vs Normal Vendor Mode.
+    // Grocery shops only expose products via the per-category collection
+    // endpoint, so any grocery vendor uses implicit collection mode (mirrors
+    // CollectionShowcaseWidget's data fetch).
+    const isGroceryVendor = vendor.category === 'Grocery';
     if (collection) {
       console.log('[VendorProduct] Collection Mode:', collection.name);
       const categoryIds = collection.categories.map(c => c.id);
       fetchCollectionProducts(shopId, categoryIds);
       // Also fetch categories so we have imageURLs for category tabs (match by id)
       fetchCategories(shopId);
-    } else if (shopId === API_STORE_ID) {
-      console.log('[VendorProduct] Implicit Collection Mode for API_STORE_ID');
+    } else if (shopId === API_STORE_ID || isGroceryVendor) {
+      console.log('[VendorProduct] Implicit Collection Mode for shopId=', shopId);
       // Just fetch categories first. The second useEffect will trigger product fetch.
       fetchCategories(shopId);
     } else {
@@ -205,8 +209,9 @@ const VendorProductComponent: React.FC = () => {
 
   // Special effect: For implicit collection mode, fetch products once categories are loaded
   useEffect(() => {
+    const isGroceryVendor = vendor.category === 'Grocery';
     if (
-      shopId === API_STORE_ID &&
+      (shopId === API_STORE_ID || isGroceryVendor) &&
       !collection &&
       categories.length > 0 &&
       products.length === 0 &&
@@ -228,6 +233,7 @@ const VendorProductComponent: React.FC = () => {
     productsLoading,
     productsError,
     fetchCollectionProducts,
+    vendor.category,
   ]);
 
   // Log fetched products
@@ -284,7 +290,9 @@ const VendorProductComponent: React.FC = () => {
     [searchQuery, filteredProducts, products]
   );
 
-  // Map categories to CategoryTabs items; use store category imageURLs when available (regular mode or after fetch in collection mode)
+  // Map categories to CategoryTabs items; use store category imageURLs when available (regular mode or after fetch in collection mode).
+  // Grocery shops typically return empty imageURLs, so fall back to the
+  // first in-division product image so each tab shows a real thumbnail.
   const categoriesForTabs: Category[] = useMemo(() => {
     const sourceCategories = collection ? collection.categories : categories || [];
     const storeCategories = categories || [];
@@ -294,13 +302,17 @@ const VendorProductComponent: React.FC = () => {
       );
       const apiCategory = c as { id: string; name: string; imageURLs?: string[] | null };
       const imageUrl = storeCat?.imageURLs?.[0] ?? apiCategory.imageURLs?.[0];
+      const sampleProduct = products?.find(p => p.division === c.id && p.imageUrl);
+      const fallback = sampleProduct?.imageUrl;
+      const resolved =
+        typeof imageUrl === 'string' && imageUrl ? imageUrl : fallback ? fallback : Images.bg1;
       return {
         id: c.id,
         name: c.name,
-        icon: typeof imageUrl === 'string' && imageUrl ? imageUrl : Images.bg1,
+        icon: resolved,
       };
     });
-  }, [categories, collection]);
+  }, [categories, collection, products]);
 
   // Only include categories that have at least one product (match product.division)
   // When searching, show all categories that have matching products

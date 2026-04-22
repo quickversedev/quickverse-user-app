@@ -18,6 +18,7 @@ import useCartStore from '../../../store/cart/cartStore';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
 import { triggerAddToCartHaptic } from '../../../utils/haptics';
+import { getStoreStatus } from '../../../utils/storeUtils';
 import LoginPromptModal from '../../common/LoginPromptModal';
 import { ThemeText } from '../../common/theme/ThemeText';
 
@@ -370,6 +371,8 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
   const { authData } = useAuth();
   const hasAuth = React.useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const storeStatus = React.useMemo(() => getStoreStatus(vendor), [vendor]);
+  const isStoreActive = React.useMemo(() => storeStatus.isOpen, [storeStatus.isOpen]);
 
   const cartId = React.useMemo(() => `vendor_${vendor.shopId}`, [vendor.shopId]);
   const cart = carts[cartId];
@@ -389,16 +392,6 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
       try {
         const cats = await productsService.fetchCategories(vendor.shopId);
 
-        // Map API categories to UI model
-        const mappedCategories = cats.map(c => ({
-          id: c.id,
-          name: c.name,
-          image:
-            c.imageURLs && c.imageURLs.length > 0
-              ? { uri: c.imageURLs[0] }
-              : { uri: PLACEHOLDER_IMAGE },
-        }));
-
         // Fetch products for each category in parallel using collection API
         const categoryIds = cats.map(c => c.id);
         const productPromises = categoryIds.map(categoryId =>
@@ -416,6 +409,20 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
           if (seenSkus.has(p.sku)) return false;
           seenSkus.add(p.sku);
           return true;
+        });
+
+        // Map API categories to UI model. Grocery shops often return empty
+        // imageURLs for categories — fall back to the first in-category
+        // product's image so each chip gets a representative thumbnail.
+        const mappedCategories = cats.map(c => {
+          const apiImage =
+            c.imageURLs && c.imageURLs.length > 0 ? c.imageURLs[0] : null;
+          const sampleProduct = uniqueProducts.find(p => p.division === c.id && p.imageUrl);
+          return {
+            id: c.id,
+            name: c.name,
+            image: { uri: apiImage || sampleProduct?.imageUrl || PLACEHOLDER_IMAGE },
+          };
         });
 
         setFetchedCategories(mappedCategories);
@@ -441,7 +448,7 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
   // Cart Handlers
   const handleAddToCart = useCallback(
     (product: Product) => {
-      if (!product.inStock) return;
+      if (!isStoreActive || !product.inStock) return;
       if (!hasAuth) {
         setShowLoginModal(true);
         return;
@@ -464,29 +471,31 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
         authData!.phone
       );
     },
-    [hasAuth, cartId, vendor.shopId, addToCart, setActiveCart, authData]
+    [isStoreActive, hasAuth, cartId, vendor.shopId, addToCart, setActiveCart, authData]
   );
 
   const handleIncrement = useCallback(
     (sku: string) => {
+      if (!isStoreActive) return;
       if (!hasAuth) {
         setShowLoginModal(true);
         return;
       }
       increment(cartId, sku, authData!.jwt, authData!.phone);
     },
-    [hasAuth, cartId, increment, authData]
+    [isStoreActive, hasAuth, cartId, increment, authData]
   );
 
   const handleDecrement = useCallback(
     (sku: string) => {
+      if (!isStoreActive) return;
       if (!hasAuth) {
         setShowLoginModal(true);
         return;
       }
       decrement(cartId, sku, authData!.jwt, authData!.phone);
     },
-    [hasAuth, cartId, decrement, authData]
+    [isStoreActive, hasAuth, cartId, decrement, authData]
   );
 
   const getProductQuantity = useCallback(
@@ -577,10 +586,25 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
         </TouchableOpacity>
       </View>
 
+      {/* Store Closed Banner */}
+      {!isStoreActive && (
+        <View style={styles.closedBanner}>
+          <ThemeText style={styles.closedText}>WE ARE CLOSED</ThemeText>
+          {vendor.openingTime && vendor.closingTime && (
+            <ThemeText style={styles.closedTimingText}>
+              {vendor.openingTime} - {vendor.closingTime}
+            </ThemeText>
+          )}
+        </View>
+      )}
+
       {isLoading ? (
         <CollectionSkeleton />
       ) : (
-        <View>
+        <View
+          style={!isStoreActive ? styles.disabledContent : undefined}
+          pointerEvents={!isStoreActive ? 'none' : 'auto'}
+        >
           {/* Categories */}
           <FlatList
             horizontal
@@ -857,6 +881,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#1E6B50',
+  },
+  // Closed state
+  closedBanner: {
+    marginBottom: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 0, 0, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closedText: {
+    color: '#EF4444',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 4,
+    fontSize: 13,
+  },
+  closedTimingText: {
+    color: '#6B7280',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  disabledContent: {
+    opacity: 0.5,
   },
   // Pagination dots
   dotsRow: {
