@@ -1,9 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
 import PromoBanner from '../../../components/common/promo/PromoBanner';
 import { usePromotions } from '../../../hooks/usePromotions';
+import useVendorStore from '../../../store/vendorStore';
+import { AppNavigationProp } from '../../../types/navigation';
+import { Promotion } from '../../../types/pages';
 
 const { width } = Dimensions.get('window');
+const SIDE_PADDING = 16;
+const BANNER_GAP = 12;
+const BANNER_WIDTH = width - SIDE_PADDING * 2;
+const SNAP_INTERVAL = BANNER_WIDTH + BANNER_GAP;
+const PAUSE_AFTER_INTERACTION_MS = 5000;
+const AUTO_SCROLL_INTERVAL_MS = 3000;
 
 // Static promotions (kept for fallback/reference — replaced by /v3/pages "Home" promotions)
 // const STATIC_PROMOTIONS = [
@@ -40,33 +50,54 @@ const { width } = Dimensions.get('window');
 // ];
 
 const HomePromotionCarousel = () => {
-  const scrollViewRef = useRef<ScrollView>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_currentIndex, setCurrentIndex] = useState(0);
-
+  const navigation = useNavigation<AppNavigationProp>();
+  const { vendors, getVendorById } = useVendorStore();
   const { promotions } = usePromotions('Home');
-  const displayPromotions = promotions;
 
-  // Auto-scroll logic
+  const scrollViewRef = useRef<ScrollView>(null);
+  const currentIndexRef = useRef(0);
+  const pauseUntilRef = useRef(0);
+  const [, setCurrentIndex] = useState(0);
+
+  const bannerItems = useMemo(
+    () => promotions.filter(item => item.bannerImage),
+    [promotions]
+  );
+
   useEffect(() => {
-    if (displayPromotions.length <= 1) return;
-    const interval = 3000;
+    if (bannerItems.length <= 1) return;
+
     const timer = setInterval(() => {
-      setCurrentIndex(prevIndex => {
-        const nextIndex = (prevIndex + 1) % displayPromotions.length;
-        const bannerWidth = width - 32 + 12; // Full width minus padding plus margin
-        scrollViewRef.current?.scrollTo({
-          x: nextIndex * bannerWidth,
-          animated: true,
-        });
-        return nextIndex;
+      if (Date.now() < pauseUntilRef.current) return;
+      const nextIndex = (currentIndexRef.current + 1) % bannerItems.length;
+      currentIndexRef.current = nextIndex;
+      setCurrentIndex(nextIndex);
+      scrollViewRef.current?.scrollTo({
+        x: nextIndex * SNAP_INTERVAL,
+        animated: true,
       });
-    }, interval);
+    }, AUTO_SCROLL_INTERVAL_MS);
 
     return () => clearInterval(timer);
-  }, [displayPromotions.length]);
+  }, [bannerItems.length]);
 
-  if (displayPromotions.length === 0) return null;
+  const handleBannerPress = useCallback(
+    (promo: Promotion) => {
+      const shopId = promo.shopId ? String(promo.shopId) : '';
+      if (!shopId || shopId.startsWith('static_') || shopId === 'mock-shop') return;
+      let vendor = getVendorById(shopId);
+      if (!vendor) {
+        vendor = vendors.find(v => String(v.shopId) === shopId) || null;
+      }
+      if (vendor) {
+        // @ts-ignore - VendorProduct route type lives on AppStack
+        navigation.navigate('VendorProduct', { vendor });
+      }
+    },
+    [getVendorById, vendors, navigation]
+  );
+
+  if (bannerItems.length === 0) return null;
 
   return (
     <View style={styles.container}>
@@ -75,16 +106,29 @@ const HomePromotionCarousel = () => {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.bannerScrollContainer}
-        pagingEnabled
+        snapToInterval={SNAP_INTERVAL}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        disableIntervalMomentum
         scrollEventThrottle={16}
+        onScrollBeginDrag={() => {
+          pauseUntilRef.current = Date.now() + PAUSE_AFTER_INTERACTION_MS;
+        }}
+        onMomentumScrollEnd={e => {
+          const idx = Math.round(e.nativeEvent.contentOffset.x / SNAP_INTERVAL);
+          currentIndexRef.current = idx;
+          setCurrentIndex(idx);
+          pauseUntilRef.current = Date.now() + PAUSE_AFTER_INTERACTION_MS;
+        }}
       >
-        {displayPromotions.map((banner, index) => (
+        {bannerItems.map((banner, index) => (
           <PromoBanner
             key={banner.promoId ?? index}
             promo={{ ...banner, bannerImage: true }}
             size={178}
             style={styles.bannerContainer}
             aspectRatio={1.5}
+            onPress={handleBannerPress}
           />
         ))}
       </ScrollView>
@@ -97,11 +141,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   bannerScrollContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: SIDE_PADDING,
   },
   bannerContainer: {
-    width: width - 32, // Full width minus padding
-    marginRight: 12,
+    width: BANNER_WIDTH,
+    marginRight: BANNER_GAP,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
