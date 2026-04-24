@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import SearchResults from '../../components/search/SearchResults';
 import SearchSkeleton from '../../components/search/SearchSkeleton';
 import { useRecentSearches } from '../../hooks/useRecentSearches';
 import { useSearch } from '../../hooks/useSearch';
+import { RootStackParamList } from '../../routes/AppStack';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Product } from '../../types/product';
@@ -18,6 +19,8 @@ import { Vendor } from '../../types/vendor';
 const SearchScreen: React.FC = () => {
   const { getColor } = useTheme();
   const navigation = useNavigation();
+  const route = useRoute<RouteProp<RootStackParamList, 'Search'>>();
+  const restrictCategory = route.params?.restrictCategory;
 
   const {
     searchQuery,
@@ -27,7 +30,7 @@ const SearchScreen: React.FC = () => {
     setSearchQuery,
     searchOnSuggestionSelect,
     clearSearch,
-  } = useSearch();
+  } = useSearch({ restrictCategory });
 
   const { addSearch } = useRecentSearches();
 
@@ -50,6 +53,43 @@ const SearchScreen: React.FC = () => {
   const nearbyStores = searchQuery.trim()
     ? searchVendorsByQuery(searchQuery).slice(0, 6) // Show up to 6 nearby stores
     : [];
+
+  // Derive the Vendors section from the product results: any shop that
+  // carries a matching product should appear, deduped and merged with the
+  // text-match results from searchVendorsByQuery so a query like "milk" surfaces
+  // every vendor that actually sells milk (not just vendors named "milk").
+  const productVendors = React.useMemo(() => {
+    const seen = new Set<string>();
+    const out: Vendor[] = [];
+
+    // Vendors whose products matched
+    (searchResults.products || []).forEach(p => {
+      if (!p?.shopId || seen.has(p.shopId)) return;
+      const v = getVendorById(p.shopId);
+      if (v) {
+        seen.add(p.shopId);
+        out.push(v);
+      }
+    });
+
+    // Plus vendors whose name/description matched the query directly
+    if (searchQuery.trim()) {
+      searchVendorsByQuery(searchQuery).forEach(v => {
+        if (!v?.shopId || seen.has(v.shopId)) return;
+        if (restrictCategory && v.category !== restrictCategory) return;
+        seen.add(v.shopId);
+        out.push(v);
+      });
+    }
+
+    return out;
+  }, [
+    searchResults.products,
+    searchQuery,
+    getVendorById,
+    searchVendorsByQuery,
+    restrictCategory,
+  ]);
 
   const styles = StyleSheet.create({
     container: {
@@ -133,9 +173,9 @@ const SearchScreen: React.FC = () => {
               <SearchSkeleton />
             ) : (
               <SearchResults
-                vendors={searchResults.vendors}
+                vendors={productVendors}
                 products={searchResults.products}
-                nearbyStores={nearbyStores}
+                nearbyStores={[]}
                 onVendorPress={handleVendorPress}
                 onProductPress={handleProductPress}
                 onFavoritePress={handleFavoritePress}

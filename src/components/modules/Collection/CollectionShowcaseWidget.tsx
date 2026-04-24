@@ -104,9 +104,9 @@ const ProductCardBase: React.FC<ProductCardProps> = ({
 
       <View style={styles.priceRow}>
         <View style={styles.prices}>
-          {item.mrp > item.sellingPrice && (
-            <ThemeText style={styles.mrpText}>₹{item.mrp}</ThemeText>
-          )}
+          <ThemeText style={styles.mrpText}>
+            {item.mrp > item.sellingPrice ? `₹${item.mrp}` : ' '}
+          </ThemeText>
           <ThemeText style={styles.sellingPriceText}>₹{item.sellingPrice}</ThemeText>
         </View>
 
@@ -825,6 +825,8 @@ const styles = StyleSheet.create({
   },
   mrpText: {
     fontSize: 10,
+    lineHeight: 14,
+    minHeight: 14,
     color: '#9CA3AF',
     textDecorationLine: 'line-through',
   },

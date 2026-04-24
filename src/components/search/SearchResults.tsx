@@ -64,8 +64,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     vendorsGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'flex-start',
-      gap: 10,
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      rowGap: 12,
+    },
+    vendorGridItem: {
+      width: '48%',
     },
     vendorCardContainer: {
       width: '32%',
@@ -176,112 +180,48 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       {products.length > 0 && (
         <View style={styles.section}>
           <SectionDivider text="Products" fontSize={14} style={{ marginVertical: 8 }} />
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.productsGridContainer}
-            style={styles.productsScrollContainer}
-          >
-            <View style={styles.productsGrid}>
-              {displayedProducts.map(product => (
-                <View key={`search-${product.sku}`} style={styles.productGridItem}>
-                  <ProductItemOnSearch product={product} onPress={onProductPress} />
-                </View>
-              ))}
-            </View>
-            {showMoreVisible && visibleProducts < products.length && (
-              <View style={styles.showMoreButton}>
-                <ThemeText
-                  variant="body"
-                  color={getColor('primary')}
-                  style={styles.showMoreText}
-                  onPress={handleShowMore}
-                >
-                  Show More
-                </ThemeText>
+          <View style={styles.productsGrid}>
+            {displayedProducts.map(product => (
+              <View key={`search-${product.sku}`} style={styles.productGridItem}>
+                <ProductItemOnSearch product={product} onPress={onProductPress} />
               </View>
-            )}
-          </ScrollView>
+            ))}
+          </View>
+          {showMoreVisible && visibleProducts < products.length && (
+            <View style={styles.showMoreButton}>
+              <ThemeText
+                variant="body"
+                color={getColor('primary')}
+                style={styles.showMoreText}
+                onPress={handleShowMore}
+              >
+                Show More
+              </ThemeText>
+            </View>
+          )}
         </View>
       )}
 
       {vendors.length > 0 && (
         <View style={styles.section}>
           <SectionDivider text="Vendors" fontSize={14} style={{ marginVertical: 8 }} />
-          {vendors.length <= 2 ? (
-            // Show 2 or fewer vendors horizontally
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScrollContent}
-              style={styles.horizontalScrollContainer}
-            >
-              {vendors.map(vendor => {
-                const vendorDetails = getVendorDetails(vendor.shopId);
-                if (!vendorDetails) return null;
+          <View style={styles.vendorsGrid}>
+            {vendors.map(vendor => {
+              const vendorDetails = getVendorDetails(vendor.shopId);
+              if (!vendorDetails) return null;
 
-                return (
-                  <View key={`search-${vendor.shopId}`} style={styles.horizontalVendorCard}>
-                    <VendorCard
-                      vendor={vendorDetails}
-                      onPress={onVendorPress}
-                      onFavoritePress={onFavoritePress}
-                      size="small"
-                    />
-                  </View>
-                );
-              })}
-            </ScrollView>
-          ) : (
-            // Show more than 2 vendors in 2-row design
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScrollContent}
-              style={styles.horizontalScrollContainer}
-            >
-              {/* Container for both rows */}
-              <View>
-                {/* First row - first half of vendors */}
-                <View style={styles.horizontalRow}>
-                  {vendors.slice(0, Math.ceil(vendors.length / 2)).map(vendor => {
-                    const vendorDetails = getVendorDetails(vendor.shopId);
-                    if (!vendorDetails) return null;
-
-                    return (
-                      <View key={vendor.shopId} style={styles.horizontalVendorCard}>
-                        <VendorCard
-                          vendor={vendorDetails}
-                          onPress={onVendorPress}
-                          onFavoritePress={onFavoritePress}
-                          size="small"
-                        />
-                      </View>
-                    );
-                  })}
+              return (
+                <View key={`search-${vendor.shopId}`} style={styles.vendorGridItem}>
+                  <VendorCard
+                    vendor={vendorDetails}
+                    onPress={onVendorPress}
+                    onFavoritePress={onFavoritePress}
+                    size="small"
+                  />
                 </View>
-                {/* Second row - second half of vendors */}
-                {vendors.length > Math.ceil(vendors.length / 2) && (
-                  <View style={styles.horizontalRow}>
-                    {vendors.slice(Math.ceil(vendors.length / 2)).map(vendor => {
-                      const vendorDetails = getVendorDetails(vendor.shopId);
-                      if (!vendorDetails) return null;
-
-                      return (
-                        <View key={vendor.shopId} style={styles.horizontalVendorCard}>
-                          <VendorCard
-                            vendor={vendorDetails}
-                            onPress={onVendorPress}
-                            onFavoritePress={onFavoritePress}
-                            size="small"
-                          />
-                        </View>
-                      );
-                    })}
-                  </View>
-                )}
-              </View>
-            </ScrollView>
-          )}
+              );
+            })}
+          </View>
         </View>
       )}
       {nearbyStores.length > 0 && (

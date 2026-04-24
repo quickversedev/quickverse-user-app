@@ -55,7 +55,7 @@ export type RootStackParamList = {
   OrderFailure: { errorMessage?: string };
   Coupons: undefined;
 
-  Search: undefined;
+  Search: { restrictCategory?: 'Food' | 'Grocery' } | undefined;
   Address: undefined;
   AddAddress: { source?: 'modal' } | undefined;
   EditAddress: { address: import('../types/address').Address };

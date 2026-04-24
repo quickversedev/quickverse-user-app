@@ -100,8 +100,8 @@ const CategoryScreen = () => {
   );
 
   const handleSearchPress = React.useCallback(() => {
-    navigation.navigate('Search');
-  }, [navigation]);
+    navigation.navigate('Search', { restrictCategory: isGrocery ? 'Grocery' : 'Food' });
+  }, [navigation, isGrocery]);
 
   const navigateToOtherCategory = React.useCallback(() => {
     const otherCategory = isGrocery ? 'Food' : 'Grocery';

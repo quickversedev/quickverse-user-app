@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { ThemeText } from '../../common/theme/ThemeText';
@@ -11,6 +12,8 @@ interface ProductItemOnSearchProps {
 
 const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPress }) => {
   const { getColor } = useTheme();
+  const getVendorNameById = useVendorStore(state => state.getVendorNameById);
+  const vendorName = product.shopId ? getVendorNameById(product.shopId) : undefined;
 
   const styles = StyleSheet.create({
     container: {
@@ -41,6 +44,12 @@ const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPr
     textContainer: {
       flex: 1,
     },
+    vendorTag: {
+      color: getColor('primary'),
+      fontSize: 10,
+      fontWeight: '600',
+      marginBottom: 2,
+    },
     productName: {
       color: getColor('text'),
       lineHeight: 16 * 1.2,
@@ -53,6 +62,11 @@ const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPr
         <Image source={{ uri: product.imageUrl || '' }} style={styles.image} />
       </View>
       <View style={styles.textContainer}>
+        {vendorName && (
+          <ThemeText style={styles.vendorTag} numberOfLines={1}>
+            {vendorName}
+          </ThemeText>
+        )}
         <ThemeText
           variant="caption"
           color={getColor('text')}

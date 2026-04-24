@@ -53,75 +53,125 @@ const SearchSkeleton: React.FC = () => {
       flexDirection: 'row',
       flexWrap: 'wrap',
       justifyContent: 'space-between',
+      rowGap: 12,
+      marginBottom: 24,
     },
-    skeletonCard: {
+    productRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
       width: '48%',
-      backgroundColor: getColor('card'),
-      borderRadius: 12,
-      marginBottom: 12,
-      overflow: 'hidden',
+      paddingHorizontal: 8,
     },
-    skeletonImage: {
+    productCircle: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: getColor('border'),
+      marginRight: 8,
+    },
+    productTextCol: {
+      flex: 1,
+    },
+    productTagLine: {
+      height: 8,
+      width: '50%',
+      borderRadius: 4,
+      backgroundColor: getColor('border'),
+      marginBottom: 6,
+    },
+    productNameLine: {
+      height: 10,
+      width: '85%',
+      borderRadius: 5,
+      backgroundColor: getColor('border'),
+      marginBottom: 4,
+    },
+    productNameLineShort: {
+      height: 10,
+      width: '60%',
+      borderRadius: 5,
+      backgroundColor: getColor('border'),
+    },
+    vendorsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      rowGap: 12,
+    },
+    vendorCard: {
+      width: '48%',
+      borderRadius: 12,
+      overflow: 'hidden',
+      backgroundColor: getColor('card'),
+    },
+    vendorImage: {
       width: '100%',
       aspectRatio: 1,
       backgroundColor: getColor('border'),
-      borderRadius: 12,
     },
-    skeletonContent: {
-      padding: 10,
+    vendorContent: {
+      padding: 8,
     },
-    skeletonTitle: {
-      height: 12,
-      backgroundColor: getColor('border'),
-      borderRadius: 6,
-      marginBottom: 8,
-      width: '85%',
-    },
-    skeletonPrice: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    skeletonPriceText: {
+    vendorNameLine: {
       height: 10,
-      backgroundColor: getColor('border'),
+      width: '80%',
       borderRadius: 5,
-      width: '40%',
+      backgroundColor: getColor('border'),
+      marginBottom: 6,
     },
-    skeletonBadge: {
-      height: 10,
+    vendorMetaLine: {
+      height: 8,
+      width: '50%',
+      borderRadius: 4,
       backgroundColor: getColor('border'),
-      borderRadius: 5,
-      width: 24,
     },
   });
 
-  const SkeletonCard = () => (
-    <Animated.View style={[styles.skeletonCard, { opacity: pulseAnim }]}>
-      <View style={styles.skeletonImage} />
-      <View style={styles.skeletonContent}>
-        <View style={styles.skeletonTitle} />
-        <View style={styles.skeletonPrice}>
-          <View style={styles.skeletonPriceText} />
-          <View style={styles.skeletonBadge} />
-        </View>
+  const ProductRowSkeleton = () => (
+    <Animated.View style={[styles.productRow, { opacity: pulseAnim }]}>
+      <View style={styles.productCircle} />
+      <View style={styles.productTextCol}>
+        <View style={styles.productTagLine} />
+        <View style={styles.productNameLine} />
+        <View style={styles.productNameLineShort} />
+      </View>
+    </Animated.View>
+  );
+
+  const VendorCardSkeleton = () => (
+    <Animated.View style={[styles.vendorCard, { opacity: pulseAnim }]}>
+      <View style={styles.vendorImage} />
+      <View style={styles.vendorContent}>
+        <View style={styles.vendorNameLine} />
+        <View style={styles.vendorMetaLine} />
       </View>
     </Animated.View>
   );
 
   return (
     <View style={styles.container}>
-      {/* Section Header Skeleton */}
       <Animated.View style={[styles.sectionHeader, { opacity: pulseAnim }]}>
         <View style={styles.sectionLine} />
         <View style={styles.sectionTitle} />
         <View style={styles.sectionLine} />
       </Animated.View>
 
-      {/* Products Grid Skeleton */}
       <View style={styles.productsGrid}>
-        {[1, 2, 3, 4, 5, 6].map(item => (
-          <SkeletonCard key={item} />
+        {[1, 2, 3, 4, 5, 6, 7, 8].map(item => (
+          <ProductRowSkeleton key={`p-${item}`} />
+        ))}
+      </View>
+
+      <Animated.View style={[styles.sectionHeader, { opacity: pulseAnim }]}>
+        <View style={styles.sectionLine} />
+        <View style={styles.sectionTitle} />
+        <View style={styles.sectionLine} />
+      </Animated.View>
+
+      <View style={styles.vendorsGrid}>
+        {[1, 2, 3, 4].map(item => (
+          <VendorCardSkeleton key={`v-${item}`} />
         ))}
       </View>
     </View>

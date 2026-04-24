@@ -25,6 +25,7 @@ import CategoryTabs, { CategoryItem } from '../../components/vendor/CategoryTabs
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { Collection } from '../../data/collectionsData';
 import { RootStackParamList } from '../../routes/AppStack';
+import productsService from '../../services/productsService';
 import useCartStore from '../../store/cart/cartStore';
 import { useProductsStore } from '../../store/products/productsStore';
 import useVendorStore from '../../store/vendorStore';
@@ -113,6 +114,31 @@ const CollectionDetailScreen: React.FC = () => {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<TextInput>(null);
+
+  // Cross-vendor search results: lazily fetched once when the user starts
+  // searching, then filtered locally as they type.
+  const [crossVendorProducts, setCrossVendorProducts] = useState<Product[]>([]);
+  const [_crossVendorLoading, setCrossVendorLoading] = useState(false);
+  const crossVendorFetchedRef = useRef(false);
+
+  const otherGroceryShopIds = useMemo(() => {
+    const groceries = getVendorsByCategory('Grocery');
+    return groceries.filter(v => v.shopId && v.shopId !== collectionsVendorId).map(v => v.shopId);
+  }, [getVendorsByCategory, collectionsVendorId]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    if (crossVendorFetchedRef.current) return;
+    if (otherGroceryShopIds.length === 0) return;
+
+    crossVendorFetchedRef.current = true;
+    setCrossVendorLoading(true);
+    productsService
+      .fetchProductsAcrossShops({ shopIds: otherGroceryShopIds, limitPerShop: 1000 })
+      .then(prods => setCrossVendorProducts(prods))
+      .catch(err => console.warn('Cross-vendor product fetch failed:', err))
+      .finally(() => setCrossVendorLoading(false));
+  }, [searchQuery, otherGroceryShopIds]);
 
   // Search bar animation
   const searchBarHeight = useRef(new Animated.Value(0)).current;
@@ -289,6 +315,23 @@ const CollectionDetailScreen: React.FC = () => {
     return result;
   }, [products, searchQuery, collection.productIds, collection.categories]);
 
+  // Cross-vendor matches for the current search query, grouped by shopId.
+  // Only populated when search is active.
+  const crossVendorMatches = useMemo(() => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed || crossVendorProducts.length === 0) return new Map<string, Product[]>();
+
+    const q = trimmed.toLowerCase();
+    const grouped = new Map<string, Product[]>();
+    for (const p of crossVendorProducts) {
+      if (!p.name || !p.name.toLowerCase().includes(q)) continue;
+      const arr = grouped.get(p.shopId) || [];
+      arr.push(p);
+      grouped.set(p.shopId, arr);
+    }
+    return grouped;
+  }, [crossVendorProducts, searchQuery]);
+
   // Filter categories to only those with products
   const categoriesWithProducts = useMemo(() => {
     if (!mappedCategories) return [];
@@ -297,41 +340,6 @@ const CollectionDetailScreen: React.FC = () => {
     const productDivisions = new Set(filteredProducts.map(p => p.division).filter(Boolean));
     return mappedCategories.filter(cat => productDivisions.has(cat.id));
   }, [mappedCategories, filteredProducts]);
-
-  // Determine list rows
-  const listRows = useMemo(() => {
-    // 1. Get standard rows based on mapped categories
-    const rows = getRowBasedProductList(categoriesWithProducts, filteredProducts, NUM_COLUMNS);
-
-    // 2. Find any products that were NOT included in the category-based rows
-    if (filteredProducts.length > 0) {
-      const shownProductSkus = new Set<string>();
-
-      rows.forEach(row => {
-        if (row.type === 'products') {
-          row.products.forEach(p => shownProductSkus.add(p.sku));
-        }
-      });
-
-      const uncategorizedProducts = filteredProducts.filter(p => !shownProductSkus.has(p.sku));
-
-      if (uncategorizedProducts.length > 0) {
-        rows.push({
-          type: 'header',
-          category: { id: 'uncategorized', name: 'More Items', icon: Images.bg1 },
-        });
-
-        for (let i = 0; i < uncategorizedProducts.length; i += NUM_COLUMNS) {
-          rows.push({
-            type: 'products',
-            products: uncategorizedProducts.slice(i, i + NUM_COLUMNS),
-          });
-        }
-      }
-    }
-
-    return rows;
-  }, [categoriesWithProducts, filteredProducts]);
 
   // Cart store integration
   const { addToCart, increment, decrement, setActiveCart, carts } = useCartStore();
@@ -376,23 +384,55 @@ const CollectionDetailScreen: React.FC = () => {
   const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
 
-  // Memoized row product list
-  const rowProductList = useMemo(
-    () => getRowBasedProductList(categoriesWithProducts, filteredProducts, NUM_COLUMNS),
-    [categoriesWithProducts, filteredProducts]
-  );
+  // Memoized row product list. Includes the standard category rows plus
+  // appended "From <Vendor>" sections when cross-vendor search results exist.
+  const rowProductList = useMemo(() => {
+    const rows = getRowBasedProductList(categoriesWithProducts, filteredProducts, NUM_COLUMNS);
 
-  // Memoized product quantity map for O(1) lookup
-  const productQuantityMap = useMemo(() => {
-    const cart = carts[cartId];
-    if (!cart?.products) return new Map<string, number>();
+    if (crossVendorMatches.size > 0) {
+      crossVendorMatches.forEach((prods, shopId) => {
+        const v = vendors.find(vv => vv.shopId === shopId);
+        const vendorName = v?.name || 'Other Store';
+        rows.push({
+          type: 'header',
+          category: {
+            id: `crossvendor_${shopId}`,
+            name: `From ${vendorName}`,
+            icon: Images.bg1,
+          },
+        });
+        for (let i = 0; i < prods.length; i += NUM_COLUMNS) {
+          rows.push({ type: 'products', products: prods.slice(i, i + NUM_COLUMNS) });
+        }
+      });
+    }
 
-    const map = new Map<string, number>();
-    Object.entries(cart.products).forEach(([sku, product]) => {
-      map.set(sku, product.quantity);
+    return rows;
+  }, [categoriesWithProducts, filteredProducts, crossVendorMatches, vendors]);
+
+  // Lookup map from sku to product (covers both local + cross-vendor results)
+  // so handlers can route to the right vendor's cart.
+  const productBySku = useMemo(() => {
+    const map = new Map<string, Product>();
+    filteredProducts.forEach(p => map.set(p.sku, p));
+    crossVendorProducts.forEach(p => {
+      if (!map.has(p.sku)) map.set(p.sku, p);
     });
     return map;
-  }, [carts, cartId]);
+  }, [filteredProducts, crossVendorProducts]);
+
+  // Memoized product quantity map for O(1) lookup. Keyed by sku, with the
+  // quantity sourced from each product's own vendor cart (collection cart for
+  // local products, cross-vendor cart for federated search hits).
+  const productQuantityMap = useMemo(() => {
+    const map = new Map<string, number>();
+    productBySku.forEach((product, sku) => {
+      const targetCartId = `vendor_${product.shopId || collectionsVendorId}`;
+      const qty = carts[targetCartId]?.products?.[sku]?.quantity || 0;
+      if (qty > 0) map.set(sku, qty);
+    });
+    return map;
+  }, [carts, productBySku, collectionsVendorId]);
 
   type RowProductListItem =
     | { type: 'header'; category: CategoryItem }
@@ -522,7 +562,8 @@ const CollectionDetailScreen: React.FC = () => {
     [categoriesWithProducts]
   );
 
-  // Cart operation handlers
+  // Cart operation handlers. Cross-vendor search results route to their own
+  // vendor's cart (vendor_<product.shopId>) instead of the collection cart.
   const handleAddToCart = useCallback(
     (product: Product) => {
       if (!hasAuth || !product.inStock) return;
@@ -533,11 +574,14 @@ const CollectionDetailScreen: React.FC = () => {
         return;
       }
 
+      const targetShopId = product.shopId || collectionsVendorId;
+      const targetCartId = `vendor_${targetShopId}`;
+
       addToCart(
-        cartId,
+        targetCartId,
         {
           sku: product.sku,
-          shopId: collectionsVendorId,
+          shopId: targetShopId,
           name: product.name,
           price: product.sellingPrice,
           mrp: product.mrp,
@@ -548,18 +592,22 @@ const CollectionDetailScreen: React.FC = () => {
         authData!.phone
       );
     },
-    [hasAuth, addToCart, cartId, authData]
+    [hasAuth, addToCart, collectionsVendorId, authData]
   );
 
   const handleVariantSelect = useCallback(
     (variant: Product) => {
       if (!selectedProductForVariants || !hasAuth) return;
 
+      const targetShopId =
+        selectedProductForVariants.shopId || variant.shopId || collectionsVendorId;
+      const targetCartId = `vendor_${targetShopId}`;
+
       addToCart(
-        cartId,
+        targetCartId,
         {
           sku: variant.sku,
-          shopId: collectionsVendorId,
+          shopId: targetShopId,
           name: variant.name,
           price: variant.sellingPrice,
           mrp: variant.mrp,
@@ -573,25 +621,28 @@ const CollectionDetailScreen: React.FC = () => {
         authData!.phone
       );
     },
-    [selectedProductForVariants, hasAuth, addToCart, cartId, authData]
+    [selectedProductForVariants, hasAuth, addToCart, collectionsVendorId, authData]
   );
 
   const handleIncrement = useCallback(
     (sku: string) => {
       if (!hasAuth) return;
-      const product = filteredProducts.find(p => p.sku === sku);
+      const product = productBySku.get(sku);
       if (product && !product.inStock) return;
-      increment(cartId, sku, authData!.jwt, authData!.phone);
+      const targetCartId = `vendor_${product?.shopId || collectionsVendorId}`;
+      increment(targetCartId, sku, authData!.jwt, authData!.phone);
     },
-    [hasAuth, increment, cartId, authData, filteredProducts]
+    [hasAuth, increment, collectionsVendorId, authData, productBySku]
   );
 
   const handleDecrement = useCallback(
     (sku: string) => {
       if (!hasAuth) return;
-      decrement(cartId, sku, authData!.jwt, authData!.phone);
+      const product = productBySku.get(sku);
+      const targetCartId = `vendor_${product?.shopId || collectionsVendorId}`;
+      decrement(targetCartId, sku, authData!.jwt, authData!.phone);
     },
-    [hasAuth, decrement, cartId, authData]
+    [hasAuth, decrement, collectionsVendorId, authData, productBySku]
   );
 
   const getProductQuantity = useCallback(

@@ -306,6 +306,53 @@ class ProductsService {
   }
 
   /**
+   * Fetch products from multiple shops in parallel and tag each with its shopId.
+   * Used for cross-vendor search inside a single collection screen.
+   */
+  async fetchProductsAcrossShops({
+    shopIds,
+    filters = {},
+    limitPerShop = 1000,
+  }: {
+    shopIds: string[];
+    filters?: ProductsFilters;
+    limitPerShop?: number;
+  }): Promise<Product[]> {
+    if (shopIds.length === 0) return [];
+
+    const results = await Promise.allSettled(
+      shopIds.map(async shopId => {
+        const response = await this.fetchProducts({
+          shopId,
+          filters,
+          offset: 0,
+          limit: limitPerShop,
+        });
+        // The /v3/products endpoint sometimes returns the products array directly,
+        // sometimes wrapped in { products: [...] }. Handle both shapes.
+        const list: Product[] = Array.isArray(response)
+          ? (response as unknown as Product[])
+          : response?.products || [];
+        return list.map(p => ({ ...p, shopId }));
+      })
+    );
+
+    const merged: Product[] = [];
+    const seen = new Set<string>();
+    for (const r of results) {
+      if (r.status !== 'fulfilled') continue;
+      for (const p of r.value) {
+        const key = `${p.shopId}:${p.sku}`;
+        if (p.sku && !seen.has(key)) {
+          seen.add(key);
+          merged.push(p);
+        }
+      }
+    }
+    return merged;
+  }
+
+  /**
    * Fetch products for a collection (using external API)
    */
   async fetchProductsForCollection({
@@ -496,9 +543,7 @@ class ProductsService {
 
 // Export helper functions for mock control
 export const setUseProductsMocks = (useMocks: boolean) => {
-  // eslint-disable-next-line no-console
   //console.log(`Products Mock Mode: ${useMocks ? 'ENABLED' : 'DISABLED'}`);
-  // eslint-disable-next-line no-console
   //console.log('To change this setting, modify USE_PRODUCTS_MOCKS in productsService.ts');
 };
 

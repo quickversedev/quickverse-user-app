@@ -264,23 +264,6 @@ const VendorProfileComponent: React.FC = () => {
         name: {
           marginBottom: 2,
         },
-        saveRow: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          marginBottom: 2,
-        },
-        saveBtn: {
-          backgroundColor: getColor('background'),
-          borderRadius: 8,
-          paddingHorizontal: 10,
-          paddingVertical: 4,
-          marginRight: 8,
-          flexDirection: 'row',
-          alignItems: 'center',
-        },
-        saveBtnText: {
-          marginLeft: 4,
-        },
         callBtn: {
           marginLeft: 8,
           backgroundColor: getColor('primary'),
@@ -401,18 +384,6 @@ const VendorProfileComponent: React.FC = () => {
             <ThemeText variant="h2" color={getColor('text')} style={styles.name}>
               {vendor.name}
             </ThemeText>
-            <View style={styles.saveRow}>
-              <TouchableOpacity style={styles.saveBtn}>
-                <MaterialCommunityIcons
-                  name="bookmark-outline"
-                  size={18}
-                  color={getColor('subText')}
-                />
-                <ThemeText variant="caption" color={getColor('subText')} style={styles.saveBtnText}>
-                  Save To Collections
-                </ThemeText>
-              </TouchableOpacity>
-            </View>
           </View>
           <TouchableOpacity
             style={styles.callBtn}
