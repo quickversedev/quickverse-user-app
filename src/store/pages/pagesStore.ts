@@ -27,8 +27,24 @@ const usePagesStore = create<PagesStore>((set, get) => ({
         })
       );
 
+      const pagesArr: Page[] = data || [];
+      const totalBanners = pagesArr.reduce(
+        (sum, p) => sum + (Array.isArray(p.promotion) ? p.promotion.length : 0),
+        0
+      );
+      console.warn(
+        `[pagesStore] /v3/pages?regionId=${regionId} → ${pagesArr.length} pages, ${totalBanners} banners`
+      );
+      pagesArr.forEach(p => {
+        const banners = Array.isArray(p.promotion) ? p.promotion : [];
+        console.warn(
+          `[pagesStore] page "${p.pageName}" → ${banners.length} banner(s):`,
+          JSON.stringify(banners, null, 2)
+        );
+      });
+
       set({
-        pages: data || [],
+        pages: pagesArr,
         loading: false,
         error: null,
       });

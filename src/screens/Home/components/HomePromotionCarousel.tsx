@@ -1,52 +1,55 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
 import PromoBanner from '../../../components/common/promo/PromoBanner';
+import { usePromotions } from '../../../hooks/usePromotions';
 
 const { width } = Dimensions.get('window');
 
-// Static promotions using local assets
-const STATIC_PROMOTIONS = [
-  {
-    shopId: 'static_1',
-    title: '',
-    subtitle: '',
-    size: 'large',
-    backgroundColor: '#FFFFFF',
-    bannerImage: true,
-    // @ts-ignore
-    imageURL: require('../../../assets/images/homePromo/qv-homePromo_1.png'),
-  },
-  {
-    shopId: 'static_2',
-    title: '',
-    subtitle: '',
-    size: 'large',
-    backgroundColor: '#FFFFFF',
-    bannerImage: true,
-    // @ts-ignore
-    imageURL: require('../../../assets/images/homePromo/qv-homePromo_2.png'),
-  },
-  {
-    shopId: 'static_3',
-    title: '',
-    subtitle: '',
-    size: 'large',
-    backgroundColor: '#FFFFFF',
-    bannerImage: true,
-    // @ts-ignore
-    imageURL: require('../../../assets/images/homePromo/qv-homePromo_3.png'),
-  },
-];
+// Static promotions (kept for fallback/reference — replaced by /v3/pages "Home" promotions)
+// const STATIC_PROMOTIONS = [
+//   {
+//     shopId: 'static_1',
+//     title: '',
+//     subtitle: '',
+//     size: 'large',
+//     backgroundColor: '#FFFFFF',
+//     bannerImage: true,
+//     // @ts-ignore
+//     imageURL: require('../../../assets/images/homePromo/qv-homePromo_1.png'),
+//   },
+//   {
+//     shopId: 'static_2',
+//     title: '',
+//     subtitle: '',
+//     size: 'large',
+//     backgroundColor: '#FFFFFF',
+//     bannerImage: true,
+//     // @ts-ignore
+//     imageURL: require('../../../assets/images/homePromo/qv-homePromo_2.png'),
+//   },
+//   {
+//     shopId: 'static_3',
+//     title: '',
+//     subtitle: '',
+//     size: 'large',
+//     backgroundColor: '#FFFFFF',
+//     bannerImage: true,
+//     // @ts-ignore
+//     imageURL: require('../../../assets/images/homePromo/qv-homePromo_3.png'),
+//   },
+// ];
 
 const HomePromotionCarousel = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_currentIndex, setCurrentIndex] = useState(0);
 
-  const displayPromotions = STATIC_PROMOTIONS;
+  const { promotions } = usePromotions('Home');
+  const displayPromotions = promotions;
 
   // Auto-scroll logic
   useEffect(() => {
+    if (displayPromotions.length <= 1) return;
     const interval = 3000;
     const timer = setInterval(() => {
       setCurrentIndex(prevIndex => {
@@ -63,6 +66,8 @@ const HomePromotionCarousel = () => {
     return () => clearInterval(timer);
   }, [displayPromotions.length]);
 
+  if (displayPromotions.length === 0) return null;
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -75,17 +80,11 @@ const HomePromotionCarousel = () => {
       >
         {displayPromotions.map((banner, index) => (
           <PromoBanner
-            key={index}
-            promo={banner}
+            key={banner.promoId ?? index}
+            promo={{ ...banner, bannerImage: true }}
             size={178}
             style={styles.bannerContainer}
             aspectRatio={1.5}
-            // Pass image source directly if PromoBanner supports it,
-            // or rely on imageURL if it handles require() paths (which it usually does via source prop)
-            // Assuming PromoBanner handles `imageSource` or we need to adapt it.
-            // Looking at previous code, `imageURL` was used for require() in MOCK_PROMOTIONS.
-            // So I will use `imageURL` to maintain compatibility with PromoBanner's likely interface.
-            imageURL={banner.imageURL}
           />
         ))}
       </ScrollView>
