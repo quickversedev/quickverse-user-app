@@ -96,7 +96,7 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
     >
       <View style={styles.iconContainer}>
         <MaterialCommunityIcons
-          name={item.type === 'smart' ? 'map-marker-outline' : 'magnify'}
+          name={item.type === 'recent' ? 'history' : 'magnify'}
           style={[styles.icon, item.type === 'smart' && styles.smartIcon]}
         />
       </View>

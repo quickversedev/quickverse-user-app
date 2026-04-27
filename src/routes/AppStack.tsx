@@ -194,34 +194,7 @@ export const AppStack = () => {
       />
       <Stack.Screen name="Coupons" component={CouponsScreen} options={slideFromBottomOptions} />
 
-      <Stack.Screen
-        name="Search"
-        component={SearchScreen}
-        options={{
-          animation: 'default',
-          gestureEnabled: true,
-          gestureDirection: 'vertical',
-          cardStyleInterpolator: Platform.select({
-            ios: CardStyleInterpolators.forVerticalIOS,
-            android: CardStyleInterpolators.forFadeFromBottomAndroid,
-            default: CardStyleInterpolators.forFadeFromBottomAndroid,
-          }),
-          transitionSpec: Platform.select({
-            ios: {
-              open: TransitionSpecs.TransitionIOSSpec,
-              close: TransitionSpecs.TransitionIOSSpec,
-            },
-            android: {
-              open: TransitionSpecs.FadeInFromBottomAndroidSpec,
-              close: TransitionSpecs.FadeOutToBottomAndroidSpec,
-            },
-            default: {
-              open: TransitionSpecs.FadeInFromBottomAndroidSpec,
-              close: TransitionSpecs.FadeOutToBottomAndroidSpec,
-            },
-          }),
-        }}
-      />
+      <Stack.Screen name="Search" component={SearchScreen} options={slideFromRightOptions} />
       <Stack.Screen name="Address" component={AddressScreen} options={slideFromRightOptions} />
       <Stack.Screen
         name="AddAddress"

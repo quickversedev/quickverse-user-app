@@ -44,15 +44,6 @@ export const useSearchSuggestions = (searchQuery: string) => {
 
         const suggestionsList: SearchSuggestion[] = [];
 
-        // Always add the typed query as the first suggestion (highest priority)
-        suggestionsList.push({
-          id: 'typed_query',
-          text: query.trim(),
-          type: 'smart',
-          icon: 'magnify',
-          priority: 2000, // Highest priority
-        });
-
         // Add recent searches that match (high priority)
         recentSearches.forEach((recent, index) => {
           if (
