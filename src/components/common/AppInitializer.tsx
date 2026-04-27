@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAddress, useAppStateRefresh, useConfig, usePages } from '../../hooks';
+import { useNetworkRecovery } from '../../hooks/useNetworkRecovery';
 import { PermissionAndLocation } from '../../hooks/Permissions/useLocation';
 import { getAddressFromCoordinates } from '../../services/api/olaLocationService';
 import { getUserAddresses } from '../../services/localStorage/storage.service';
@@ -12,6 +13,7 @@ import useVendorStore from '../../store/vendorStore';
 import { Address } from '../../types/address';
 import ErrorState from './ErrorState';
 import LocationRequiredModal from './LocationRequiredModal';
+import NoInternetOverlay from './NoInternetOverlay';
 import { HomeScreenSkeleton } from './skeleton';
 
 /**
@@ -120,6 +122,11 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   useAppStateRefresh({
     onForeground: refreshAppData,
     refreshThreshold: 120000, // Refresh after 2 minute in background
+    enabled: isLoggedIn && isInitialized,
+  });
+
+  const { isConnected, manualRetry } = useNetworkRecovery({
+    onReconnect: refreshAppData,
     enabled: isLoggedIn && isInitialized,
   });
 
@@ -525,7 +532,12 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
 
   // Show main app content when initialization successful and location is set
   if (isInitialized) {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        <NoInternetOverlay visible={!isConnected} onRetry={manualRetry} />
+      </>
+    );
   }
 
   // Fallback/loading state while initializing
