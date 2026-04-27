@@ -1,11 +1,12 @@
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { RootStackParamList } from '../../../routes/AppStack';
 import { CartProduct } from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
+import { ThemeText } from '../../common/theme/ThemeText';
 import CartItem from './CartItem';
 
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
@@ -21,17 +22,18 @@ interface CartItemListProps {
 const CartItemList: React.FC<CartItemListProps> = ({ items, onInc, onDec, vendor, navigation }) => {
   const { getColor, getTypography, theme } = useTheme();
 
+  const preparationTime = useMemo(
+    () => vendor?.preparationTime || '30 mins',
+    [vendor?.preparationTime],
+  );
+
   const styles = StyleSheet.create({
     cartItemListBox: {
       borderColor: getColor('border'),
       borderWidth: 1,
-      borderTopLeftRadius: 0,
-      borderTopRightRadius: theme.borderRadius.md,
-      borderBottomLeftRadius: theme.borderRadius.md,
-      borderBottomRightRadius: theme.borderRadius.md,
+      borderRadius: theme.borderRadius.md,
       margin: 16,
-      marginTop: 0,
-      padding: 16,
+      marginTop: 8,
       backgroundColor: getColor('card'),
       overflow: 'visible',
       ...Platform.select({
@@ -45,6 +47,28 @@ const CartItemList: React.FC<CartItemListProps> = ({ items, onInc, onDec, vendor
           elevation: 4,
         },
       }),
+    },
+    vendorHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingTop: 14,
+      paddingBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: getColor('border'),
+    },
+    deliveryBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderColor: getColor('primary'),
+      borderWidth: 1.5,
+      borderRadius: theme.borderRadius.md,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    itemsContainer: {
+      padding: 16,
     },
     addMoreButton: {
       marginTop: 12,
@@ -86,21 +110,41 @@ const CartItemList: React.FC<CartItemListProps> = ({ items, onInc, onDec, vendor
         onDec={() => onDec(item.sku)}
       />
     ),
-    [onInc, onDec]
+    [onInc, onDec],
   );
 
   return (
     <View style={styles.cartItemListBox}>
-      {items.map(renderCartItem)}
-      <TouchableOpacity style={styles.addMoreButton} onPress={handleAddMore} activeOpacity={0.7}>
-        <MaterialCommunityIcons
-          name="plus"
-          size={18}
-          color={getColor('primary')}
-          style={styles.addMoreIcon}
-        />
-        <Text style={styles.addMoreText}>Add More Items</Text>
-      </TouchableOpacity>
+      {vendor && (
+        <View style={styles.vendorHeader}>
+          <ThemeText variant="caption" color={getColor('text')} style={{ fontWeight: 'bold' }}>
+            {vendor.name}
+          </ThemeText>
+          <View style={styles.deliveryBadge}>
+            <MaterialCommunityIcons
+              name="flash"
+              size={16}
+              color={getColor('primary')}
+              style={{ marginRight: 4 }}
+            />
+            <ThemeText variant="caption" color={getColor('primary')} style={{ fontWeight: 'bold' }}>
+              {preparationTime}
+            </ThemeText>
+          </View>
+        </View>
+      )}
+      <View style={styles.itemsContainer}>
+        {items.map(renderCartItem)}
+        <TouchableOpacity style={styles.addMoreButton} onPress={handleAddMore} activeOpacity={0.7}>
+          <MaterialCommunityIcons
+            name="plus"
+            size={18}
+            color={getColor('primary')}
+            style={styles.addMoreIcon}
+          />
+          <Text style={styles.addMoreText}>Add More Items</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };

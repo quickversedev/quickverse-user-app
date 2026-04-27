@@ -21,7 +21,6 @@ import {
   CouponSection,
   PaymentOptions,
   PaymentSummary,
-  VendorPill,
 } from '../../components/modules/Cart';
 import {
   AddressSelectionModal,
@@ -801,8 +800,6 @@ const CartScreen: React.FC = () => {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 240 }}>
         <AnimatedCard delay={0}>
-          {vendor && <VendorPill vendor={vendor} />}
-
           <CartItemList
             items={cartItems}
             onInc={handleInc}

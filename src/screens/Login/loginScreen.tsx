@@ -294,7 +294,7 @@ const LoginScreen: React.FC = () => {
       backgroundColor: theme.colors.secondary,
       borderRadius: 8,
       paddingVertical: 14,
-      marginTop: 'auto',
+      marginTop: 16,
     },
     otpButtonDisabled: {
       backgroundColor: theme.colors.overlay,

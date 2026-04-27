@@ -28,11 +28,12 @@ const SectionDivider: React.FC<SectionDividerProps> = ({ text, style, textStyle,
       <ThemeText
         variant="h2"
         color={textColor}
+        numberOfLines={1}
         style={[
           styles.text,
           textStyle,
           fontSize ? { fontSize } : {},
-          { letterSpacing: 1, textAlign: 'center' },
+          { letterSpacing: 1, textAlign: 'center', flexShrink: 0 },
         ]}
       >
         {text}
