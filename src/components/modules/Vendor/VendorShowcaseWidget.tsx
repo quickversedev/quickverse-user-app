@@ -19,7 +19,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
 import { triggerAddToCartHaptic } from '../../../utils/haptics';
-import { getStoreStatus } from '../../../utils/storeUtils';
+import { formatTimeToAMPM, getStoreStatus } from '../../../utils/storeUtils';
 import LoginPromptModal from '../../common/LoginPromptModal';
 import { ThemeText } from '../../common/theme/ThemeText';
 
@@ -394,7 +394,8 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   const hasAuth = React.useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const storeStatus = React.useMemo(() => getStoreStatus(vendor), [vendor]);
-  const isStoreActive = React.useMemo(() => storeStatus.isOpen, [storeStatus.isOpen]);
+  const isStoreActive = false; // TODO: revert — simulating closed store for testing
+  // const isStoreActive = React.useMemo(() => storeStatus.isOpen, [storeStatus.isOpen]);
 
   const cartId = React.useMemo(() => `vendor_${vendor.shopId}`, [vendor.shopId]);
   const cart = carts[cartId];
@@ -604,7 +605,7 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
           <ThemeText style={styles.closedText}>WE ARE CLOSED</ThemeText>
           {vendor.openingTime && vendor.closingTime && (
             <ThemeText style={styles.closedTimingText}>
-              {vendor.openingTime} - {vendor.closingTime}
+              {formatTimeToAMPM(vendor.openingTime)} - {formatTimeToAMPM(vendor.closingTime)}
             </ThemeText>
           )}
         </View>
@@ -614,9 +615,9 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
         <ShowcaseSkeleton />
       ) : (
         <View
-          style={!isStoreActive ? styles.disabledContent : undefined}
           pointerEvents={!isStoreActive ? 'none' : 'auto'}
         >
+          {!isStoreActive && <View style={styles.disabledOverlay} />}
           {/* Categories */}
           <FlatList
             horizontal
@@ -952,8 +953,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  disabledContent: {
-    opacity: 0.5,
+  disabledOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+    zIndex: 10,
+    borderRadius: 12,
   },
   exploreButtonSmall: {
     flexDirection: 'row',

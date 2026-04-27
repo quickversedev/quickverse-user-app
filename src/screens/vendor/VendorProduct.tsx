@@ -1289,8 +1289,8 @@ const VendorProductComponent: React.FC = () => {
               </View>
             )}
 
-          {/* Main Content: Categories + Products - Only show when products exist */}
-          {products.length > 0 && (
+          {/* Main Content: Categories + Products - Hide when search yields no results */}
+          {products.length > 0 && !(searchQuery && filteredProducts.length === 0) && (
             <View style={styles.mainContent}>
               {/* Category List (absolute overlay with animation) - store timing hidden for now */}
 

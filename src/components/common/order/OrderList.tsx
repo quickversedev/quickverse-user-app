@@ -80,11 +80,9 @@ const OrderList: React.FC<OrderListProps> = ({
   // Memoized values
 
   const filteredOrders = useMemo(() => {
-    // Keep showing current items during pagination; only clear on true initial loads or refreshes
-    if (refreshing) return [];
     if (loading && orders.length === 0) return [];
     return orders;
-  }, [orders, loading, refreshing]);
+  }, [orders, loading]);
   const keyExtractor = useMemo(() => (item: Order) => item.orderId, []);
   const getStatusColor = useMemo(
     () => (status: Order['status']) => {
