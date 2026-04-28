@@ -235,7 +235,7 @@ const CategoryScreen = () => {
         renderItem={renderItem}
         keyExtractor={item => item.shopId}
         ListHeaderComponent={renderHeader}
-        ListEmptyComponent={!showStoresList ? null : renderEmpty}
+        ListEmptyComponent={hasNoVendors || showStoresList ? renderEmpty : null}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         removeClippedSubviews={true}
