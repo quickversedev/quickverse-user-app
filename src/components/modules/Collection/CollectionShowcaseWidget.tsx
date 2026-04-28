@@ -372,8 +372,7 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
   const hasAuth = React.useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const storeStatus = React.useMemo(() => getStoreStatus(vendor), [vendor]);
-  const isStoreActive = false; // TODO: revert — simulating closed store for testing
-  // const isStoreActive = React.useMemo(() => storeStatus.isOpen, [storeStatus.isOpen]);
+  const isStoreActive = React.useMemo(() => storeStatus.isOpen, [storeStatus.isOpen]);
 
   const cartId = React.useMemo(() => `vendor_${vendor.shopId}`, [vendor.shopId]);
   const cart = carts[cartId];
