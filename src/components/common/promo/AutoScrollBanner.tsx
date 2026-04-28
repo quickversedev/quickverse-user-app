@@ -58,6 +58,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interva
       snapToAlignment="start"
       decelerationRate="fast"
       disableIntervalMomentum
+      scrollEnabled={bannerItems.length > 1}
       scrollEventThrottle={16}
       onScrollBeginDrag={() => {
         pauseUntilRef.current = Date.now() + PAUSE_AFTER_INTERACTION_MS;
@@ -70,7 +71,16 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interva
       }}
     >
       {bannerItems.map((banner, index) => (
-        <PromoBanner key={index} promo={banner} size="medium" style={styles.bannerContainer} onPress={onBannerPress} />
+        <PromoBanner
+          key={index}
+          promo={banner}
+          size="medium"
+          style={[
+            styles.bannerContainer,
+            index === bannerItems.length - 1 && { marginRight: 0 },
+          ]}
+          onPress={onBannerPress}
+        />
       ))}
     </ScrollView>
   );

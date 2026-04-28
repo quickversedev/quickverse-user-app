@@ -110,6 +110,7 @@ const HomePromotionCarousel = () => {
         snapToAlignment="start"
         decelerationRate="fast"
         disableIntervalMomentum
+        scrollEnabled={bannerItems.length > 1}
         scrollEventThrottle={16}
         onScrollBeginDrag={() => {
           pauseUntilRef.current = Date.now() + PAUSE_AFTER_INTERACTION_MS;
@@ -126,7 +127,10 @@ const HomePromotionCarousel = () => {
             key={banner.promoId ?? index}
             promo={{ ...banner, bannerImage: true }}
             size={178}
-            style={styles.bannerContainer}
+            style={[
+              styles.bannerContainer,
+              index === bannerItems.length - 1 && { marginRight: 0 },
+            ]}
             aspectRatio={1.5}
             onPress={handleBannerPress}
           />

@@ -159,6 +159,7 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
             onBlur={handleInputBlur}
             onSubmitEditing={onSubmitEditing}
             returnKeyType="search"
+            maxLength={50}
             ref={searchInputRef}
           />
           {searchQuery.length > 0 && (
