@@ -212,7 +212,12 @@ const ProfileScreen = () => {
         {isLoggedIn && (
           <TouchableOpacity
             style={[styles.logoutButton, { backgroundColor: getColor('card') }]}
-            onPress={signOut}
+            onPress={() => {
+              Alert.alert('Logout', 'Are you sure you want to logout?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Logout', style: 'destructive', onPress: signOut },
+              ]);
+            }}
           >
             <View style={styles.featureContent}>
               <Icon name="logout" size={24} color="#FF4444" />
