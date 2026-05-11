@@ -17,17 +17,18 @@ interface AutoScrollBannerProps {
 
 const PAUSE_AFTER_INTERACTION_MS = 5000;
 
-const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interval = 3000, onBannerPress }) => {
+const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
+  bannerData,
+  interval = 3000,
+  onBannerPress,
+}) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const [_currentIndex, setCurrentIndex] = useState(0);
   const currentIndexRef = useRef(0);
   const pauseUntilRef = useRef(0);
 
   // Only show promotions that are actual banner images
-  const bannerItems = useMemo(
-    () => bannerData.filter(item => item.bannerImage),
-    [bannerData],
-  );
+  const bannerItems = useMemo(() => bannerData.filter(item => item.bannerImage), [bannerData]);
 
   useEffect(() => {
     if (bannerItems.length === 0) return;
@@ -75,10 +76,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({ bannerData, interva
           key={index}
           promo={banner}
           size="medium"
-          style={[
-            styles.bannerContainer,
-            index === bannerItems.length - 1 && { marginRight: 0 },
-          ]}
+          style={[styles.bannerContainer, index === bannerItems.length - 1 && { marginRight: 0 }]}
           onPress={onBannerPress}
         />
       ))}
@@ -94,11 +92,12 @@ const styles = StyleSheet.create({
     width: BANNER_WIDTH,
     marginVertical: 8,
     marginRight: BANNER_GAP,
+    
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
 });
 

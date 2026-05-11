@@ -29,27 +29,20 @@ class DeviceInfoService {
    */
   private async getDeviceInfo(): Promise<Partial<DeviceInfoRequest>> {
     try {
-      const [deviceId, uniqueId, brand, model, systemVersion, version] = await Promise.all([
-        DeviceInfo.getDeviceId(),
-        Platform.OS,
-        DeviceInfo.getModel(),
-        DeviceInfo.getSystemVersion(),
-        DeviceInfo.getVersion(),
+      const [uniqueId, brand, model, systemVersion, version] = await Promise.all([
         DeviceInfo.getUniqueId(),
         DeviceInfo.getBrand(),
         DeviceInfo.getModel(),
         DeviceInfo.getSystemVersion(),
         DeviceInfo.getVersion(),
-        DeviceInfo.getBuildNumber(),
-        DeviceInfo.isTablet(),
       ]);
 
       return {
-        deviceId: uniqueId || deviceId,
+        deviceId: uniqueId,
         deviceType: Platform.OS.toUpperCase(),
-        deviceModel: `${brand} ${model}`.trim(),
+        deviceModel: `${model}`.trim(),
         osVersion: systemVersion,
-        appVersion: `${version}`,
+        appVersion: version,
         tokenType: 'FCM',
         lastActiveTimestamp: new Date().toISOString(),
         notificationEnabled: await getNotificationPermissionStatus(),
@@ -57,6 +50,7 @@ class DeviceInfoService {
       };
     } catch (error) {
       console.error('Error getting device info:', error);
+
       return {};
     }
   }
@@ -89,6 +83,8 @@ class DeviceInfoService {
         loginTimestamp: deviceInfo.loginTimestamp || new Date().toISOString(),
       };
 
+      console.error('Request data for /updateDevice:', requestData);
+
       const response = await apiCall(
         axiosInstance.post<DeviceInfoResponse>('/v1/updateDevice', requestData, {
           headers: {
@@ -97,6 +93,7 @@ class DeviceInfoService {
           },
         })
       );
+      console.log('/updateDevice response:', response, requestData);
 
       return response;
     } catch (error) {
