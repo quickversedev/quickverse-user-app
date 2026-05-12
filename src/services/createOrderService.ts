@@ -10,9 +10,12 @@ export interface CreateOrderRequest {
   notificationEmail: string | null;
   customerName: string;
   paymentMethod: string;
+  orderAmount: number;
 }
 
 export interface CreateOrderResponse {
+  order_id: string;
+  payment_session_id: string;
   orderId: string;
   customerId: string;
   totalOrderAmount: number;
@@ -84,6 +87,7 @@ class OrderService {
       );
       return response;
     } catch (error: unknown) {
+      console.log('Create Order Error : ', error);
       console.error('Create Order Error:', {
         message: (error as any)?.message || 'Unknown error',
         code: (error as any)?.code || 'UNKNOWN',

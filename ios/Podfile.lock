@@ -1,6 +1,15 @@
 PODS:
   - BVLinearGradient (2.8.3):
     - React-Core
+  - CashfreeAnalyticsSDK (2.3.3):
+    - CFNetworkSDK (= 2.3.3)
+  - CashfreePG (2.3.7):
+    - CashfreePGUISDK (= 2.3.7)
+  - CashfreePGCoreSDK (2.3.7):
+    - CashfreeAnalyticsSDK (= 2.3.3)
+  - CashfreePGUISDK (2.3.7):
+    - CashfreePGCoreSDK (= 2.3.7)
+  - CFNetworkSDK (2.3.3)
   - FBLazyVector (0.84.1)
   - Firebase (12.8.0):
     - Firebase/Core (= 12.8.0)
@@ -1577,6 +1586,9 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
+  - react-native-cashfree-pg-sdk (2.3.2):
+    - CashfreePG (= 2.3.7)
+    - React-Core
   - react-native-geolocation (3.4.0):
     - hermes-engine
     - RCTRequired
@@ -1658,6 +1670,28 @@ PODS:
     - React-ImageManager
     - React-jsi
     - react-native-maps/Generated
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - react-native-netinfo (12.0.1):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -2559,9 +2593,11 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - react-native-cashfree-pg-sdk (from `../node_modules/react-native-cashfree-pg-sdk`)
   - "react-native-geolocation (from `../node_modules/@react-native-community/geolocation`)"
   - react-native-get-random-values (from `../node_modules/react-native-get-random-values`)
   - react-native-maps (from `../node_modules/react-native-maps`)
+  - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-otp-verify (from `../node_modules/react-native-otp-verify`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-vector-icons-ant-design (from `../node_modules/@react-native-vector-icons/ant-design`)"
@@ -2619,6 +2655,11 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - CashfreeAnalyticsSDK
+    - CashfreePG
+    - CashfreePGCoreSDK
+    - CashfreePGUISDK
+    - CFNetworkSDK
     - Firebase
     - FirebaseAnalytics
     - FirebaseCore
@@ -2718,12 +2759,16 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-cashfree-pg-sdk:
+    :path: "../node_modules/react-native-cashfree-pg-sdk"
   react-native-geolocation:
     :path: "../node_modules/@react-native-community/geolocation"
   react-native-get-random-values:
     :path: "../node_modules/react-native-get-random-values"
   react-native-maps:
     :path: "../node_modules/react-native-maps"
+  react-native-netinfo:
+    :path: "../node_modules/@react-native-community/netinfo"
   react-native-otp-verify:
     :path: "../node_modules/react-native-otp-verify"
   react-native-safe-area-context:
@@ -2835,6 +2880,11 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   BVLinearGradient: cb006ba232a1f3e4f341bb62c42d1098c284da70
+  CashfreeAnalyticsSDK: 11f37b2323be07bf07948bd6046b7c19e947ae07
+  CashfreePG: 88c1cdaa0ab8decb1c2e02263cca37eda9f30c59
+  CashfreePGCoreSDK: 0895818f75ea22e347e715a285cf241fe01f4349
+  CashfreePGUISDK: 2e4a3be02dbaf0af48520c573eb08585491b5545
+  CFNetworkSDK: 6a6261de10185efd4d2957583f0cbad395999cac
   FBLazyVector: e97c19a5a442429d1988f182a1940fb08df514da
   Firebase: 9a58fdbc9d8655ed7b79a19cf9690bb007d3d46d
   FirebaseAnalytics: f20bbad8cb7f65d8a5eaefeb424ae8800a31bdfc
@@ -2889,9 +2939,11 @@ SPEC CHECKSUMS:
   React-logger: b5521614afb8690420146dfc61a1447bb5d65419
   React-Mapbuffer: f4ee8c62e0ef8359d139124f35a471518a172cd3
   React-microtasksnativemodule: d1956f0eec54c619b63a379520fb4c618a55ccb9
+  react-native-cashfree-pg-sdk: 163291ea095e796c45dc972839caab97a31af697
   react-native-geolocation: cfc39041210bd9f591ec2beb7d417291251da8e5
   react-native-get-random-values: a603782b2b222a34533c66371614790282dba3f1
   react-native-maps: b6686e329c41ce2ae1c6a7ba8dc37254f06399e7
+  react-native-netinfo: 7e0b1936e928fa8ddb60da9e572a33767db7805f
   react-native-otp-verify: 6d153f8a8e8392c6a51f9d94c090dc16d7c756b2
   react-native-safe-area-context: ae7587b95fb580d1800c5b0b2a7bd48c2868e67a
   react-native-vector-icons-ant-design: e88c25686a4e778a56823f7ecb4e014fde1713c5

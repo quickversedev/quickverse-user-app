@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo } from 'react';
@@ -12,7 +13,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import AnimatedCard from '../../components/common/AnimatedCard';
 import {
   CartFooter,
@@ -31,14 +31,13 @@ import { useOrders } from '../../hooks/useOrders';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { RootStackParamList } from '../../routes/AppStack';
 import orderService, { CreateOrderRequest } from '../../services/createOrderService';
-import createPaymentService, { CreatePaymentRequest } from '../../services/createPaymentService';
 import { getCODCharges } from '../../services/paymentService';
 import { SmartBizAddress, smartBizAddressService } from '../../store/address/smartBizAddressStore';
 import useCartStore from '../../store/cart/cartStore';
 import useCouponStore from '../../store/cart/couponStore';
 import useConfigStore from '../../store/configStore';
-import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
 import usePricingStore from '../../store/pricingStore';
+import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Address } from '../../types/address';
@@ -47,6 +46,17 @@ import { Product } from '../../types/product';
 import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
 import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
 import PaymentScreen from './PaymentScreen';
+
+import { CFPaymentGatewayService } from 'react-native-cashfree-pg-sdk';
+
+import {
+  CFDropCheckoutPayment,
+  CFEnvironment,
+  CFPaymentComponentBuilder,
+  CFPaymentModes,
+  CFSession,
+  CFThemeBuilder,
+} from 'cashfree-pg-api-contract';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
@@ -375,6 +385,28 @@ const CartScreen: React.FC = () => {
     setIsOrderLoading(true);
 
     try {
+      const subTotal = cart?.totalCartAmount ?? 0;
+      const isGrocery = vendor?.category?.toLowerCase().includes('grocery');
+      const serviceType = isGrocery ? 'GROCERY' : 'FOOD';
+      const pricing = usePricingStore.getState().getPricingValues(serviceType);
+
+      const commission = pricing.commissionRate * subTotal;
+      const taxableAmount = commission + pricing.deliveryFee + pricing.platformFee;
+      const taxes = Math.round(pricing.gstRate * taxableAmount);
+      const calculatedCouponDiscount = cart.smartBizOffer?.totalBenefit ?? 0;
+      const calculatedTotalDiscountOnItems = cart.totalDiscountOnItems ?? 0;
+
+      const calculatedTotal =
+        subTotal +
+        pricing.deliveryFee +
+        pricing.platformFee +
+        pricing.packagingCharges +
+        taxes -
+        calculatedTotalDiscountOnItems -
+        calculatedCouponDiscount;
+
+      console.log(calculatedTotal);
+
       // Step 1: Create Order
       const orderRequest: CreateOrderRequest = {
         shopId: parseInt(vendor.shopId, 10),
@@ -385,7 +417,8 @@ const CartScreen: React.FC = () => {
         notificationMobileNumber: selectedAddress.phone,
         notificationEmail: null,
         customerName: selectedAddress.name || 'Customer',
-        paymentMethod: selectedPaymentOption.toUpperCase(),
+        paymentMethod: 'PREPAID',
+        orderAmount: calculatedTotal,
       };
 
       const orderResponse = await orderService.createOrder(
@@ -394,44 +427,100 @@ const CartScreen: React.FC = () => {
         authData.phone
       );
 
-      // Step 2: Create Payment
-      const paymentRequest: CreatePaymentRequest = {
-        customerId: parseInt(orderResponse.customerId, 10),
-        mobileNumber: authData.phone,
-        name: selectedAddress.name,
-        orderId: orderResponse.orderId,
-        tenders: [
-          {
-            amount: orderResponse.totalOrderAmount,
-            status: 'CREATED',
-            type: 'COMPLETION',
-            paymentMethod: selectedPaymentOption.toUpperCase(),
-            additionalTenderCharges: 10, // This should come from payment configuration
-          },
-        ],
+      console.log('Order Response : ', orderResponse);
+
+      // Set up event subscribers and callbacks
+      const onReceivedEvent = (eventName: string, map: any) => {
+        console.log('Payment event: ' + eventName + ' data: ' + JSON.stringify(map));
+      };
+      const onVerify = (orderId: string) => {
+        console.log('Payment verified for orderId: ' + orderId);
+        // Clear cart and navigate to success
+        // if (cart && authData?.jwt && authData?.phone) {
+        //   clearCart(cart.cartId, authData.jwt, authData.phone);
+        // }
+        // navigation.navigate('OrderSuccess', {
+        //   orderId: orderResponse.order_id,
+        //   amount: calculatedTotal,
+        //   date: new Date().toLocaleDateString(),
+        //   shopId: vendor.shopId,
+        // });
+      };
+      const onError = (error: any, orderId: string) => {
+        console.log('Payment error: ' + JSON.stringify(error) + ' orderId: ' + orderId);
+        navigation.navigate('OrderFailure', {
+          errorMessage: 'Payment failed. Please try again.',
+        });
       };
 
-      await createPaymentService.createPayment(paymentRequest, authData.jwt, authData.phone);
+      CFPaymentGatewayService.setEventSubscriber({ onReceivedEvent });
+      CFPaymentGatewayService.setCallback({ onVerify, onError });
 
-      // Both APIs successful - Clear cart and navigate to success screen
-      if (cart && authData?.jwt && authData?.phone) {
-        await clearCart(cart.cartId, authData.jwt, authData.phone);
-      }
+      const session = new CFSession(
+        orderResponse?.payment_session_id,
+        orderResponse?.order_id,
+        CFEnvironment.SANDBOX
+      );
 
-      const currentDate = new Date();
-      const formattedDate = `${currentDate.getDate()}${getOrdinalSuffix(
-        currentDate.getDate()
-      )} ${currentDate.toLocaleDateString('en-US', {
-        month: 'long',
-        year: 'numeric',
-      })} • ${currentDate.toLocaleDateString('en-US', { weekday: 'long' })}`;
+      // Add all payment modes
+      const paymentModes = new CFPaymentComponentBuilder()
+        .add(CFPaymentModes.CARD)
+        .add(CFPaymentModes.UPI)
+        .add(CFPaymentModes.NB)
+        .add(CFPaymentModes.WALLET)
+        .add(CFPaymentModes.PAY_LATER)
+        .build();
 
-      navigation.navigate('OrderSuccess', {
-        orderId: orderResponse.orderId,
-        amount: orderResponse.totalOrderAmount,
-        date: formattedDate,
-        shopId: vendor.shopId,
-      });
+      const theme = new CFThemeBuilder()
+        .setNavigationBarBackgroundColor('#D97706')
+        .setNavigationBarTextColor('#FFFFFF')
+        .setButtonBackgroundColor('#D97706')
+        .setButtonTextColor('#FFFFFF')
+        .setPrimaryTextColor('#212121')
+        .setSecondaryTextColor('#757575')
+        .build();
+
+      const dropPayment = new CFDropCheckoutPayment(session, paymentModes, theme);
+      CFPaymentGatewayService.doPayment(dropPayment);
+
+      // // Step 2: Create Payment
+      // const paymentRequest: CreatePaymentRequest = {
+      //   customerId: parseInt(orderResponse.customerId, 10),
+      //   mobileNumber: authData.phone,
+      //   name: selectedAddress.name,
+      //   orderId: orderResponse.orderId,
+      //   tenders: [
+      //     {
+      //       amount: orderResponse.totalOrderAmount,
+      //       status: 'CREATED',
+      //       type: 'COMPLETION',
+      //       paymentMethod: selectedPaymentOption.toUpperCase(),
+      //       additionalTenderCharges: 10, // This should come from payment configuration
+      //     },
+      //   ],
+      // };
+
+      // await createPaymentService.createPayment(paymentRequest, authData.jwt, authData.phone);
+
+      // // Both APIs successful - Clear cart and navigate to success screen
+      // if (cart && authData?.jwt && authData?.phone) {
+      //   await clearCart(cart.cartId, authData.jwt, authData.phone);
+      // }
+
+      // const currentDate = new Date();
+      // const formattedDate = `${currentDate.getDate()}${getOrdinalSuffix(
+      //   currentDate.getDate()
+      // )} ${currentDate.toLocaleDateString('en-US', {
+      //   month: 'long',
+      //   year: 'numeric',
+      // })} • ${currentDate.toLocaleDateString('en-US', { weekday: 'long' })}`;
+
+      // navigation.navigate('OrderSuccess', {
+      //   orderId: orderResponse.orderId,
+      //   amount: orderResponse.totalOrderAmount,
+      //   date: formattedDate,
+      //   shopId: vendor.shopId,
+      // });
     } catch (error: unknown) {
       // Check for specific store not active error
       if (
