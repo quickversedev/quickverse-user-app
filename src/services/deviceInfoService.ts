@@ -5,8 +5,11 @@ import { getNotificationPermissionStatus } from '../utils/notificationUtils';
 
 export interface DeviceInfoRequest {
   deviceId: string;
+  role: string;
+  phone: string | number;
   deviceType: string;
   deviceModel: string;
+  deviceBrand?: string;
   osVersion: string;
   appVersion: string;
   fcmToken: string;
@@ -41,6 +44,7 @@ class DeviceInfoService {
         deviceId: uniqueId,
         deviceType: Platform.OS.toUpperCase(),
         deviceModel: `${model}`.trim(),
+        deviceBrand: brand,
         osVersion: systemVersion,
         appVersion: version,
         tokenType: 'FCM',
@@ -69,9 +73,12 @@ class DeviceInfoService {
       const deviceInfo = await this.getDeviceInfo();
 
       const requestData: DeviceInfoRequest = {
+        role: 'CUSTOMER',
+        phone: phone,
         deviceId: deviceInfo.deviceId || '',
         deviceType: Platform.OS.toUpperCase(),
         deviceModel: deviceInfo.deviceModel || '',
+        deviceBrand: deviceInfo.deviceBrand || '',
         osVersion: deviceInfo.osVersion || '',
         appVersion: deviceInfo.appVersion || '',
         fcmToken: fcmToken,
@@ -83,10 +90,8 @@ class DeviceInfoService {
         loginTimestamp: deviceInfo.loginTimestamp || new Date().toISOString(),
       };
 
-      console.error('Request data for /updateDevice:', requestData);
-
       const response = await apiCall(
-        axiosInstance.post<DeviceInfoResponse>('/v1/updateDevice', requestData, {
+        axiosInstance.post<DeviceInfoResponse>('/v1/updateDeviceRegistry', requestData, {
           headers: {
             SessionKey: sessionKey,
             phone: phone,

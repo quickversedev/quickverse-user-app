@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
+  AppState,
   Dimensions,
   Image,
   ImageBackground,
@@ -22,7 +23,6 @@ const { height, width } = Dimensions.get('window');
 
 const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isUpdateRequired, setIsUpdateRequired] = useState(false);
-
   const { theme } = useTheme();
 
   // Animation refs
@@ -30,76 +30,56 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
-  // Use the custom hook to fetch update data
-  const { updateData, loading, error } = useFetchUpdateData();
-  //console.log('updateData', updateData);
-  // Mounted ref to prevent state updates after unmount
+  const { updateData, loading, error, retry } = useFetchUpdateData();
   const isMounted = useRef(true);
+  const appState = useRef(AppState.currentState);
 
   useEffect(() => {
+    isMounted.current = true;
+
+    // Check update when app returns from background
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        retry?.();
+      }
+      appState.current = nextAppState;
+    });
+
     return () => {
       isMounted.current = false;
+      subscription.remove();
     };
-  }, []);
+  }, [retry]);
 
-  // Animate in when update is required
-  useEffect(() => {
-    if (isUpdateRequired) {
-      const animations = [
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          tension: 100,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 100,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ];
+  // Version Comparison Logic
+  const compareVersions = useCallback(
+    (currentVersion: string, requiredVersion: string): boolean => {
+      const current = currentVersion.split('.').map(Number);
+      const required = requiredVersion.split('.').map(Number);
 
-      Animated.parallel(animations).start();
+      console.log(current, required);
 
-      return () => {
-        // Clean up animations
-        animations.forEach(anim => anim.stop());
-      };
-    }
-  }, [isUpdateRequired, fadeAnim, slideAnim, scaleAnim]);
+      for (let i = 0; i < Math.max(current.length, required.length); i++) {
+        const currentPart = current[i] || 0;
+        const requiredPart = required[i] || 0;
 
-  const compareVersions = (currentVersion: string, requiredVersion: string): boolean => {
-    const current = currentVersion.split('.').map(Number);
-    const required = requiredVersion.split('.').map(Number);
-
-    for (let i = 0; i < Math.max(current.length, required.length); i++) {
-      const currentPart = current[i] || 0;
-      const requiredPart = required[i] || 0;
-
-      if (currentPart < requiredPart) return true;
-      if (currentPart > requiredPart) return false;
-    }
-
-    return false;
-  };
+        if (currentPart < requiredPart) return true; // Needs update
+        if (currentPart > requiredPart) return false; // Current is newer
+      }
+      return false;
+    },
+    []
+  );
 
   const checkForUpdate = useCallback(async () => {
-    if (!isMounted.current) return;
+    if (!isMounted.current || !updateData?.min_required_version) {
+      setIsUpdateRequired(false);
+      return;
+    }
 
     try {
       const currentVersion = DeviceInfo.getVersion();
-      //console.log('currentVersion', currentVersion);
-      if (!updateData?.min_required_version) {
-        setIsUpdateRequired(false);
-        return;
-      }
-
+      console.log(updateData.min_required_version);
       const needsUpdate = compareVersions(currentVersion, updateData.min_required_version);
 
       if (isMounted.current) {
@@ -107,117 +87,110 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } catch (err) {
       console.error('Error checking for updates:', err);
-    } finally {
-      // no-op; we do not block UI while checking for updates
     }
-  }, [updateData]);
+  }, [updateData, compareVersions]);
 
+  // Trigger check when data is fetched
   useEffect(() => {
     if (!loading && !error && updateData) {
       checkForUpdate();
     }
   }, [loading, error, updateData, checkForUpdate]);
 
+  // Trigger animations
+  useEffect(() => {
+    if (isUpdateRequired) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [isUpdateRequired, fadeAnim, slideAnim, scaleAnim]);
+
   const handleUpdate = async () => {
     try {
       const storeUrl = Platform.OS === 'ios' ? updateData?.ios_url : updateData?.android_url;
 
       if (!storeUrl) {
-        Alert.alert('Error', 'Store URL not available');
+        Alert.alert(
+          'Notice',
+          'The update link is currently unavailable. Please check the store manually.'
+        );
         return;
       }
 
       const supported = await Linking.canOpenURL(storeUrl);
-
       if (supported) {
         await Linking.openURL(storeUrl);
       } else {
-        Alert.alert('Error', 'Cannot open store URL');
+        // Fallback for some simulators or specific environments
+        Alert.alert('Error', 'Unable to open the App Store directly.');
       }
     } catch (err) {
-      console.error('Error opening store:', err);
-      if (isMounted.current) {
-        Alert.alert('Error', 'Failed to open store');
-      }
+      Alert.alert('Error', 'An unexpected error occurred while redirecting to the store.');
     }
   };
 
-  // Do not block the UI while fetching update info; continue unless update is required
+  const styles = getStyles(theme);
 
-  // Error state
-  // if (error) {
-  //   return (
-  //     <View style={getStyles(theme).errorContainer}>
-  //       <Image style={getStyles(theme).errorLogo} source={Images.logoQv} />
-  //       <Text style={getStyles(theme).errorTitle}>Connection Error</Text>
-  //       <Text style={getStyles(theme).errorText}>
-  //         Failed to check for updates. Please check your internet connection.
-  //       </Text>
-  //       <TouchableOpacity style={getStyles(theme).retryButton} onPress={handleRetry}>
-  //         <Text style={getStyles(theme).retryButtonText}>Try Again</Text>
-  //       </TouchableOpacity>
-  //     </View>
-  //   );
-  // }
-
-  // Update required state
   if (isUpdateRequired) {
     return (
-      <Animated.View
-        style={[
-          getStyles(theme).container,
-          {
-            opacity: fadeAnim,
-          },
-        ]}
-      >
-        <ImageBackground
-          source={Images.bg1}
-          style={getStyles(theme).topBackground}
-          resizeMode="cover"
-        />
+      <View style={styles.container}>
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
+          <ImageBackground source={Images.bg1} style={styles.topBackground} resizeMode="cover" />
+        </Animated.View>
 
-        <View style={getStyles(theme).logoContainer}>
-          <Image style={getStyles(theme).topLogo} source={Images.logoQv} />
+        <View style={styles.logoContainer}>
+          <Image style={styles.topLogo} source={Images.logoQv} />
         </View>
 
         <Animated.View
           style={[
-            getStyles(theme).card,
+            styles.card,
             {
+              opacity: fadeAnim,
               transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
             },
           ]}
         >
-          <View style={getStyles(theme).updateIconContainer}>
-            <Text style={getStyles(theme).updateIcon}>🔄</Text>
+          <View style={styles.updateIconContainer}>
+            <Text style={styles.updateIcon}>🔄</Text>
           </View>
 
-          <Text style={getStyles(theme).title}>Update Required</Text>
-          <Text style={getStyles(theme).subtitle}>
+          <Text style={styles.title}>Update Required</Text>
+          <Text style={styles.subtitle}>
             A new version of the app is available with important improvements and bug fixes.
           </Text>
 
-          <View style={getStyles(theme).versionInfo}>
-            <Text style={getStyles(theme).versionText}>
-              Current Version: {DeviceInfo.getVersion()}
-            </Text>
-            <Text style={getStyles(theme).versionText}>
+          <View style={styles.versionInfo}>
+            <Text style={styles.versionText}>Current Version: {DeviceInfo.getVersion()}</Text>
+            <Text style={styles.versionText}>
               Required Version: {updateData?.min_required_version}
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={getStyles(theme).updateButton}
-            onPress={handleUpdate}
-            activeOpacity={0.8}
-          >
-            <Text style={getStyles(theme).updateButtonText}>Update Now</Text>
+          <TouchableOpacity style={styles.updateButton} onPress={handleUpdate} activeOpacity={0.8}>
+            <Text style={styles.updateButtonText}>Update Now</Text>
           </TouchableOpacity>
 
-          <Text style={getStyles(theme).updateNote}>Please update to continue using the app</Text>
+          <Text style={styles.updateNote}>Please update to continue using the app</Text>
         </Animated.View>
-      </Animated.View>
+      </View>
     );
   }
 
@@ -237,8 +210,6 @@ const getStyles = (theme: Theme) =>
     topBackground: {
       height: height * 0.6,
       width: '100%',
-      position: 'absolute',
-      top: -80,
     },
     logoContainer: {
       width: '100%',
@@ -316,11 +287,6 @@ const getStyles = (theme: Theme) =>
       paddingHorizontal: 32,
       width: '100%',
       marginBottom: 16,
-      shadowColor: theme.colors.shadow.color,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 4,
     },
     updateButtonText: {
       fontSize: theme.typography.body,
@@ -333,63 +299,5 @@ const getStyles = (theme: Theme) =>
       fontSize: theme.typography.caption,
       textAlign: 'center',
       fontStyle: 'italic',
-    },
-    // Loading styles
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: theme.colors.background,
-    },
-    loadingLogo: {
-      width: 120,
-      height: 120,
-      resizeMode: 'contain',
-      marginBottom: 32,
-    },
-    spinner: {
-      marginBottom: 16,
-    },
-    loadingText: {
-      color: theme.colors.subText,
-      fontSize: theme.typography.body,
-    },
-    // Error styles
-    errorContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: theme.colors.background,
-      padding: 24,
-    },
-    errorLogo: {
-      width: 100,
-      height: 100,
-      resizeMode: 'contain',
-      marginBottom: 32,
-    },
-    errorTitle: {
-      fontSize: theme.typography.h2,
-      color: theme.colors.text,
-      fontWeight: 'bold',
-      marginBottom: 12,
-    },
-    errorText: {
-      fontSize: theme.typography.body,
-      color: theme.colors.subText,
-      textAlign: 'center',
-      marginBottom: 24,
-      lineHeight: 24,
-    },
-    retryButton: {
-      backgroundColor: theme.colors.secondary,
-      paddingVertical: 12,
-      paddingHorizontal: 24,
-      borderRadius: theme.borderRadius.sm,
-    },
-    retryButtonText: {
-      color: theme.colors.background,
-      fontSize: theme.typography.body,
-      fontWeight: 'bold',
     },
   });
