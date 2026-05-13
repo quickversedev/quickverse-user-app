@@ -1,8 +1,8 @@
+import Feather from '@react-native-vector-icons/feather';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Feather from '@react-native-vector-icons/feather';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import SectionDivider from '../../components/common/SectionDivider';
 import CollectionShowcaseWidget from '../../components/modules/Collection/CollectionShowcaseWidget';
@@ -41,9 +41,10 @@ const CategoryScreen = () => {
   // the first grocery vendor if 94728 isn't in the list.
   const showcaseVendors = React.useMemo(() => {
     if (!isGrocery) return categoryVendors;
-    const preferred = categoryVendors.find(v => String(v.shopId) === '94728');
-    if (preferred) return [preferred];
-    return categoryVendors.slice(0, 1);
+    console.log(categoryVendors);
+    // const preferred = categoryVendors.find(v => String(v.shopId) === '94728');
+    // if (preferred) return [preferred];
+    return categoryVendors.filter(v => v.shopId !== '68246');
   }, [isGrocery, categoryVendors]);
 
   // Cart Logic
