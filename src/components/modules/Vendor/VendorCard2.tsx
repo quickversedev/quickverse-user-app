@@ -1,3 +1,4 @@
+import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import React from 'react';
 import {
   Dimensions,
@@ -7,8 +8,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import AntDesign from '@react-native-vector-icons/ant-design';
-import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
 import { getCleanImageUri } from '../../../utils/imageUtils';
@@ -244,7 +243,6 @@ const VendorCard2: React.FC<VendorCardProps> = ({
             <ThemeText style={styles.dot}>•</ThemeText>
             <ThemeText style={styles.metaText}>{vendor.shopAddress?.city || 'Location'}</ThemeText>
           </View>
-
         </View>
       </View>
     </TouchableOpacity>
