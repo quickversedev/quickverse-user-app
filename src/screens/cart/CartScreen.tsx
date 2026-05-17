@@ -47,16 +47,14 @@ import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
 import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
 import PaymentScreen from './PaymentScreen';
 
-import { CFPaymentGatewayService } from 'react-native-cashfree-pg-sdk';
-
 import {
-  CFDropCheckoutPayment,
   CFEnvironment,
-  CFPaymentComponentBuilder,
-  CFPaymentModes,
   CFSession,
   CFThemeBuilder,
+  CFUPIIntentCheckoutPayment,
 } from 'cashfree-pg-api-contract';
+import { CFPaymentGatewayService } from 'react-native-cashfree-pg-sdk';
+// import createPaymentService, { CreatePaymentRequest } from '../../services/createPaymentService';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
@@ -103,8 +101,8 @@ const CartScreen: React.FC = () => {
   const [paymentExpanded, setPaymentExpanded] = React.useState(false);
   const [showPaymentModal, setShowPaymentModal] = React.useState(false);
   const [selectedPaymentOption, setSelectedPaymentOption] = React.useState<string | undefined>(
-    'cod'
-  ); // Default to COD
+    'prepaid'
+  ); // Default to Prepaid
   const [isOrderLoading, setIsOrderLoading] = React.useState(false);
   const [showDistanceModal, setShowDistanceModal] = React.useState(false);
   const [storeClosedModal, setStoreClosedModal] = React.useState<{
@@ -350,6 +348,95 @@ const CartScreen: React.FC = () => {
     [cart, authData, decrement, featuredProducts, convertToProduct]
   );
 
+  interface OrderResponse {
+    payment_session_id: string;
+    order_id: string;
+  }
+
+  interface Vendor {
+    shopId: any;
+  }
+
+  const handleCashFreePayment = async (
+    orderResponse: OrderResponse,
+    calculatedTotal: number,
+    vendor: Vendor
+  ): Promise<void> => {
+    try {
+      const onReceivedEvent = (eventName: string, map: any): void => {
+        console.log('Payment event: ' + eventName + ' data: ' + JSON.stringify(map));
+      };
+
+      const onVerify = async (orderId: string): Promise<void> => {
+        console.log('Payment verified for orderId: ' + orderId);
+        setIsOrderLoading(true);
+
+        try {
+          const orderStatusResponse: any = await orderService.getOrderStatus(
+            orderResponse.order_id,
+            authData?.jwt || ''
+          );
+
+          if (orderStatusResponse.orderId && orderStatusResponse.paymentStatus === 'PAID') {
+            navigation.navigate('OrderSuccess', {
+              orderId: orderStatusResponse.orderId,
+              amount: calculatedTotal,
+              date: new Date().toLocaleDateString(),
+              shopId: vendor.shopId,
+            });
+
+            if (cart && authData?.jwt && authData?.phone) {
+              await clearCart(cart.cartId, authData.jwt, authData.phone);
+            }
+            setIsOrderLoading(false);
+          }
+        } catch (err) {
+          console.log('Error clearing cart:', err);
+        } finally {
+          setIsOrderLoading(false);
+        }
+      };
+
+      const onError = (error: any, orderId: string): void => {
+        console.log('Payment error: ' + JSON.stringify(error) + ' orderId: ' + orderId);
+
+        navigation.navigate('OrderFailure', {
+          errorMessage: 'Payment failed. Please try again.',
+        });
+      };
+
+      CFPaymentGatewayService.setEventSubscriber({
+        onReceivedEvent,
+      });
+
+      CFPaymentGatewayService.setCallback({
+        onVerify,
+        onError,
+      });
+
+      const session = new CFSession(
+        orderResponse.payment_session_id,
+        orderResponse.order_id,
+        CFEnvironment.SANDBOX
+      );
+
+      const theme = new CFThemeBuilder()
+        .setNavigationBarBackgroundColor('#D97706')
+        .setNavigationBarTextColor('#FFFFFF')
+        .setButtonBackgroundColor('#D97706')
+        .setButtonTextColor('#FFFFFF')
+        .setPrimaryTextColor('#212121')
+        .setSecondaryTextColor('#757575')
+        .build();
+
+      const upiIntentPayment = new CFUPIIntentCheckoutPayment(session, theme);
+
+      CFPaymentGatewayService.doUPIPayment(upiIntentPayment);
+    } catch (error) {
+      console.log('Cashfree payment error:', error);
+    }
+  };
+
   const handleCheckout = useCallback(async () => {
     // const shouldShowCompulsoryModal =
     //   !permissionDataInAuth?.permission ||
@@ -405,8 +492,6 @@ const CartScreen: React.FC = () => {
         calculatedTotalDiscountOnItems -
         calculatedCouponDiscount;
 
-      console.log(calculatedTotal);
-
       // Step 1: Create Order
       const orderRequest: CreateOrderRequest = {
         shopId: parseInt(vendor.shopId, 10),
@@ -417,7 +502,7 @@ const CartScreen: React.FC = () => {
         notificationMobileNumber: selectedAddress.phone,
         notificationEmail: null,
         customerName: selectedAddress.name || 'Customer',
-        paymentMethod: 'PREPAID',
+        paymentMethod: selectedPaymentOption?.toUpperCase() || 'PREPAID',
         orderAmount: calculatedTotal,
       };
 
@@ -429,98 +514,20 @@ const CartScreen: React.FC = () => {
 
       console.log('Order Response : ', orderResponse);
 
-      // Set up event subscribers and callbacks
-      const onReceivedEvent = (eventName: string, map: any) => {
-        console.log('Payment event: ' + eventName + ' data: ' + JSON.stringify(map));
-      };
-      const onVerify = (orderId: string) => {
-        console.log('Payment verified for orderId: ' + orderId);
-        // Clear cart and navigate to success
-        // if (cart && authData?.jwt && authData?.phone) {
-        //   clearCart(cart.cartId, authData.jwt, authData.phone);
-        // }
-        // navigation.navigate('OrderSuccess', {
-        //   orderId: orderResponse.order_id,
-        //   amount: calculatedTotal,
-        //   date: new Date().toLocaleDateString(),
-        //   shopId: vendor.shopId,
-        // });
-      };
-      const onError = (error: any, orderId: string) => {
-        console.log('Payment error: ' + JSON.stringify(error) + ' orderId: ' + orderId);
-        navigation.navigate('OrderFailure', {
-          errorMessage: 'Payment failed. Please try again.',
+      if (selectedPaymentOption === 'prepaid') {
+        handleCashFreePayment(orderResponse, calculatedTotal, vendor);
+      } else {
+        if (cart && authData?.jwt && authData?.phone) {
+          await clearCart(cart.cartId, authData.jwt, authData.phone);
+        }
+
+        navigation.navigate('OrderSuccess', {
+          orderId: orderResponse.orderId,
+          amount: calculatedTotal,
+          date: new Date().toLocaleDateString(),
+          shopId: vendor.shopId,
         });
-      };
-
-      CFPaymentGatewayService.setEventSubscriber({ onReceivedEvent });
-      CFPaymentGatewayService.setCallback({ onVerify, onError });
-
-      const session = new CFSession(
-        orderResponse?.payment_session_id,
-        orderResponse?.order_id,
-        CFEnvironment.SANDBOX
-      );
-
-      // Add all payment modes
-      const paymentModes = new CFPaymentComponentBuilder()
-        .add(CFPaymentModes.CARD)
-        .add(CFPaymentModes.UPI)
-        .add(CFPaymentModes.NB)
-        .add(CFPaymentModes.WALLET)
-        .add(CFPaymentModes.PAY_LATER)
-        .build();
-
-      const theme = new CFThemeBuilder()
-        .setNavigationBarBackgroundColor('#D97706')
-        .setNavigationBarTextColor('#FFFFFF')
-        .setButtonBackgroundColor('#D97706')
-        .setButtonTextColor('#FFFFFF')
-        .setPrimaryTextColor('#212121')
-        .setSecondaryTextColor('#757575')
-        .build();
-
-      const dropPayment = new CFDropCheckoutPayment(session, paymentModes, theme);
-      CFPaymentGatewayService.doPayment(dropPayment);
-
-      // // Step 2: Create Payment
-      // const paymentRequest: CreatePaymentRequest = {
-      //   customerId: parseInt(orderResponse.customerId, 10),
-      //   mobileNumber: authData.phone,
-      //   name: selectedAddress.name,
-      //   orderId: orderResponse.orderId,
-      //   tenders: [
-      //     {
-      //       amount: orderResponse.totalOrderAmount,
-      //       status: 'CREATED',
-      //       type: 'COMPLETION',
-      //       paymentMethod: selectedPaymentOption.toUpperCase(),
-      //       additionalTenderCharges: 10, // This should come from payment configuration
-      //     },
-      //   ],
-      // };
-
-      // await createPaymentService.createPayment(paymentRequest, authData.jwt, authData.phone);
-
-      // // Both APIs successful - Clear cart and navigate to success screen
-      // if (cart && authData?.jwt && authData?.phone) {
-      //   await clearCart(cart.cartId, authData.jwt, authData.phone);
-      // }
-
-      // const currentDate = new Date();
-      // const formattedDate = `${currentDate.getDate()}${getOrdinalSuffix(
-      //   currentDate.getDate()
-      // )} ${currentDate.toLocaleDateString('en-US', {
-      //   month: 'long',
-      //   year: 'numeric',
-      // })} • ${currentDate.toLocaleDateString('en-US', { weekday: 'long' })}`;
-
-      // navigation.navigate('OrderSuccess', {
-      //   orderId: orderResponse.orderId,
-      //   amount: orderResponse.totalOrderAmount,
-      //   date: formattedDate,
-      //   shopId: vendor.shopId,
-      // });
+      }
     } catch (error: unknown) {
       // Check for specific store not active error
       if (
@@ -726,14 +733,14 @@ const CartScreen: React.FC = () => {
   }, [cart?.cartId, activeCartId, setActiveCart]);
 
   // Set default payment option when payment methods are loaded
-  React.useEffect(() => {
-    if (availableOptions.length > 0 && !selectedPaymentOption) {
-      const codOption = availableOptions.find(option => option.key === 'cod' && option.available);
-      if (codOption) {
-        setSelectedPaymentOption('cod');
-      }
-    }
-  }, [availableOptions, selectedPaymentOption]);
+  // React.useEffect(() => {
+  //   if (availableOptions.length > 0 && !selectedPaymentOption) {
+  //     const codOption = availableOptions.find(option => option.key === 'cod' && option.available);
+  //     if (codOption) {
+  //       setSelectedPaymentOption('cod');
+  //     }
+  //   }
+  // }, [availableOptions, selectedPaymentOption]);
 
   // Resolve SmartBiz AddressId for selected address tag when landing on Cart
   // React.useEffect(() => {
@@ -1001,6 +1008,7 @@ const CartScreen: React.FC = () => {
           onClose={handlePaymentModalClose}
           onConfirm={handlePaymentConfirm}
           paymentMethods={paymentMethods}
+          selectedOption={selectedPaymentOption as 'phonepe' | 'gpay' | 'cod' | 'prepaid'}
           error={paymentMethodsError}
           loading={paymentMethodsLoading}
           onRetry={refetchPaymentMethods}

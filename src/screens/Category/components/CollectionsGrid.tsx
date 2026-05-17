@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
@@ -10,11 +11,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import SectionDivider from '../../../components/common/SectionDivider';
 import { Collection } from '../../../data/collectionsData';
 import { useTheme } from '../../../theme/ThemeContext';
-import { isStoreOpen, formatTimeToAMPM } from '../../../utils/storeUtils';
+import { formatTimeToAMPM, isStoreOpen } from '../../../utils/storeUtils';
 
 interface CollectionsGridProps {
   collections: Collection[];
@@ -41,7 +41,7 @@ const CollectionsGrid: React.FC<CollectionsGridProps> = ({ collections, shopId }
       isStoreOpen({
         storeActive: true,
         openingTime: '08:00 AM',
-        closingTime: '11:00 PM',
+        closingTime: '01:00 AM',
       }),
     []
   );

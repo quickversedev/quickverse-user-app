@@ -10,7 +10,7 @@ export interface CreateOrderRequest {
   notificationEmail: string | null;
   customerName: string;
   paymentMethod: string;
-  orderAmount: number;
+  orderAmount?: number;
 }
 
 export interface CreateOrderResponse {
@@ -99,6 +99,23 @@ class OrderService {
         sessionKey: sessionKey ? '***' : 'MISSING',
         phone: phone ? '***' : 'MISSING',
       });
+      throw error;
+    }
+  }
+
+  async getOrderStatus(cashFreeId: string, sessionKey: string): Promise<void> {
+    try {
+      const response = await apiCall(
+        axiosInstance.get(`v2/check-order-status?cashFreeId=${cashFreeId}`, {
+          headers: {
+            SessionKey: sessionKey,
+            Authorization: getAuthHeader(),
+          },
+        })
+      );
+      return response;
+    } catch (error) {
+      console.log('Get Order Status Error : ', error);
       throw error;
     }
   }
