@@ -684,10 +684,10 @@ const COLORS = {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     backgroundColor: '#F6FEFB',
     borderRadius: 18,
     padding: 16,
-    marginVertical: 10,
     shadowColor: '#064E3B',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
