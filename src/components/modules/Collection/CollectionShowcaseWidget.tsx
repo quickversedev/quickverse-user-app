@@ -608,6 +608,7 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
           {/* Categories */}
           <FlatList
             horizontal
+            nestedScrollEnabled={true}
             data={activeCategories}
             renderItem={renderCategoryItem}
             keyExtractor={item => item.id}
@@ -636,6 +637,7 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
               <FlatList
                 ref={productsListRef}
                 horizontal
+                nestedScrollEnabled={true}
                 data={displayedProducts}
                 renderItem={renderProductItem}
                 keyExtractor={(item, index) => `${item.sku}-${index}`}
