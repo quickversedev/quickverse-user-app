@@ -1,3 +1,4 @@
+import Icon from '@react-native-vector-icons/material-design-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -13,12 +14,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ViewToken,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from '@react-native-vector-icons/material-design-icons';
 import { Images } from '../../assets';
 import CartBar from '../../components/common/Cart/CartBar';
-import _SectionDivider from '../../components/common/SectionDivider';
 import HorizontalProductCard from '../../components/modules/Product/HorizontalProductCard';
 import ProductDetailModal from '../../components/modules/Product/ProductDetailModal';
 import VariantsModal from '../../components/modules/Product/VariantsModal';
@@ -377,6 +377,8 @@ const VendorProductComponent: React.FC = () => {
   const scrollY = useRef(new Animated.Value(0)).current;
   const categoryScrollRef = useRef<ScrollView>(null);
 
+  const isProgrammaticScrollRef = useRef(false);
+
   // Animated value for timing section opacity
   // Store timing animations — hidden for now
   const _timingOpacity = useMemo(
@@ -492,44 +494,51 @@ const VendorProductComponent: React.FC = () => {
   }).current;
 
   const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: Array<{ item: RowProductListItem }> }) => {
-      // Find the first visible header
-      const firstHeader = viewableItems.find(item => item.item.type === 'header');
-      if (
-        firstHeader &&
-        selectedCategory !==
-          (firstHeader.item as { type: 'header'; category: Category }).category.id
-      ) {
-        setSelectedCategory(
-          (firstHeader.item as { type: 'header'; category: Category }).category.id
-        );
+    (info: {
+      viewableItems: ViewToken<RowProductListItem>[];
+      changed: ViewToken<RowProductListItem>[];
+    }) => {
+      // Block updates during programmatic scrolls to prevent intermediate categories flashing
+      if (isProgrammaticScrollRef.current) return;
+
+      // Among visible items, prefer the header closest to the top (smallest index)
+      let closestHeader: { category: Category; index: number } | null = null;
+      info.viewableItems.forEach(v => {
+        if (v.item.type === 'header' && v.index != null) {
+          const headerItem = v.item as { type: 'header'; category: Category };
+          if (!closestHeader || v.index < closestHeader.index) {
+            closestHeader = { category: headerItem.category, index: v.index };
+          }
+        }
+      });
+
+      if (closestHeader) {
+        const categoryId = (closestHeader as { category: Category }).category.id;
+        if (selectedCategory !== categoryId) {
+          setSelectedCategory(categoryId);
+        }
       }
     }
   ).current;
-  // --- End viewability ---
 
   // On category select, scroll to its header and center the category
   const handleCategorySelect = useCallback(
     (catId: string) => {
       setSelectedCategory(catId);
 
-      // Scroll to the category in the horizontal scroll view
+      // Lock viewability updates so intermediate categories don't flash
+      isProgrammaticScrollRef.current = true;
+
       const categoryIndex = filteredCategories.findIndex(cat => cat.id === catId);
       if (categoryIndex !== -1 && categoryScrollRef.current) {
-        // Calculate the position to center the selected category
         const screenWidth = width;
         const scrollToX = Math.max(
           0,
           categoryIndex * CATEGORY_WIDTH - screenWidth / 2 + CATEGORY_WIDTH / 2
         );
-
-        categoryScrollRef.current.scrollTo({
-          x: scrollToX,
-          animated: true,
-        });
+        categoryScrollRef.current.scrollTo({ x: scrollToX, animated: true });
       }
 
-      // Scroll to the category header in the product list
       const idx = categoryIndexMap[catId];
       if (idx !== undefined && flatListRef.current) {
         flatListRef.current.scrollToIndex({ index: idx, animated: true });
@@ -1177,9 +1186,7 @@ const VendorProductComponent: React.FC = () => {
 
   return (
     <>
-      <SafeAreaView
-        style={{ flex: 1, backgroundColor: getColor('background') }}
-      >
+      <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background') }}>
         <View style={styles.container}>
           {/* Header with Search and Back Button */}
           <View style={styles.header}>
@@ -1322,9 +1329,17 @@ const VendorProductComponent: React.FC = () => {
                     onScroll={handleScroll}
                     scrollEventThrottle={16}
                     onViewableItemsChanged={onViewableItemsChanged}
+                    onMomentumScrollEnd={() => {
+                      // Clear programmatic-scroll lock when scrolling finishes
+                      isProgrammaticScrollRef.current = false;
+                    }}
                     viewabilityConfig={viewabilityConfig}
                     onScrollToIndexFailed={info => {
                       console.warn('Scroll failed', info);
+
+                      // If scrollToIndex failed, perform a programmatic fallback
+                      // and keep the programmatic lock until momentum ends.
+                      isProgrammaticScrollRef.current = true;
 
                       // scroll to the nearest rendered index instead
                       flatListRef.current?.scrollToOffset({
@@ -1332,9 +1347,10 @@ const VendorProductComponent: React.FC = () => {
                         animated: true,
                       });
 
-                      // retry after a delay
+                      // retry after a short delay
                       setTimeout(() => {
                         if (rowProductList.length > 0) {
+                          isProgrammaticScrollRef.current = true;
                           flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
                         }
                       }, 100);
