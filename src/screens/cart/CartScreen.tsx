@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo } from 'react';
@@ -12,7 +13,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import AnimatedCard from '../../components/common/AnimatedCard';
 import {
   CartFooter,
@@ -37,8 +37,8 @@ import { SmartBizAddress, smartBizAddressService } from '../../store/address/sma
 import useCartStore from '../../store/cart/cartStore';
 import useCouponStore from '../../store/cart/couponStore';
 import useConfigStore from '../../store/configStore';
-import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
 import usePricingStore from '../../store/pricingStore';
+import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Address } from '../../types/address';
@@ -81,6 +81,8 @@ const CartScreen: React.FC = () => {
     vendorOffersError,
     customerOffersError,
   } = useCouponStore();
+
+  console.log(carts);
 
   // Auth hooks
   const { selectedAddress, setSelectedAddress, permissionDataInAuth, authData } = useAuth();
@@ -163,6 +165,7 @@ const CartScreen: React.FC = () => {
 
   const vendor = useMemo(() => {
     if (!cart?.cartId) return undefined;
+    console.log(vendors);
     return vendors.find(v => v.shopId === cart.cartId.replace('vendor_', ''));
   }, [vendors, cart?.cartId]);
 

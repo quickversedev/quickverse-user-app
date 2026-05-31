@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import debounce from 'lodash.debounce';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -16,7 +17,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -269,11 +269,14 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
       };
 
       // Set as selected address
-      console.log('🔵 [AddressModal] Setting address:', JSON.stringify({
-        city: currentLocationAddress.city,
-        state: currentLocationAddress.state,
-        addressLine1: currentLocationAddress.addressLine1,
-      }));
+      console.log(
+        '🔵 [AddressModal] Setting address:',
+        JSON.stringify({
+          city: currentLocationAddress.city,
+          state: currentLocationAddress.state,
+          addressLine1: currentLocationAddress.addressLine1,
+        })
+      );
       setSelectedAddress(currentLocationAddress);
       handleClose();
     } catch (error) {
@@ -680,9 +683,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                   </TouchableOpacity>
 
                   <View style={themedStyles.emptyContainer}>
-                    <Text style={themedStyles.emptyText}>
-                      Log in to save addresses.
-                    </Text>
+                    <Text style={themedStyles.emptyText}>Log in to save addresses.</Text>
                     <LoginButton />
                   </View>
                 </>
@@ -794,8 +795,19 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                     }}
                     activeOpacity={0.7}
                   >
-                    <MaterialCommunityIcons name="cog-outline" size={18} color={getColor('subText')} />
-                    <Text style={{ color: getColor('subText'), fontSize: 13, fontWeight: '600', marginLeft: 6 }}>
+                    <MaterialCommunityIcons
+                      name="cog-outline"
+                      size={18}
+                      color={getColor('subText')}
+                    />
+                    <Text
+                      style={{
+                        color: getColor('subText'),
+                        fontSize: 13,
+                        fontWeight: '600',
+                        marginLeft: 6,
+                      }}
+                    >
                       Manage Saved Addresses
                     </Text>
                   </TouchableOpacity>
@@ -803,7 +815,6 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
               )}
             </View>
           </View>
-
         </View>
       </TouchableWithoutFeedback>
     </Modal>

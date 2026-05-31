@@ -63,6 +63,8 @@ const CategoryScreen = () => {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [collectionsLoading, setCollectionsLoading] = useState(false);
 
+  const isCollectionAvailable = vendors.some(vendor => vendor.shopId === '68246');
+
   useEffect(() => {
     const loadCollections = async () => {
       if (!isGrocery) {
@@ -170,8 +172,8 @@ const CategoryScreen = () => {
           )}
 
           {/* Collections Grid (Grocery Only) */}
-          {isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
-          {isGrocery && !collectionsLoading && collections.length > 0 && (
+          {isCollectionAvailable && isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
+          {isCollectionAvailable && isGrocery && !collectionsLoading && collections.length > 0 && (
             <CollectionsGrid collections={collections} shopId={API_STORE_ID} />
           )}
 

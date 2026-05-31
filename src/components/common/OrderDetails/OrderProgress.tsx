@@ -1,6 +1,6 @@
+import Icon from '@react-native-vector-icons/material-design-icons';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Icon from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '../../../theme/ThemeContext';
 import type { Order } from '../../../types/order';
 
@@ -22,11 +22,12 @@ const DELAY_MESSAGES = [
 const STEPS = ['Order Placed', 'Accepted', 'Picked Up', 'Delivered'] as const;
 
 const getActiveStepIndex = (status: Order['status']): number => {
+  console.log(status);
   switch (status) {
     case 'payment_pending':
+    case 'processing':
       return 0;
     case 'confirmed':
-    case 'processing':
       return 1;
     case 'ready':
     case 'shipped':
