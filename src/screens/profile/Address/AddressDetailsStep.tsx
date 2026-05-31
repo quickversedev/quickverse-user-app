@@ -96,6 +96,15 @@ const AddressDetailsStep = ({
       if (!details.pincode.trim() && selectedAddressDescription.postalCode) {
         updates.pincode = selectedAddressDescription.postalCode;
       }
+      if (!details.addressLine2.trim() && selectedAddressDescription.road) {
+        updates.addressLine2 = selectedAddressDescription.road;
+      }
+      if (
+        !details.addressLine3?.trim() &&
+        selectedAddressDescription.locality
+      ) {
+        updates.addressLine3 = selectedAddressDescription.locality;
+      }
 
       // Only update if there are changes to make
       if (Object.keys(updates).length > 0) {

@@ -65,6 +65,8 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     city: '',
     postalCode: '',
     formatted_address: '',
+    road: '',
+    locality: '',
   });
   const mapRef = useRef<MapView>(null);
 
@@ -101,6 +103,8 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
         city: '',
         postalCode: '',
         formatted_address: '',
+        road: '',
+        locality: '',
       });
     }
   };

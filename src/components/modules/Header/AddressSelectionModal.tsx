@@ -247,6 +247,9 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
             ', ' +
             location.longitude.toFixed(4),
           postalCode: '',
+          country: '',
+          road: '',
+          locality: '',
         };
       }
 

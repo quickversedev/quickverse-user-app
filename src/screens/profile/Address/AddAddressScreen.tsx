@@ -52,6 +52,8 @@ const AddAddressScreen = () => {
     city: '',
     postalCode: '',
     formatted_address: '',
+    road: '',
+    locality: '',
   });
   const [addressDetails, setAddressDetails] = useState<AddressDetails>({
     name: '',

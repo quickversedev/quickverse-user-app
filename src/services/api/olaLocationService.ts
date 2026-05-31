@@ -12,6 +12,8 @@ export interface AddressComponents {
   city: string;
   postalCode: string;
   formatted_address: string;
+  road: string;
+  locality: string;
 }
 
 export interface SearchResult {
@@ -58,6 +60,8 @@ const extractAddressComponents = (
     city: '',
     postalCode: '',
     formatted_address: formattedAddress || '',
+    road: '',
+    locality: '',
   };
 
   let locality = '';
@@ -78,12 +82,40 @@ const extractAddressComponents = (
       sublocality = component.long_name || '';
     } else if (types.includes('postal_code')) {
       components.postalCode = component.long_name || '';
+    } else if (types.includes('route')) {
+      components.road = component.long_name || '';
     }
   });
+
+  components.locality = sublocality || locality || '';
 
   // Use locality or sublocality as city fallback
   if (!components.city) {
     components.city = locality || sublocality || '';
+  }
+
+  // Fallback: extract road from formatted_address leading segments
+  if (!components.road && formattedAddress) {
+    const parts = formattedAddress.split(',').map(p => p.trim());
+    const knownValues = new Set(
+      [
+        components.city,
+        components.state,
+        components.country,
+        components.postalCode,
+        components.locality,
+        locality,
+        sublocality,
+      ]
+        .filter(Boolean)
+        .map(v => v.toLowerCase())
+    );
+    const roadParts = parts.filter(
+      p => p && !knownValues.has(p.toLowerCase()) && !/^\d{6}$/.test(p)
+    );
+    if (roadParts.length > 0) {
+      components.road = roadParts[0];
+    }
   }
 
   // Last resort: extract from formatted address (first meaningful segment)
