@@ -364,6 +364,28 @@ const CartScreen: React.FC = () => {
       return;
     }
 
+    // Prevent checkout if store is closed (time-based or manually)
+    if (vendor) {
+      const storeStatus = isStoreOpen({
+        openingTime: vendor.openingTime,
+        closingTime: vendor.closingTime,
+        storeActive: vendor.storeActive,
+      });
+
+      if (!storeStatus.isOpen) {
+        const isTimeBased = vendor.storeActive !== false && storeStatus.nextOpeningTime;
+        const opensAtText = isTimeBased
+          ? ` Opens at ${formatTimeToAMPM(storeStatus.nextOpeningTime!)}.`
+          : '';
+
+        setStoreClosedModal({
+          visible: true,
+          message: `The store is closed at the moment.${opensAtText} Please try again later.`,
+        });
+        return;
+      }
+    }
+
     // Validate required data
     if (!cart || !vendor || !selectedAddress || !authData?.jwt || !authData?.phone) {
       navigation.navigate('OrderFailure', {
