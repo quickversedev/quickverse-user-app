@@ -5,6 +5,7 @@ import MapView, { Callout, Circle, Marker } from 'react-native-maps';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
 import { ThemeText } from '../../components/common/theme/ThemeText';
+import { DEFAULT_FALLBACK_COORDINATES } from '../../constants/location';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAppStateRefresh } from '../../hooks/useAppStateRefresh';
 import useVendorStore from '../../store/vendorStore';
@@ -28,8 +29,8 @@ const ExploreScreen = () => {
       };
     }
     return {
-      latitude: 18.5204, // Default to Pune
-      longitude: 73.8567,
+      latitude: DEFAULT_FALLBACK_COORDINATES.latitude,
+      longitude: DEFAULT_FALLBACK_COORDINATES.longitude,
       latitudeDelta: 0.06,
       longitudeDelta: 0.06,
     };

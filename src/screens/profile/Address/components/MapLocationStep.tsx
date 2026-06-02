@@ -1,3 +1,4 @@
+import { DEFAULT_FALLBACK_COORDINATES } from '../../../../constants/location';
 import debounce from 'lodash.debounce';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -53,8 +54,8 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const [loading, setLoading] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
   const [region, setRegion] = useState({
-    latitude: 18.5204, // Default to Pune
-    longitude: 73.8567,
+    latitude: DEFAULT_FALLBACK_COORDINATES.latitude,
+    longitude: DEFAULT_FALLBACK_COORDINATES.longitude,
     latitudeDelta: 0.01,
     longitudeDelta: 0.01,
   });
@@ -176,8 +177,8 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     }
   };
 
-  const latitude = selectedLocation?.latitude ?? 18.5204;
-  const longitude = selectedLocation?.longitude ?? 73.8567;
+  const latitude = selectedLocation?.latitude ?? DEFAULT_FALLBACK_COORDINATES.latitude;
+  const longitude = selectedLocation?.longitude ?? DEFAULT_FALLBACK_COORDINATES.longitude;
 
   const fetchAutocompleteSuggestions = useMemo(
     () =>
