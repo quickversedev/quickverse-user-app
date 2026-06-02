@@ -81,32 +81,27 @@ const AddressDetailsStep = ({
   const [isCustomTagMode, setIsCustomTagMode] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null); // Keep local error state
 
-  // Auto-fill city, state, and pincode from selectedAddressDescription
+  // Auto-fill city, state, pincode, road, and locality from selectedAddressDescription
   useEffect(() => {
     if (selectedAddressDescription) {
       const updates: Partial<AddressDetails> = {};
 
-      // Only auto-fill if the field is empty or hasn't been manually edited
-      if (!details.city.trim() && selectedAddressDescription.city) {
+      if (selectedAddressDescription.city) {
         updates.city = selectedAddressDescription.city;
       }
-      if (!details.state.trim() && selectedAddressDescription.state) {
+      if (selectedAddressDescription.state) {
         updates.state = selectedAddressDescription.state;
       }
-      if (!details.pincode.trim() && selectedAddressDescription.postalCode) {
+      if (selectedAddressDescription.postalCode) {
         updates.pincode = selectedAddressDescription.postalCode;
       }
-      if (!details.addressLine2.trim() && selectedAddressDescription.road) {
+      if (selectedAddressDescription.road) {
         updates.addressLine2 = selectedAddressDescription.road;
       }
-      if (
-        !details.addressLine3?.trim() &&
-        selectedAddressDescription.locality
-      ) {
+      if (selectedAddressDescription.locality) {
         updates.addressLine3 = selectedAddressDescription.locality;
       }
 
-      // Only update if there are changes to make
       if (Object.keys(updates).length > 0) {
         onDetailsChange({
           ...details,
@@ -114,14 +109,9 @@ const AddressDetailsStep = ({
         });
       }
     }
-  }, [
-    selectedAddressDescription,
-    details.city,
-    details.state,
-    details.pincode,
-    onDetailsChange,
-    details,
-  ]);
+    // Only re-run when the geocode result changes, not on every details change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAddressDescription]);
   // Validation rules
   const validateField = (field: keyof AddressDetails, value: string): string | undefined => {
     switch (field) {
