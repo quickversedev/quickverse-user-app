@@ -1,11 +1,9 @@
 import React, { memo, useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
-import { triggerAddToCartHaptic, triggerErrorHaptic } from '../../../utils/haptics';
-import LoginPromptModal from '../../common/LoginPromptModal';
+import { triggerAddToCartHaptic } from '../../../utils/haptics';
 import { ThemeText } from '../../common/theme/ThemeText';
 import _VegIcon from '../../common/VegIcon';
 
@@ -34,8 +32,6 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
     showVariantsCount = false,
   }) => {
     const { getColor, theme } = useTheme();
-    const { authData } = useAuth();
-    const [showLoginModal, setShowLoginModal] = useState(false);
     const [imageError, setImageError] = useState(false);
 
     const {
@@ -54,14 +50,8 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
 
     const handleAddPress = () => {
       if (isDisabled) return;
-
-      if (authData?.jwt) {
-        triggerAddToCartHaptic();
-        onAdd();
-      } else {
-        triggerErrorHaptic();
-        setShowLoginModal(true);
-      }
+      triggerAddToCartHaptic();
+      onAdd();
     };
 
     const handleCardPress = () => {
@@ -295,13 +285,6 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
           {/* Add Button */}
           <View style={styles.buttonContainer}>{renderAddButton()}</View>
         </TouchableOpacity>
-
-        <LoginPromptModal
-          visible={showLoginModal}
-          onClose={() => setShowLoginModal(false)}
-          title="Login required"
-          message="Please log in to add items to your cart."
-        />
       </>
     );
   }

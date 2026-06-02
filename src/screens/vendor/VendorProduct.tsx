@@ -155,7 +155,7 @@ const VendorProductComponent: React.FC = () => {
   } = useProductsStore();
 
   // Memoized values
-  const hasAuth = useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
+
   const storeStatus = useMemo(() => getStoreStatus(vendor), [vendor]);
   // In collection mode always treat store as active so products are never greyed out; otherwise use vendor open status
   const isStoreActive = collection ? true : routeVendor ? storeStatus.isOpen : true;
@@ -622,7 +622,7 @@ const VendorProductComponent: React.FC = () => {
   // Cart operation handlers
   const handleAddToCart = useCallback(
     (product: Product) => {
-      if (!isStoreActive || !hasAuth || !product.inStock) return; // Disable when store is closed, no auth, or out of stock
+      if (!isStoreActive || !product.inStock) return;
 
       // If product has multiple variants, show variants modal
       if (product.numberOfVariants && product.numberOfVariants > 1) {
@@ -643,16 +643,16 @@ const VendorProductComponent: React.FC = () => {
           image: typeof product.imageUrl === 'string' ? product.imageUrl : '',
           veg: product.veg,
         },
-        authData!.jwt,
-        authData!.phone
+        authData?.jwt || '',
+        authData?.phone || ''
       );
     },
-    [isStoreActive, hasAuth, addToCart, cartId, vendor.shopId, authData]
+    [isStoreActive, addToCart, cartId, vendor.shopId, authData]
   );
 
   const handleVariantSelect = useCallback(
     (variant: Product) => {
-      if (!selectedProductForVariants || !hasAuth) return;
+      if (!selectedProductForVariants) return;
 
       addToCart(
         cartId,
@@ -668,30 +668,29 @@ const VendorProductComponent: React.FC = () => {
               : '',
           veg: selectedProductForVariants.veg ?? true,
         },
-        authData!.jwt,
-        authData!.phone
+        authData?.jwt || '',
+        authData?.phone || ''
       );
     },
-    [selectedProductForVariants, hasAuth, addToCart, cartId, vendor.shopId, authData]
+    [selectedProductForVariants, addToCart, cartId, vendor.shopId, authData]
   );
 
   const handleIncrement = useCallback(
     (sku: string) => {
-      if (!isStoreActive || !hasAuth) return; // Disable when store is closed or no auth
-      // Check if the product is in stock before incrementing
+      if (!isStoreActive) return;
       const product = products.find(p => p.sku === sku);
-      if (product && !product.inStock) return; // Disable if product is out of stock
-      increment(cartId, sku, authData!.jwt, authData!.phone);
+      if (product && !product.inStock) return;
+      increment(cartId, sku, authData?.jwt || '', authData?.phone || '');
     },
-    [isStoreActive, hasAuth, increment, cartId, authData, products]
+    [isStoreActive, increment, cartId, authData, products]
   );
 
   const handleDecrement = useCallback(
     (sku: string) => {
-      if (!isStoreActive || !hasAuth) return; // Disable when store is closed or no auth
-      decrement(cartId, sku, authData!.jwt, authData!.phone);
+      if (!isStoreActive) return;
+      decrement(cartId, sku, authData?.jwt || '', authData?.phone || '');
     },
-    [isStoreActive, hasAuth, decrement, cartId, authData]
+    [isStoreActive, decrement, cartId, authData]
   );
 
   // Optimized product quantity lookup using memoized map

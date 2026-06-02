@@ -6,6 +6,7 @@ import {
 } from '../../config/api/axios.config';
 import { PermissionAndLocation } from '../../hooks/Permissions/useLocation';
 import authService from '../../services/api/authService';
+import cartApiService from '../../services/cartApiService';
 import {
   AuthSession,
   getAuthSession,
@@ -270,6 +271,26 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     if (token && phone) {
       setAuth({ jwt: token, phone, username: name || 'Howdy', defaultAddressId });
+
+      // Sync any guest cart items to the server
+      const guestCarts = useCartStore.getState().carts;
+      const cartIds = Object.keys(guestCarts);
+      if (cartIds.length > 0) {
+        for (const cId of cartIds) {
+          const cart = guestCarts[cId];
+          const shopId = cId.replace('vendor_', '');
+          for (const product of Object.values(cart.products)) {
+            for (let i = 0; i < product.quantity; i++) {
+              try {
+                await cartApiService.addToCart(shopId, product.sku, token, phone);
+              } catch (_e) {
+                /* continue syncing remaining items */
+              }
+            }
+          }
+        }
+        useCartStore.getState().refreshAllCarts(token, phone).catch(() => {});
+      }
     }
     if (newUser) setNewUserstate(newUser);
   };

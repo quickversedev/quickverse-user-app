@@ -160,11 +160,6 @@ const FloatingCartsStack: React.FC = () => {
   // Only hide if there are no non-empty carts AND no in-progress order to show
   if (nonEmptyCarts.length === 0 && !hasInProgressOrder) return null;
 
-  // Only render when user is logged in
-  if (!authData?.jwt || !authData?.phone) {
-    return null;
-  }
-
   // Show a hint of the next cart behind the first when collapsed
   const showSecondCartBehind = !expanded && sortedCarts.length > 1;
 

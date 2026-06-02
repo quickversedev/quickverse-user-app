@@ -103,11 +103,6 @@ const useCartStore = create<CartStore>()(
           const state = get();
           const prevCart = state.carts[cartId];
 
-          if (!jwtToken) {
-            set({ error: 'No authentication token available' });
-            return;
-          }
-
           // track requests per cart
           const requestId = (state.latestRequestIdPerCart[cartId] || 0) + 1;
           set({
@@ -118,7 +113,7 @@ const useCartStore = create<CartStore>()(
             error: null,
           });
 
-          // optimistic update
+          // optimistic update (works for both guest and authenticated)
           set(s => {
             const cart = s.carts[cartId] || { cartId, products: {} };
 
@@ -139,6 +134,9 @@ const useCartStore = create<CartStore>()(
               },
             };
           });
+
+          // Skip API call for guest users (local-only cart)
+          if (!jwtToken) return;
 
           try {
             const shopId = cartId.replace('vendor_', '');
@@ -169,11 +167,29 @@ const useCartStore = create<CartStore>()(
 
         removeFromCart: async (cartId, sku, jwtToken, phone) => {
           set({ loading: true, error: null });
-          try {
-            if (!jwtToken) {
-              throw new Error('No authentication token available');
-            }
 
+          // Guest user: local-only removal
+          if (!jwtToken) {
+            set(s => {
+              const cart = s.carts[cartId];
+              if (!cart) return { loading: false };
+              const { [sku]: _removed, ...remainingProducts } = cart.products;
+              if (Object.keys(remainingProducts).length === 0) {
+                const { [cartId]: _removedCart, ...remainingCarts } = s.carts;
+                return { carts: remainingCarts, loading: false };
+              }
+              return {
+                carts: {
+                  ...s.carts,
+                  [cartId]: { ...cart, products: remainingProducts },
+                },
+                loading: false,
+              };
+            });
+            return;
+          }
+
+          try {
             const shopId = cartId.replace('vendor_', '');
             const apiResponse = await cartApiService.deleteFromCart(
               shopId,
@@ -208,7 +224,7 @@ const useCartStore = create<CartStore>()(
             },
           });
 
-          // optimistic update
+          // optimistic update (works for both guest and authenticated)
           set(s => {
             const cart = s.carts[cartId];
             if (!cart) return {};
@@ -229,6 +245,9 @@ const useCartStore = create<CartStore>()(
               error: null,
             };
           });
+
+          // Skip API call for guest users
+          if (!jwtToken) return;
 
           try {
             const shopId = cartId.replace('vendor_', '');
@@ -263,7 +282,7 @@ const useCartStore = create<CartStore>()(
             },
           });
 
-          // optimistic update
+          // optimistic update (works for both guest and authenticated)
           set(s => {
             const cart = s.carts[cartId];
             if (!cart) return {};
@@ -287,6 +306,9 @@ const useCartStore = create<CartStore>()(
               error: null,
             };
           });
+
+          // Skip API call for guest users
+          if (!jwtToken) return;
 
           try {
             const shopId = cartId.replace('vendor_', '');
