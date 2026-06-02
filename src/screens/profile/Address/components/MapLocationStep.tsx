@@ -115,7 +115,16 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     (async () => {
       const hasPermission = await checkLocationPermission();
       if (!hasPermission) {
-        await requestLocationPermission();
+        const result = await requestLocationPermission();
+        if (result !== 'granted') {
+          const fallback = {
+            latitude: DEFAULT_FALLBACK_COORDINATES.latitude,
+            longitude: DEFAULT_FALLBACK_COORDINATES.longitude,
+          };
+          setRegion(getRegionFromLocation(fallback));
+          updateSelectedLocationAndAddress(fallback);
+          return;
+        }
       }
       getCurrentLocation();
     })();
