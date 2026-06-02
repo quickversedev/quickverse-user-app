@@ -83,8 +83,6 @@ const CartScreen: React.FC = () => {
     customerOffersError,
   } = useCouponStore();
 
-  console.log(carts);
-
   // Auth hooks
   const { selectedAddress, setSelectedAddress, permissionDataInAuth, authData } = useAuth();
 
@@ -167,7 +165,6 @@ const CartScreen: React.FC = () => {
 
   const vendor = useMemo(() => {
     if (!cart?.cartId) return undefined;
-    console.log(vendors);
     return vendors.find(v => v.shopId === cart.cartId.replace('vendor_', ''));
   }, [vendors, cart?.cartId]);
 
