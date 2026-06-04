@@ -53,6 +53,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [region, setRegion] = useState({
     latitude: DEFAULT_FALLBACK_COORDINATES.latitude,
     longitude: DEFAULT_FALLBACK_COORDINATES.longitude,
@@ -110,43 +111,37 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     }
   };
 
-  // On mount, fetch and center on current location
+  // On mount, resolve coordinates before showing the map
   useEffect(() => {
+    const fallback = {
+      latitude: DEFAULT_FALLBACK_COORDINATES.latitude,
+      longitude: DEFAULT_FALLBACK_COORDINATES.longitude,
+    };
+
+    const applyLocation = (loc: { latitude: number; longitude: number }) => {
+      setRegion(getRegionFromLocation(loc));
+      updateSelectedLocationAndAddress(loc);
+      setMapReady(true);
+    };
+
     (async () => {
-      const hasPermission = await checkLocationPermission();
-      if (!hasPermission) {
+      const status = await checkLocationPermission();
+      if (status !== 'granted') {
         const result = await requestLocationPermission();
         if (result !== 'granted') {
-          const fallback = {
-            latitude: DEFAULT_FALLBACK_COORDINATES.latitude,
-            longitude: DEFAULT_FALLBACK_COORDINATES.longitude,
-          };
-          setRegion(getRegionFromLocation(fallback));
-          updateSelectedLocationAndAddress(fallback);
+          applyLocation(fallback);
           return;
         }
       }
-      getCurrentLocation();
+      try {
+        const coords = await getCurrentLocation();
+        applyLocation({ latitude: coords.latitude, longitude: coords.longitude });
+      } catch {
+        applyLocation(fallback);
+      }
     })();
-  }, [checkLocationPermission, getCurrentLocation, requestLocationPermission]);
-
-  // When current location is available, center map and update selected location
-  useEffect(() => {
-    if (
-      typeof currentLocation.latitude === 'number' &&
-      typeof currentLocation.longitude === 'number'
-    ) {
-      const newLocation = {
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-      };
-
-      setRegion(getRegionFromLocation(newLocation));
-
-      // Update selected location and get address
-      updateSelectedLocationAndAddress(newLocation);
-    }
-  }, [currentLocation.latitude, currentLocation.longitude]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleGetCurrentLocation = async () => {
     try {
@@ -522,56 +517,71 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       >
         {/* Map with rounded top corners */}
         <View style={themedStyles.mapContainer}>
-          <MapView
-            ref={mapRef}
-            style={themedStyles.map}
-            region={region}
-            onRegionChangeComplete={handleRegionChangeComplete}
-            showsUserLocation={true}
-            showsMyLocationButton={false}
-            onPress={() => {
-              Keyboard.dismiss();
-              if (searchResults.length > 0) {
-                setSearchResults([]);
-              }
-            }}
-          >
-            {/* Show current location marker if available */}
-            {currentLocation.latitude && currentLocation.longitude && (
-              <Marker
-                coordinate={{
-                  latitude: currentLocation.latitude,
-                  longitude: currentLocation.longitude,
-                }}
-                title="Current Location"
-                description="Your current location"
-                anchor={{ x: 0.5, y: 0.5 }}
-              >
-                <View style={themedStyles.currentLocationDot} />
-              </Marker>
-            )}
-
-            {/* Show selected location marker if different from current location */}
-            {selectedLocation && !isCurrentLocationSelected() && (
-              <Marker
-                coordinate={{
-                  latitude: selectedLocation.latitude,
-                  longitude: selectedLocation.longitude,
-                }}
-                pinColor="red"
-                title="Selected Location"
-                description="Selected address location"
-              />
-            )}
-          </MapView>
-          {/* Center Pin Overlay - Only show when no search results */}
-          {searchResults.length === 0 && (
-            <View pointerEvents="none" style={themedStyles.centerPinContainer}>
-              <Image
-                source={Images.mapLocation}
-                style={[themedStyles.centerPin, themedStyles.centerPinOffset]}
-              />
+          {!mapReady ? (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: getColor('card'),
+              }}
+            >
+              <ActivityIndicator size="large" color={getColor('primary')} />
             </View>
+          ) : (
+            <>
+              <MapView
+                ref={mapRef}
+                style={themedStyles.map}
+                region={region}
+                onRegionChangeComplete={handleRegionChangeComplete}
+                showsUserLocation={true}
+                showsMyLocationButton={false}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  if (searchResults.length > 0) {
+                    setSearchResults([]);
+                  }
+                }}
+              >
+                {/* Show current location marker if available */}
+                {currentLocation.latitude && currentLocation.longitude && (
+                  <Marker
+                    coordinate={{
+                      latitude: currentLocation.latitude,
+                      longitude: currentLocation.longitude,
+                    }}
+                    title="Current Location"
+                    description="Your current location"
+                    anchor={{ x: 0.5, y: 0.5 }}
+                  >
+                    <View style={themedStyles.currentLocationDot} />
+                  </Marker>
+                )}
+
+                {/* Show selected location marker if different from current location */}
+                {selectedLocation && !isCurrentLocationSelected() && (
+                  <Marker
+                    coordinate={{
+                      latitude: selectedLocation.latitude,
+                      longitude: selectedLocation.longitude,
+                    }}
+                    pinColor="red"
+                    title="Selected Location"
+                    description="Selected address location"
+                  />
+                )}
+              </MapView>
+              {/* Center Pin Overlay - Only show when no search results */}
+              {searchResults.length === 0 && (
+                <View pointerEvents="none" style={themedStyles.centerPinContainer}>
+                  <Image
+                    source={Images.mapLocation}
+                    style={[themedStyles.centerPin, themedStyles.centerPinOffset]}
+                  />
+                </View>
+              )}
+            </>
           )}
           {/* Search Bar Overlay */}
           <View pointerEvents="box-none" style={themedStyles.searchBarContainer}>
