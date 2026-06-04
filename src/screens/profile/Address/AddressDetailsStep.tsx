@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import LoginPromptModal from '../../../components/common/LoginPromptModal';
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useAddress } from '../../../hooks/useAddress';
 
 import { AddressComponents } from '../../../services/api/olaLocationService';
@@ -75,11 +77,13 @@ const AddressDetailsStep = ({
   const { getColor, getTypography, getButtonColor } = useTheme();
   const _navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { addAddress, addingLoading } = useAddress(); // Use addingLoading from store
+  const { authData } = useAuth();
+  const { addAddress, addingLoading } = useAddress();
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isCustomTagMode, setIsCustomTagMode] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null); // Keep local error state
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Auto-fill city, state, pincode, road, and locality from selectedAddressDescription
   useEffect(() => {
@@ -243,6 +247,11 @@ const AddressDetailsStep = ({
   };
 
   const handleSave = async () => {
+    if (!authData?.jwt) {
+      setShowLoginModal(true);
+      return;
+    }
+
     // Mark all fields as touched
     const allFields = [
       'name',
@@ -884,6 +893,12 @@ const AddressDetailsStep = ({
           )}
         </TouchableOpacity>
       </View>
+      <LoginPromptModal
+        visible={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        title="Login to Save Address"
+        message="Please login to save your delivery address."
+      />
     </KeyboardAvoidingView>
   );
 };
