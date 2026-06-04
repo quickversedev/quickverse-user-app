@@ -734,8 +734,8 @@ const AddressDetailsStep = ({
   return (
     <KeyboardAvoidingView
       style={themedStyles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <ScrollView
         style={themedStyles.container}
@@ -751,11 +751,11 @@ const AddressDetailsStep = ({
           </View>
         )}
 
-        {renderInputRow('name', 'Name(Eg John Wick)', 'phoneNumber', 'Phone Number', {
-          required1: true,
-          required2: true,
-          keyboardType2: 'numeric',
-          maxLength2: 10,
+        {renderInput('name', 'Name', { required: true })}
+        {renderInput('phoneNumber', 'Phone Number', {
+          required: true,
+          keyboardType: 'numeric',
+          maxLength: 10,
         })}
         {renderInput('addressLine1', 'Floor / Flat No. / Building', { required: true })}
         {renderInput('addressLine2', 'Road / Street ', { required: true })}
