@@ -131,7 +131,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   // Cart handlers
   const handleAddToCart = () => {
-    if (!authData?.jwt || isStoreClosed) return;
+    if (isStoreClosed) return;
     addToCart(
       cartId,
       {
@@ -143,19 +143,19 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         image: displayImageUrl,
         veg: product.veg,
       },
-      authData.jwt,
-      authData.phone
+      authData?.jwt || '',
+      authData?.phone || ''
     );
   };
 
   const handleIncrement = () => {
-    if (!authData?.jwt || isStoreClosed) return;
-    increment(cartId, displaySku, authData.jwt, authData.phone);
+    if (isStoreClosed) return;
+    increment(cartId, displaySku, authData?.jwt || '', authData?.phone || '');
   };
 
   const handleDecrement = () => {
-    if (!authData?.jwt || isStoreClosed) return;
-    decrement(cartId, displaySku, authData.jwt, authData.phone);
+    if (isStoreClosed) return;
+    decrement(cartId, displaySku, authData?.jwt || '', authData?.phone || '');
   };
 
   const styles = StyleSheet.create({
@@ -298,9 +298,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   const handleSuggestedItemAdd = (item: SuggestedItem) => {
-    if (!authData?.jwt) return;
-    // Add suggested item to cart
-    //console.log('item', item);
     const cartProduct = {
       sku: item.id,
       shopId: vendor.shopId,
@@ -308,19 +305,17 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       price: item.price,
       mrp: item.mrp,
       image: item.image.toString(),
-      veg: true, // Default to vegetarian for suggested items
+      veg: true,
     };
-    addToCart(cartId, cartProduct, authData.jwt, authData.phone);
+    addToCart(cartId, cartProduct, authData?.jwt || '', authData?.phone || '');
   };
 
   const handleSuggestedItemIncrement = (item: SuggestedItem) => {
-    if (!authData?.jwt) return;
-    increment(cartId, item.id, authData.jwt, authData.phone);
+    increment(cartId, item.id, authData?.jwt || '', authData?.phone || '');
   };
 
   const handleSuggestedItemDecrement = (item: SuggestedItem) => {
-    if (!authData?.jwt) return;
-    decrement(cartId, item.id, authData.jwt, authData.phone);
+    decrement(cartId, item.id, authData?.jwt || '', authData?.phone || '');
   };
 
   // Create variants for ProductInfo component
