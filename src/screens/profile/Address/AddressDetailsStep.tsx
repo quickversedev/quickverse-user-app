@@ -334,31 +334,32 @@ const AddressDetailsStep = ({
   const themedStyles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: getColor('background') || '#111827', // Fallback to default background
+      backgroundColor: getColor('background'),
     },
     contentContainer: {
-      padding: Math.max(20, width * 0.05),
+      paddingHorizontal: 16,
+      paddingTop: 16,
       paddingBottom: 16,
     },
-
     inputContainer: {
-      marginBottom: 20,
+      marginBottom: 14,
     },
     inputRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginBottom: 20,
+      marginBottom: 14,
+      gap: 12,
     },
     inputRowItem: {
-      flex: 0.48, // Take up roughly half the width with some spacing
+      flex: 1,
     },
     inputWrapper: {
       position: 'relative',
     },
     input: {
-      height: Math.max(50, height * 0.065),
-      paddingHorizontal: Math.max(18, width * 0.045),
-      borderRadius: 12,
+      height: 52,
+      paddingHorizontal: 16,
+      borderRadius: 10,
       borderWidth: 1,
       backgroundColor: getColor('card'),
       color: getColor('text'),
@@ -368,9 +369,9 @@ const AddressDetailsStep = ({
     },
     floatingLabel: {
       position: 'absolute',
-      top: 8,
-      left: Math.max(18, width * 0.045),
-      fontSize: getTypography('caption'),
+      top: 6,
+      left: 16,
+      fontSize: getTypography('caption') - 1,
       fontWeight: '600',
       includeFontPadding: false,
       zIndex: 1,
@@ -379,12 +380,11 @@ const AddressDetailsStep = ({
       borderColor: getColor('error'),
       borderWidth: 1.5,
     },
-
     errorText: {
       color: getColor('error'),
       fontSize: getTypography('caption'),
-      marginTop: 6,
-      marginLeft: 6,
+      marginTop: 4,
+      marginLeft: 4,
       includeFontPadding: false,
       fontWeight: '500',
     },
@@ -397,34 +397,36 @@ const AddressDetailsStep = ({
       color: getColor('subText'),
       fontSize: getTypography('caption'),
       fontStyle: 'italic',
-      marginLeft: 6,
-      marginTop: 4,
+      marginLeft: 4,
+      marginTop: 2,
     },
     tagContainer: {
-      marginBottom: 24,
+      marginTop: 4,
+      marginBottom: 8,
     },
     tagLabel: {
       color: getColor('text'),
-      fontSize: getTypography('body'),
-      fontWeight: '600',
+      fontSize: getTypography('caption'),
+      fontWeight: '700',
       includeFontPadding: false,
       textAlignVertical: 'center',
-      marginBottom: 12,
+      marginBottom: 10,
+      letterSpacing: 0.3,
     },
     tagButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-      borderRadius: 24,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
       borderWidth: 1,
-      marginRight: 10,
-      marginBottom: 10,
+      marginRight: 8,
+      marginBottom: 8,
       borderColor: getColor('border'),
       backgroundColor: getColor('card'),
     },
     tagButtonSelected: {
-      backgroundColor: `${getColor('primary')}12`,
+      backgroundColor: `${getColor('primary')}15`,
       borderColor: getColor('primary'),
       borderWidth: 1.5,
     },
@@ -442,15 +444,15 @@ const AddressDetailsStep = ({
       fontWeight: '700',
     },
     saveButtonContainer: {
-      paddingHorizontal: Math.max(20, width * 0.05),
-      paddingTop: 12,
-      paddingBottom: Math.max(insets.bottom, 16),
+      paddingHorizontal: 16,
+      paddingTop: 10,
+      paddingBottom: Math.max(insets.bottom, 12),
       backgroundColor: getColor('background'),
-      borderTopWidth: 1,
+      borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: getColor('border'),
     },
     saveButton: {
-      paddingVertical: 16,
+      paddingVertical: 15,
       borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
@@ -464,29 +466,29 @@ const AddressDetailsStep = ({
       fontWeight: '700',
       color:
         isFormValid() && !addingLoading
-          ? getColor('background') || '#111827'
-          : getColor('subText') || '#9CA3AF',
+          ? getColor('background')
+          : getColor('subText'),
       fontSize: getTypography('body'),
       includeFontPadding: false,
       textAlignVertical: 'center',
-      letterSpacing: 0.3,
+      letterSpacing: 0.5,
     },
     apiErrorContainer: {
-      backgroundColor: `${getColor('error')}15`,
+      backgroundColor: `${getColor('error')}12`,
       borderWidth: 1,
       borderColor: getColor('error'),
-      padding: Math.max(14, width * 0.035),
-      borderRadius: 12,
-      marginBottom: 20,
+      padding: 12,
+      borderRadius: 10,
+      marginBottom: 14,
       flexDirection: 'row',
       alignItems: 'center',
     },
     apiErrorText: {
       color: getColor('error'),
-      fontSize: getTypography('body'),
+      fontSize: getTypography('caption'),
       flex: 1,
       includeFontPadding: false,
-      lineHeight: getTypography('body') * 1.3,
+      lineHeight: getTypography('caption') * 1.4,
       fontWeight: '500',
     },
     loadingContainer: {
@@ -495,7 +497,7 @@ const AddressDetailsStep = ({
       justifyContent: 'center',
     },
     loadingText: {
-      color: getColor('background') || '#111827',
+      color: getColor('background'),
       fontSize: getTypography('body'),
       fontWeight: '600',
       marginLeft: 10,
@@ -540,7 +542,7 @@ const AddressDetailsStep = ({
               hasError && themedStyles.inputError,
               {
                 borderColor: hasError ? getColor('error') : getColor('border'),
-                paddingTop: isActive ? 20 : 0,
+                paddingTop: isActive ? 18 : 0,
               },
             ]}
             placeholder={isActive ? '' : displayPlaceholder}
@@ -636,7 +638,7 @@ const AddressDetailsStep = ({
                 hasError1 && themedStyles.inputError,
                 {
                   borderColor: hasError1 ? getColor('error') : getColor('border'),
-                  paddingTop: isActive1 ? 20 : 0,
+                  paddingTop: isActive1 ? 18 : 0,
                 },
               ]}
               placeholder={isActive1 ? '' : displayPlaceholder1}
@@ -686,7 +688,7 @@ const AddressDetailsStep = ({
                 hasError2 && themedStyles.inputError,
                 {
                   borderColor: hasError2 ? getColor('error') : getColor('border'),
-                  paddingTop: isActive2 ? 20 : 0,
+                  paddingTop: isActive2 ? 18 : 0,
                 },
               ]}
               placeholder={isActive2 ? '' : displayPlaceholder2}
@@ -760,7 +762,6 @@ const AddressDetailsStep = ({
         {renderInput('addressLine1', 'Floor / Flat No. / Building', { required: true })}
         {renderInput('addressLine2', 'Road / Street ', { required: true })}
         {renderInputRow('addressLine3', 'Area / Locality', 'pincode', 'Pincode', {
-          optional1: true,
           required2: true,
           keyboardType2: 'numeric',
           maxLength2: 6,
