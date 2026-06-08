@@ -82,6 +82,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
 
   useEffect(() => {
     if (visible && isLoggedIn && vendorId && authData?.jwt && authData?.phone) {
+      smartBizAddressService.clearCache(vendorId);
       fetchAddresses();
     }
   }, [visible, isLoggedIn, vendorId, authData?.jwt, authData?.phone]);
