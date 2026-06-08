@@ -381,9 +381,9 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       backgroundColor: getColor('card'),
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
-      paddingTop: 16,
-      paddingBottom: insets.bottom + 16,
-      paddingHorizontal: 20,
+      paddingTop: 12,
+      paddingBottom: insets.bottom + 12,
+      paddingHorizontal: 16,
       shadowColor: theme.colors.shadow.color,
       shadowOffset: { width: 0, height: -4 },
       shadowOpacity: 0.15,
@@ -397,7 +397,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     },
     buttonContainer: {
       width: '100%',
-      paddingTop: 16,
+      paddingTop: 10,
     },
     bottomSheetTitle: {
       color: getColor('subText'),
@@ -416,22 +416,22 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       width: '100%',
       backgroundColor: getColor('background'),
       borderRadius: theme.borderRadius.md,
-      padding: 14,
+      padding: 10,
       borderWidth: 1,
       borderColor: getColor('border'),
     },
     addressIconBadge: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 12,
+      marginRight: 10,
     },
     selectedLocationText: {
       color: getColor('text'),
-      fontSize: getTypography('body'),
-      lineHeight: 22,
+      fontSize: getTypography('caption'),
+      lineHeight: 18,
       fontWeight: '500',
     },
     loadingContainer: {
@@ -737,13 +737,17 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                     </View>
                     <Text
                       style={[themedStyles.selectedLocationText, { flex: 1 }]}
-                      numberOfLines={5}
                     >
-                      {selectedAddressDescription.formatted_address ||
-                        selectedAddressDescription.city ||
-                        selectedAddressDescription.state ||
-                        selectedAddressDescription.country ||
-                        'Location selected'}
+                      {[
+                        selectedAddressDescription.road,
+                        selectedAddressDescription.locality,
+                        selectedAddressDescription.city,
+                        selectedAddressDescription.state,
+                        selectedAddressDescription.postalCode,
+                        selectedAddressDescription.country,
+                      ]
+                        .filter(Boolean)
+                        .join(', ') || 'Location selected'}
                     </Text>
                   </View>
                 )}
