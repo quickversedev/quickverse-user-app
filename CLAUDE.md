@@ -119,13 +119,15 @@ AppStack
 
 ### Key Patterns
 
-- **Cart:** Multi-vendor carts keyed by `vendor_<shopId>`. Uses `latestRequestIdPerCart` for request deduplication to avoid stale responses. Optimistic UI updates with rollback on API error. Cart auto-removes when all products reach quantity 0.
+- **Cart:** Multi-vendor carts keyed by `vendor_<shopId>`. Uses `latestRequestIdPerCart` for request deduplication to avoid stale responses. Optimistic UI updates with rollback on API error. Cart auto-removes when all products reach quantity 0. Guest users get local-only carts (no API calls) — pass `authData?.jwt || ''` and `authData?.phone || ''`; never gate cart actions on `!authData?.jwt`.
 - **Store persistence:** Stores use Zustand `persist` middleware with the `mmkvStorage` adapter. Use `partialize` to persist only essential state (exclude `loading`, `error`, etc.).
 - **Cache expiry:** Some stores (e.g., `featuredProductsStore`) implement time-based cache expiry (5-minute TTL).
 - **Tax formula:** 18% GST on (commission + delivery + platform fees). Food: 10% commission, Grocery: 2%. Identical logic in `PaymentSummary.tsx` and `OrderDetailsScreen.tsx` — keep them in sync.
 - **API services:** Thin wrappers around the `apiCall()` helper in axios config. Some services (e.g., `cartApiService`) include response-to-local format transformation logic.
 - **Loading states:** Skeleton shimmer components in `src/components/common/skeleton/`
-- **Location:** Geolocation API + Ola Maps reverse geocoding, races GPS & network in parallel
+- **Location:** Geolocation API + Ola Maps reverse geocoding, races GPS & network in parallel. Default fallback is Beed, Maharashtra (`DEFAULT_FALLBACK_COORDINATES` in `src/constants/location.ts`). `checkLocationPermission()` returns a PermissionStatus string (e.g. `'granted'`), not boolean — compare with `!== 'granted'`, not `!status`.
+- **SmartBiz addresses:** Singleton `SmartBizAddressService` (`src/store/address/smartBizAddressStore.ts`) with per-vendor 5-minute in-memory cache. Call `clearCache(vendorId)` before fetching when fresh data is needed (e.g., after adding an address).
+- **Ola Maps limitation:** Reverse geocode `formatted_address` omits sublocality/locality — build display addresses from individual `address_components` fields. Pincode accuracy can differ from expected values; this is an upstream data issue.
 - **Search:** Local suggestions + API search (`v3/search`), recent searches persisted to MMKV (max 10)
 - **Error handling:** Centralized in axios.config with `ApiError` interface. Toast on Android, Alert on iOS.
 - **Theme:** Server-driven theme (fetched by `AppInitializer`) with `DefaultTheme` fallback. Always use `useTheme().getColor()` for colors — avoid hardcoded values. Primary: #D97706 (amber).
