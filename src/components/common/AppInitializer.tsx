@@ -10,6 +10,7 @@ import useOrderStore from '../../store/cart/orderStore';
 import usePricingStore from '../../store/pricingStore';
 import useThemeStore from '../../store/themeStore';
 import useVendorStore from '../../store/vendorStore';
+import { DEFAULT_FALLBACK_ADDRESS, DEFAULT_FALLBACK_COORDINATES } from '../../constants/location';
 import { Address } from '../../types/address';
 import ErrorState from './ErrorState';
 import LocationRequiredModal from './LocationRequiredModal';
@@ -87,8 +88,12 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
         vendorPromise,
         fetchAddresses(),
         fetchInitialConfig({
-          longitude: locationData?.location?.longitude?.toString(),
-          latitude: locationData?.location?.latitude?.toString(),
+          longitude:
+            locationData?.location?.longitude?.toString() ||
+            String(DEFAULT_FALLBACK_COORDINATES.longitude),
+          latitude:
+            locationData?.location?.latitude?.toString() ||
+            String(DEFAULT_FALLBACK_COORDINATES.latitude),
         }),
         fetchTheme(),
         fetchPages(),
@@ -222,8 +227,8 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
           return;
         }
 
-        // No location, no saved addresses — show LocationRequiredModal (don't set any address)
-        console.warn('No location available and no saved addresses. User must select location.');
+        // No location, no saved addresses — use default fallback location
+        setSelectedAddress(DEFAULT_FALLBACK_ADDRESS);
       };
 
       if (permissionStatus === 'granted' && currentLatitude && currentLongitude) {
@@ -319,10 +324,12 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       const configPromise = fetchInitialConfig({
         longitude:
           selectedAddress?.coordinates?.longitude?.toString() ||
-          locationData?.location?.longitude?.toString(),
+          locationData?.location?.longitude?.toString() ||
+          String(DEFAULT_FALLBACK_COORDINATES.longitude),
         latitude:
           selectedAddress?.coordinates?.latitude?.toString() ||
-          locationData?.location?.latitude?.toString(),
+          locationData?.location?.latitude?.toString() ||
+          String(DEFAULT_FALLBACK_COORDINATES.latitude),
       });
       // Step 3: Handle address fetching based on MMKV storage state
       const addressPromise = isLoggedIn

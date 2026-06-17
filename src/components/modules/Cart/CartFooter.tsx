@@ -19,6 +19,7 @@ interface CartFooterProps {
   onCheckout: () => void;
   disabled?: boolean;
   loading?: boolean;
+  isGuest?: boolean;
 }
 
 const CartFooter: React.FC<CartFooterProps> = ({
@@ -28,6 +29,7 @@ const CartFooter: React.FC<CartFooterProps> = ({
   onCheckout,
   disabled = false,
   loading = false,
+  isGuest = false,
 }) => {
   const { getColor, getTypography, theme, getButtonColor } = useTheme();
   const insets = useSafeAreaInsets();
@@ -148,6 +150,7 @@ const CartFooter: React.FC<CartFooterProps> = ({
 
   const getButtonText = () => {
     if (loading) return 'Processing...';
+    if (isGuest) return 'Login to Place Order';
     if (!isAddressSelected) return 'Select Address to Continue';
     if (disabled) return 'Select Payment Method';
     return 'Place Order';

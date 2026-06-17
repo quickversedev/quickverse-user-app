@@ -2,7 +2,6 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   Image,
   ImageBackground,
@@ -15,7 +14,6 @@ import {
   View,
 } from 'react-native';
 
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import {
   CodeField,
@@ -24,6 +22,7 @@ import {
   useClearByFocusCell,
 } from 'react-native-confirmation-code-field';
 import { useOtpVerify } from 'react-native-otp-verify';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Images } from '../../assets';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useAuth } from '../../contexts/login/AuthProvider';
@@ -43,6 +42,7 @@ const OTPScreen: React.FC = () => {
   const [value, setValue] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [otpErrorMessage, setOtpErrorMessage] = useState('');
 
   // Resend OTP Timer
   const [resendTimeout, setResendTimeout] = useState(60);
@@ -59,7 +59,7 @@ const OTPScreen: React.FC = () => {
 
   // Timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
 
     if (!canResend && resendTimeout > 0) {
       interval = setInterval(() => {
@@ -94,6 +94,30 @@ const OTPScreen: React.FC = () => {
     }
   }, [autoOtp]);
 
+  const getOtpFriendlyErrorMessage = useCallback((err: unknown) => {
+    const error = err as { status?: number; message?: string; response?: { data?: unknown } };
+    const rawMessage =
+      error.message ||
+      (typeof error.response?.data === 'string' ? error.response.data : '') ||
+      JSON.stringify(error.response?.data ?? '');
+
+    if (
+      error.status === 401 ||
+      error.status === 422 ||
+      /invalid otp|expired otp|otp has expired|verify.*otp|wrong otp|invalid or expired/i.test(
+        rawMessage
+      )
+    ) {
+      return 'Invalid or expired OTP entered. Please try again.';
+    }
+
+    if (/valid 6-digit otp|verification id|required|format/i.test(rawMessage)) {
+      return 'Please enter the OTP carefully and try again.';
+    }
+
+    return 'Something went wrong while verifying the OTP. Please try again.';
+  }, []);
+
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => setIsKeyboardVisible(true));
     const hideSub = Keyboard.addListener('keyboardDidHide', () => setIsKeyboardVisible(false));
@@ -105,19 +129,21 @@ const OTPScreen: React.FC = () => {
 
   const verifyOTP = useCallback(async () => {
     if (value.length !== CELL_COUNT) {
-      Alert.alert('Invalid OTP', 'Please enter a valid 4-digit OTP');
+      setOtpErrorMessage('Please enter all 4 digits of the OTP.');
       return;
     }
 
     setLoading(true);
+    setOtpErrorMessage('');
     try {
       await auth.verifyOtp(phoneNumber, value, currentVerificationId);
     } catch (err) {
+      setOtpErrorMessage(getOtpFriendlyErrorMessage(err));
       console.error('login otp error', err);
     } finally {
       setLoading(false);
     }
-  }, [value, auth, phoneNumber, currentVerificationId]);
+  }, [value, auth, phoneNumber, currentVerificationId, getOtpFriendlyErrorMessage]);
 
   // Auto-submit when all 4 digits are filled
   useEffect(() => {
@@ -135,6 +161,7 @@ const OTPScreen: React.FC = () => {
 
     try {
       setLoading(true);
+      setOtpErrorMessage('');
       const newVerificationId = await auth.sendOtp(phoneNumber);
       setCurrentVerificationId(newVerificationId);
       setValue('');
@@ -145,7 +172,7 @@ const OTPScreen: React.FC = () => {
       setResendTimeout(60);
       setCanResend(false);
     } catch (error) {
-      Alert.alert('Error', 'Failed to resend OTP. Please try again.');
+      setOtpErrorMessage('Unable to resend OTP right now. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -153,6 +180,13 @@ const OTPScreen: React.FC = () => {
 
   const handleChangeNumber = () => {
     navigation.goBack();
+  };
+
+  const handleOtpChange = (text: string) => {
+    setValue(text);
+    if (otpErrorMessage) {
+      setOtpErrorMessage('');
+    }
   };
 
   const dismissKeyboard = () => {
@@ -219,6 +253,13 @@ const OTPScreen: React.FC = () => {
       marginBottom: 16,
       justifyContent: 'space-between',
       flexDirection: 'row',
+    },
+    otpErrorText: {
+      textAlign: 'center',
+      marginTop: -4,
+      marginBottom: 12,
+      color: '#D92D20',
+      fontFamily: 'BricolageGrotesque-Regular',
     },
     cell: {
       width: 50,
@@ -307,7 +348,7 @@ const OTPScreen: React.FC = () => {
               ref={ref}
               {...props}
               value={value}
-              onChangeText={setValue}
+              onChangeText={handleOtpChange}
               cellCount={CELL_COUNT}
               rootStyle={styles.codeFieldRoot}
               keyboardType="number-pad"
@@ -325,6 +366,12 @@ const OTPScreen: React.FC = () => {
                 </View>
               )}
             />
+
+            {!!otpErrorMessage && (
+              <ThemeText variant="caption" style={styles.otpErrorText} color="#D92D20">
+                {otpErrorMessage}
+              </ThemeText>
+            )}
 
             <View style={styles.resendContainer}>
               <ThemeText variant="caption" color={theme.colors.subText} style={styles.resendText}>

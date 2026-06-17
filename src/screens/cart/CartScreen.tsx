@@ -45,6 +45,7 @@ import { Order } from '../../types/order';
 import { Product } from '../../types/product';
 import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
 import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
+import LoginPromptModal from '../../components/common/LoginPromptModal';
 import PaymentScreen from './PaymentScreen';
 
 import {
@@ -109,6 +110,7 @@ const CartScreen: React.FC = () => {
     visible: boolean;
     message: string;
   }>({ visible: false, message: '' });
+  const [showLoginPromptModal, setShowLoginPromptModal] = React.useState(false);
 
   // Theme
   const { getColor } = useTheme();
@@ -249,8 +251,8 @@ const CartScreen: React.FC = () => {
 
   // Memoized event handlers
   const handleClearCart = useCallback(() => {
-    if (cart && authData?.jwt) {
-      clearCart(cart.cartId, authData.jwt, authData.phone || '');
+    if (cart) {
+      clearCart(cart.cartId, authData?.jwt || '', authData?.phone || '');
       if (navigation.canGoBack()) {
         navigation.goBack();
       } else {
@@ -261,8 +263,8 @@ const CartScreen: React.FC = () => {
 
   const handleInc = useCallback(
     (sku: string) => {
-      if (cart && authData?.jwt) {
-        increment(cart.cartId, sku, authData.jwt, authData.phone || '');
+      if (cart) {
+        increment(cart.cartId, sku, authData?.jwt || '', authData?.phone || '');
       }
     },
     [cart, authData?.jwt, authData?.phone, increment]
@@ -270,8 +272,8 @@ const CartScreen: React.FC = () => {
 
   const handleDec = useCallback(
     (sku: string) => {
-      if (cart && authData?.jwt) {
-        decrement(cart.cartId, sku, authData.jwt, authData.phone || '');
+      if (cart) {
+        decrement(cart.cartId, sku, authData?.jwt || '', authData?.phone || '');
       }
     },
     [cart, authData?.jwt, authData?.phone, decrement]
@@ -438,9 +440,12 @@ const CartScreen: React.FC = () => {
   };
 
   const handleCheckout = useCallback(async () => {
-    // const shouldShowCompulsoryModal =
-    //   !permissionDataInAuth?.permission ||
-    //   (selectedAddress && selectedAddress.isSavedAddress === false);
+    // Gate guest users at checkout — require login before payment
+    if (!authData?.jwt) {
+      setShowLoginPromptModal(true);
+      return;
+    }
+
     const shouldShowCompulsoryModal = !selectedSmartBizAddress;
 
     if (shouldShowCompulsoryModal) {
@@ -459,6 +464,28 @@ const CartScreen: React.FC = () => {
     if (!selectedPaymentOption || selectedPaymentOption.trim() === '') {
       setShowPaymentModal(true);
       return;
+    }
+
+    // Prevent checkout if store is closed (time-based or manually)
+    if (vendor) {
+      const storeStatus = isStoreOpen({
+        openingTime: vendor.openingTime,
+        closingTime: vendor.closingTime,
+        storeActive: vendor.storeActive,
+      });
+
+      if (!storeStatus.isOpen) {
+        const isTimeBased = vendor.storeActive !== false && storeStatus.nextOpeningTime;
+        const opensAtText = isTimeBased
+          ? ` Opens at ${formatTimeToAMPM(storeStatus.nextOpeningTime!)}.`
+          : '';
+
+        setStoreClosedModal({
+          visible: true,
+          message: `The store is closed at the moment.${opensAtText} Please try again later.`,
+        });
+        return;
+      }
     }
 
     // Validate required data
@@ -955,6 +982,7 @@ const CartScreen: React.FC = () => {
         onCheckout={handleCheckout}
         disabled={isCheckoutDisabled}
         loading={isOrderLoading}
+        isGuest={!authData?.jwt}
       />
 
       {/* SmartBiz Address Selection Button */}
@@ -1077,6 +1105,13 @@ const CartScreen: React.FC = () => {
           </View>
         </SafeAreaView>
       </Modal>
+
+      <LoginPromptModal
+        visible={showLoginPromptModal}
+        onClose={() => setShowLoginPromptModal(false)}
+        title="Login to Place Order"
+        message="Please login to continue with payment and place your order."
+      />
 
       {/* Store Closed Modal */}
       <Modal

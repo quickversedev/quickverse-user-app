@@ -172,8 +172,14 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
     },
   });
 
-  const { isLoading, isGranted, isDenied, requestLocationPermission, getCurrentLocation } =
-    useLocation();
+  const {
+    isLoading,
+    isGranted,
+    isDenied,
+    requestLocationPermission,
+    getCurrentLocation,
+    skipLocationPermission,
+  } = useLocation();
 
   useEffect(() => {
     if (!isLoading && !isDenied) {
@@ -208,9 +214,16 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
   }
   const promptLocationRequired = () => {
     Alert.alert(
-      'Location access required',
-      'We need your location to show nearby stores and deliver your orders. Please enable location permission to continue.',
+      'Location access denied',
+      'Without location access, we\'ll use a default location (Beed, Maharashtra). You can change your location anytime from the home screen.',
       [
+        {
+          text: 'Use Default Location',
+          onPress: () => {
+            skipLocationPermission();
+            onPermissionsComplete();
+          },
+        },
         { text: 'Retry', onPress: () => requestLocationPermission() },
         {
           text: 'Open Settings',
@@ -218,7 +231,6 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
             Linking.openSettings().catch(err => console.warn('Cannot open settings:', err)),
         },
       ],
-      { cancelable: false }
     );
   };
   // `handlePermissionRef` kept above `promptLocationRequired` is intentional —
@@ -296,6 +308,15 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionsComp
           </View>
           <TouchableOpacity style={styles.permissionButton} onPress={handlePermission}>
             <Text style={styles.permissionButtonText}>Grant Permissions</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ alignSelf: 'center', marginTop: 12, paddingVertical: 8 }}
+            onPress={() => {
+              skipLocationPermission();
+              onPermissionsComplete();
+            }}
+          >
+            <Text style={[styles.skipText, { textDecorationLine: 'underline' }]}>Skip for now</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

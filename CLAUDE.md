@@ -40,12 +40,13 @@ cd android && ./gradlew bundleRelease     # Release AAB (Play Store)
 
 ### Core Tech
 
-- **Framework:** React Native (bare workflow), TypeScript
-- **State:** Zustand with MMKV persistence (all stores persist to encrypted storage)
+- **Framework:** React Native 0.84 (bare workflow), TypeScript strict
+- **State:** Zustand with MMKV persistence (custom adapter in `src/services/localStorage/storage.service.ts`)
 - **Navigation:** React Navigation 7.x (native stack + bottom tabs)
 - **HTTP:** Axios with centralized config in `src/config/api/axios.config.ts`
 - **Notifications:** Firebase Messaging + Notifee
-- **Maps:** React Native Maps + Ola Maps (geocoding)
+- **Maps:** React Native Maps + Ola Maps (geocoding via `src/services/api/olaLocationService.ts`)
+- **SVGs:** Imported as React components via `react-native-svg-transformer` (configured in metro.config.js)
 
 ### Project Structure
 
@@ -54,69 +55,82 @@ src/
 ├── screens/        # UI screens organized by feature
 ├── components/     # common/ (shared UI), modules/ (Cart, Header, Product, Vendor)
 ├── store/          # Zustand stores (cart/, address/, products/, pages/, config, theme, vendor)
-├── services/       # API services + localStorage/MMKV wrapper
+├── services/       # API services (api/) + localStorage/MMKV wrapper
 ├── hooks/          # Custom hooks (+ Permissions/ subdirectory)
 ├── contexts/       # AuthProvider (login/JWT), TabContext (tab state)
 ├── navigation/     # Navigation config (HomeStack, TabNavigation, LoginNavigation)
-├── routes/         # Stack/tab route definitions
+├── routes/         # Route.tsx (root), AuthStack, AppStack
 ├── types/          # TypeScript interfaces
-├── config/         # Axios config
+├── config/         # Axios config + types
 ├── theme/          # ThemeContext & theme logic
-├── assets/         # Images, SVGs, fonts, themes
+├── assets/         # Images, SVGs, fonts, theme definitions
 └── utils/          # Utility functions
+```
+
+### App Startup Flow
+
+```
+App.tsx providers (GestureHandler → Tab → SafeArea → Theme → Navigation → Auth)
+└── Route.tsx (auth check)
+    ├── AuthStack (LoginScreen → OTP → Registration) — if not authenticated
+    └── ForceUpdateChecker
+        └── AppBootstrap
+            ├── PermissionsScreen (location grant — shown first)
+            ├── Registration (new users — after permissions)
+            └── AppInitializer (fetches config/theme/pricing) + AppStack
 ```
 
 ### Navigation Structure
 
 ```
-Route.tsx (auth check)
-├── LoginStack (loginScreen -> OTP -> Registration)
-└── AppStack
-    ├── TabNavigation
-    │   ├── HomeStack (HomeMain, Category)
-    │   ├── ExploreScreen
-    │   └── CartScreen (with badge)
-    ├── VendorProduct, VendorDetails, VendorProfile
-    ├── Cart, Coupons
-    ├── Orders, OrderDetails, OrderSuccess, OrderFailure
-    ├── Search
-    ├── Profile, Address, AddAddress (slide-up), HelpDesk, AboutUs
-    ├── CollectionDetail
-    └── Category
+AppStack
+├── TabNavigation
+│   ├── HomeStack (HomeMain, Category)
+│   ├── ExploreScreen
+│   └── CartScreen (with badge)
+├── VendorProduct, VendorDetails, VendorProfile
+├── Cart, Coupons
+├── Orders, OrderDetails, OrderSuccess, OrderFailure
+├── Search
+├── Profile, Address, AddAddress (slide-up), HelpDesk, AboutUs
+├── CollectionDetail
+└── Category
 ```
 
 ### API Configuration
 
-- **Base URL:** configured via `API_URL` env var (see `.env`)
-- **Auth header:** `SessionKey: <jwt_token>` (added per-request, not in default headers)
-- **Request header:** `Request-Origin: CUSTOMER`
+- **Base URL:** Hardcoded in `axios.config.ts` (`API_CONFIG.baseURL`). Switch by commenting/uncommenting production vs local URLs there.
+- **Default headers:** `Content-Type: application/json`, `Request-Origin: CUSTOMER`
+- **Auth:** `Authorization: Basic <AUTHORIZATION_KEY>` added via `getAuthHeader()`. Per-request auth uses `SessionKey: <jwt>` header.
 - **Timeout:** 15 seconds
-- **Session expiry:** Error codes 1047/1042 trigger auto-logout via AuthProvider
+- **Session expiry:** Error codes 1047/1042 trigger auto-logout via `setSessionExpiredCallback` in axios config
 - **Error normalization:** All axios errors are converted to `ApiError` format (`status`, `message`, `code`, `isCancelled`, `apiEndpoint`)
 - **Per-request headers:** Use `withHeaders()` or `createRequestWithHeaders()` helpers — don't set defaults globally
 
 ### Authentication Flow
 
-1. Phone number -> `POST /v1/requestOtp`
-2. OTP -> `POST /v1/login` -> JWT
-3. New user -> `POST /v1/register/customer`
-4. JWT stored in MMKV, sent as `SessionKey` header per-request
-5. Session expiry (1047/1042) -> auto-logout via global `setSessionExpiredCallback` in axios config
+1. Phone number → `POST /v1/requestOtp`
+2. OTP → `POST /v1/login` → JWT
+3. New user → `POST /v1/register/customer`
+4. JWT stored in MMKV (`AuthSession` type), sent as `SessionKey` header per-request
+5. Session expiry (1047/1042) → auto-logout via global `setSessionExpiredCallback` in axios config
 6. Auth state managed in `src/contexts/login/AuthProvider.tsx`
 7. **Logout resets all stores atomically** — `resetAuthState()` in AuthProvider clears MMKV + resets every Zustand store via `setState()`
 
 ### Key Patterns
 
-- **Cart:** Multi-vendor carts keyed by `vendor_<shopId>`. Uses `latestRequestIdPerCart` for request deduplication to avoid stale responses. Optimistic UI updates with rollback on API error. Cart auto-removes when all products reach quantity 0.
-- **Store persistence:** Stores use Zustand `persist` middleware with a custom MMKV adapter from `src/services/localStorage/storage.service.ts`. Use `partialize` to persist only essential state (exclude `loading`, `error`, etc.).
+- **Cart:** Multi-vendor carts keyed by `vendor_<shopId>`. Uses `latestRequestIdPerCart` for request deduplication to avoid stale responses. Optimistic UI updates with rollback on API error. Cart auto-removes when all products reach quantity 0. Guest users get local-only carts (no API calls) — pass `authData?.jwt || ''` and `authData?.phone || ''`; never gate cart actions on `!authData?.jwt`.
+- **Store persistence:** Stores use Zustand `persist` middleware with the `mmkvStorage` adapter. Use `partialize` to persist only essential state (exclude `loading`, `error`, etc.).
 - **Cache expiry:** Some stores (e.g., `featuredProductsStore`) implement time-based cache expiry (5-minute TTL).
 - **Tax formula:** 18% GST on (commission + delivery + platform fees). Food: 10% commission, Grocery: 2%. Identical logic in `PaymentSummary.tsx` and `OrderDetailsScreen.tsx` — keep them in sync.
 - **API services:** Thin wrappers around the `apiCall()` helper in axios config. Some services (e.g., `cartApiService`) include response-to-local format transformation logic.
 - **Loading states:** Skeleton shimmer components in `src/components/common/skeleton/`
-- **Location:** Geolocation API + Ola Maps reverse geocoding, races GPS & network in parallel
-- **Search:** Local suggestions + API search (`v3/search`), recent searches persisted to MMKV
-- **Error handling:** Centralized in axios.config with ApiError interface, Toast on Android, Alert on iOS
-- **Theme:** Always use theme context for colors; avoid hardcoded values. Primary: #D97706 (amber).
+- **Location:** Geolocation API + Ola Maps reverse geocoding, races GPS & network in parallel. Default fallback is Beed, Maharashtra (`DEFAULT_FALLBACK_COORDINATES` in `src/constants/location.ts`). `checkLocationPermission()` returns a PermissionStatus string (e.g. `'granted'`), not boolean — compare with `!== 'granted'`, not `!status`.
+- **SmartBiz addresses:** Singleton `SmartBizAddressService` (`src/store/address/smartBizAddressStore.ts`) with per-vendor 5-minute in-memory cache. Call `clearCache(vendorId)` before fetching when fresh data is needed (e.g., after adding an address).
+- **Ola Maps limitation:** Reverse geocode `formatted_address` omits sublocality/locality — build display addresses from individual `address_components` fields. Pincode accuracy can differ from expected values; this is an upstream data issue.
+- **Search:** Local suggestions + API search (`v3/search`), recent searches persisted to MMKV (max 10)
+- **Error handling:** Centralized in axios.config with `ApiError` interface. Toast on Android, Alert on iOS.
+- **Theme:** Server-driven theme (fetched by `AppInitializer`) with `DefaultTheme` fallback. Always use `useTheme().getColor()` for colors — avoid hardcoded values. Primary: #D97706 (amber).
 
 ### Environment Variables
 
@@ -128,8 +142,9 @@ Restart Metro after `.env` changes: `npm start -- --reset-cache`
 
 - **`no-console`:** Only `console.warn` and `console.error` are allowed — `console.log` is an ESLint error.
 - **Unused vars:** Prefix with `_` to suppress the `no-unused-vars` error (e.g., `_unusedParam`).
-- **Prettier:** 100-char line width, single quotes, 2-space indent, no trailing commas in arrow parens.
+- **Prettier:** 100-char print width, single quotes, 2-space indent, trailing commas (es5), avoid parens on single-arg arrows.
 - **Lint-staged** (`.lintstagedrc.js`): Pre-commit hook runs `eslint --fix` + `prettier --write` on staged TS/JS files.
+- **Inline styles:** `react-native/no-inline-styles` is set to warn.
 
 ## Important Rules
 

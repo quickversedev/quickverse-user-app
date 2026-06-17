@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useTheme } from '../../../theme/ThemeContext';
-import { triggerAddToCartHaptic, triggerErrorHaptic } from '../../../utils/haptics';
-import LoginPromptModal from '../../common/LoginPromptModal';
+import { triggerAddToCartHaptic } from '../../../utils/haptics';
 import { ThemeText } from '../../common/theme/ThemeText';
 
 interface AddButtonProps {
@@ -23,8 +21,6 @@ const AddButton: React.FC<AddButtonProps> = ({
   disabled = false,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
-  const { authData } = useAuth();
-  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const hasMultipleVariants = numberOfVariants > 1;
   const shouldShowBadge = (size === 'small' || size === 'xs') && hasMultipleVariants;
@@ -34,13 +30,8 @@ const AddButton: React.FC<AddButtonProps> = ({
     if (disabled) {
       return;
     }
-    if (authData?.jwt) {
-      triggerAddToCartHaptic();
-      onPress();
-    } else {
-      triggerErrorHaptic();
-      setShowLoginModal(true);
-    }
+    triggerAddToCartHaptic();
+    onPress();
   };
 
   // Unified dimensions matching QuantitySelector
@@ -118,14 +109,6 @@ const AddButton: React.FC<AddButtonProps> = ({
     },
   });
 
-  const renderLoginModal = () => (
-    <LoginPromptModal
-      visible={showLoginModal}
-      onClose={() => setShowLoginModal(false)}
-      title="Login required"
-      message="Please log in to add items to your cart."
-    />
-  );
 
   // Small button with variants - show badge
   if (shouldShowBadge) {
@@ -140,7 +123,7 @@ const AddButton: React.FC<AddButtonProps> = ({
           </View>
         </TouchableOpacity>
 
-        {renderLoginModal()}
+
       </>
     );
   }
@@ -163,7 +146,7 @@ const AddButton: React.FC<AddButtonProps> = ({
           <View style={styles.divider} />
           <Text style={styles.variantsText}>{numberOfVariants} OPTIONS</Text>
         </TouchableOpacity>
-        {renderLoginModal()}
+
       </>
     );
   }
@@ -184,7 +167,6 @@ const AddButton: React.FC<AddButtonProps> = ({
         )}
       </TouchableOpacity>
 
-      {renderLoginModal()}
     </>
   );
 };

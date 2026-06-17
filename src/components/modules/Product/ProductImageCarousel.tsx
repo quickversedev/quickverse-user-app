@@ -1,6 +1,5 @@
 import React from 'react';
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '../../../theme/ThemeContext';
 // 80% of screen width, max 320px
 interface ProductImageCarouselProps {
@@ -129,10 +128,10 @@ const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
         ))}
       </View>
 
-      <TouchableOpacity style={styles.addToStacksButton} onPress={onAddToStacks}>
+      {/* <TouchableOpacity style={styles.addToStacksButton} onPress={onAddToStacks}>
         <MaterialCommunityIcons name="bookmark-outline" size={16} color={getColor('text')} />
         <Text style={styles.addToStacksText}>Add to Stacks</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 };

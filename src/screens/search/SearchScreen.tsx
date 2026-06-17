@@ -47,7 +47,9 @@ const SearchScreen: React.FC = () => {
   };
 
   // Get featured vendors from vendor store
-  const featuredVendors = getFeaturedVendors().slice(0, 6); // Show up to 6 featured vendors
+  const featuredVendors = getFeaturedVendors()
+    .filter(vendor => !restrictCategory || vendor.category === restrictCategory)
+    .slice(0, 6); // Show up to 6 featured vendors
 
   // Get nearby stores based on search query
   const nearbyStores = searchQuery.trim()
@@ -83,13 +85,7 @@ const SearchScreen: React.FC = () => {
     }
 
     return out;
-  }, [
-    searchResults.products,
-    searchQuery,
-    getVendorById,
-    searchVendorsByQuery,
-    restrictCategory,
-  ]);
+  }, [searchResults.products, searchQuery, getVendorById, searchVendorsByQuery, restrictCategory]);
 
   const styles = StyleSheet.create({
     container: {
@@ -99,7 +95,7 @@ const SearchScreen: React.FC = () => {
     trendingVendorsGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'space-between',
+      // justifyContent: 'space-between',
       gap: 4,
       paddingHorizontal: 16,
       paddingVertical: 16,

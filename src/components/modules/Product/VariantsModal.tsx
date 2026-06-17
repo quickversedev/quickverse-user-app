@@ -69,7 +69,6 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
   };
 
   const handleAddToCart = (variant: Product) => {
-    if (!authData?.jwt) return;
     addToCart(
       cartId,
       {
@@ -81,19 +80,17 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
         image: product.imageUrl || '',
         veg: product.veg,
       },
-      authData.jwt,
-      authData.phone
+      authData?.jwt || '',
+      authData?.phone || ''
     );
   };
 
   const handleIncrement = (variantId: string) => {
-    if (!authData?.jwt) return;
-    increment(cartId, variantId, authData.jwt, authData.phone);
+    increment(cartId, variantId, authData?.jwt || '', authData?.phone || '');
   };
 
   const handleDecrement = (variantId: string) => {
-    if (!authData?.jwt) return;
-    decrement(cartId, variantId, authData.jwt, authData.phone);
+    decrement(cartId, variantId, authData?.jwt || '', authData?.phone || '');
   };
 
   const getVariantQuantity = (variantId: string) => {

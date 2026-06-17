@@ -1,8 +1,16 @@
+import Feather from '@react-native-vector-icons/feather';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Dimensions,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Feather from '@react-native-vector-icons/feather';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import SectionDivider from '../../components/common/SectionDivider';
 import CollectionShowcaseWidget from '../../components/modules/Collection/CollectionShowcaseWidget';
@@ -18,6 +26,9 @@ import CollectionsGrid from './components/CollectionsGrid';
 import CollectionsGridSkeleton from './components/CollectionsGridSkeleton';
 
 type CategoryScreenRouteProp = RouteProp<RootStackParamList, 'Category'>;
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SHOWCASE_CARD_WIDTH = SCREEN_WIDTH * 0.85;
 
 const CategoryScreen = () => {
   const navigation = useNavigation<any>();
@@ -41,15 +52,18 @@ const CategoryScreen = () => {
   // the first grocery vendor if 94728 isn't in the list.
   const showcaseVendors = React.useMemo(() => {
     if (!isGrocery) return categoryVendors;
-    const preferred = categoryVendors.find(v => String(v.shopId) === '94728');
-    if (preferred) return [preferred];
-    return categoryVendors.slice(0, 1);
+    console.log(categoryVendors);
+    // const preferred = categoryVendors.find(v => String(v.shopId) === '94728');
+    // if (preferred) return [preferred];
+    return categoryVendors.filter(v => v.shopId !== '68246').reverse();
   }, [isGrocery, categoryVendors]);
 
   // Cart Logic
   // Collections Logic (Grocery Only)
   const [collections, setCollections] = useState<Collection[]>([]);
   const [collectionsLoading, setCollectionsLoading] = useState(false);
+
+  const isCollectionAvailable = vendors.some(vendor => vendor.shopId === '68246');
 
   useEffect(() => {
     const loadCollections = async () => {
@@ -137,17 +151,29 @@ const CategoryScreen = () => {
       {/* Conditional Content if Vendors Exist */}
       {!hasNoVendors && (
         <>
-          {/* Collection Showcase Widgets (Grocery vendors) */}
-          {isGrocery &&
-            showcaseVendors.map(v => (
-              <View key={v.shopId} style={styles.showcaseWrapper}>
-                <CollectionShowcaseWidget vendor={v} onPressExplore={() => handleVendorPress(v)} />
-              </View>
-            ))}
+          {/* Collection Showcase Widgets (Grocery vendors) — horizontal scroll */}
+          {isGrocery && showcaseVendors.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={SHOWCASE_CARD_WIDTH + 12}
+              decelerationRate="fast"
+              contentContainerStyle={styles.showcaseList}
+            >
+              {showcaseVendors.map(v => (
+                <View key={v.shopId} style={styles.showcaseCard}>
+                  <CollectionShowcaseWidget
+                    vendor={v}
+                    onPressExplore={() => handleVendorPress(v)}
+                  />
+                </View>
+              ))}
+            </ScrollView>
+          )}
 
           {/* Collections Grid (Grocery Only) */}
-          {isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
-          {isGrocery && !collectionsLoading && collections.length > 0 && (
+          {isCollectionAvailable && isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
+          {isCollectionAvailable && isGrocery && !collectionsLoading && collections.length > 0 && (
             <CollectionsGrid collections={collections} shopId={API_STORE_ID} />
           )}
 
@@ -278,10 +304,14 @@ const styles = StyleSheet.create({
   promoContainer: {
     // marginBottom: 24,
   },
-  showcaseWrapper: {
-    paddingHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 8,
+  showcaseList: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignItems: 'stretch',
+  },
+  showcaseCard: {
+    width: SHOWCASE_CARD_WIDTH,
+    marginRight: 12,
   },
   horizontalList: {
     paddingLeft: 20,

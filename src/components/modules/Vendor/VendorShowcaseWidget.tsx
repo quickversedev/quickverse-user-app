@@ -20,7 +20,6 @@ import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
 import { triggerAddToCartHaptic } from '../../../utils/haptics';
 import { formatTimeToAMPM, getStoreStatus } from '../../../utils/storeUtils';
-import LoginPromptModal from '../../common/LoginPromptModal';
 import { ThemeText } from '../../common/theme/ThemeText';
 
 interface CategoryItem {
@@ -391,8 +390,6 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   // Cart Integration
   const { addToCart, increment, decrement, carts, setActiveCart } = useCartStore();
   const { authData } = useAuth();
-  const hasAuth = React.useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const storeStatus = React.useMemo(() => getStoreStatus(vendor), [vendor]);
   const isStoreActive = React.useMemo(() => storeStatus.isOpen, [storeStatus.isOpen]);
 
@@ -458,12 +455,7 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   const handleAddToCart = useCallback(
     (product: Product) => {
       if (!isStoreActive || !product.inStock) return;
-      if (!hasAuth) {
-        setShowLoginModal(true);
-        return;
-      }
 
-      // Ensure active cart is set
       setActiveCart(cartId);
 
       addToCart(
@@ -477,35 +469,27 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
           image: product.imageUrl || '',
           veg: product.veg,
         },
-        authData!.jwt,
-        authData!.phone
+        authData?.jwt || '',
+        authData?.phone || ''
       );
     },
-    [isStoreActive, hasAuth, cartId, vendor.shopId, addToCart, setActiveCart, authData]
+    [isStoreActive, cartId, vendor.shopId, addToCart, setActiveCart, authData]
   );
 
   const handleIncrement = useCallback(
     (sku: string) => {
       if (!isStoreActive) return;
-      if (!hasAuth) {
-        setShowLoginModal(true);
-        return;
-      }
-      increment(cartId, sku, authData!.jwt, authData!.phone);
+      increment(cartId, sku, authData?.jwt || '', authData?.phone || '');
     },
-    [isStoreActive, hasAuth, cartId, increment, authData]
+    [isStoreActive, cartId, increment, authData]
   );
 
   const handleDecrement = useCallback(
     (sku: string) => {
       if (!isStoreActive) return;
-      if (!hasAuth) {
-        setShowLoginModal(true);
-        return;
-      }
-      decrement(cartId, sku, authData!.jwt, authData!.phone);
+      decrement(cartId, sku, authData?.jwt || '', authData?.phone || '');
     },
-    [isStoreActive, hasAuth, cartId, decrement, authData]
+    [isStoreActive, cartId, decrement, authData]
   );
 
   const getProductQuantity = useCallback(
@@ -674,12 +658,6 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
         </View>
       )}
 
-      <LoginPromptModal
-        visible={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        title="Login required"
-        message="Please log in to add items to your cart."
-      />
     </View>
   );
 };

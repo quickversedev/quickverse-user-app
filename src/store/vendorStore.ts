@@ -46,7 +46,6 @@ const sortVendorsByActiveStatus = (vendors: Vendor[]): Vendor[] => {
   });
 };
 
-
 const useVendorStore = create<VendorStore>((set, get) => ({
   // Initial state
   vendors: [],
