@@ -18,10 +18,11 @@ const normalizeStatus = (state?: string): Order['status'] => {
     case 'accepted':
       return 'confirmed';
     case 'shipped':
-      return 'shipped';
+      return 'shipping';
     case 'packed':
       return 'ready';
     case 'completed':
+    case 'delivered':
       return 'delivered';
     case 'cancelled':
     case 'rejected':
@@ -148,7 +149,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
           case 'accepted':
             return 'confirmed';
           case 'shipped':
-            return 'shipped';
+            return 'shipping';
           case 'packed':
             return 'ready';
           case 'completed':
@@ -260,6 +261,9 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         )
       );
 
+      console.warn('fetchOrderById response:', JSON.stringify(apiOrder, null, 2));
+      console.warn('fetchOrderById status:', apiOrder.state, 'orderMasterStatus:', apiOrder.orderMasterStatus);
+
       // Map the API response to our Order type
       const mappedOrder: Order = {
         orderId: String(apiOrder.orderId || orderId),
@@ -279,7 +283,15 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         totalInvoiceAmount: Number(apiOrder.totalOrderAmount || 0),
         deliveryFees: Number(apiOrder.deliveryFees || 0),
         additionalPaymentCharges: Number(apiOrder.additionalPaymentCharges || 0),
-        status: normalizeStatus(apiOrder.state),
+        status: (() => {
+          const s = String(apiOrder.state || '').toLowerCase();
+          const earlyStates = ['open', 'pending', 'accepted', 'shipped', 'cancelled', 'rejected'];
+          if (earlyStates.includes(s)) {
+            return normalizeStatus(apiOrder.state);
+          }
+          return normalizeStatus(apiOrder.orderMasterStatus || apiOrder.state);
+        })(),
+        orderMasterStatus: apiOrder.orderMasterStatus || undefined,
         orderDate:
           typeof apiOrder.creationTime === 'string' && /\D/.test(apiOrder.creationTime)
             ? new Date(apiOrder.creationTime).toISOString()

@@ -31,6 +31,7 @@ const statusLabel: Record<string, string> = {
   confirmed: 'Confirmed',
   ready: 'Ready for dispatch',
   shipped: 'On the way',
+  shipping: 'On the way',
 };
 
 // Pulsing dot component for live indicator

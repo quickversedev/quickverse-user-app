@@ -31,6 +31,7 @@ const getActiveStepIndex = (status: Order['status']): number => {
       return 1;
     case 'ready':
     case 'shipped':
+    case 'shipping':
       return 2;
     case 'delivered':
       return 3;

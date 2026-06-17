@@ -1065,6 +1065,7 @@ const ORDER_STATUS_COLORS: Record<string, { background: string; text: string }> 
   processing: { background: '#42A5F5', text: '#FFFFFF' },
   confirmed: { background: '#2196F3', text: '#FFFFFF' },
   shipped: { background: '#7E57C2', text: '#FFFFFF' },
+  shipping: { background: '#7E57C2', text: '#FFFFFF' },
   ready: { background: '#26A69A', text: '#FFFFFF' },
   delivered: { background: '#66BB6A', text: '#FFFFFF' },
   cancelled: { background: '#EF5350', text: '#FFFFFF' },

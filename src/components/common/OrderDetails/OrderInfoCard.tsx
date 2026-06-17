@@ -67,6 +67,11 @@ const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, getStatusColor, ac
               {order.status === 'delivered' ? 'DELIVERED' : order.status.toUpperCase()}
             </Text>
           </View>
+          {order.orderMasterStatus && (
+            <Text style={[styles.masterStatusText, { color: getColor('subText') }]}>
+              {order.orderMasterStatus.replace(/_/g, ' ')}
+            </Text>
+          )}
         </View>
       </View>
 
@@ -182,6 +187,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  masterStatusText: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 4,
+    textAlign: 'right',
   },
   contactRow: {
     flexDirection: 'row',
