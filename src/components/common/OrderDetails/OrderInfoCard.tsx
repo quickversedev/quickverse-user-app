@@ -6,11 +6,10 @@ import { Order } from '../../../types/order';
 
 interface OrderInfoCardProps {
   order: Order;
-  getStatusColor: (status: string) => string;
   actionButton?: React.ReactNode;
 }
 
-const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, getStatusColor, actionButton }) => {
+const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, actionButton }) => {
   const { getColor } = useTheme();
 
   return (
@@ -39,7 +38,7 @@ const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, getStatusColor, ac
         {actionButton && <View style={styles.actionButtonContainer}>{actionButton}</View>}
       </View>
 
-      {/* Delivery Details and Status */}
+      {/* Delivery Details */}
       <View style={styles.deliveryStatusRow}>
         <View style={styles.deliveryDetails}>
           <Text style={[styles.deliveryDate, { color: getColor('text') }]}>
@@ -58,18 +57,6 @@ const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, getStatusColor, ac
           {order.actualDeliveryTime && (
             <Text style={[styles.deliveryAgent, { color: getColor('subText') }]}>
               By {order.customerName}
-            </Text>
-          )}
-        </View>
-        <View style={styles.rightSection}>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}>
-            <Text style={styles.statusText}>
-              {order.status === 'delivered' ? 'DELIVERED' : order.status.toUpperCase()}
-            </Text>
-          </View>
-          {order.orderMasterStatus && (
-            <Text style={[styles.masterStatusText, { color: getColor('subText') }]}>
-              {order.orderMasterStatus.replace(/_/g, ' ')}
             </Text>
           )}
         </View>
@@ -145,19 +132,6 @@ const styles = StyleSheet.create({
   locationCity: {
     fontSize: 12,
   },
-  rightSection: {
-    alignItems: 'flex-end',
-  },
-  connectingLine: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginLeft: 12,
-  },
-  dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-  },
   deliveryStatusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -174,25 +148,6 @@ const styles = StyleSheet.create({
   },
   deliveryAgent: {
     fontSize: 12,
-  },
-  statusBadge: {
-    alignSelf: 'flex-end',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  masterStatusText: {
-    fontSize: 11,
-    fontWeight: '500',
-    marginTop: 4,
-    textAlign: 'right',
   },
   contactRow: {
     flexDirection: 'row',

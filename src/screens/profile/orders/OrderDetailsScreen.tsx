@@ -486,24 +486,6 @@ const OrderDetailsScreen = () => {
     // //console.log('Get help pressed');
   }, []);
 
-  const getStatusColor = useCallback((status: string) => {
-    switch (status) {
-      case 'delivered':
-        return '#4CAF50';
-      case 'cancelled':
-        return '#F44336';
-      case 'pending':
-        return '#FF9800';
-      case 'confirmed':
-        return '#2196F3';
-      case 'preparing':
-        return '#9C27B0';
-      case 'ready':
-        return '#00BCD4';
-      default:
-        return '#666666';
-    }
-  }, []);
 
   // Types to avoid 'any' and map API shape safely
   type DerivedItem = { id: string; name: string; quantity: number; price: number; image?: string };
@@ -673,7 +655,6 @@ const OrderDetailsScreen = () => {
         >
           <OrderInfoCard
             order={selectedOrder}
-            getStatusColor={getStatusColor}
             actionButton={
               selectedOrder.status === 'payment_pending' ? (
                 <View style={styles.actionButtonContainer}>
@@ -723,14 +704,14 @@ const OrderDetailsScreen = () => {
             }
           />
 
-          {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (
-            <OrderProgress
-              status={selectedOrder.status}
-              orderCreationTime={selectedOrder.orderDate}
-              category={vendorDetails?.category}
-              preparationTime={vendorDetails?.preparationTime}
-            />
-          )}
+          <OrderProgress
+            status={selectedOrder.status}
+            orderCreationTime={selectedOrder.orderDate}
+            category={vendorDetails?.category}
+            preparationTime={vendorDetails?.preparationTime}
+            orderMasterStatus={selectedOrder.orderMasterStatus}
+            orderDate={selectedOrder.orderDate}
+          />
 
           {/* Shop Details Section */}
           <SectionDivider text="Shop Details" />
