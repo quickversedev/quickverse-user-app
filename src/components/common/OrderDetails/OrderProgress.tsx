@@ -19,7 +19,7 @@ const DELAY_MESSAGES = [
   { text: 'On its way soon!', icon: 'map-marker-path' },
 ];
 
-const STEPS = ['Order Placed', 'Accepted', 'Picked Up', 'Delivered'] as const;
+const STEPS = ['Order Placed', 'Accepted', 'Shipping', 'Delivered'] as const;
 
 const getActiveStepIndex = (status: Order['status']): number => {
   console.log(status);
