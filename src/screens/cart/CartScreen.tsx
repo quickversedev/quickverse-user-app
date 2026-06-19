@@ -12,8 +12,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import RazorpayCheckout from 'react-native-razorpay';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AnimatedCard from '../../components/common/AnimatedCard';
+import LoginPromptModal from '../../components/common/LoginPromptModal';
 import {
   CartFooter,
   CartHeader,
@@ -45,7 +47,6 @@ import { Order } from '../../types/order';
 import { Product } from '../../types/product';
 import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
 import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
-import LoginPromptModal from '../../components/common/LoginPromptModal';
 import PaymentScreen from './PaymentScreen';
 
 import {
@@ -439,6 +440,66 @@ const CartScreen: React.FC = () => {
     }
   };
 
+  const handleRazorpayPayment = async (
+    orderResponse: OrderResponse,
+    calculatedTotal: number,
+    vendor: Vendor
+  ) => {
+    try {
+      const RAZORPAY_KEY_ID = 'rzp_test_T2Z6i6Go29OJwg';
+
+      const options = {
+        description: 'QuickVerse Order Payment',
+        currency: 'INR',
+        key: RAZORPAY_KEY_ID,
+        amount: '50000',
+        name: 'QuickVerse India Private Limited',
+        method: {
+          upi: true,
+          card: false,
+          netbanking: false,
+          wallet: false,
+          emi: false,
+          paylater: false,
+        },
+        prefill: {
+          email: '',
+          contact: '+919876543210',
+          name: 'Gaurav Kumar',
+        },
+        // theme: {
+        //   color: '#53a20e',
+        // },
+      };
+
+      const response = await RazorpayCheckout.open(options);
+      console.log('Razorpay Payment Success : ', response);
+
+      setIsOrderLoading(true);
+
+      // const orderStatusResponse: any = await orderService.getOrderStatus(
+      //   orderResponse.order_id,
+      //   authData?.jwt || ''
+      // );
+
+      // if (orderStatusResponse.orderId && orderStatusResponse.paymentStatus === 'PAID') {
+      //   navigation.navigate('OrderSuccess', {
+      //     orderId: orderStatusResponse.orderId,
+      //     amount: calculatedTotal,
+      //     date: new Date().toLocaleDateString(),
+      //     shopId: vendor.shopId,
+      //   });
+
+      //   if (cart && authData?.jwt && authData?.phone) {
+      //     await clearCart(cart.cartId, authData.jwt, authData.phone);
+      //   }
+      //   setIsOrderLoading(false);
+      // }
+    } catch (error) {
+      console.log('Razorpay Payment Failed : ', error);
+    }
+  };
+
   const handleCheckout = useCallback(async () => {
     // Gate guest users at checkout — require login before payment
     if (!authData?.jwt) {
@@ -533,16 +594,18 @@ const CartScreen: React.FC = () => {
         orderAmount: calculatedTotal,
       };
 
-      const orderResponse = await orderService.createOrder(
-        orderRequest,
-        authData.jwt,
-        authData.phone
-      );
+      // const orderResponse = await orderService.createOrder(
+      //   orderRequest,
+      //   authData.jwt,
+      //   authData.phone
+      // );
 
-      console.log('Order Response : ', orderResponse);
+      // console.log('Order Response : ', orderResponse);
+      const orderResponse: any = null;
 
       if (selectedPaymentOption === 'prepaid') {
-        handleCashFreePayment(orderResponse, calculatedTotal, vendor);
+        // handleCashFreePayment(orderResponse, calculatedTotal, vendor);
+        handleRazorpayPayment(orderResponse, calculatedTotal, vendor);
       } else {
         if (cart && authData?.jwt && authData?.phone) {
           await clearCart(cart.cartId, authData.jwt, authData.phone);

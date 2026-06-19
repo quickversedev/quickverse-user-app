@@ -56,11 +56,11 @@ const showToast = (message: string) => {
  */
 export const API_CONFIG = {
   /** Base URL for the QuickVerse API server */
-  // baseURL: 'http://prd.quickverse.in/quickVerse',
+  baseURL: 'http://prd.quickverse.in/quickVerse',
   // Local: Use your machine IP for physical device, or 10.0.2.2 for Android emulator
   // baseURL: 'http://10.0.2.2:8080/quickVerse',
   // baseURL: 'https://73c5-2401-4900-c254-82c4-8907-619a-bb73-7338.ngrok-free.app/quickVerse',
-  baseURL: 'https://superscientifically-revengeless-ronald.ngrok-free.dev/quickVerse',
+  // baseURL: 'https://superscientifically-revengeless-ronald.ngrok-free.dev/quickVerse',
 
   /** Default timeout for all requests (15 seconds) */
   timeout: 15000,
