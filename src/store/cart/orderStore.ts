@@ -21,6 +21,7 @@ const normalizeStatus = (state?: string): Order['status'] => {
     case 'partner_assigned':
     case 'reached_location':
     case 'out_for_delivery':
+    case 'order_picked_up':
       return 'shipping';
     case 'packed':
       return 'ready';
@@ -168,10 +169,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
           totalInvoiceAmount: Number(m.totalInvoiceAmount ?? 0),
           status: (() => {
             const s = String(m.state || '').toLowerCase();
-            const earlyStates = ['open', 'pending', 'accepted', 'cancelled', 'rejected'];
-            if (earlyStates.includes(s)) {
-              return normalizeStatus(m.state);
-            }
+            if (s === 'cancelled' || s === 'rejected') return normalizeStatus(m.state);
             return normalizeStatus(m.orderMasterStatus || m.state);
           })(),
           orderMasterStatus: m.orderMasterStatus || undefined,
@@ -289,10 +287,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         additionalPaymentCharges: Number(apiOrder.additionalPaymentCharges || 0),
         status: (() => {
           const s = String(apiOrder.state || '').toLowerCase();
-          const earlyStates = ['open', 'pending', 'accepted', 'cancelled', 'rejected'];
-          if (earlyStates.includes(s)) {
-            return normalizeStatus(apiOrder.state);
-          }
+          if (s === 'cancelled' || s === 'rejected') return normalizeStatus(apiOrder.state);
           return normalizeStatus(apiOrder.orderMasterStatus || apiOrder.state);
         })(),
         orderMasterStatus: apiOrder.orderMasterStatus || undefined,
@@ -355,8 +350,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
             )
           );
           const s = String(apiOrder.state || '').toLowerCase();
-          const earlyStates = ['open', 'pending', 'accepted', 'cancelled', 'rejected'];
-          const status = earlyStates.includes(s)
+          const status = (s === 'cancelled' || s === 'rejected')
             ? normalizeStatus(apiOrder.state)
             : normalizeStatus(apiOrder.orderMasterStatus || apiOrder.state);
           return { orderId: order.orderId, status, orderMasterStatus: apiOrder.orderMasterStatus };

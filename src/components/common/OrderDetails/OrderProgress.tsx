@@ -263,7 +263,7 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
                     </Text>
                   )}
                 </View>
-                {isActive && orderMasterStatus && (
+                {isActive && step.key === 'shipping' && orderMasterStatus && (
                   <Text style={[styles.masterStatusText, { color: activeColor }]}>
                     {orderMasterStatus.replace(/_/g, ' ')}
                   </Text>
