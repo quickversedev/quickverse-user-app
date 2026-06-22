@@ -119,6 +119,8 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
       const phone = authData?.phone || '';
       if (!jwt || !phone) return;
 
+      setStatusesVerified(false);
+
       const refresh = () =>
         refreshInProgressStatuses(jwt, phone)
           .then(() => setStatusesVerified(true))
