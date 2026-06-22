@@ -30,7 +30,9 @@ export const useAddress = () => {
 
   const handleAddAddress = useCallback(
     async (newAddress: NewAddress) => {
+      console.log('Adding address:', newAddress);
       const result = await addAddress(newAddress, authData as AuthSession);
+      console.log('Add address result:', result);
       return result;
     },
     [addAddress, authData]
@@ -85,7 +87,7 @@ export const useAddress = () => {
       loadAddressesFromStorage,
       // Computed values
       hasAddresses: addresses.length > 0,
-      defaultAddress: addresses.find(addr => addr.isDefaultAddress) || addresses[0]
+      defaultAddress: addresses.find(addr => addr.isDefaultAddress) || addresses[0],
     }),
     [
       addresses,
