@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
-  Image,
   Keyboard,
   Platform,
   ScrollView,
@@ -17,8 +16,8 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { Images } from '../../../../assets';
 import SectionDivider from '../../../../components/common/SectionDivider';
+import MapOnboardingOverlay from './MapOnboardingOverlay';
 import { useLocation } from '../../../../hooks/Permissions/useLocation';
 import {
   getAddressFromCoordinates,
@@ -61,6 +60,8 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     longitudeDelta: 0.01,
   });
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [onboardingStep, setOnboardingStep] = useState<1 | 2>(1);
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const [selectedAddressDescription, setSelectedAddressDescription] = useState<AddressComponents>({
     country: '',
     state: '',
@@ -240,16 +241,6 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     }
   };
 
-  // Check if selected location is the same as current location
-  const isCurrentLocationSelected = () => {
-    if (!selectedLocation || !currentLocation.latitude || !currentLocation.longitude) {
-      return false;
-    }
-    const latDiff = Math.abs(selectedLocation.latitude - currentLocation.latitude);
-    const lngDiff = Math.abs(selectedLocation.longitude - currentLocation.longitude);
-    return latDiff < 0.0001 && lngDiff < 0.0001; // Very small threshold for comparison
-  };
-
   // Theme-driven styles
   const themedStyles = StyleSheet.create({
     outerContainer: {
@@ -272,12 +263,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       pointerEvents: 'none',
     },
     centerPinOffset: {
-      marginTop: -PIN_SIZE / 2,
-    },
-    centerPin: {
-      width: PIN_SIZE,
-      height: PIN_SIZE,
-      resizeMode: 'contain',
+      marginTop: -PIN_SIZE,
     },
     searchBarContainer: {
       position: 'absolute',
@@ -554,30 +540,22 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                     title="Current Location"
                     description="Your current location"
                     anchor={{ x: 0.5, y: 0.5 }}
+                    zIndex={10}
+                    tracksViewChanges={false}
                   >
                     <View style={themedStyles.currentLocationDot} />
                   </Marker>
                 )}
 
-                {/* Show selected location marker if different from current location */}
-                {selectedLocation && !isCurrentLocationSelected() && (
-                  <Marker
-                    coordinate={{
-                      latitude: selectedLocation.latitude,
-                      longitude: selectedLocation.longitude,
-                    }}
-                    pinColor="red"
-                    title="Selected Location"
-                    description="Selected address location"
-                  />
-                )}
               </MapView>
               {/* Center Pin Overlay - Only show when no search results */}
               {searchResults.length === 0 && (
                 <View pointerEvents="none" style={themedStyles.centerPinContainer}>
-                  <Image
-                    source={Images.mapLocation}
-                    style={[themedStyles.centerPin, themedStyles.centerPinOffset]}
+                  <MaterialCommunityIcons
+                    name="map-marker"
+                    size={PIN_SIZE}
+                    color="#E53935"
+                    style={themedStyles.centerPinOffset}
                   />
                 </View>
               )}
@@ -788,6 +766,17 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
           </View>
         </View>
       </View>
+      <MapOnboardingOverlay
+        step={onboardingStep}
+        visible={showOnboarding}
+        onNext={() => {
+          if (onboardingStep === 1) {
+            setOnboardingStep(2);
+          } else {
+            setShowOnboarding(false);
+          }
+        }}
+      />
     </View>
   );
 };
