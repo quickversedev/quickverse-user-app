@@ -87,7 +87,7 @@ const MapOnboardingOverlay = ({ step, onNext, visible }: MapOnboardingOverlayPro
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'transparent',
     justifyContent: 'flex-end',
     zIndex: 100,
     ...Platform.select({
