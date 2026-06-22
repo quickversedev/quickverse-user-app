@@ -16,7 +16,6 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import SectionDivider from '../../../../components/common/SectionDivider';
 import MapOnboardingOverlay from './MapOnboardingOverlay';
 import { useLocation } from '../../../../hooks/Permissions/useLocation';
 import {
@@ -385,40 +384,27 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       width: '100%',
       paddingTop: 10,
     },
-    bottomSheetTitle: {
-      color: getColor('subText'),
-      fontSize: getTypography('h2'),
-      fontWeight: '600',
-      letterSpacing: 1.5,
-      marginBottom: 24,
-      textAlign: 'center',
-      textTransform: 'uppercase',
-      borderBottomWidth: 1,
-      borderBottomColor: getColor('border'),
+    selectedLocationHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 8,
       width: '100%',
-      paddingBottom: 8,
+    },
+    selectedLocationTitle: {
+      color: getColor('text'),
+      fontSize: getTypography('body'),
+      fontWeight: '600',
     },
     selectedLocationContainer: {
       width: '100%',
-      backgroundColor: getColor('background'),
-      borderRadius: theme.borderRadius.md,
-      padding: 10,
-      borderWidth: 1,
-      borderColor: getColor('border'),
-    },
-    addressIconBadge: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 10,
+      marginBottom: 12,
     },
     selectedLocationText: {
-      color: getColor('text'),
+      color: getColor('subText'),
       fontSize: getTypography('caption'),
-      lineHeight: 18,
-      fontWeight: '500',
+      lineHeight: 20,
+      fontWeight: '400',
     },
     loadingContainer: {
       flexDirection: 'row',
@@ -465,7 +451,7 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       }),
     },
     primaryButtonText: {
-      color: '#1F2937',
+      color: '#FFFFFF',
       fontWeight: '700',
       fontSize: getTypography('body'),
       letterSpacing: 0.5,
@@ -690,7 +676,10 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
         {/* Bottom Sheet Section */}
         <View style={themedStyles.bottomSheet}>
           <View style={themedStyles.bottomSheetContent}>
-            <SectionDivider text="DELIVERY ADDRESS" style={{ marginBottom: 8 }} fontSize={14} />
+            <View style={themedStyles.selectedLocationHeader}>
+              <MaterialCommunityIcons name="map-marker" size={20} color="#E53935" />
+              <Text style={themedStyles.selectedLocationTitle}>Selected Location</Text>
+            </View>
 
             {selectedLocation && (
               <View style={themedStyles.selectedLocationContainer}>
@@ -700,37 +689,23 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                     <Text style={themedStyles.loadingText}>Getting address...</Text>
                   </View>
                 ) : (
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', flex: 1 }}>
-                    <View
-                      style={[
-                        themedStyles.addressIconBadge,
-                        { backgroundColor: `${getColor('primary')}15` },
-                      ]}
-                    >
-                      <MaterialCommunityIcons
-                        name="map-marker"
-                        size={22}
-                        color={getColor('primary')}
-                      />
-                    </View>
-                    <Text
-                      style={[themedStyles.selectedLocationText, { flex: 1 }]}
-                    >
-                      {[
-                        selectedAddressDescription.road,
-                        selectedAddressDescription.locality,
-                        selectedAddressDescription.city,
-                        selectedAddressDescription.state,
-                        selectedAddressDescription.postalCode,
-                        selectedAddressDescription.country,
-                      ]
-                        .filter(Boolean)
-                        .join(', ') || 'Location selected'}
-                    </Text>
-                  </View>
+                  <Text style={themedStyles.selectedLocationText}>
+                    {[
+                      selectedAddressDescription.road,
+                      selectedAddressDescription.locality,
+                      selectedAddressDescription.city,
+                      selectedAddressDescription.state,
+                      selectedAddressDescription.postalCode,
+                      selectedAddressDescription.country,
+                    ]
+                      .filter(Boolean)
+                      .join(', ') || 'Location selected'}
+                  </Text>
                 )}
               </View>
             )}
+
+
           </View>
 
           <View style={themedStyles.buttonContainer}>
@@ -742,25 +717,19 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
               onPress={handleLocationConfirm}
               accessible={true}
               accessibilityRole="button"
-              accessibilityLabel="Add address details"
-              accessibilityHint="Opens form to add more address details"
+              accessibilityLabel="Confirm location"
+              accessibilityHint="Confirms the selected location and opens address details form"
               accessibilityState={{ disabled: !selectedLocation }}
               activeOpacity={0.85}
               disabled={!selectedLocation}
             >
-              <MaterialCommunityIcons
-                name="arrow-right"
-                size={20}
-                color={!selectedLocation ? getColor('subText') : '#1F2937'}
-                style={{ marginRight: 8 }}
-              />
               <Text
                 style={[
                   themedStyles.primaryButtonText,
                   !selectedLocation && themedStyles.primaryButtonTextDisabled,
                 ]}
               >
-                Add Address Details
+                Confirm Location
               </Text>
             </TouchableOpacity>
           </View>
