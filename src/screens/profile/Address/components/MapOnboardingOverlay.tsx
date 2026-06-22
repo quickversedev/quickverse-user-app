@@ -76,7 +76,11 @@ const MapOnboardingOverlay = ({ step, onNext, visible }: MapOnboardingOverlayPro
           </View>
         )}
 
-        <TouchableOpacity style={styles.nextButton} onPress={onNext} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={[styles.nextButton, { backgroundColor: getColor('primary') }]}
+          onPress={onNext}
+          activeOpacity={0.85}
+        >
           <Text style={styles.nextButtonText}>Next</Text>
         </TouchableOpacity>
       </View>
@@ -90,14 +94,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     justifyContent: 'flex-end',
     zIndex: 100,
-    ...Platform.select({
-      android: { elevation: 100 },
-    }),
   },
   card: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 16,
   },
   title: {
     fontWeight: '700',
@@ -138,11 +144,15 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   nextButton: {
-    backgroundColor: '#22C55E',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
   },
   nextButtonText: {
     color: '#FFFFFF',
