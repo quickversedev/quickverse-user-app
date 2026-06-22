@@ -100,7 +100,6 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
   const orders = useOrderStore(state => state.orders);
   const fetchOrders = useOrderStore(state => state.fetchOrders);
   const refreshInProgressStatuses = useOrderStore(state => state.refreshInProgressStatuses);
-  const loading = useOrderStore(state => state.loading);
   const { width: screenWidth } = useWindowDimensions();
   const setSelectedOrder = useOrderStore(state => state.setSelectedOrder);
   const getVendorById = useVendorStore(state => state.getVendorById);
@@ -108,29 +107,44 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
   // Match CartBar width
   const containerWidth = screenWidth - 32; // Match CartBar width exactly
 
-  // Re-fetch orders on focus, then refresh in-progress statuses via detail API
-  // (list API doesn't return orderMasterStatus, so delivered orders appear as "shipping")
+  // Don't render until the first detail-API refresh confirms true statuses.
+  // AppInitializer's list API data lacks orderMasterStatus, so statuses can be stale.
+  const [statusesVerified, setStatusesVerified] = useState(false);
+
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useFocusEffect(
     useCallback(() => {
       const jwt = authData?.jwt || '';
       const phone = authData?.phone || '';
-      if (!loading && jwt && phone) {
-        fetchOrders(jwt, phone, null, 5)
-          .then(() => refreshInProgressStatuses(jwt, phone))
-          .catch(() => {});
+      if (!jwt || !phone) return;
+
+      const refresh = () =>
+        refreshInProgressStatuses(jwt, phone)
+          .then(() => setStatusesVerified(true))
+          .catch(() => setStatusesVerified(true));
+
+      const currentOrders = useOrderStore.getState().orders;
+      if (currentOrders.length === 0) {
+        fetchOrders(jwt, phone, null, 5).then(refresh).catch(refresh);
+      } else {
+        refresh();
       }
+
+      pollingRef.current = setInterval(refresh, 30_000);
+
+      return () => {
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+      };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authData?.jwt, authData?.phone])
   );
 
   const inProgressOrders = useMemo(() => {
-    return orders.filter(o => {
-      if (o.status === 'delivered' || o.status === 'cancelled') return false;
-      // List API doesn't return orderMasterStatus, so a "shipping" order might
-      // actually be delivered. Hide until detail API confirms the true status.
-      if (o.status === 'shipping' && !o.orderMasterStatus) return false;
-      return true;
-    });
+    return orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
   }, [orders]);
 
   const scrollRef = useRef<ScrollView | null>(null);
@@ -148,7 +162,7 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, inProgressOrders.length, containerWidth]);
 
-  if (inProgressOrders.length === 0) return null;
+  if (!statusesVerified || inProgressOrders.length === 0) return null;
 
   const renderBar = (order: any) => {
     const items = order.items || [];
