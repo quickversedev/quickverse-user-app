@@ -7,7 +7,7 @@ const ORDER_API_URL = '/v2/order/getSMZBIZOrders';
 
 const USE_ORDER_MOCKS = false; // Set to false for real API
 
-// Normalize backend order state to app's Order['status']
+// Normalize backend order state (or orderMasterStatus) to app's Order['status']
 const normalizeStatus = (state?: string): Order['status'] => {
   const s = String(state || '').toLowerCase();
   switch (s) {
@@ -18,6 +18,9 @@ const normalizeStatus = (state?: string): Order['status'] => {
     case 'accepted':
       return 'confirmed';
     case 'shipped':
+    case 'partner_assigned':
+    case 'reached_location':
+    case 'out_for_delivery':
       return 'shipping';
     case 'packed':
       return 'ready';
@@ -137,29 +140,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         paymentMethod?: string;
         notificationDetail?: { customerName?: string; mobileNumber?: string | number };
         skuDetailsGrouped?: SkuGroup[];
-      };
-
-      const normalizeStatus = (state?: string): Order['status'] => {
-        const s = String(state || '').toLowerCase();
-        switch (s) {
-          case 'open':
-            return 'payment_pending';
-          case 'pending':
-            return 'processing';
-          case 'accepted':
-            return 'confirmed';
-          case 'shipped':
-            return 'shipping';
-          case 'packed':
-            return 'ready';
-          case 'completed':
-            return 'delivered';
-          case 'cancelled':
-          case 'rejected':
-            return 'cancelled';
-          default:
-            return 'processing';
-        }
+        orderMasterStatus?: string;
       };
 
       const mappedOrders: Order[] = (ordersMetadata || []).map((m: OrderMeta) => {
@@ -185,7 +166,15 @@ const useOrderStore = create<OrderStore>((set, get) => ({
           additionalPaymentCharges: Number(m.additionalPaymentCharges ?? 0),
           deliveryFees: Number(m.deliveryDetails?.deliveryFees ?? 0),
           totalInvoiceAmount: Number(m.totalInvoiceAmount ?? 0),
-          status: normalizeStatus(m.state),
+          status: (() => {
+            const s = String(m.state || '').toLowerCase();
+            const earlyStates = ['open', 'pending', 'accepted', 'cancelled', 'rejected'];
+            if (earlyStates.includes(s)) {
+              return normalizeStatus(m.state);
+            }
+            return normalizeStatus(m.orderMasterStatus || m.state);
+          })(),
+          orderMasterStatus: m.orderMasterStatus || undefined,
           orderDate:
             typeof m.creationTime === 'string' && /\D/.test(m.creationTime)
               ? new Date(m.creationTime).toISOString()
@@ -211,11 +200,29 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         hasMore: nextCursor !== null,
       };
 
-      set(state => ({
-        orders: currentCursor === null ? mappedOrders : [...state.orders, ...mappedOrders],
-        pagination: updatedPagination,
-        loading: false,
-      }));
+      set(state => {
+        let finalOrders;
+        if (currentCursor === null) {
+          // Preserve orderMasterStatus corrections from detail API fetches,
+          // since the list API doesn't return orderMasterStatus
+          const existingMap = new Map(state.orders.map(o => [o.orderId, o]));
+          finalOrders = mappedOrders.map(o => {
+            const existing = existingMap.get(o.orderId);
+            if (existing?.orderMasterStatus && !o.orderMasterStatus) {
+              return { ...o, status: existing.status, orderMasterStatus: existing.orderMasterStatus };
+            }
+            return o;
+          });
+        } else {
+          finalOrders = [...state.orders, ...mappedOrders];
+        }
+
+        return {
+          orders: finalOrders,
+          pagination: updatedPagination,
+          loading: false,
+        };
+      });
     } catch (err: unknown) {
       const errorMessage =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
@@ -261,9 +268,6 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         )
       );
 
-      console.warn('fetchOrderById response:', JSON.stringify(apiOrder, null, 2));
-      console.warn('fetchOrderById status:', apiOrder.state, 'orderMasterStatus:', apiOrder.orderMasterStatus);
-
       // Map the API response to our Order type
       const mappedOrder: Order = {
         orderId: String(apiOrder.orderId || orderId),
@@ -285,7 +289,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         additionalPaymentCharges: Number(apiOrder.additionalPaymentCharges || 0),
         status: (() => {
           const s = String(apiOrder.state || '').toLowerCase();
-          const earlyStates = ['open', 'pending', 'accepted', 'shipped', 'cancelled', 'rejected'];
+          const earlyStates = ['open', 'pending', 'accepted', 'cancelled', 'rejected'];
           if (earlyStates.includes(s)) {
             return normalizeStatus(apiOrder.state);
           }
@@ -311,7 +315,13 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         ),
       };
 
-      set({ selectedOrder: mappedOrder, loading: false });
+      set(state => ({
+        selectedOrder: mappedOrder,
+        loading: false,
+        orders: state.orders.map(o =>
+          o.orderId === mappedOrder.orderId ? { ...o, status: mappedOrder.status, orderMasterStatus: mappedOrder.orderMasterStatus } : o
+        ),
+      }));
     } catch (err: unknown) {
       const errorMessage =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
@@ -319,6 +329,52 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         'Failed to fetch order details';
       set({ error: errorMessage, loading: false });
     }
+  },
+
+  refreshInProgressStatuses: async (jwt: string, phone: string) => {
+    const inProgress = get().orders.filter(
+      o => o.status !== 'delivered' && o.status !== 'cancelled'
+    );
+    if (inProgress.length === 0) return;
+
+    const updates = await Promise.all(
+      inProgress.map(async order => {
+        try {
+          const apiOrder = await apiCall(
+            axiosInstance.get(
+              `/v2/order/fetchOrder?groupify=true&viewMode=CONSTELLATION_VIEW&shopId=${
+                order.shopId || ''
+              }&orderId=${order.orderId}`,
+              {
+                headers: {
+                  SessionKey: jwt,
+                  Authorization: getAuthHeader(),
+                  phone,
+                },
+              }
+            )
+          );
+          const s = String(apiOrder.state || '').toLowerCase();
+          const earlyStates = ['open', 'pending', 'accepted', 'cancelled', 'rejected'];
+          const status = earlyStates.includes(s)
+            ? normalizeStatus(apiOrder.state)
+            : normalizeStatus(apiOrder.orderMasterStatus || apiOrder.state);
+          return { orderId: order.orderId, status, orderMasterStatus: apiOrder.orderMasterStatus };
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    set(state => ({
+      orders: state.orders.map(o => {
+        const update = updates.find(u => u && u.orderId === o.orderId);
+        if (update) {
+          return { ...o, status: update.status, orderMasterStatus: update.orderMasterStatus };
+        }
+        return o;
+      }),
+    }));
   },
 
   setOrders: (orders: Order[]) => set({ orders }),

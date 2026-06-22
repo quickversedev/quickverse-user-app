@@ -95,6 +95,7 @@ export interface OrderStore {
     pageSize?: number
   ) => Promise<void>;
   fetchOrderById: (orderId: string, jwt: string, phone: string, shopId?: string) => Promise<void>;
+  refreshInProgressStatuses: (jwt: string, phone: string) => Promise<void>;
   setOrders: (orders: Order[]) => void;
   setSelectedOrder: (order: Order | null) => void;
   setLoading: (loading: boolean) => void;

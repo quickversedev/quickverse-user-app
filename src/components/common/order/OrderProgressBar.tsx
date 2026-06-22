@@ -1,5 +1,5 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -99,6 +99,7 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
   const { authData } = useAuth();
   const orders = useOrderStore(state => state.orders);
   const fetchOrders = useOrderStore(state => state.fetchOrders);
+  const refreshInProgressStatuses = useOrderStore(state => state.refreshInProgressStatuses);
   const loading = useOrderStore(state => state.loading);
   const { width: screenWidth } = useWindowDimensions();
   const setSelectedOrder = useOrderStore(state => state.setSelectedOrder);
@@ -107,25 +108,29 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
   // Match CartBar width
   const containerWidth = screenWidth - 32; // Match CartBar width exactly
 
-  // Guard to prevent multiple fetches
-  const hasFetchedRef = useRef(false);
-
-  useEffect(() => {
-    const jwt = authData?.jwt || '';
-    const phone = authData?.phone || '';
-    // Only fetch once per component mount, and only if orders are empty
-    if (!hasFetchedRef.current && !loading && orders.length === 0 && jwt && phone) {
-      hasFetchedRef.current = true;
-      // Fetch a small page to keep it lightweight
-      fetchOrders(jwt, phone, null, 5).catch(() => {
-        // no-op; UI stays quiet on failure
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authData?.jwt, authData?.phone]);
+  // Re-fetch orders on focus, then refresh in-progress statuses via detail API
+  // (list API doesn't return orderMasterStatus, so delivered orders appear as "shipping")
+  useFocusEffect(
+    useCallback(() => {
+      const jwt = authData?.jwt || '';
+      const phone = authData?.phone || '';
+      if (!loading && jwt && phone) {
+        fetchOrders(jwt, phone, null, 5)
+          .then(() => refreshInProgressStatuses(jwt, phone))
+          .catch(() => {});
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authData?.jwt, authData?.phone])
+  );
 
   const inProgressOrders = useMemo(() => {
-    return orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
+    return orders.filter(o => {
+      if (o.status === 'delivered' || o.status === 'cancelled') return false;
+      // List API doesn't return orderMasterStatus, so a "shipping" order might
+      // actually be delivered. Hide until detail API confirms the true status.
+      if (o.status === 'shipping' && !o.orderMasterStatus) return false;
+      return true;
+    });
   }, [orders]);
 
   const scrollRef = useRef<ScrollView | null>(null);
@@ -158,7 +163,6 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
     const handlePress = () => {
       if (order?.orderId) {
         setSelectedOrder(order);
-        console.log('navigating to order details', order);
         navigation.navigate('OrderDetails', { orderId: order.orderId, order });
       }
     };
