@@ -17,6 +17,7 @@ import { AddressComponents } from '../../../services/api/olaLocationService';
 import useAddressStore from '../../../store/address/addressStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import AddressDetailsStep from './AddressDetailsStep';
+import AddressReviewStep from './AddressReviewStep';
 import MapLocationStep from './components/MapLocationStep';
 
 const { width } = Dimensions.get('window');
@@ -78,9 +79,8 @@ const AddAddressScreen = () => {
     setStep(2);
   };
 
-  const handleSaveAddress = async (_details: AddressDetails) => {
-    setApiError(null);
-    // The API call is now handled by AddressDetailsStep internally
+  const handleGoToReview = (_details: AddressDetails) => {
+    setStep(3);
   };
 
   const handleAddressSaveSuccess = async () => {
@@ -98,7 +98,7 @@ const AddAddressScreen = () => {
     if (step === 1) {
       navigation.goBack();
     } else {
-      setStep(1);
+      setStep(step - 1);
     }
   };
 
@@ -177,11 +177,11 @@ const AddAddressScreen = () => {
       style={{
         flex: 1,
         backgroundColor: getColor('background'),
-        paddingTop: step === 2 ? insets.top : 0,
-        paddingBottom: step === 2 ? insets.bottom : 0,
+        paddingTop: step >= 2 ? insets.top : 0,
+        paddingBottom: step >= 2 ? insets.bottom : 0,
       }}
     >
-      {/* Header - Transparent for step 1, regular for step 2 */}
+      {/* Header - Transparent for step 1, regular for step 2/3 */}
       {step === 1 ? (
         <View style={themedStyles.headerTransparent} pointerEvents="box-none">
           <TouchableOpacity
@@ -192,7 +192,7 @@ const AddAddressScreen = () => {
             <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
           </TouchableOpacity>
         </View>
-      ) : (
+      ) : step === 2 ? (
         <View style={themedStyles.header}>
           <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
             <MaterialCommunityIcons
@@ -204,20 +204,40 @@ const AddAddressScreen = () => {
           <Text style={themedStyles.title}>Add Address Details</Text>
           <View style={themedStyles.placeholder} />
         </View>
+      ) : (
+        <View style={themedStyles.header}>
+          <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
+            <MaterialCommunityIcons
+              name="arrow-left-thick"
+              size={25}
+              color={getColor('primary')}
+            />
+          </TouchableOpacity>
+          <Text style={themedStyles.title}>Review Address</Text>
+          <View style={themedStyles.placeholder} />
+        </View>
       )}
 
       {/* Body */}
       {step === 1 ? (
         <MapLocationStep onLocationSelect={handleLocationSelect} />
-      ) : (
+      ) : step === 2 ? (
         <AddressDetailsStep
           location={location}
           selectedAddressDescription={selectedAddressDescription}
           details={addressDetails}
           onDetailsChange={setAddressDetails}
-          onSave={handleSaveAddress}
+          onSave={handleGoToReview}
           onSuccess={handleAddressSaveSuccess}
           apiError={apiError}
+        />
+      ) : (
+        <AddressReviewStep
+          location={location}
+          details={addressDetails}
+          onChangeAddress={() => setStep(2)}
+          onChangeRecipient={() => setStep(2)}
+          onSuccess={handleAddressSaveSuccess}
         />
       )}
     </View>
