@@ -90,9 +90,10 @@ const MapOnboardingOverlay = ({ step, onNext, visible }: MapOnboardingOverlayPro
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
-    justifyContent: 'flex-end',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     zIndex: 100,
   },
   card: {
