@@ -94,6 +94,7 @@ const OrderList: React.FC<OrderListProps> = ({
         case 'confirmed':
           return { background: '#2196F3', text: '#FFFFFF' }; // Blue
         case 'shipped':
+        case 'shipping':
           return { background: '#7E57C2', text: '#FFFFFF' }; // Deep Purple
         case 'ready':
           return { background: '#26A69A', text: '#FFFFFF' }; // Teal

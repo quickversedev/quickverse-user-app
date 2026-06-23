@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import {
@@ -7,14 +8,12 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import LoginPromptModal from '../../../components/common/LoginPromptModal';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useAddress } from '../../../hooks/useAddress';
@@ -473,10 +472,7 @@ const AddressDetailsStep = ({
     },
     saveButtonText: {
       fontWeight: '700',
-      color:
-        isFormValid() && !addingLoading
-          ? getColor('background')
-          : getColor('subText'),
+      color: isFormValid() && !addingLoading ? getColor('background') : getColor('subText'),
       fontSize: getTypography('body'),
       includeFontPadding: false,
       textAlignVertical: 'center',
@@ -779,7 +775,10 @@ const AddressDetailsStep = ({
 
         {/* Tag selector */}
         {(() => {
-          const presetTags: { label: string; icon: 'home-outline' | 'briefcase-outline' | 'bed-outline' | 'tag-outline' }[] = [
+          const presetTags: {
+            label: string;
+            icon: 'home-outline' | 'briefcase-outline' | 'bed-outline' | 'tag-outline';
+          }[] = [
             { label: 'Home', icon: 'home-outline' },
             { label: 'Work', icon: 'briefcase-outline' },
             { label: 'Hotel', icon: 'bed-outline' },
@@ -804,10 +803,7 @@ const AddressDetailsStep = ({
                   return (
                     <TouchableOpacity
                       key={label}
-                      style={[
-                        themedStyles.tagButton,
-                        isSelected && themedStyles.tagButtonSelected,
-                      ]}
+                      style={[themedStyles.tagButton, isSelected && themedStyles.tagButtonSelected]}
                       onPress={() => {
                         if (label === 'Other') {
                           setIsCustomTagMode(true);
@@ -863,8 +859,6 @@ const AddressDetailsStep = ({
             </View>
           );
         })()}
-
-
       </ScrollView>
 
       <View style={themedStyles.saveButtonContainer}>

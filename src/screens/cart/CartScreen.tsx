@@ -34,7 +34,7 @@ import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { RootStackParamList } from '../../routes/AppStack';
 import orderService, { CreateOrderRequest } from '../../services/createOrderService';
 import { getCODCharges } from '../../services/paymentService';
-import { SmartBizAddress, smartBizAddressService } from '../../store/address/smartBizAddressStore';
+import { smartBizAddressService } from '../../store/address/smartBizAddressStore';
 import useCartStore from '../../store/cart/cartStore';
 import useCouponStore from '../../store/cart/couponStore';
 import useConfigStore from '../../store/configStore';
@@ -98,8 +98,9 @@ const CartScreen: React.FC = () => {
   // Local state
   const [showAddressModal, setShowAddressModal] = React.useState(false);
   const [showSmartBizAddressModal, setShowSmartBizAddressModal] = React.useState(false);
-  const [selectedSmartBizAddress, setSelectedSmartBizAddress] =
-    React.useState<SmartBizAddress | null>(null);
+  const [selectedSmartBizAddress, setSelectedSmartBizAddress] = React.useState<Address | null>(
+    selectedAddress || null
+  );
   const [paymentExpanded, setPaymentExpanded] = React.useState(false);
   const [showPaymentModal, setShowPaymentModal] = React.useState(false);
   const [selectedPaymentOption, setSelectedPaymentOption] = React.useState<string | undefined>(
@@ -225,9 +226,9 @@ const CartScreen: React.FC = () => {
   }, [vendor]);
 
   const customerLatLon = useMemo(() => {
-    if (!selectedSmartBizAddress?.address) return null;
-    const lat = parseFloat(selectedSmartBizAddress.address.latitude);
-    const lon = parseFloat(selectedSmartBizAddress.address.longitude);
+    if (!selectedSmartBizAddress) return null;
+    const lat = selectedSmartBizAddress.coordinates.latitude;
+    const lon = selectedSmartBizAddress.coordinates.longitude;
     if (Number.isFinite(lat) && Number.isFinite(lon)) {
       return { lat, lon };
     }
@@ -586,7 +587,7 @@ const CartScreen: React.FC = () => {
         shopId: parseInt(vendor.shopId, 10),
         cartId: cart.smartBizCartId,
         orderSource: 'CONSTELLATION',
-        customerAddressId: selectedSmartBizAddress?.id || '',
+        customerAddressId: selectedSmartBizAddress?.addressID || '',
         fulfillmentOption: 'DELIVERY',
         notificationMobileNumber: selectedAddress.phone,
         notificationEmail: null,
@@ -699,7 +700,7 @@ const CartScreen: React.FC = () => {
     [setSelectedAddress]
   );
 
-  const handleSmartBizAddressSelect = useCallback((address: SmartBizAddress) => {
+  const handleSmartBizAddressSelect = useCallback((address: Address) => {
     setSelectedSmartBizAddress(address);
     setShowSmartBizAddressModal(false);
   }, []);
@@ -733,7 +734,7 @@ const CartScreen: React.FC = () => {
       return 'Select delivery address';
     }
 
-    const { name, addressLine1, city, state } = selectedSmartBizAddress?.address;
+    const { name, addressLine1, city, state } = selectedSmartBizAddress;
     const parts = [name, addressLine1, city, state].filter(Boolean).join(', ');
     return distanceText ? `${parts} • ${distanceText}` : parts;
   }, [selectedSmartBizAddress, distanceText]);
@@ -751,16 +752,16 @@ const CartScreen: React.FC = () => {
 
         // Auto-select default address if none selected
         if (!selectedSmartBizAddress) {
-          const defaultAddress = smartBizAddressService.getDefaultAddress(vendor.shopId);
-          if (defaultAddress) {
-            setSelectedSmartBizAddress(defaultAddress);
-          } else {
-            // If no default, select first available address
-            const addresses = smartBizAddressService.getAddresses(vendor.shopId);
-            if (addresses.length > 0) {
-              setSelectedSmartBizAddress(addresses[0]);
-            }
-          }
+          // const defaultAddress = smartBizAddressService.getDefaultAddress(vendor.shopId);
+          // if (defaultAddress) {
+          //   setSelectedSmartBizAddress(defaultAddress);
+          // } else {
+          //   // If no default, select first available address
+          //   const addresses = smartBizAddressService.getAddresses(vendor.shopId);
+          //   if (addresses.length > 0) {
+          //     setSelectedSmartBizAddress(addresses[0]);
+          //   }
+          // }
         }
 
         // Then fetch coupons after addresses are loaded
@@ -1042,7 +1043,7 @@ const CartScreen: React.FC = () => {
 
       <CartFooter
         address={getFormattedAddress()}
-        addressTag={selectedSmartBizAddress?.address?.tag || selectedSmartBizAddress?.address?.name}
+        addressTag={selectedSmartBizAddress?.tag || selectedSmartBizAddress?.name}
         onSelectAddress={() => setShowSmartBizAddressModal(true)}
         onCheckout={handleCheckout}
         disabled={isCheckoutDisabled}
@@ -1227,6 +1228,7 @@ const ORDER_STATUS_COLORS: Record<string, { background: string; text: string }> 
   processing: { background: '#42A5F5', text: '#FFFFFF' },
   confirmed: { background: '#2196F3', text: '#FFFFFF' },
   shipped: { background: '#7E57C2', text: '#FFFFFF' },
+  shipping: { background: '#7E57C2', text: '#FFFFFF' },
   ready: { background: '#26A69A', text: '#FFFFFF' },
   delivered: { background: '#66BB6A', text: '#FFFFFF' },
   cancelled: { background: '#EF5350', text: '#FFFFFF' },

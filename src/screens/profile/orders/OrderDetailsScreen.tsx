@@ -185,7 +185,7 @@ const OrderDetailsScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const route = useRoute();
   const { getColor } = useTheme();
-  const { selectedOrder, loadOrderById, refreshOrders } = useOrders();
+  const { selectedOrder, loadOrderById, refreshOrders, setSelectedOrder } = useOrders();
   const { authData } = useAuth();
   const { orderId, shopId } = route.params as { orderId: string; shopId?: string };
   const { getVendorById } = useVendorStore();
@@ -229,14 +229,21 @@ const OrderDetailsScreen = () => {
     return usePricingStore.getState().getPricingValues(serviceType);
   }, [pricingConfig, serviceType]);
 
-  // Load order and setup polling
+  // Capture shopId before clearing stale data (list API doesn't have orderMasterStatus,
+  // so stale selectedOrder would show wrong status for 1-2s until fetchOrderById completes)
+  const shopIdRef = useRef(shopId || selectedOrder?.shopId);
+
+  // Clear stale data and fetch fresh on mount
   useEffect(() => {
     if (orderId) {
-      loadOrderById(orderId, shopId || selectedOrder?.shopId);
+      setSelectedOrder(null);
+      loadOrderById(orderId, shopIdRef.current);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
 
-    // Setup polling for order status updates
-    // Only poll if order is not in a final state
+  // Poll for status updates while order is active
+  useEffect(() => {
     const shouldPoll =
       selectedOrder?.status &&
       selectedOrder.status !== 'delivered' &&
@@ -244,18 +251,17 @@ const OrderDetailsScreen = () => {
 
     if (shouldPoll) {
       pollingIntervalRef.current = setInterval(() => {
-        loadOrderById(orderId, shopId || selectedOrder?.shopId);
+        loadOrderById(orderId, shopIdRef.current);
       }, POLLING_INTERVAL_MS);
     }
 
-    // Cleanup polling on unmount or when order reaches final state
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;
       }
     };
-  }, [orderId, loadOrderById, selectedOrder?.status, selectedOrder?.shopId, shopId]);
+  }, [selectedOrder?.status, orderId, loadOrderById]);
 
   // Check notification permission on component mount
   useEffect(() => {
@@ -486,24 +492,6 @@ const OrderDetailsScreen = () => {
     // //console.log('Get help pressed');
   }, []);
 
-  const getStatusColor = useCallback((status: string) => {
-    switch (status) {
-      case 'delivered':
-        return '#4CAF50';
-      case 'cancelled':
-        return '#F44336';
-      case 'pending':
-        return '#FF9800';
-      case 'confirmed':
-        return '#2196F3';
-      case 'preparing':
-        return '#9C27B0';
-      case 'ready':
-        return '#00BCD4';
-      default:
-        return '#666666';
-    }
-  }, []);
 
   // Types to avoid 'any' and map API shape safely
   type DerivedItem = { id: string; name: string; quantity: number; price: number; image?: string };
@@ -620,7 +608,7 @@ const OrderDetailsScreen = () => {
     return (
       <SafeAreaView style={[styles.safeArea, { backgroundColor: getColor('background') }]}>
         <View style={[styles.container, { backgroundColor: getColor('background') }]}>
-          <OrderHeader orderId="Loading..." onBackPress={handleBackPress} />
+          <OrderHeader orderId={orderId || 'Loading...'} onBackPress={handleBackPress} />
           <OrderDetailsSkeleton getColor={getColor} />
         </View>
       </SafeAreaView>
@@ -673,7 +661,6 @@ const OrderDetailsScreen = () => {
         >
           <OrderInfoCard
             order={selectedOrder}
-            getStatusColor={getStatusColor}
             actionButton={
               selectedOrder.status === 'payment_pending' ? (
                 <View style={styles.actionButtonContainer}>
@@ -723,14 +710,14 @@ const OrderDetailsScreen = () => {
             }
           />
 
-          {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (
-            <OrderProgress
-              status={selectedOrder.status}
-              orderCreationTime={selectedOrder.orderDate}
-              category={vendorDetails?.category}
-              preparationTime={vendorDetails?.preparationTime}
-            />
-          )}
+          <OrderProgress
+            status={selectedOrder.status}
+            orderCreationTime={selectedOrder.orderDate}
+            category={vendorDetails?.category}
+            preparationTime={vendorDetails?.preparationTime}
+            orderMasterStatus={selectedOrder.orderMasterStatus}
+            orderDate={selectedOrder.orderDate}
+          />
 
           {/* Shop Details Section */}
           <SectionDivider text="Shop Details" />

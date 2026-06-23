@@ -36,6 +36,7 @@ export interface Order {
     | 'processing'
     | 'confirmed'
     | 'shipped'
+    | 'shipping'
     | 'ready'
     | 'delivered'
     | 'cancelled';
@@ -45,6 +46,7 @@ export interface Order {
   deliveryAddress: OrderAddress;
   paymentMethod: 'cash' | 'card' | 'upi';
   paymentStatus: 'pending' | 'paid' | 'failed';
+  orderMasterStatus?: string;
   specialInstructions?: string;
   customerName: string;
   customerPhone: string;
