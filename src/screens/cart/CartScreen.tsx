@@ -454,6 +454,7 @@ const CartScreen: React.FC = () => {
         key: RAZORPAY_KEY_ID,
         amount: calculatedTotal * 100,
         name: 'QuickVerse',
+        order_id: orderResponse?.order_id,
         method: {
           upi: true,
           card: false,
@@ -594,14 +595,15 @@ const CartScreen: React.FC = () => {
         orderAmount: calculatedTotal,
       };
 
-      // const orderResponse = await orderService.createOrder(
-      //   orderRequest,
-      //   authData.jwt,
-      //   authData.phone
-      // );
+      console.log('Order Request : ', orderRequest);
 
-      // console.log('Order Response : ', orderResponse);
-      const orderResponse: any = null;
+      const orderResponse = await orderService.createOrder(
+        orderRequest,
+        authData.jwt,
+        authData.phone
+      );
+
+      console.log('Order Response : ', orderResponse);
 
       if (selectedPaymentOption === 'prepaid') {
         // handleCashFreePayment(orderResponse, calculatedTotal, vendor);
