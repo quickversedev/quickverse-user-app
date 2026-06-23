@@ -452,8 +452,8 @@ const CartScreen: React.FC = () => {
         description: 'QuickVerse Order Payment',
         currency: 'INR',
         key: RAZORPAY_KEY_ID,
-        amount: '50000',
-        name: 'QuickVerse India Private Limited',
+        amount: calculatedTotal * 100,
+        name: 'QuickVerse',
         method: {
           upi: true,
           card: false,
@@ -464,8 +464,8 @@ const CartScreen: React.FC = () => {
         },
         prefill: {
           email: '',
-          contact: '+919876543210',
-          name: 'Gaurav Kumar',
+          contact: authData?.phone,
+          name: authData?.username,
         },
         // theme: {
         //   color: '#53a20e',
