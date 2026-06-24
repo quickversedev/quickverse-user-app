@@ -74,7 +74,7 @@ class OrderService {
   ): Promise<CreateOrderResponse> {
     try {
       const response = await apiCall(
-        axiosInstance.post<CreateOrderResponse>('/v2/order/createOrder', requestData, {
+        axiosInstance.post<CreateOrderResponse>('/v2/order/placeOrder', requestData, {
           headers: {
             SessionKey: sessionKey,
             Authorization: getAuthHeader(),
