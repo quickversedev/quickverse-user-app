@@ -1,6 +1,6 @@
 import Icon from '@react-native-vector-icons/material-design-icons';
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import type { Order } from '../../../types/order';
 
@@ -11,109 +11,50 @@ type OrderProgressProps = {
   preparationTime?: string;
   orderMasterStatus?: string;
   orderDate?: string;
+  deliveryPartnerName?: string;
+  deliveryPartnerPhone?: string;
 };
 
-const DELAY_MESSAGES = [
-  { text: 'Finalizing your order...', icon: 'package-variant' },
-  { text: 'Almost there!', icon: 'truck-fast' },
-  { text: 'Just a moment...', icon: 'timer-sand' },
-  { text: 'Preparing with care...', icon: 'chef-hat' },
-  { text: 'On its way soon!', icon: 'map-marker-path' },
+const STEPS = [
+  { key: 'placed', label: 'Order\nPlaced', icon: 'clipboard-check-outline' },
+  { key: 'at_store', label: 'At\nStore', icon: 'store' },
+  { key: 'picked_up', label: 'Picked\nUp', icon: 'package-variant' },
+  { key: 'reached', label: 'Reached', icon: 'truck-delivery-outline' },
+  { key: 'delivered', label: 'Delivered', icon: 'check-decagram' },
 ];
 
-const STEPS = [
-  { key: 'placed', label: 'Order Placed', icon: 'package-variant-closed' },
-  { key: 'accepted', label: 'Accepted', icon: 'check-circle-outline' },
-  { key: 'shipping', label: 'Shipping', icon: 'truck-delivery-outline' },
-  { key: 'delivered', label: 'Delivered', icon: 'check-decagram' },
-] as const;
+const CIRCLE_SIZE = 36;
+const ICON_SIZE = 18;
+const LINE_HEIGHT = 3;
+const COMPLETED_COLOR = '#4CAF50';
+const COMPLETED_BG = '#E8F5E9';
+const CANCELLED_COLOR = '#F44336';
 
-const getActiveStepIndex = (status: Order['status']): number => {
-  switch (status) {
-    case 'payment_pending':
-    case 'processing':
-      return 0;
-    case 'confirmed':
-      return 1;
-    case 'ready':
-    case 'shipped':
-    case 'shipping':
-      return 2;
-    case 'delivered':
-      return 3;
-    case 'cancelled':
-    default:
-      return -1;
-  }
+const DELAY_MESSAGES = [
+  { text: 'Finalizing your order...', icon: 'package-variant' as const },
+  { text: 'Almost there!', icon: 'truck-fast' as const },
+  { text: 'Just a moment...', icon: 'timer-sand' as const },
+  { text: 'Preparing with care...', icon: 'chef-hat' as const },
+  { text: 'On its way soon!', icon: 'map-marker-path' as const },
+];
+
+const getActiveStepIndex = (status: Order['status'], orderMasterStatus?: string): number => {
+  if (status === 'cancelled') return -1;
+  if (status === 'delivered') return STEPS.length;
+
+  const oms = (orderMasterStatus || '').toLowerCase();
+  if (oms === 'out_for_delivery') return 3;
+  if (oms === 'order_picked_up') return 2;
+  if (oms === 'reached_location' || oms === 'partner_assigned') return 1;
+  if (status === 'shipping' || status === 'shipped') return 1;
+
+  return 0;
 };
 
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
-
-const PulsingRing: React.FC<{ color: string }> = ({ color }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const opacityAnim = useRef(new Animated.Value(0.6)).current;
-
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(scaleAnim, {
-            toValue: 1.8,
-            duration: 800,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacityAnim, {
-            toValue: 0,
-            duration: 800,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(scaleAnim, {
-            toValue: 1,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacityAnim, {
-            toValue: 0.6,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ]),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [scaleAnim, opacityAnim]);
-
-  return (
-    <Animated.View
-      style={[
-        styles.pulsingRing,
-        {
-          borderColor: color,
-          transform: [{ scale: scaleAnim }],
-          opacity: opacityAnim,
-        },
-      ]}
-    />
-  );
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  processing: '#FF9800',
-  payment_pending: '#FF9800',
-  confirmed: '#2196F3',
-  ready: '#00BCD4',
-  shipping: '#7E57C2',
-  delivered: '#4CAF50',
-  cancelled: '#F44336',
 };
 
 const OrderProgress: React.FC<OrderProgressProps> = ({
@@ -123,9 +64,11 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
   preparationTime,
   orderMasterStatus,
   orderDate,
+  deliveryPartnerName,
+  deliveryPartnerPhone,
 }) => {
-  const { theme, getColor } = useTheme();
-  const activeIndex = getActiveStepIndex(status);
+  const { getColor } = useTheme();
+  const activeIndex = getActiveStepIndex(status, orderMasterStatus);
   const isCancelled = status === 'cancelled';
   const isDelivered = status === 'delivered';
   const isTerminal = isCancelled || isDelivered;
@@ -133,52 +76,37 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
   let deliveryTimeMinutes = 20;
   if (preparationTime) {
     const parsedTime = parseInt(preparationTime.replace(/[^0-9]/g, ''), 10);
-    if (!isNaN(parsedTime) && parsedTime > 0) {
-      deliveryTimeMinutes = parsedTime;
-    }
+    if (!isNaN(parsedTime) && parsedTime > 0) deliveryTimeMinutes = parsedTime;
   } else {
-    const isFood = category?.toLowerCase().includes('food');
-    deliveryTimeMinutes = isFood ? 35 : 20;
+    deliveryTimeMinutes = category?.toLowerCase().includes('food') ? 35 : 20;
   }
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [delayMessageIndex, setDelayMessageIndex] = useState(0);
-
   const isDelayed = elapsedSeconds >= deliveryTimeMinutes * 60;
   const remainingSeconds = Math.max(0, deliveryTimeMinutes * 60 - elapsedSeconds);
   const progressPercent = Math.min(100, (elapsedSeconds / (deliveryTimeMinutes * 60)) * 100);
 
   useEffect(() => {
     if (!orderCreationTime || isTerminal) return;
-
     const creationMs =
       typeof orderCreationTime === 'string'
         ? new Date(orderCreationTime).getTime()
         : orderCreationTime;
-
-    const initialElapsed = Math.floor((Date.now() - creationMs) / 1000);
-    setElapsedSeconds(Math.max(0, initialElapsed));
-
+    setElapsedSeconds(Math.max(0, Math.floor((Date.now() - creationMs) / 1000)));
     const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - creationMs) / 1000);
-      setElapsedSeconds(Math.max(0, elapsed));
+      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - creationMs) / 1000)));
     }, 1000);
-
     return () => clearInterval(interval);
   }, [orderCreationTime, isTerminal]);
 
   useEffect(() => {
     if (!isDelayed) return;
-
     const interval = setInterval(() => {
       setDelayMessageIndex(prev => (prev + 1) % DELAY_MESSAGES.length);
     }, 5000);
-
     return () => clearInterval(interval);
   }, [isDelayed]);
-
-  const currentDelayMessage = DELAY_MESSAGES[delayMessageIndex];
-  const activeColor = STATUS_COLORS[status] || theme.colors.secondary;
 
   const formattedOrderTime = orderDate
     ? new Date(orderDate).toLocaleTimeString('en-US', {
@@ -190,156 +118,190 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
 
   return (
     <View style={[styles.container, { backgroundColor: getColor('card') }]}>
-      {/* Vertical Timeline */}
-      <View style={styles.timeline}>
+      {/* Delivery Partner Card */}
+      {deliveryPartnerName && (
+        <View
+          style={[
+            styles.partnerCard,
+            {
+              backgroundColor: `${getColor('primary')}0A`,
+              borderColor: `${getColor('primary')}25`,
+            },
+          ]}
+        >
+          <View style={styles.partnerInfo}>
+            <Text style={[styles.partnerLabel, { color: getColor('primary') }]}>
+              Delivery Partner
+            </Text>
+            <Text style={[styles.partnerName, { color: getColor('text') }]}>
+              {deliveryPartnerName}
+            </Text>
+            {deliveryPartnerPhone && (
+              <Text style={[styles.partnerPhone, { color: getColor('subText') }]}>
+                {deliveryPartnerPhone}
+              </Text>
+            )}
+          </View>
+          {deliveryPartnerPhone && (
+            <TouchableOpacity
+              style={[styles.callButton, { backgroundColor: getColor('primary') }]}
+              onPress={() => Linking.openURL(`tel:${deliveryPartnerPhone}`)}
+              activeOpacity={0.8}
+            >
+              <Icon name="phone" size={16} color="#FFFFFF" />
+              <Text style={styles.callText}>Call</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {/* Horizontal Stepper */}
+      <View style={styles.stepper}>
         {STEPS.map((step, index) => {
           const isCompleted = !isCancelled && index < activeIndex;
           const isActive = !isCancelled && index === activeIndex;
           const isFuture = isCancelled || index > activeIndex;
 
-          const circleColor = isCompleted
-            ? theme.colors.secondary
-            : isActive
-              ? activeColor
-              : theme.colors.border;
+          const leftLineGreen = index > 0 && !isCancelled && index <= activeIndex;
+          const rightLineGreen = index < STEPS.length - 1 && !isCancelled && index < activeIndex;
 
-          const labelColor = isCompleted || isActive ? getColor('text') : getColor('subText');
-          const isLastStep = index === STEPS.length - 1;
+          let circleBg: string;
+          let circleBorder: string;
+          let iconColor: string;
+
+          if (isCompleted) {
+            circleBg = COMPLETED_COLOR;
+            circleBorder = COMPLETED_COLOR;
+            iconColor = '#FFFFFF';
+          } else if (isActive) {
+            circleBg = COMPLETED_BG;
+            circleBorder = COMPLETED_COLOR;
+            iconColor = COMPLETED_COLOR;
+          } else {
+            circleBg = `${getColor('border')}40`;
+            circleBorder = getColor('border');
+            iconColor = getColor('subText');
+          }
+
+          const labelColor = isFuture ? getColor('subText') : getColor('text');
 
           return (
-            <View key={step.key} style={styles.stepRow}>
-              {/* Left column: circle + connector */}
-              <View style={styles.leftColumn}>
-                <View style={styles.circleWrapper}>
-                  {isActive && <PulsingRing color={activeColor} />}
+            <View key={step.key} style={styles.stepColumn}>
+              <View style={styles.circleRow}>
+                {/* Left half-line */}
+                {index > 0 ? (
                   <View
                     style={[
-                      styles.circle,
-                      isActive && styles.circleActive,
+                      styles.halfLine,
                       {
-                        backgroundColor: isFuture ? 'transparent' : circleColor,
-                        borderColor: circleColor,
-                      },
-                    ]}
-                  >
-                    {isCompleted && (
-                      <Icon name="check" size={10} color="#FFFFFF" />
-                    )}
-                    {isActive && (
-                      <View style={[styles.innerDot, { backgroundColor: '#FFFFFF' }]} />
-                    )}
-                  </View>
-                </View>
-                {!isLastStep && (
-                  <View
-                    style={[
-                      styles.connector,
-                      {
-                        borderColor: isCompleted ? theme.colors.secondary : theme.colors.border,
-                        borderStyle: isCompleted ? 'solid' : 'dashed',
+                        backgroundColor: leftLineGreen ? COMPLETED_COLOR : getColor('border'),
                       },
                     ]}
                   />
+                ) : (
+                  <View style={styles.halfLineSpacer} />
                 )}
-              </View>
 
-              {/* Right column: label + sub-text */}
-              <View style={[styles.rightColumn, isLastStep && styles.lastStepRight]}>
-                <View style={styles.labelRow}>
-                  <Text
-                    style={[
-                      styles.stepLabel,
-                      {
-                        color: labelColor,
-                        fontWeight: isActive || isCompleted ? '600' : '400',
-                      },
-                    ]}
-                  >
-                    {step.label}
-                  </Text>
-                  {index === 0 && formattedOrderTime && (
-                    <Text style={[styles.timeText, { color: getColor('subText') }]}>
-                      {formattedOrderTime}
-                    </Text>
-                  )}
-                </View>
-                {isActive && step.key === 'shipping' && orderMasterStatus && (
-                  <Text style={[styles.masterStatusText, { color: activeColor }]}>
-                    {orderMasterStatus.replace(/_/g, ' ')}
-                  </Text>
-                )}
-              </View>
-            </View>
-          );
-        })}
-
-        {/* Cancelled step — appended after the last reached step */}
-        {isCancelled && (
-          <View style={styles.stepRow}>
-            <View style={styles.leftColumn}>
-              <View style={styles.circleWrapper}>
+                {/* Circle */}
                 <View
                   style={[
                     styles.circle,
-                    styles.circleActive,
-                    { backgroundColor: '#F44336', borderColor: '#F44336' },
+                    {
+                      backgroundColor: circleBg,
+                      borderColor: circleBorder,
+                      borderWidth: isActive ? 2.5 : 2,
+                    },
                   ]}
                 >
-                  <Icon name="close" size={10} color="#FFFFFF" />
+                  <Icon name={step.icon as any} size={ICON_SIZE} color={iconColor} />
                 </View>
+
+                {/* Right half-line */}
+                {index < STEPS.length - 1 ? (
+                  <View
+                    style={[
+                      styles.halfLine,
+                      {
+                        backgroundColor: rightLineGreen ? COMPLETED_COLOR : getColor('border'),
+                      },
+                    ]}
+                  />
+                ) : (
+                  <View style={styles.halfLineSpacer} />
+                )}
               </View>
-            </View>
-            <View style={[styles.rightColumn, styles.lastStepRight]}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.stepLabel, { color: '#F44336', fontWeight: '600' }]}>
-                  Cancelled
+
+              {/* Label */}
+              <Text
+                style={[
+                  styles.stepLabel,
+                  {
+                    color: labelColor,
+                    fontWeight: isCompleted || isActive ? '600' : '400',
+                  },
+                ]}
+                numberOfLines={2}
+              >
+                {step.label}
+              </Text>
+
+              {/* Time for Order Placed */}
+              {index === 0 && formattedOrderTime && (
+                <Text style={[styles.stepTime, { color: getColor('subText') }]}>
+                  {formattedOrderTime}
                 </Text>
-              </View>
+              )}
             </View>
-          </View>
-        )}
+          );
+        })}
       </View>
 
-      {/* Timer Section — only for active (non-terminal) orders */}
-      {orderCreationTime && !isTerminal && (
-        <>
-          {!isDelayed ? (
-            <View
-              style={[
-                styles.timerContainer,
-                { backgroundColor: getColor('background'), borderColor: theme.colors.border },
-              ]}
-            >
-              <View style={styles.timerRow}>
-                <Icon name="clock-outline" size={18} color={activeColor} />
-                <Text style={[styles.timerText, { color: getColor('text') }]}>
-                  Estimated delivery in {formatTime(remainingSeconds)}
-                </Text>
-              </View>
-              <View style={[styles.progressBar, { backgroundColor: theme.colors.overlay }]}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { backgroundColor: activeColor, width: `${progressPercent}%` },
-                  ]}
-                />
-              </View>
-            </View>
-          ) : (
-            <View style={styles.delayContainer}>
-              <Icon
-                name={currentDelayMessage.icon}
-                size={28}
-                color="#856404"
-                style={styles.delayIcon}
-              />
-              <Text style={styles.delayText}>{currentDelayMessage.text}</Text>
-              <Text style={styles.delaySubtext}>Your order is taking a bit longer</Text>
-              <Text style={styles.delaySubtext}>Thank you for your patience</Text>
-            </View>
-          )}
-        </>
+      {/* Cancelled badge */}
+      {isCancelled && (
+        <View style={styles.cancelledRow}>
+          <Icon name="close-circle" size={18} color={CANCELLED_COLOR} />
+          <Text style={styles.cancelledText}>Order Cancelled</Text>
+        </View>
       )}
+
+      {/* Timer / Delay */}
+      {orderCreationTime &&
+        !isTerminal &&
+        (!isDelayed ? (
+          <View
+            style={[
+              styles.timerBox,
+              { backgroundColor: getColor('background'), borderColor: getColor('border') },
+            ]}
+          >
+            <View style={styles.timerRow}>
+              <Icon name="clock-outline" size={18} color={COMPLETED_COLOR} />
+              <Text style={[styles.timerText, { color: getColor('text') }]}>
+                Estimated delivery in {formatTime(remainingSeconds)}
+              </Text>
+            </View>
+            <View style={[styles.progressBar, { backgroundColor: `${getColor('border')}60` }]}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { backgroundColor: COMPLETED_COLOR, width: `${progressPercent}%` },
+                ]}
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={styles.delayBox}>
+            <Icon
+              name={DELAY_MESSAGES[delayMessageIndex].icon}
+              size={28}
+              color="#856404"
+              style={styles.delayIcon}
+            />
+            <Text style={styles.delayText}>{DELAY_MESSAGES[delayMessageIndex].text}</Text>
+            <Text style={styles.delaySubtext}>Your order is taking a bit longer</Text>
+            <Text style={styles.delaySubtext}>Thank you for your patience</Text>
+          </View>
+        ))}
     </View>
   );
 };
@@ -347,88 +309,98 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
 const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
-    padding: 20,
+    padding: 16,
     marginBottom: 20,
   },
-  timeline: {
-    paddingLeft: 4,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  leftColumn: {
-    width: 32,
-    alignItems: 'center',
-  },
-  circleWrapper: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  circleActive: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2.5,
-  },
-  innerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  pulsingRing: {
-    position: 'absolute',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-  },
-  connector: {
-    flex: 1,
-    minHeight: 28,
-    borderLeftWidth: 2,
-    marginLeft: 0,
-  },
-  rightColumn: {
-    flex: 1,
-    paddingLeft: 12,
-    paddingBottom: 28,
-    justifyContent: 'center',
-    minHeight: 24,
-  },
-  lastStepRight: {
-    paddingBottom: 0,
-  },
-  labelRow: {
+  partnerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 16,
   },
-  stepLabel: {
-    fontSize: 14,
-    lineHeight: 20,
+  partnerInfo: {
+    flex: 1,
   },
-  timeText: {
+  partnerLabel: {
     fontSize: 12,
-    marginLeft: 8,
+    fontWeight: '600',
+    marginBottom: 4,
   },
-  masterStatusText: {
-    fontSize: 12,
-    fontWeight: '500',
+  partnerName: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  partnerPhone: {
+    fontSize: 13,
     marginTop: 2,
   },
-  timerContainer: {
+  callButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 24,
+    gap: 6,
+  },
+  callText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  stepper: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+  },
+  stepColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  circleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: CIRCLE_SIZE,
+  },
+  halfLine: {
+    flex: 1,
+    height: LINE_HEIGHT,
+    borderRadius: LINE_HEIGHT / 2,
+  },
+  halfLineSpacer: {
+    flex: 1,
+  },
+  circle: {
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepLabel: {
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 14,
+  },
+  stepTime: {
+    fontSize: 9,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  cancelledRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    gap: 6,
+  },
+  cancelledText: {
+    color: CANCELLED_COLOR,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  timerBox: {
     borderRadius: 10,
     padding: 14,
     marginTop: 16,
@@ -454,7 +426,7 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 2,
   },
-  delayContainer: {
+  delayBox: {
     backgroundColor: '#FFF3CD',
     borderRadius: 10,
     padding: 14,
