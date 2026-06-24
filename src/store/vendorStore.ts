@@ -101,7 +101,7 @@ const useVendorStore = create<VendorStore>((set, get) => ({
 
       const data = await apiCall(
         axiosInstance.get(VENDOR_API_URL, {
-          params,
+          params: { ...params, isTest: false },
           headers: {
             Authorization: authHeader,
           },
