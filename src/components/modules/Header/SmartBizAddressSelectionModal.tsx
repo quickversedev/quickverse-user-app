@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,17 +12,15 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../../contexts/login/AuthProvider';
+import { useAddress } from '../../../hooks';
 import { RootStackParamList } from '../../../routes/AppStack';
-import {
-  SmartBizAddress,
-  smartBizAddressService,
-} from '../../../store/address/smartBizAddressStore';
+import { smartBizAddressService } from '../../../store/address/smartBizAddressStore';
 import { useTheme } from '../../../theme/ThemeContext';
+import { Address } from '../../../types/address';
 
 const { height: screenHeight } = Dimensions.get('window');
 const MAX_MODAL_HEIGHT = screenHeight * 0.75;
@@ -29,8 +28,8 @@ const MAX_MODAL_HEIGHT = screenHeight * 0.75;
 interface SmartBizAddressSelectionModalProps {
   visible: boolean;
   onClose: () => void;
-  onAddressSelect: (address: SmartBizAddress) => void;
-  selectedAddress?: SmartBizAddress | null;
+  onAddressSelect: (address: Address) => void;
+  selectedAddress?: Address | null;
   vendorId: string;
 }
 
@@ -46,39 +45,41 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
   const insets = useSafeAreaInsets();
 
   // Local state for addresses
-  const [addresses, setAddresses] = useState<SmartBizAddress[]>([]);
-  const [loading, setLoading] = useState(false);
+  // const [addresses, setAddresses] = useState<SmartBizAddress[]>([]);
+  // const [loading, setLoading] = useState(false);
+  const { addresses, loading, fetchAddresses } = useAddress();
+
   const [error, setError] = useState<string | null>(null);
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const isLoggedIn = Boolean(authData?.jwt);
 
-  const fetchAddresses = async () => {
-    console.log('[SmartBizModal] fetchAddresses called, vendorId:', vendorId);
-    if (!isLoggedIn || !vendorId || !authData?.jwt || !authData?.phone) {
-      console.log('[SmartBizModal] fetchAddresses - missing required data');
-      return;
-    }
+  // const fetchAddresses = async () => {
+  //   console.log('[SmartBizModal] fetchAddresses called, vendorId:', vendorId);
+  //   if (!isLoggedIn || !vendorId || !authData?.jwt || !authData?.phone) {
+  //     console.log('[SmartBizModal] fetchAddresses - missing required data');
+  //     return;
+  //   }
 
-    setLoading(true);
-    setError(null);
+  //   setLoading(true);
+  //   setError(null);
 
-    try {
-      const fetchedAddresses = await smartBizAddressService.fetchAddresses(
-        vendorId,
-        authData.jwt,
-        authData.phone
-      );
-      console.log('[SmartBizModal] fetchAddresses - got', fetchedAddresses.length, 'addresses');
-      setAddresses(fetchedAddresses);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch addresses';
-      console.log('[SmartBizModal] fetchAddresses - error:', errorMessage);
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //   try {
+  //     const fetchedAddresses = await smartBizAddressService.fetchAddresses(
+  //       vendorId,
+  //       authData.jwt,
+  //       authData.phone
+  //     );
+  //     console.log('[SmartBizModal] fetchAddresses - got', fetchedAddresses.length, 'addresses');
+  //     setAddresses(fetchedAddresses);
+  //   } catch (err) {
+  //     const errorMessage = err instanceof Error ? err.message : 'Failed to fetch addresses';
+  //     console.log('[SmartBizModal] fetchAddresses - error:', errorMessage);
+  //     setError(errorMessage);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   useEffect(() => {
     if (visible && isLoggedIn && vendorId && authData?.jwt && authData?.phone) {
@@ -91,7 +92,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
     onClose();
   };
 
-  const handleAddressSelect = (address: SmartBizAddress) => {
+  const handleAddressSelect = (address: Address) => {
     onAddressSelect(address);
     handleClose();
   };
@@ -121,7 +122,9 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
   useEffect(() => {
     if (visible && !loading && sortedAddresses.length > 0 && selectedAddress) {
       const timer = setTimeout(() => {
-        const selectedIndex = sortedAddresses.findIndex(a => a.id === selectedAddress.id);
+        const selectedIndex = sortedAddresses.findIndex(
+          a => a.addressID === selectedAddress.addressID
+        );
         if (selectedIndex > 0) {
           scrollRef.current?.scrollTo({
             y: selectedIndex * ADDRESS_CARD_HEIGHT,
@@ -411,13 +414,13 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
     },
   });
 
-  const renderAddressCard = (address: SmartBizAddress) => {
-    const isSelected = selectedAddress?.id === address.id;
-    const isDefault = address.id === defaultAddress?.id;
+  const renderAddressCard = (address: Address) => {
+    const isSelected = selectedAddress?.addressID === address.addressID;
+    // const isDefault = address.addressID === defaultAddress?.addressID;
 
     return (
       <TouchableOpacity
-        key={address.id}
+        key={address.addressID}
         style={[themedStyles.addressCard, isSelected && themedStyles.selectedAddressCard]}
         onPress={() => handleAddressSelect(address)}
         activeOpacity={0.7}
@@ -440,29 +443,25 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
         <View style={themedStyles.addressContent}>
           <View style={themedStyles.addressHeader}>
             <Text style={themedStyles.addressName} numberOfLines={1}>
-              {address.address.tag || address.address.name}
+              {address.tag || address.name}
             </Text>
             <View style={themedStyles.addressTagsContainer}>
-              {isDefault && (
+              {/* {isDefault && (
                 <View style={themedStyles.defaultBadge}>
                   <Text style={themedStyles.defaultBadgeText}>Default</Text>
                 </View>
-              )}
+              )} */}
             </View>
           </View>
 
           <View style={themedStyles.addressDetails}>
             <Text style={themedStyles.addressLine} numberOfLines={1}>
-              {[
-                address.address.addressLine1,
-                address.address.addressLine2,
-                address.address.addressLine3,
-              ]
+              {[address.addressLine1, address.addressLine2, address.addressLine3]
                 .filter(Boolean)
                 .join(', ')}
             </Text>
             <Text style={themedStyles.addressLocation} numberOfLines={1}>
-              {address.address.city}, {address.address.state} - {address.address.pincode}
+              {address.city}, {address.state} - {address.postalCode}
             </Text>
           </View>
         </View>
@@ -630,7 +629,6 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
             </TouchableOpacity>
           </View>
         </View>
-
       </View>
     </Modal>
   );

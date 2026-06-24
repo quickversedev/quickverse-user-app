@@ -727,10 +727,7 @@ const AddressDetailsStep = ({
                   return (
                     <TouchableOpacity
                       key={label}
-                      style={[
-                        themedStyles.tagButton,
-                        isSelected && themedStyles.tagButtonSelected,
-                      ]}
+                      style={[themedStyles.tagButton, isSelected && themedStyles.tagButtonSelected]}
                       onPress={() => {
                         if (label === 'Other') {
                           setIsCustomTagMode(true);
