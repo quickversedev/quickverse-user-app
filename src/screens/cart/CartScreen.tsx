@@ -49,13 +49,6 @@ import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
 import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
 import PaymentScreen from './PaymentScreen';
 
-import {
-  CFEnvironment,
-  CFSession,
-  CFThemeBuilder,
-  CFUPIIntentCheckoutPayment,
-} from 'cashfree-pg-api-contract';
-import { CFPaymentGatewayService } from 'react-native-cashfree-pg-sdk';
 // import createPaymentService, { CreatePaymentRequest } from '../../services/createPaymentService';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
@@ -354,6 +347,7 @@ const CartScreen: React.FC = () => {
 
   interface OrderResponse {
     payment_session_id: string;
+    id: string;
     order_id: string;
   }
 
@@ -361,85 +355,85 @@ const CartScreen: React.FC = () => {
     shopId: any;
   }
 
-  const handleCashFreePayment = async (
-    orderResponse: OrderResponse,
-    calculatedTotal: number,
-    vendor: Vendor
-  ): Promise<void> => {
-    try {
-      const onReceivedEvent = (eventName: string, map: any): void => {
-        console.log('Payment event: ' + eventName + ' data: ' + JSON.stringify(map));
-      };
+  // const handleCashFreePayment = async (
+  //   orderResponse: OrderResponse,
+  //   calculatedTotal: number,
+  //   vendor: Vendor
+  // ): Promise<void> => {
+  //   try {
+  //     const onReceivedEvent = (eventName: string, map: any): void => {
+  //       console.log('Payment event: ' + eventName + ' data: ' + JSON.stringify(map));
+  //     };
 
-      const onVerify = async (orderId: string): Promise<void> => {
-        console.log('Payment verified for orderId: ' + orderId);
-        setIsOrderLoading(true);
+  //     const onVerify = async (orderId: string): Promise<void> => {
+  //       console.log('Payment verified for orderId: ' + orderId);
+  //       setIsOrderLoading(true);
 
-        try {
-          const orderStatusResponse: any = await orderService.getOrderStatus(
-            orderResponse.order_id,
-            authData?.jwt || ''
-          );
+  //       try {
+  //         const orderStatusResponse: any = await orderService.getOrderStatus(
+  //           orderResponse.order_id,
+  //           authData?.jwt || ''
+  //         );
 
-          if (orderStatusResponse.orderId && orderStatusResponse.paymentStatus === 'PAID') {
-            navigation.navigate('OrderSuccess', {
-              orderId: orderStatusResponse.orderId,
-              amount: calculatedTotal,
-              date: new Date().toLocaleDateString(),
-              shopId: vendor.shopId,
-            });
+  //         if (orderStatusResponse.orderId && orderStatusResponse.paymentStatus === 'PAID') {
+  //           navigation.navigate('OrderSuccess', {
+  //             orderId: orderStatusResponse.orderId,
+  //             amount: calculatedTotal,
+  //             date: new Date().toLocaleDateString(),
+  //             shopId: vendor.shopId,
+  //           });
 
-            if (cart && authData?.jwt && authData?.phone) {
-              await clearCart(cart.cartId, authData.jwt, authData.phone);
-            }
-            setIsOrderLoading(false);
-          }
-        } catch (err) {
-          console.log('Error clearing cart:', err);
-        } finally {
-          setIsOrderLoading(false);
-        }
-      };
+  //           if (cart && authData?.jwt && authData?.phone) {
+  //             await clearCart(cart.cartId, authData.jwt, authData.phone);
+  //           }
+  //           setIsOrderLoading(false);
+  //         }
+  //       } catch (err) {
+  //         console.log('Error clearing cart:', err);
+  //       } finally {
+  //         setIsOrderLoading(false);
+  //       }
+  //     };
 
-      const onError = (error: any, orderId: string): void => {
-        console.log('Payment error: ' + JSON.stringify(error) + ' orderId: ' + orderId);
+  //     const onError = (error: any, orderId: string): void => {
+  //       console.log('Payment error: ' + JSON.stringify(error) + ' orderId: ' + orderId);
 
-        navigation.navigate('OrderFailure', {
-          errorMessage: 'Payment failed. Please try again.',
-        });
-      };
+  //       navigation.navigate('OrderFailure', {
+  //         errorMessage: 'Payment failed. Please try again.',
+  //       });
+  //     };
 
-      CFPaymentGatewayService.setEventSubscriber({
-        onReceivedEvent,
-      });
+  //     CFPaymentGatewayService.setEventSubscriber({
+  //       onReceivedEvent,
+  //     });
 
-      CFPaymentGatewayService.setCallback({
-        onVerify,
-        onError,
-      });
+  //     CFPaymentGatewayService.setCallback({
+  //       onVerify,
+  //       onError,
+  //     });
 
-      const session = new CFSession(
-        orderResponse.payment_session_id,
-        orderResponse.order_id,
-        CFEnvironment.SANDBOX
-      );
+  //     const session = new CFSession(
+  //       orderResponse.payment_session_id,
+  //       orderResponse.order_id,
+  //       CFEnvironment.SANDBOX
+  //     );
 
-      const theme = new CFThemeBuilder()
-        .setNavigationBarBackgroundColor('#D97706')
-        .setNavigationBarTextColor('#FFFFFF')
-        .setButtonBackgroundColor('#D97706')
-        .setButtonTextColor('#FFFFFF')
-        .setPrimaryTextColor('#212121')
-        .setSecondaryTextColor('#757575')
-        .build();
+  //     const theme = new CFThemeBuilder()
+  //       .setNavigationBarBackgroundColor('#D97706')
+  //       .setNavigationBarTextColor('#FFFFFF')
+  //       .setButtonBackgroundColor('#D97706')
+  //       .setButtonTextColor('#FFFFFF')
+  //       .setPrimaryTextColor('#212121')
+  //       .setSecondaryTextColor('#757575')
+  //       .build();
 
-      const upiIntentPayment = new CFUPIIntentCheckoutPayment(session, theme);
+  //     const upiIntentPayment = new CFUPIIntentCheckoutPayment(session, theme);
 
-      CFPaymentGatewayService.doUPIPayment(upiIntentPayment);
-    } catch (error) {
-      console.log('Cashfree payment error:', error);
-    }
-  };
+  //     CFPaymentGatewayService.doUPIPayment(upiIntentPayment);
+  //   } catch (error) {
+  //     console.log('Cashfree payment error:', error);
+  //   }
+  // };
 
   const handleRazorpayPayment = async (
     orderResponse: OrderResponse,
@@ -447,6 +441,8 @@ const CartScreen: React.FC = () => {
     vendor: Vendor
   ) => {
     try {
+      setIsOrderLoading(true);
+
       const RAZORPAY_KEY_ID = 'rzp_test_T2Z6i6Go29OJwg';
 
       const options = {
@@ -455,7 +451,7 @@ const CartScreen: React.FC = () => {
         key: RAZORPAY_KEY_ID,
         amount: calculatedTotal * 100,
         name: 'QuickVerse',
-        order_id: orderResponse?.order_id,
+        order_id: orderResponse?.id,
         method: {
           upi: true,
           card: false,
@@ -474,10 +470,46 @@ const CartScreen: React.FC = () => {
         // },
       };
 
+      console.log(options);
+
       const response = await RazorpayCheckout.open(options);
       console.log('Razorpay Payment Success : ', response);
 
-      setIsOrderLoading(true);
+      // const capturePaymentPayload = { amount: calculatedTotal * 100, currency: 'INR' };
+
+      // const paymentResponse = await orderService.captureOrder(
+      //   response.razorpay_payment_id,
+      //   capturePaymentPayload,
+      //   authData?.jwt || '',
+      //   authData?.phone || ''
+      // );
+
+      // console.log('Payment Response : ', paymentResponse);
+
+      try {
+        const orderStatusResponse: any = await orderService.getOrderStatus(
+          orderResponse.id,
+          authData?.jwt || ''
+        );
+
+        if (orderStatusResponse.orderId && orderStatusResponse.paymentStatus === 'PAID') {
+          navigation.navigate('OrderSuccess', {
+            orderId: orderStatusResponse.orderId,
+            amount: calculatedTotal,
+            date: new Date().toLocaleDateString(),
+            shopId: vendor.shopId,
+          });
+
+          if (cart && authData?.jwt && authData?.phone) {
+            await clearCart(cart.cartId, authData.jwt, authData.phone);
+          }
+          setIsOrderLoading(false);
+        }
+      } catch (err) {
+        console.log('Error clearing cart:', err);
+      } finally {
+        setIsOrderLoading(false);
+      }
 
       // const orderStatusResponse: any = await orderService.getOrderStatus(
       //   orderResponse.order_id,

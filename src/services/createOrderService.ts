@@ -17,6 +17,7 @@ export interface CreateOrderResponse {
   order_id: string;
   payment_session_id: string;
   orderId: string;
+  id: string;
   customerId: string;
   totalOrderAmount: number;
   orderStatus: string;
@@ -99,6 +100,24 @@ class OrderService {
         sessionKey: sessionKey ? '***' : 'MISSING',
         phone: phone ? '***' : 'MISSING',
       });
+      throw error;
+    }
+  }
+
+  async captureOrder(paymentId: string, payload: any, sessionKey: string, phone: string) {
+    try {
+      const response = await apiCall(
+        axiosInstance.post(`v3/payment/${paymentId}/capture`, payload, {
+          headers: {
+            SessionKey: sessionKey,
+            Authorization: getAuthHeader(),
+            phone: phone,
+          },
+        })
+      );
+      return response;
+    } catch (error: unknown) {
+      console.log('Capture Payament Error : ', error);
       throw error;
     }
   }
