@@ -57,7 +57,7 @@ export type RootStackParamList = {
 
   Search: { restrictCategory?: 'Food' | 'Grocery' } | undefined;
   Address: undefined;
-  AddAddress: { source?: 'modal' } | undefined;
+  AddAddress: { source?: 'modal', screen?: string } | undefined;
   EditAddress: { address: import('../types/address').Address };
   HelpDesk: undefined;
   AboutUs: undefined;

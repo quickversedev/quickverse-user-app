@@ -93,7 +93,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
 
   const handleAddNewAddress = () => {
     onClose();
-    navigation.navigate('AddAddress', { source: 'modal' });
+    navigation.navigate('AddAddress', { source: 'modal', screen: 'home' });
   };
 
   // Debounced search function

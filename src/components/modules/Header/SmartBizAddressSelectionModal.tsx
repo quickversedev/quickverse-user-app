@@ -107,7 +107,7 @@ export const SmartBizAddressSelectionModal: React.FC<SmartBizAddressSelectionMod
 
   const handleAddNewAddress = () => {
     onClose();
-    navigation.navigate('AddAddress', { source: 'modal' });
+    navigation.navigate('AddAddress', { source: 'modal', screen: 'checkout' });
   };
 
   const defaultAddress = smartBizAddressService.getDefaultAddress(vendorId);

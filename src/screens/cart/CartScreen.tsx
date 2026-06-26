@@ -883,7 +883,10 @@ const CartScreen: React.FC = () => {
       <CartFooter
         address={getFormattedAddress()}
         addressTag={selectedSmartBizAddress?.tag || selectedSmartBizAddress?.name}
-        onSelectAddress={() => setShowSmartBizAddressModal(true)}
+        onSelectAddress={() => {
+          console.log('Select address pressed');
+          setShowSmartBizAddressModal(true);
+        }}
         onCheckout={handleCheckout}
         disabled={isCheckoutDisabled}
         loading={isOrderLoading}

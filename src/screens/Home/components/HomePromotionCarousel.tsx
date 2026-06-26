@@ -59,10 +59,9 @@ const HomePromotionCarousel = () => {
   const pauseUntilRef = useRef(0);
   const [, setCurrentIndex] = useState(0);
 
-  const bannerItems = useMemo(
-    () => promotions.filter(item => item.bannerImage),
-    [promotions]
-  );
+  const bannerItems = useMemo(() => promotions.filter(item => item.bannerImage), [promotions]);
+
+  console.log(bannerItems);
 
   useEffect(() => {
     if (bannerItems.length <= 1) return;
@@ -127,10 +126,7 @@ const HomePromotionCarousel = () => {
             key={banner.promoId ?? index}
             promo={{ ...banner, bannerImage: true }}
             size={178}
-            style={[
-              styles.bannerContainer,
-              index === bannerItems.length - 1 && { marginRight: 0 },
-            ]}
+            style={[styles.bannerContainer, index === bannerItems.length - 1 && { marginRight: 0 }]}
             aspectRatio={1.5}
             onPress={handleBannerPress}
           />
