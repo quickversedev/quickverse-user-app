@@ -41,7 +41,7 @@ cd android && ./gradlew bundleRelease     # Release AAB (Play Store)
 ### Core Tech
 
 - **Framework:** React Native 0.84 (bare workflow), TypeScript strict
-- **State:** Zustand with MMKV persistence (custom adapter in `src/services/localStorage/storage.service.ts`)
+- **State:** Zustand 5 with MMKV persistence (custom adapter in `src/services/localStorage/storage.service.ts`)
 - **Navigation:** React Navigation 7.x (native stack + bottom tabs)
 - **HTTP:** Axios with centralized config in `src/config/api/axios.config.ts`
 - **Notifications:** Firebase Messaging + Notifee
@@ -54,7 +54,7 @@ cd android && ./gradlew bundleRelease     # Release AAB (Play Store)
 src/
 ├── screens/        # UI screens organized by feature
 ├── components/     # common/ (shared UI), modules/ (Cart, Header, Product, Vendor)
-├── store/          # Zustand stores (cart/, address/, products/, pages/, config, theme, vendor)
+├── store/          # Zustand stores (cart/, address/, products/, config, theme, vendor, pricing)
 ├── services/       # API services (api/) + localStorage/MMKV wrapper
 ├── hooks/          # Custom hooks (+ Permissions/ subdirectory)
 ├── contexts/       # AuthProvider (login/JWT), TabContext (tab state)
@@ -115,11 +115,11 @@ AppStack
 4. JWT stored in MMKV (`AuthSession` type), sent as `SessionKey` header per-request
 5. Session expiry (1047/1042) → auto-logout via global `setSessionExpiredCallback` in axios config
 6. Auth state managed in `src/contexts/login/AuthProvider.tsx`
-7. **Logout resets all stores atomically** — `resetAuthState()` in AuthProvider clears MMKV + resets every Zustand store via `setState()`
+7. **Logout resets all stores atomically** — `resetAuthState()` in AuthProvider clears MMKV (`StorageService.clearAll()`) + resets every Zustand store via explicit `setState()` calls. When adding a new store, add its reset to `resetAuthState()`.
 
 ### Key Patterns
 
-- **Cart:** Multi-vendor carts keyed by `vendor_<shopId>`. Uses `latestRequestIdPerCart` for request deduplication to avoid stale responses. Optimistic UI updates with rollback on API error. Cart auto-removes when all products reach quantity 0. Guest users get local-only carts (no API calls) — pass `authData?.jwt || ''` and `authData?.phone || ''`; never gate cart actions on `!authData?.jwt`.
+- **Cart:** Multi-vendor carts keyed by `vendor_<shopId>`. Uses `latestRequestIdPerCart` for request deduplication to avoid stale responses. Optimistic UI updates with rollback on API error. Cart auto-removes when all products reach quantity 0. Guest users get local-only carts (no API calls) — pass `authData?.jwt || ''` and `authData?.phone || ''`; never gate cart actions on `!authData?.jwt`. On login, local guest carts are synced to the server (see `syncGuestCart` in AuthProvider).
 - **Store persistence:** Stores use Zustand `persist` middleware with the `mmkvStorage` adapter. Use `partialize` to persist only essential state (exclude `loading`, `error`, etc.).
 - **Cache expiry:** Some stores (e.g., `featuredProductsStore`) implement time-based cache expiry (5-minute TTL).
 - **Tax formula:** 18% GST on (commission + delivery + platform fees). Food: 10% commission, Grocery: 2%. Identical logic in `PaymentSummary.tsx` and `OrderDetailsScreen.tsx` — keep them in sync.
@@ -142,7 +142,7 @@ Restart Metro after `.env` changes: `npm start -- --reset-cache`
 
 - **`no-console`:** Only `console.warn` and `console.error` are allowed — `console.log` is an ESLint error.
 - **Unused vars:** Prefix with `_` to suppress the `no-unused-vars` error (e.g., `_unusedParam`).
-- **Prettier:** 100-char print width, single quotes, 2-space indent, trailing commas (es5), avoid parens on single-arg arrows.
+- **Prettier:** 100-char print width, single quotes, 2-space indent, trailing commas (es5), avoid parens on single-arg arrows, `endOfLine: 'auto'`.
 - **Lint-staged** (`.lintstagedrc.js`): Pre-commit hook runs `eslint --fix` + `prettier --write` on staged TS/JS files.
 - **Inline styles:** `react-native/no-inline-styles` is set to warn.
 
