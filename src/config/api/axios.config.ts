@@ -59,7 +59,7 @@ export const API_CONFIG = {
   // baseURL: 'http://prd.quickverse.in/quickVerse',
   // Local: Use your machine IP for physical device, or 10.0.2.2 for Android emulator
   // baseURL: 'http://10.0.2.2:8080/quickVerse',
-  baseURL: 'https://ca64-2401-4900-1b2d-f3a3-b535-f829-4155-14d9.ngrok-free.app/quickVerse',
+  baseURL: 'https://4eeb-2401-4900-c250-eb5e-3863-899e-7129-9890.ngrok-free.app/quickVerse',
   // baseURL: 'https://superscientifically-revengeless-ronald.ngrok-free.dev/quickVerse',
 
   /** Default timeout for all requests (15 seconds) */

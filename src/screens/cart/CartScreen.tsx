@@ -441,8 +441,6 @@ const CartScreen: React.FC = () => {
     vendor: Vendor
   ) => {
     try {
-      setIsOrderLoading(true);
-
       const RAZORPAY_KEY_ID = 'rzp_test_T2Z6i6Go29OJwg';
 
       const options = {
@@ -465,26 +463,12 @@ const CartScreen: React.FC = () => {
           contact: authData?.phone,
           name: authData?.username,
         },
-        // theme: {
-        //   color: '#53a20e',
-        // },
       };
-
-      console.log(options);
 
       const response = await RazorpayCheckout.open(options);
       console.log('Razorpay Payment Success : ', response);
 
-      // const capturePaymentPayload = { amount: calculatedTotal * 100, currency: 'INR' };
-
-      // const paymentResponse = await orderService.captureOrder(
-      //   response.razorpay_payment_id,
-      //   capturePaymentPayload,
-      //   authData?.jwt || '',
-      //   authData?.phone || ''
-      // );
-
-      // console.log('Payment Response : ', paymentResponse);
+      setIsOrderLoading(true);
 
       try {
         const orderStatusResponse: any = await orderService.getOrderStatus(
@@ -510,25 +494,6 @@ const CartScreen: React.FC = () => {
       } finally {
         setIsOrderLoading(false);
       }
-
-      // const orderStatusResponse: any = await orderService.getOrderStatus(
-      //   orderResponse.order_id,
-      //   authData?.jwt || ''
-      // );
-
-      // if (orderStatusResponse.orderId && orderStatusResponse.paymentStatus === 'PAID') {
-      //   navigation.navigate('OrderSuccess', {
-      //     orderId: orderStatusResponse.orderId,
-      //     amount: calculatedTotal,
-      //     date: new Date().toLocaleDateString(),
-      //     shopId: vendor.shopId,
-      //   });
-
-      //   if (cart && authData?.jwt && authData?.phone) {
-      //     await clearCart(cart.cartId, authData.jwt, authData.phone);
-      //   }
-      //   setIsOrderLoading(false);
-      // }
     } catch (error) {
       console.log('Razorpay Payment Failed : ', error);
     }
