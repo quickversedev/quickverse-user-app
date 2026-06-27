@@ -54,7 +54,8 @@ target 'qvuserapp_ui' do
 
   # react-native-permissions handled by setup_permissions above
 
-  post_install do |installer|
+ post_install do |installer|
+    # React Native ka default post install logic
     # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
       installer,
@@ -62,5 +63,14 @@ target 'qvuserapp_ui' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    # Custom fix for non-modular include errors (like react-native-maps)
+    installer.pods_project.targets.each do |target|
+      if target.name == 'react-native-maps'
+        target.build_configurations.each do |config|
+          config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+        end
+      end
+    end
   end
 end
