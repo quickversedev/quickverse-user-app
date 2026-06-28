@@ -31,12 +31,12 @@ import { useAuth } from '../../contexts/login/AuthProvider';
 import { useOrders } from '../../hooks/useOrders';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { RootStackParamList } from '../../routes/AppStack';
+import couponService from '../../services/api/couponSevice';
 import orderService, { CreateOrderRequest } from '../../services/createOrderService';
 import createPaymentService, { CreatePaymentRequest } from '../../services/createPaymentService';
 import { getCODCharges } from '../../services/paymentService';
 import { smartBizAddressService } from '../../store/address/smartBizAddressStore';
 import useCartStore from '../../store/cart/cartStore';
-import useCouponStore from '../../store/cart/couponStore';
 import useConfigStore from '../../store/configStore';
 import usePricingStore from '../../store/pricingStore';
 import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
@@ -52,41 +52,26 @@ import PaymentScreen from './PaymentScreen';
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
 
-// ============================================================================
-// MAIN CART SCREEN COMPONENT
-// ============================================================================
-
 const CartScreen: React.FC = () => {
   const navigation = useNavigation<CartScreenNavigationProp>();
   const route = useRoute<CartScreenRouteProp>();
   const { cartId } = route.params || {};
+  const { getRegionId } = useConfigStore(state => state);
 
-  // Store hooks
   const {
     carts,
     activeCartId,
     increment,
     decrement,
     clearCart,
-    getAppliedCoupon,
     refreshCart,
     addToCart,
     setActiveCart,
   } = useCartStore();
   const { vendors } = useVendorStore();
-  const {
-    getAvailableCoupons,
-    checkAndFetchOffers,
-    vendorOffersLoading,
-    customerOffersLoading,
-    vendorOffersError,
-    customerOffersError,
-  } = useCouponStore();
 
-  // Auth hooks
   const { selectedAddress, setSelectedAddress, permissionDataInAuth, authData } = useAuth();
 
-  // Local state
   const [showAddressModal, setShowAddressModal] = React.useState(false);
   const [showSmartBizAddressModal, setShowSmartBizAddressModal] = React.useState(false);
   const [selectedSmartBizAddress, setSelectedSmartBizAddress] = React.useState<Address | null>(
@@ -96,7 +81,7 @@ const CartScreen: React.FC = () => {
   const [showPaymentModal, setShowPaymentModal] = React.useState(false);
   const [selectedPaymentOption, setSelectedPaymentOption] = React.useState<string | undefined>(
     'cod'
-  ); // Default to COD
+  );
   const [isOrderLoading, setIsOrderLoading] = React.useState(false);
   const [showDistanceModal, setShowDistanceModal] = React.useState(false);
   const [storeClosedModal, setStoreClosedModal] = React.useState<{
@@ -104,15 +89,16 @@ const CartScreen: React.FC = () => {
     message: string;
   }>({ visible: false, message: '' });
   const [showLoginPromptModal, setShowLoginPromptModal] = React.useState(false);
+  const [availableCoupons, setAvailableCoupons] = React.useState<any[]>([]);
+  const [couponLoading, setCouponLoading] = React.useState(false);
+  const [selectedCoupon, setSelectedCoupon] = React.useState<any | null>(null);
+  const couponCallbackRef = React.useRef<((coupon: any) => void) | null>(null);
 
-  // Theme
   const { getColor } = useTheme();
   const { orders, loading: ordersLoading, loadMoreOrders, hasMoreOrders } = useOrders();
   const getVendorById = useVendorStore(state => state.getVendorById);
-  // Subscribe to pricing configs so totals re-render when configs load
   const pricingConfigs = usePricingStore(state => state.configs);
 
-  // Compute the final billed total for a previous order (matches OrderDetailsScreen formula)
   const computePreviousOrderTotal = useCallback(
     (order: Order): number => {
       const subTotal = (order.items || []).reduce(
@@ -135,28 +121,21 @@ const CartScreen: React.FC = () => {
     },
     [getVendorById, pricingConfigs]
   );
+
   const { getFeaturedProducts } = useFeaturedProductsStore();
   const [featuredProducts, setFeaturedProducts] = React.useState<Product[]>([]);
-  // const [smartBizAddressId, setSmartBizAddressId] = React.useState<string | null>(null);
-  // Normalize delivery radius to kilometers if config is in meters
+
   const deliveryRadiusKmRaw = useConfigStore(state => state.getDeliveryDistance());
   const deliveryRadiusKm = useMemo(() => {
     if (deliveryRadiusKmRaw == null) return null;
-    // Heuristic: if value is large (likely meters), convert to km
     return deliveryRadiusKmRaw > 100 ? deliveryRadiusKmRaw / 1000 : deliveryRadiusKmRaw;
   }, [deliveryRadiusKmRaw]);
 
-  // Memoized derived state
   const cart = useMemo(() => {
     if (cartId && carts[cartId]) return carts[cartId];
     if (activeCartId && carts[activeCartId]) return carts[activeCartId];
-
-    // Fallback: pick the first available cart if any
     const allCartIds = Object.keys(carts);
-    if (allCartIds.length > 0) {
-      return carts[allCartIds[0]];
-    }
-
+    if (allCartIds.length > 0) return carts[allCartIds[0]];
     return undefined;
   }, [cartId, activeCartId, carts]);
 
@@ -169,16 +148,6 @@ const CartScreen: React.FC = () => {
     return vendors.find(v => v.shopId === cart.cartId.replace('vendor_', ''));
   }, [vendors, cart?.cartId]);
 
-  const appliedCoupon = useMemo(() => {
-    return cart ? getAppliedCoupon(cart.cartId) : undefined;
-  }, [cart, getAppliedCoupon]);
-
-  const availableCoupons = useMemo(() => {
-    const coupons = getAvailableCoupons(vendor?.shopId || '');
-    return coupons;
-  }, [getAvailableCoupons, vendor?.shopId]);
-
-  // Payment methods hook
   const {
     paymentMethods,
     availableOptions,
@@ -192,19 +161,15 @@ const CartScreen: React.FC = () => {
     phone: authData?.phone,
   });
 
-  // Get COD charges from payment methods
   const codCharges = useMemo(() => {
     return getCODCharges(paymentMethods);
   }, [paymentMethods]);
 
   const vendorLatLon = useMemo(() => {
     if (!vendor) return null;
-    // Prefer GeoJSON location if present, fallback to coordinates field
     if (vendor.location?.coordinates && vendor.location.coordinates.length === 2) {
       const [lon, lat] = vendor.location.coordinates;
-      if (typeof lat === 'number' && typeof lon === 'number') {
-        return { lat, lon };
-      }
+      if (typeof lat === 'number' && typeof lon === 'number') return { lat, lon };
     }
     if (
       vendor.coordinates &&
@@ -220,9 +185,7 @@ const CartScreen: React.FC = () => {
     if (!selectedSmartBizAddress) return null;
     const lat = selectedSmartBizAddress.coordinates.latitude;
     const lon = selectedSmartBizAddress.coordinates.longitude;
-    if (Number.isFinite(lat) && Number.isFinite(lon)) {
-      return { lat, lon };
-    }
+    if (Number.isFinite(lat) && Number.isFinite(lon)) return { lat, lon };
     return null;
   }, [selectedSmartBizAddress]);
 
@@ -242,7 +205,6 @@ const CartScreen: React.FC = () => {
     return `${formatDistanceKm(distanceKm)} away`;
   }, [distanceKm]);
 
-  // Memoized event handlers
   const handleClearCart = useCallback(() => {
     if (cart) {
       clearCart(cart.cartId, authData?.jwt || '', authData?.phone || '');
@@ -271,6 +233,7 @@ const CartScreen: React.FC = () => {
     },
     [cart, authData?.jwt, authData?.phone, decrement]
   );
+
   const convertToProduct = useCallback(
     (item: { id: string; name: string; price: number; image: number }, index: number): Product => {
       if (index === -1) throw new Error('Invalid suggested item');
@@ -303,9 +266,7 @@ const CartScreen: React.FC = () => {
     (item: { id: string; name: string; price: number; image: number }) => {
       const index = featuredProducts.findIndex(p => p.sku === item.id);
       const product = convertToProduct(item, index);
-
       if (!cart || !authData?.jwt || !authData?.phone) return;
-
       const cartProduct = {
         sku: product.sku,
         shopId: product.shopId,
@@ -315,7 +276,6 @@ const CartScreen: React.FC = () => {
         image: product.imageUrl || '',
         veg: product.veg,
       };
-
       addToCart(cart.cartId, cartProduct, authData.jwt, authData.phone);
     },
     [cart, authData, addToCart, featuredProducts, convertToProduct]
@@ -325,7 +285,6 @@ const CartScreen: React.FC = () => {
     (item: { id: string; name: string; price: number; image: number }) => {
       const index = featuredProducts.findIndex(p => p.name === item.name);
       const product = convertToProduct(item, index);
-
       if (!cart || !authData?.jwt || !authData?.phone) return;
       increment(cart.cartId, product.sku, authData.jwt, authData.phone);
     },
@@ -336,29 +295,45 @@ const CartScreen: React.FC = () => {
     (item: { id: string; name: string; price: number; image: number }) => {
       const index = featuredProducts.findIndex(p => p.name === item.name);
       const product = convertToProduct(item, index);
-
       if (!cart || !authData?.jwt || !authData?.phone) return;
       decrement(cart.cartId, product.sku, authData.jwt, authData.phone);
     },
     [cart, authData, decrement, featuredProducts, convertToProduct]
   );
 
+  const handleCouponNavigation = useCallback(() => {
+    couponCallbackRef.current = (coupon: any) => {
+      setSelectedCoupon(coupon);
+    };
+    const apiSubtotal = cart?.totalCartAmount ?? 0;
+
+    const localSubtotal = cartItems.reduce(
+      (sum: number, product: any) => sum + product.price * product.quantity,
+      0
+    );
+
+    const calculatedSubtotal = apiSubtotal > 0 ? apiSubtotal : localSubtotal;
+
+    navigation.navigate('Coupons', {
+      cartTotal: calculatedSubtotal,
+      coupons: availableCoupons,
+      loading: couponLoading,
+      selectedCoupon: selectedCoupon,
+      onApply: couponCallbackRef.current,
+    } as any);
+  }, [navigation, availableCoupons, couponLoading, selectedCoupon, cart]);
+
   const handleCheckout = useCallback(async () => {
-    // Gate guest users at checkout — require login before payment
     if (!authData?.jwt) {
       setShowLoginPromptModal(true);
       return;
     }
 
-    const shouldShowCompulsoryModal = !selectedSmartBizAddress;
-
-    if (shouldShowCompulsoryModal) {
-      // setShowAddressModal(true);
+    if (!selectedSmartBizAddress) {
       setShowSmartBizAddressModal(true);
       return;
     }
 
-    // Prevent checkout if beyond delivery radius
     const maxKm = deliveryRadiusKm ?? 5;
     if (distanceKm != null && distanceKm > maxKm) {
       setShowDistanceModal(true);
@@ -370,7 +345,6 @@ const CartScreen: React.FC = () => {
       return;
     }
 
-    // Prevent checkout if store is closed (time-based or manually)
     if (vendor) {
       const storeStatus = isStoreOpen({
         openingTime: vendor.openingTime,
@@ -383,7 +357,6 @@ const CartScreen: React.FC = () => {
         const opensAtText = isTimeBased
           ? ` Opens at ${formatTimeToAMPM(storeStatus.nextOpeningTime!)}.`
           : '';
-
         setStoreClosedModal({
           visible: true,
           message: `The store is closed at the moment.${opensAtText} Please try again later.`,
@@ -392,7 +365,6 @@ const CartScreen: React.FC = () => {
       }
     }
 
-    // Validate required data
     if (!cart || !vendor || !selectedAddress || !authData?.jwt || !authData?.phone) {
       navigation.navigate('OrderFailure', {
         errorMessage: 'Missing required information. Please try again.',
@@ -403,7 +375,6 @@ const CartScreen: React.FC = () => {
     setIsOrderLoading(true);
 
     try {
-      // Step 1: Create Order
       const orderRequest: CreateOrderRequest = {
         shopId: parseInt(vendor.shopId, 10),
         cartId: cart.smartBizCartId,
@@ -422,7 +393,6 @@ const CartScreen: React.FC = () => {
         authData.phone
       );
 
-      // Step 2: Create Payment
       const paymentRequest: CreatePaymentRequest = {
         customerId: parseInt(orderResponse.customerId, 10),
         mobileNumber: authData.phone,
@@ -434,14 +404,13 @@ const CartScreen: React.FC = () => {
             status: 'CREATED',
             type: 'COMPLETION',
             paymentMethod: selectedPaymentOption.toUpperCase(),
-            additionalTenderCharges: 10, // This should come from payment configuration
+            additionalTenderCharges: 10,
           },
         ],
       };
 
       await createPaymentService.createPayment(paymentRequest, authData.jwt, authData.phone);
 
-      // Both APIs successful - Clear cart and navigate to success screen
       if (cart && authData?.jwt && authData?.phone) {
         await clearCart(cart.cartId, authData.jwt, authData.phone);
       }
@@ -461,7 +430,6 @@ const CartScreen: React.FC = () => {
         shopId: vendor.shopId,
       });
     } catch (error: unknown) {
-      // Check for specific store not active error
       if (
         error &&
         typeof error === 'object' &&
@@ -476,9 +444,6 @@ const CartScreen: React.FC = () => {
             })
           : null;
 
-        // Only show opening time if store is closed due to time (not manually closed)
-        // If storeActive is false, it's manually closed - don't show opening time
-        // If status.isOpen would be true based on time but backend says closed, it's manual
         const nextOpenTime = status?.nextOpeningTime;
         const isTimeBased = vendor?.storeActive !== false && nextOpenTime;
         const opensAtText = isTimeBased ? ` Opens at ${formatTimeToAMPM(nextOpenTime)}.` : '';
@@ -494,10 +459,7 @@ const CartScreen: React.FC = () => {
         (error as any)?.message ||
         (error instanceof Error ? error.message : 'Order creation failed. Please try again.');
 
-      // Navigate to failure screen with error message
-      navigation.navigate('OrderFailure', {
-        errorMessage,
-      });
+      navigation.navigate('OrderFailure', { errorMessage });
     } finally {
       setIsOrderLoading(false);
     }
@@ -516,7 +478,6 @@ const CartScreen: React.FC = () => {
     deliveryRadiusKm,
   ]);
 
-  // Helper function to get ordinal suffix
   const getOrdinalSuffix = useCallback((day: number) => {
     if (day > 3 && day < 21) return 'th';
     switch (day % 10) {
@@ -544,16 +505,6 @@ const CartScreen: React.FC = () => {
     setShowSmartBizAddressModal(false);
   }, []);
 
-  const handleCouponNavigation = useCallback(() => {
-    if (vendor?.shopId) {
-      navigation.navigate('Coupons');
-    }
-  }, [vendor?.shopId, navigation]);
-
-  const handleEditCoupon = useCallback(() => {
-    navigation.navigate('Coupons');
-  }, [navigation]);
-
   const handlePaymentOptionsPress = useCallback(() => {
     setShowPaymentModal(true);
   }, []);
@@ -567,12 +518,8 @@ const CartScreen: React.FC = () => {
     setShowPaymentModal(false);
   }, []);
 
-  // Memoized utility functions
   const getFormattedAddress = useCallback(() => {
-    if (!selectedSmartBizAddress) {
-      return 'Select delivery address';
-    }
-
+    if (!selectedSmartBizAddress) return 'Select delivery address';
     const { name, addressLine1, city, state } = selectedSmartBizAddress;
     const parts = [name, addressLine1, city, state].filter(Boolean).join(', ');
     return distanceText ? `${parts} • ${distanceText}` : parts;
@@ -582,122 +529,36 @@ const CartScreen: React.FC = () => {
     return !selectedPaymentOption || Boolean(paymentMethodsError) || isOrderLoading;
   }, [selectedPaymentOption, paymentMethodsError, isOrderLoading]);
 
-  // Effects
   React.useEffect(() => {
     const initializeCart = async () => {
       if (vendor?.shopId && authData?.jwt && authData?.phone) {
-        // Fetch addresses first
         await smartBizAddressService.fetchAddresses(vendor.shopId, authData.jwt, authData.phone);
-
-        // Auto-select default address if none selected
-        if (!selectedSmartBizAddress) {
-          // const defaultAddress = smartBizAddressService.getDefaultAddress(vendor.shopId);
-          // if (defaultAddress) {
-          //   setSelectedSmartBizAddress(defaultAddress);
-          // } else {
-          //   // If no default, select first available address
-          //   const addresses = smartBizAddressService.getAddresses(vendor.shopId);
-          //   if (addresses.length > 0) {
-          //     setSelectedSmartBizAddress(addresses[0]);
-          //   }
-          // }
-        }
-
-        // Then fetch coupons after addresses are loaded
-        await checkAndFetchOffers(vendor.shopId, authData);
       }
     };
-
     initializeCart();
-  }, [
-    vendor?.shopId,
-    authData?.jwt,
-    authData?.phone,
-    checkAndFetchOffers,
-    selectedSmartBizAddress,
-  ]);
+  }, [vendor?.shopId, authData?.jwt, authData?.phone, selectedSmartBizAddress]);
 
-  // Revalidate coupons when cart contents change
-  React.useEffect(() => {
-    if (vendor?.shopId && cart && authData?.jwt && authData?.phone) {
-      // Revalidate coupons when cart items or total amount changes
-      checkAndFetchOffers(vendor.shopId, authData);
-    }
-  }, [
-    cartItems.length,
-    cart?.totalCartAmount,
-    vendor?.shopId,
-    checkAndFetchOffers,
-    authData?.jwt,
-    authData?.phone,
-  ]);
-
-  // Refresh cart data when screen loads
   React.useEffect(() => {
     const refreshCartData = async () => {
       if (!cart?.cartId || !authData?.jwt || !authData?.phone) return;
-
-      // Refresh cart data to ensure we have the latest state from server
       await refreshCart(cart.cartId, authData.jwt, authData.phone);
-
-      // After cart refresh, revalidate coupons
-      if (vendor?.shopId) {
-        await checkAndFetchOffers(vendor.shopId, authData);
-      }
     };
-
     refreshCartData();
-  }, [
-    cart?.cartId,
-    authData?.jwt,
-    authData?.phone,
-    refreshCart,
-    vendor?.shopId,
-    checkAndFetchOffers,
-    authData,
-  ]);
+  }, [cart?.cartId, authData?.jwt, authData?.phone, refreshCart, vendor?.shopId, authData]);
 
-  // Sync activeCartId if we found a cart via fallback
   React.useEffect(() => {
     if (cart && !activeCartId) {
       setActiveCart(cart.cartId);
     }
   }, [cart?.cartId, activeCartId, setActiveCart]);
 
-  // Set default payment option when payment methods are loaded
   React.useEffect(() => {
     if (availableOptions.length > 0 && !selectedPaymentOption) {
       const codOption = availableOptions.find(option => option.key === 'cod' && option.available);
-      if (codOption) {
-        setSelectedPaymentOption('cod');
-      }
+      if (codOption) setSelectedPaymentOption('cod');
     }
   }, [availableOptions, selectedPaymentOption]);
 
-  // Resolve SmartBiz AddressId for selected address tag when landing on Cart
-  // React.useEffect(() => {
-  //   const resolveSmartBizAddress = async () => {
-  //     try {
-  //       if (!vendor?.shopId || !authData?.jwt || !authData?.phone || !selectedAddress?.tag) {
-  //         setSmartBizAddressId(null);
-  //         return;
-  //       }
-  //       const map = await smartBizAddressService.fetchSmartBizAddressIds(
-  //         vendor.shopId,
-  //         authData.jwt,
-  //         authData.phone
-  //       );
-  //       const tag = selectedAddress.tag;
-  //       const matched = map[tag];
-  //       setSmartBizAddressId(matched || null);
-  //     } catch (_e) {
-  //       setSmartBizAddressId(null);
-  //     }
-  //   };
-  //   resolveSmartBizAddress();
-  // }, [vendor?.shopId, authData?.jwt, authData?.phone, selectedAddress?.tag]);
-
-  // Fetch featured products for vendor as suggested items
   React.useEffect(() => {
     const fetchFeatured = async () => {
       try {
@@ -714,7 +575,26 @@ const CartScreen: React.FC = () => {
     fetchFeatured();
   }, [vendor?.shopId, getFeaturedProducts]);
 
-  // Return empty state if cart or vendor is not available
+  React.useEffect(() => {
+    const fetchCoupons = async () => {
+      if (!vendor?.shopId) return;
+      setCouponLoading(true);
+      try {
+        const data = await couponService.getAvailableCoupons(
+          getRegionId() as string,
+          vendor.shopId,
+          vendor?.category?.toUpperCase()
+        );
+        setAvailableCoupons(data);
+      } catch (_err) {
+        setAvailableCoupons([]);
+      } finally {
+        setCouponLoading(false);
+      }
+    };
+    fetchCoupons();
+  }, [vendor?.shopId]);
+
   if (isOrderLoading) {
     return (
       <View
@@ -737,7 +617,6 @@ const CartScreen: React.FC = () => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background') }}>
         <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, paddingBottom: 100 }}>
-          {/* Empty cart section */}
           <View style={styles.emptyCartSection}>
             <MaterialCommunityIcons name="cart-off" size={80} color={getColor('subText')} />
             <Text
@@ -763,7 +642,6 @@ const CartScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Previous Orders section */}
           {ordersLoading && orders.length === 0 ? (
             <ActivityIndicator size="small" color={getColor('primary')} style={{ marginTop: 32 }} />
           ) : orders.length > 0 ? (
@@ -812,8 +690,6 @@ const CartScreen: React.FC = () => {
     >
       <CartHeader
         onBack={() => {
-          // Try parent stack navigator first (when Cart is a tab),
-          // then fall back to tab goBack, then Home
           const parent = navigation.getParent();
           if (parent?.canGoBack()) {
             parent.goBack();
@@ -839,12 +715,11 @@ const CartScreen: React.FC = () => {
 
         <AnimatedCard delay={100}>
           <CouponSection
-            appliedCoupon={appliedCoupon}
-            couponLoading={vendorOffersLoading || customerOffersLoading}
-            couponError={Boolean(vendorOffersError || customerOffersError)}
+            couponLoading={couponLoading}
             availableCoupons={availableCoupons}
             onCouponNavigation={handleCouponNavigation}
-            onEditCoupon={handleEditCoupon}
+            selectedCoupon={selectedCoupon}
+            onRemoveCoupon={() => setSelectedCoupon(null)}
           />
         </AnimatedCard>
 
@@ -866,58 +741,20 @@ const CartScreen: React.FC = () => {
             codCharges={codCharges}
             selectedPaymentOption={selectedPaymentOption}
             vendorCategory={vendor?.category}
+            selectedCoupon={selectedCoupon}
           />
         </AnimatedCard>
-
-        {/* <AnimatedCard delay={400}>
-          <SuggestedItems
-            products={featuredProducts}
-            onItemPress={handleAddSuggested}
-            onAdd={handleAddSuggested}
-            onIncrement={handleIncrementSuggested}
-            onDecrement={handleDecrementSuggested}
-          />
-        </AnimatedCard> */}
       </ScrollView>
 
       <CartFooter
         address={getFormattedAddress()}
         addressTag={selectedSmartBizAddress?.tag || selectedSmartBizAddress?.name}
-        onSelectAddress={() => {
-          console.log('Select address pressed');
-          setShowSmartBizAddressModal(true);
-        }}
+        onSelectAddress={() => setShowSmartBizAddressModal(true)}
         onCheckout={handleCheckout}
         disabled={isCheckoutDisabled}
         loading={isOrderLoading}
         isGuest={!authData?.jwt}
       />
-
-      {/* SmartBiz Address Selection Button */}
-      {/* {vendor && (
-        <TouchableOpacity
-          style={{
-            position: 'absolute',
-            bottom: 140,
-            right: 20,
-            backgroundColor: getColor('primary'),
-            borderRadius: 28,
-            width: 56,
-            height: 56,
-            justifyContent: 'center',
-            alignItems: 'center',
-            elevation: 8,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 4,
-          }}
-          onPress={() => setShowSmartBizAddressModal(true)}
-          activeOpacity={0.8}
-        >
-          <MaterialCommunityIcons name="map-marker-multiple" size={24} color={getColor('white')} />
-        </TouchableOpacity>
-      )} */}
 
       <AddressSelectionModal
         visible={showAddressModal}
@@ -950,7 +787,6 @@ const CartScreen: React.FC = () => {
         />
       </Modal>
 
-      {/* Distance Warning Modal */}
       <Modal
         visible={showDistanceModal}
         transparent
@@ -985,7 +821,6 @@ const CartScreen: React.FC = () => {
                 Your address is {formatDistanceKm(distanceKm as number)} away.
               </Text>
             ) : null}
-
             <View style={styles.actions}>
               <TouchableOpacity
                 onPress={() => {
@@ -1020,7 +855,6 @@ const CartScreen: React.FC = () => {
         message="Please login to continue with payment and place your order."
       />
 
-      {/* Store Closed Modal */}
       <Modal
         visible={storeClosedModal.visible}
         transparent
@@ -1059,10 +893,6 @@ const CartScreen: React.FC = () => {
     </SafeAreaView>
   );
 };
-
-// ============================================================================
-// PREVIOUS ORDER CARD (used in empty cart state)
-// ============================================================================
 
 const ORDER_STATUS_COLORS: Record<string, { background: string; text: string }> = {
   payment_pending: { background: '#FFA726', text: '#FFFFFF' },
@@ -1103,7 +933,6 @@ const PreviousOrderCardBase: React.FC<PreviousOrderCardProps> = ({
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {/* Image grid */}
       <View style={styles.orderImageGrid}>
         {displayItems.length === 1 ? (
           <View style={styles.orderGridFull}>
@@ -1168,7 +997,6 @@ const PreviousOrderCardBase: React.FC<PreviousOrderCardProps> = ({
         )}
       </View>
 
-      {/* Order info */}
       <View style={styles.orderCardInfo}>
         <Text style={[styles.orderCardId, { color: getColor('text') }]} numberOfLines={1}>
           Order: #{order.orderId}
@@ -1191,7 +1019,6 @@ const PreviousOrderCardBase: React.FC<PreviousOrderCardProps> = ({
         </View>
       </View>
 
-      {/* Amount + chevron */}
       <View style={styles.orderCardRight}>
         <Text style={[styles.orderCardAmount, { color: getColor('text') }]}>
           {'\u20B9'} {total.toFixed(0)}
@@ -1248,7 +1075,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   secondaryBtnText: {},
-  // Store Closed Modal Styles
   storeClosedOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1297,7 +1123,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  // Empty cart + previous orders
   emptyCartSection: {
     alignItems: 'center',
     paddingTop: 40,
@@ -1330,7 +1155,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  // Order card styles
   orderCard: {
     flexDirection: 'row',
     borderRadius: 12,

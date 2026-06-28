@@ -5,6 +5,7 @@ import {
 } from '@react-navigation/stack';
 import React from 'react';
 
+import { NavigatorScreenParams } from '@react-navigation/native';
 import { Platform } from 'react-native';
 import { Collection } from '../data/collectionsData';
 import ProfileStack from '../navigation/profileNavigation';
@@ -24,7 +25,6 @@ import ProductDetailDemo from '../screens/vendor/ProductDetailDemo';
 import VendorDetails from '../screens/vendor/VendorDetails';
 import VendorProduct from '../screens/vendor/VendorProduct';
 import VendorProfile from '../screens/vendor/VendorProfile';
-import { NavigatorScreenParams } from '@react-navigation/native';
 import { Order } from '../types/order';
 import { Vendor } from '../types/vendor';
 
@@ -53,11 +53,11 @@ export type RootStackParamList = {
   OrderDetails: { orderId: string; order: Order };
   OrderSuccess: { orderId: string; amount: number; date: string; shopId?: string };
   OrderFailure: { errorMessage?: string };
-  Coupons: undefined;
+  Coupons: { coupons: any; loading: boolean, cartTotal: number };
 
   Search: { restrictCategory?: 'Food' | 'Grocery' } | undefined;
   Address: undefined;
-  AddAddress: { source?: 'modal', screen?: string } | undefined;
+  AddAddress: { source?: 'modal'; screen?: string } | undefined;
   EditAddress: { address: import('../types/address').Address };
   HelpDesk: undefined;
   AboutUs: undefined;
