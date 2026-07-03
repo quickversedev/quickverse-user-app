@@ -1,11 +1,11 @@
-import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import React, { useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { getAvailablePaymentOptions } from '../../services/paymentService';
 import { useTheme } from '../../theme/ThemeContext';
 
-type PaymentOptionKey = 'phonepe' | 'gpay' | 'cod';
+type PaymentOptionKey = 'phonepe' | 'gpay' | 'cod' | 'prepaid';
 
 type PaymentOption = {
   key: PaymentOptionKey;
@@ -29,6 +29,7 @@ interface PaymentScreenProps {
   error?: string | null;
   loading?: boolean;
   onRetry?: () => void;
+  selectedOption?: PaymentOptionKey;
 }
 
 const PaymentScreen: React.FC<PaymentScreenProps> = ({
@@ -38,9 +39,10 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
   error = null,
   loading = false,
   onRetry,
+  selectedOption,
 }) => {
   const { getColor, getButtonColor } = useTheme();
-  const [selected, setSelected] = useState<PaymentOptionKey>('cod');
+  const [selected, setSelected] = useState<PaymentOptionKey>(selectedOption || 'prepaid');
   const [upiId, setUpiId] = useState<string>('');
 
   const options: PaymentOption[] = useMemo(() => {
@@ -109,11 +111,87 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           </View>
         )}
 
-        {/* Section 1: UPI applications */}
         <ThemeText variant="caption" color={getColor('subText')} style={styles.sectionTitle}>
-          UPI applications (Unavailable for now)
+          Prepaid
         </ThemeText>
-        <View
+        <TouchableOpacity
+          onPress={() => setSelected('prepaid')}
+          style={[
+            styles.option,
+            {
+              backgroundColor: getColor('card'),
+              borderColor: getColor(selected === 'prepaid' ? 'primary' : 'border'),
+            },
+          ]}
+        >
+          <View style={styles.optionContent}>
+            <View
+              style={[
+                styles.radioOuter,
+                { borderColor: getColor(selected === 'prepaid' ? 'primary' : 'border') },
+              ]}
+            >
+              <View
+                style={[
+                  styles.radioInner,
+                  { backgroundColor: getColor(selected === 'prepaid' ? 'primary' : 'background') },
+                ]}
+              />
+            </View>
+            <View style={styles.texts}>
+              <ThemeText variant="body" color={getColor('text')} style={styles.title}>
+                Prepaid
+              </ThemeText>
+              <ThemeText variant="caption" color={getColor('subText')} style={styles.subtitle}>
+                Pay securely using UPI
+              </ThemeText>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        <ThemeText variant="caption" color={getColor('subText')} style={styles.sectionTitle}>
+          Cash on Delivery
+        </ThemeText>
+        <TouchableOpacity
+          onPress={() => setSelected('cod')}
+          style={[
+            styles.option,
+            {
+              backgroundColor: getColor('card'),
+              borderColor: getColor(selected === 'cod' ? 'primary' : 'border'),
+            },
+          ]}
+        >
+          <View style={styles.optionContent}>
+            <View
+              style={[
+                styles.radioOuter,
+                { borderColor: getColor(selected === 'cod' ? 'primary' : 'border') },
+              ]}
+            >
+              <View
+                style={[
+                  styles.radioInner,
+                  { backgroundColor: getColor(selected === 'cod' ? 'primary' : 'background') },
+                ]}
+              />
+            </View>
+            <View style={styles.texts}>
+              <ThemeText variant="body" color={getColor('text')} style={styles.title}>
+                Cash on Delivery
+              </ThemeText>
+              <ThemeText variant="caption" color={getColor('subText')} style={styles.subtitle}>
+                Pay with cash when your order arrives
+              </ThemeText>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Section 1: UPI applications - OLD FLOW */}
+        {/* <ThemeText variant="caption" color={getColor('subText')} style={styles.sectionTitle}>
+          UPI applications (Unavailable for now)
+        </ThemeText> */}
+        {/* <View
           style={[
             styles.card,
             { backgroundColor: getColor('card'), borderColor: getColor('border') },
@@ -123,7 +201,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
             .filter(o => o.key === 'phonepe' || o.key === 'gpay')
             .map((item, idx) => {
               const isActive = selected === item.key;
-              const isDisabled = true; // Always disabled for now
+              const isDisabled = true;
               return (
                 <View key={item.key}>
                   {idx > 0 ? (
@@ -180,7 +258,6 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
               );
             })}
 
-          {/* UPI ID sub-section */}
           <View style={[styles.itemDivider, { backgroundColor: getColor('border') }]} />
           <View style={styles.upiIdSection}>
             <ThemeText variant="small" color={getColor('subText')} style={styles.upiIdLabel}>
@@ -197,23 +274,23 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
                   backgroundColor: getColor('background'),
                   borderColor: getColor('border'),
                   color: getColor('text'),
-                  opacity: 0.5, // Disabled appearance
+                  opacity: 0.5,
                 },
               ]}
               keyboardType="default"
               autoCapitalize="none"
               autoCorrect={false}
-              editable={false} // Make it non-editable
+              editable={false}
               returnKeyType="done"
             />
           </View>
-        </View>
+        </View> */}
 
-        {/* Section 2: Cash on Delivery */}
-        <ThemeText variant="caption" color={getColor('subText')} style={styles.sectionTitle}>
+        {/* Section 2: Cash on Delivery: OLD FLOW */}
+        {/* <ThemeText variant="caption" color={getColor('subText')} style={styles.sectionTitle}>
           Cash on Delivery
-        </ThemeText>
-        {options
+        </ThemeText> */}
+        {/* {options
           .filter(o => o.key === 'cod')
           .map(item => {
             const isActive = selected === item.key;
@@ -263,7 +340,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
                 </View>
               </TouchableOpacity>
             );
-          })}
+          })} */}
       </ScrollView>
 
       <View style={styles.footer}>

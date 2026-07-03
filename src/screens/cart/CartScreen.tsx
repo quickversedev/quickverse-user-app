@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import RazorpayCheckout from 'react-native-razorpay';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AnimatedCard from '../../components/common/AnimatedCard';
 import LoginPromptModal from '../../components/common/LoginPromptModal';
@@ -34,7 +35,6 @@ import { RootStackParamList } from '../../routes/AppStack';
 import couponService from '../../services/api/couponSevice';
 import cartApiService from '../../services/cartApiService';
 import orderService, { CreateOrderRequest } from '../../services/createOrderService';
-import createPaymentService, { CreatePaymentRequest } from '../../services/createPaymentService';
 import { getCODCharges } from '../../services/paymentService';
 import { smartBizAddressService } from '../../store/address/smartBizAddressStore';
 import useCartStore from '../../store/cart/cartStore';
@@ -81,7 +81,7 @@ const CartScreen: React.FC = () => {
   const [paymentExpanded, setPaymentExpanded] = React.useState(false);
   const [showPaymentModal, setShowPaymentModal] = React.useState(false);
   const [selectedPaymentOption, setSelectedPaymentOption] = React.useState<string | undefined>(
-    'cod'
+    'prepaid'
   );
   const [isOrderLoading, setIsOrderLoading] = React.useState(false);
   const [showDistanceModal, setShowDistanceModal] = React.useState(false);
@@ -97,10 +97,9 @@ const CartScreen: React.FC = () => {
 
   const [checkoutSummary, setCheckoutSummary] = React.useState<any>(null);
   const [checkoutSummaryLoading, setCheckoutSummaryLoading] = React.useState(false);
-
   const [couponErrorVisible, setCouponErrorVisible] = React.useState(false);
 
-  const { getColor, theme } = useTheme();
+  const { getColor } = useTheme();
   const { orders, loading: ordersLoading, loadMoreOrders, hasMoreOrders } = useOrders();
   const getVendorById = useVendorStore(state => state.getVendorById);
   const pricingConfigs = usePricingStore(state => state.configs);
@@ -316,14 +315,11 @@ const CartScreen: React.FC = () => {
       setSelectedCoupon(coupon);
     };
     const apiSubtotal = cart?.totalCartAmount ?? 0;
-
     const localSubtotal = cartItems.reduce(
       (sum: number, product: any) => sum + product.price * product.quantity,
       0
     );
-
     const calculatedSubtotal = apiSubtotal > 0 ? apiSubtotal : localSubtotal;
-
     navigation.navigate('Coupons', {
       cartTotal: calculatedSubtotal,
       coupons: availableCoupons,
@@ -353,13 +349,12 @@ const CartScreen: React.FC = () => {
       };
       const result: any = await cartApiService.calculateCheckoutSummary(payload);
       const summaryData = result?.response?.data;
-
       setCheckoutSummary(summaryData);
       if (summaryData?.couponError) {
         setCouponErrorVisible(true);
       }
     } catch (error) {
-      console.log('Error : ', error);
+      console.log('Error calculating checkout summary: ', error);
       setCheckoutSummary(null);
     } finally {
       setCheckoutSummaryLoading(false);
@@ -369,6 +364,80 @@ const CartScreen: React.FC = () => {
   useEffect(() => {
     handleCalculateCheckoutSummary();
   }, [handleCalculateCheckoutSummary]);
+
+  interface OrderResponse {
+    payment_session_id: string;
+    id: string;
+    order_id: string;
+    orderId: string;
+    totalOrderAmount: number;
+  }
+
+  interface VendorRef {
+    shopId: any;
+  }
+
+  const handleRazorpayPayment = async (
+    orderResponse: OrderResponse,
+    calculatedTotal: number,
+    vendor: VendorRef
+  ) => {
+    try {
+      const RAZORPAY_KEY_ID = 'rzp_test_T2Z6i6Go29OJwg';
+
+      const options = {
+        description: 'QuickVerse Order Payment',
+        currency: 'INR',
+        key: RAZORPAY_KEY_ID,
+        amount: calculatedTotal * 100,
+        name: 'QuickVerse',
+        order_id: orderResponse?.id,
+        method: {
+          upi: true,
+          card: false,
+          netbanking: false,
+          wallet: false,
+          emi: false,
+          paylater: false,
+        },
+        prefill: {
+          email: '',
+          contact: authData?.phone,
+          name: authData?.username,
+        },
+      };
+
+      const response = await RazorpayCheckout.open(options);
+      console.log('Razorpay Payment Success : ', response);
+
+      setIsOrderLoading(true);
+
+      try {
+        const orderStatusResponse: any = await orderService.getOrderStatus(
+          orderResponse.id,
+          authData?.jwt || ''
+        );
+
+        if (orderStatusResponse.orderId && orderStatusResponse.paymentStatus === 'PAID') {
+          if (cart && authData?.jwt && authData?.phone) {
+            await clearCart(cart.cartId, authData.jwt, authData.phone);
+          }
+          navigation.navigate('OrderSuccess', {
+            orderId: orderStatusResponse.orderId,
+            amount: calculatedTotal,
+            date: new Date().toLocaleDateString(),
+            shopId: vendor.shopId,
+          });
+        }
+      } catch (err) {
+        console.log('Error verifying Razorpay payment:', err);
+      } finally {
+        setIsOrderLoading(false);
+      }
+    } catch (error) {
+      console.log('Razorpay Payment Failed : ', error);
+    }
+  };
 
   const handleCheckout = useCallback(async () => {
     if (!authData?.jwt) {
@@ -422,6 +491,8 @@ const CartScreen: React.FC = () => {
     setIsOrderLoading(true);
 
     try {
+      const calculatedTotal = checkoutSummary?.payableAmount ?? cart?.totalCartAmount ?? 0;
+
       const orderRequest: CreateOrderRequest = {
         shopId: parseInt(vendor.shopId, 10),
         cartId: cart.smartBizCartId,
@@ -431,7 +502,8 @@ const CartScreen: React.FC = () => {
         notificationMobileNumber: selectedAddress.phone,
         notificationEmail: null,
         customerName: selectedAddress.name || 'Customer',
-        paymentMethod: selectedPaymentOption.toUpperCase(),
+        paymentMethod: selectedPaymentOption?.toUpperCase() || 'PREPAID',
+        orderAmount: calculatedTotal,
       };
 
       const orderResponse = await orderService.createOrder(
@@ -440,42 +512,19 @@ const CartScreen: React.FC = () => {
         authData.phone
       );
 
-      const paymentRequest: CreatePaymentRequest = {
-        customerId: parseInt(orderResponse.customerId, 10),
-        mobileNumber: authData.phone,
-        name: selectedAddress.name,
-        orderId: orderResponse.orderId,
-        tenders: [
-          {
-            amount: orderResponse.totalOrderAmount,
-            status: 'CREATED',
-            type: 'COMPLETION',
-            paymentMethod: selectedPaymentOption.toUpperCase(),
-            additionalTenderCharges: 10,
-          },
-        ],
-      };
-
-      await createPaymentService.createPayment(paymentRequest, authData.jwt, authData.phone);
-
-      if (cart && authData?.jwt && authData?.phone) {
-        await clearCart(cart.cartId, authData.jwt, authData.phone);
+      if (selectedPaymentOption === 'prepaid') {
+        await handleRazorpayPayment(orderResponse, calculatedTotal, vendor);
+      } else {
+        if (cart && authData?.jwt && authData?.phone) {
+          await clearCart(cart.cartId, authData.jwt, authData.phone);
+        }
+        navigation.navigate('OrderSuccess', {
+          orderId: orderResponse.orderId,
+          amount: calculatedTotal,
+          date: new Date().toLocaleDateString(),
+          shopId: vendor.shopId,
+        });
       }
-
-      const currentDate = new Date();
-      const formattedDate = `${currentDate.getDate()}${getOrdinalSuffix(
-        currentDate.getDate()
-      )} ${currentDate.toLocaleDateString('en-US', {
-        month: 'long',
-        year: 'numeric',
-      })} • ${currentDate.toLocaleDateString('en-US', { weekday: 'long' })}`;
-
-      navigation.navigate('OrderSuccess', {
-        orderId: orderResponse.orderId,
-        amount: orderResponse.totalOrderAmount,
-        date: formattedDate,
-        shopId: vendor.shopId,
-      });
     } catch (error: unknown) {
       if (
         error &&
@@ -523,21 +572,8 @@ const CartScreen: React.FC = () => {
     clearCart,
     distanceKm,
     deliveryRadiusKm,
+    checkoutSummary,
   ]);
-
-  const getOrdinalSuffix = useCallback((day: number) => {
-    if (day > 3 && day < 21) return 'th';
-    switch (day % 10) {
-      case 1:
-        return 'st';
-      case 2:
-        return 'nd';
-      case 3:
-        return 'rd';
-      default:
-        return 'th';
-    }
-  }, []);
 
   const handleAddressSelect = useCallback(
     (address: Address) => {
@@ -742,8 +778,6 @@ const CartScreen: React.FC = () => {
           ? 'Minimum Order Value Not Met'
           : 'Coupon Error';
 
-  console.log('checkoutSummary?.couponError : ', checkoutSummary);
-
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: getColor('background') }}
@@ -842,6 +876,7 @@ const CartScreen: React.FC = () => {
           onClose={handlePaymentModalClose}
           onConfirm={handlePaymentConfirm}
           paymentMethods={paymentMethods}
+          selectedOption={selectedPaymentOption as 'phonepe' | 'gpay' | 'cod' | 'prepaid'}
           error={paymentMethodsError}
           loading={paymentMethodsLoading}
           onRetry={refetchPaymentMethods}
@@ -952,7 +987,6 @@ const CartScreen: React.FC = () => {
         </View>
       </Modal>
 
-      {/* FIXED: Dynamic Coupon Error Modal */}
       <Modal
         visible={couponErrorVisible}
         transparent
@@ -1377,7 +1411,6 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-
     marginBottom: 8,
     textAlign: 'center',
   },
