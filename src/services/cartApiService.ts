@@ -1,4 +1,4 @@
-import axiosInstance, { apiCall, withHeaders } from '../config/api/axios.config';
+import axiosInstance, { apiCall, getAuthHeader, withHeaders } from '../config/api/axios.config';
 
 // API Response Types
 export interface CartApiResponse {
@@ -278,6 +278,25 @@ class CartApiService {
       return this.transformCartResponse(response);
     } catch (error) {
       console.error('Clear cart error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Checkout Summary Calculations
+   */
+  async calculateCheckoutSummary(payload: any) {
+    try {
+      const authHeader = getAuthHeader();
+
+      const response = await axiosInstance.post('/v2/cart/checkout-summary', payload, {
+        headers: {
+          Authorization: authHeader,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.log('Error : ', error);
       throw error;
     }
   }

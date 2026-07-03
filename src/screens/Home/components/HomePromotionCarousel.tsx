@@ -61,8 +61,6 @@ const HomePromotionCarousel = () => {
 
   const bannerItems = useMemo(() => promotions.filter(item => item.bannerImage), [promotions]);
 
-  console.log(bannerItems);
-
   useEffect(() => {
     if (bannerItems.length <= 1) return;
 

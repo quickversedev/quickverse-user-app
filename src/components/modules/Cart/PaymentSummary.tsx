@@ -1,6 +1,7 @@
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Easing,
   Platform,
@@ -9,8 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Cart } from '../../../store/cart/cartStore';
-import usePricingStore from '../../../store/pricingStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { ThemeText } from '../../common/theme/ThemeText';
 
@@ -19,40 +18,59 @@ interface Coupon {
   code: string;
   mov: number;
   discountValue: number | null;
-  type: string; // 'FREE_DELIVERY' | 'FIXED' | 'PERCENTAGE'
+  type: string;
   uptoValue: number | null;
+}
+
+interface CheckoutSummary {
+  itemTotalAmount?: number;
+  couponId?: string | null;
+  couponCode?: string | null;
+  couponDiscount?: number;
+  isFreeDelivery?: boolean;
+  amountAfterCoupon?: number;
+  packagingCharges?: number;
+  actualDeliveryFee?: number;
+  deliveryFee?: number;
+  platformFee?: number;
+  serviceGstRate?: number;
+  commissionRate?: number;
+  commission?: number;
+  commissionGst?: number;
+  deliveryGst?: number;
+  packagingGst?: number;
+  platformGst?: number;
+  totalGst?: number;
+  taxableAmount?: number;
+  payableAmount?: number;
+  razorpayCharges?: number;
+  couponError?: string | null;
+  couponErrorMessage?: string | null;
+  couponApplied?: boolean;
 }
 
 interface PaymentSummaryProps {
   expanded: boolean;
   onToggle: () => void;
-  cart?: Cart;
+  summary?: CheckoutSummary | null;
+  summaryLoading?: boolean;
   codCharges?: number;
   selectedPaymentOption?: string | undefined;
-  vendorCategory?: string;
   selectedCoupon?: Coupon;
 }
 
 const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   expanded,
   onToggle,
-  cart,
+  summary,
+  summaryLoading = false,
   codCharges = 0,
   selectedPaymentOption,
-  vendorCategory,
   selectedCoupon,
 }) => {
-  const { getColor, theme, getButtonColor } = useTheme();
+  const { getColor, theme } = useTheme();
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
-  const isGrocery = vendorCategory?.toLowerCase().includes('grocery');
-  const serviceType = isGrocery ? 'GROCERY' : 'FOOD';
 
-  const pricingConfig = usePricingStore(state => state.configs[serviceType]);
-  const pricing = useMemo(() => {
-    return usePricingStore.getState().getPricingValues(serviceType);
-  }, [pricingConfig, serviceType]);
-
-  // Animation values
   const animatedHeight = useRef(new Animated.Value(0)).current;
   const animatedOpacity = useRef(new Animated.Value(0)).current;
   const animatedRotation = useRef(new Animated.Value(0)).current;
@@ -86,105 +104,28 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     outputRange: ['0deg', '180deg'],
   });
 
-  const {
-    subtotal,
-    deliveryFee,
-    deliveryFeeOriginal,
-    platformFee,
-    platformFeeOriginal,
-    packagingCharges,
-    packagingChargesOriginal,
-    taxes,
-    commission,
-    taxableAmount,
-    totalDiscountOnItems,
-    calculatedCouponDiscount,
-    isFreeDeliveryApplied,
-    finalTotal,
-  } = useMemo(() => {
-    if (!cart) {
-      return {
-        subtotal: 0,
-        deliveryFee: 0,
-        deliveryFeeOriginal: 0,
-        platformFee: 0,
-        platformFeeOriginal: 0,
-        packagingCharges: 0,
-        packagingChargesOriginal: 0,
-        taxes: 0,
-        commission: 0,
-        taxableAmount: 0,
-        totalDiscountOnItems: 0,
-        calculatedCouponDiscount: 0,
-        isFreeDeliveryApplied: false,
-        finalTotal: 0,
-      };
-    }
+  const itemTotalAmount = summary?.itemTotalAmount ?? 0;
+  const couponDiscount = summary?.couponDiscount ?? 0;
+  const isFreeDelivery = summary?.isFreeDelivery ?? false;
+  const packagingCharges = summary?.packagingCharges ?? 0;
+  const actualDeliveryFee = summary?.actualDeliveryFee ?? 0;
+  const deliveryFee = summary?.deliveryFee ?? 0;
+  const platformFee = summary?.platformFee ?? 0;
+  const serviceGstRate = summary?.serviceGstRate ?? 0;
+  const commissionRate = summary?.commissionRate ?? 0;
+  const commission = summary?.commission ?? 0;
+  const commissionGst = summary?.commissionGst ?? 0;
+  const deliveryGst = summary?.deliveryGst ?? 0;
+  const packagingGst = summary?.packagingGst ?? 0;
+  const platformGst = summary?.platformGst ?? 0;
+  const totalGst = summary?.totalGst ?? 0;
+  const taxableAmount = summary?.taxableAmount ?? 0;
+  const payableAmount = summary?.payableAmount ?? 0;
+  const razorpayCharges = summary?.razorpayCharges ?? 0;
 
-    const apiSubtotal = cart.totalCartAmount ?? 0;
-    const localSubtotal = Object.values(cart.products).reduce(
-      (sum, product) => sum + product.price * product.quantity,
-      0
-    );
-
-    const calculatedSubtotal = apiSubtotal > 0 ? apiSubtotal : localSubtotal;
-    const calculatedTotalDiscountOnItems = cart.totalDiscountOnItems ?? 0;
-
-    // Evaluate active structural coupon impacts rules
-    let couponDiscountAmount = 0;
-    let freeDeliveryActive = false;
-
-    if (selectedCoupon && calculatedSubtotal >= selectedCoupon.mov) {
-      if (selectedCoupon.type === 'FREE_DELIVERY') {
-        freeDeliveryActive = true;
-      } else if (selectedCoupon.type === 'FIXED' && selectedCoupon.discountValue != null) {
-        couponDiscountAmount = selectedCoupon.discountValue;
-      } else if (selectedCoupon.type === 'PERCENTAGE' && selectedCoupon.discountValue != null) {
-        const percentageBenefit = (selectedCoupon.discountValue / 100) * calculatedSubtotal;
-        if (selectedCoupon.uptoValue != null) {
-          couponDiscountAmount = Math.min(percentageBenefit, selectedCoupon.uptoValue);
-        } else {
-          couponDiscountAmount = percentageBenefit;
-        }
-      }
-    }
-
-    // Adjust current structural fee based on Free Delivery coupon flag status
-    const effectiveDeliveryFee = freeDeliveryActive ? 0 : pricing.deliveryFee;
-
-    // Compute precise legal dynamic GST mapping values
-    const commission = pricing.commissionRate * calculatedSubtotal;
-    const taxableAmount = commission + effectiveDeliveryFee + pricing.platformFee;
-    const taxes = Math.round(pricing.gstRate * taxableAmount);
-
-    // Sum final mathematical aggregation structure
-    const calculatedTotal =
-      calculatedSubtotal +
-      effectiveDeliveryFee +
-      pricing.platformFee +
-      pricing.packagingCharges +
-      taxes +
-      codCharges -
-      calculatedTotalDiscountOnItems -
-      couponDiscountAmount;
-
-    return {
-      subtotal: calculatedSubtotal,
-      deliveryFee: effectiveDeliveryFee,
-      deliveryFeeOriginal: pricing.deliveryFeeOriginal,
-      platformFee: pricing.platformFee,
-      platformFeeOriginal: pricing.platformFeeOriginal,
-      packagingCharges: pricing.packagingCharges,
-      packagingChargesOriginal: pricing.packagingChargesOriginal,
-      taxes,
-      commission,
-      taxableAmount,
-      totalDiscountOnItems: calculatedTotalDiscountOnItems,
-      calculatedCouponDiscount: couponDiscountAmount,
-      isFreeDeliveryApplied: freeDeliveryActive,
-      finalTotal: Math.max(0, calculatedTotal),
-    };
-  }, [cart, codCharges, pricing, selectedCoupon]);
+  const isCod = selectedPaymentOption === 'cod';
+  const extraPaymentCharges = isCod ? codCharges : razorpayCharges;
+  const finalTotal = payableAmount + extraPaymentCharges;
 
   const styles = StyleSheet.create({
     paymentSummaryBox: {
@@ -312,9 +253,17 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
           <ThemeText variant="body" style={styles.paymentSummaryTitle}>
             Total Bill
           </ThemeText>
-          <ThemeText variant="body" style={styles.paymentSummaryAmount}>
-            ₹{finalTotal.toFixed(2)}
-          </ThemeText>
+          {summaryLoading && !summary ? (
+            <ActivityIndicator
+              size="small"
+              color={getColor('primary')}
+              style={{ alignSelf: 'flex-start', marginTop: 4 }}
+            />
+          ) : (
+            <ThemeText variant="body" style={styles.paymentSummaryAmount}>
+              ₹{finalTotal.toFixed(2)}
+            </ThemeText>
+          )}
         </View>
         <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
           <MaterialCommunityIcons name="chevron-down" size={24} color={getColor('text')} />
@@ -343,212 +292,213 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
         </View>
 
         <View style={styles.billBreakdown}>
-          {/* Subtotal */}
-          <View style={styles.billRow}>
-            <ThemeText variant="body" style={styles.billLabel}>
-              Sub Total
-            </ThemeText>
-            <ThemeText variant="body" style={styles.billAmount}>
-              ₹{subtotal.toFixed(2)}
-            </ThemeText>
-          </View>
-
-          {/* Item Discounts */}
-          {totalDiscountOnItems > 0 && (
-            <View style={styles.billRow}>
-              <ThemeText variant="body" style={styles.billLabel}>
-                Item Discount
-              </ThemeText>
-              <ThemeText variant="body" style={styles.discountAmount}>
-                -₹{totalDiscountOnItems.toFixed(2)}
-              </ThemeText>
+          {summaryLoading && !summary ? (
+            <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={getColor('primary')} />
             </View>
-          )}
-
-          {/* Active Structural Coupon Discounts */}
-          {calculatedCouponDiscount > 0 && (
-            <View style={styles.billRow}>
-              <ThemeText variant="body" style={styles.billLabel}>
-                Coupon Discount ({selectedCoupon?.code})
-              </ThemeText>
-              <ThemeText variant="body" style={styles.discountAmount}>
-                -₹{calculatedCouponDiscount.toFixed(2)}
-              </ThemeText>
-            </View>
-          )}
-
-          <View style={styles.dottedLine} />
-
-          {/* Delivery Fee */}
-          <View style={styles.billRow}>
-            <ThemeText variant="body" style={styles.billLabel}>
-              Delivery Fee
-            </ThemeText>
-            <View style={styles.feeRow}>
-              {isFreeDeliveryApplied ? (
-                <>
-                  <ThemeText
-                    variant="body"
-                    style={[styles.crossedText, { color: getColor('text') }]}
-                  >
-                    ₹{deliveryFeeOriginal.toFixed(2)}
-                  </ThemeText>
-                  <ThemeText
-                    variant="body"
-                    style={[styles.discountAmount, { color: getColor('primary') }]}
-                  >
-                    FREE
-                  </ThemeText>
-                </>
-              ) : (
-                <>
-                  {deliveryFeeOriginal > deliveryFee && (
-                    <ThemeText
-                      variant="body"
-                      style={[styles.crossedText, { color: getColor('text') }]}
-                    >
-                      ₹{deliveryFeeOriginal.toFixed(2)}
-                    </ThemeText>
-                  )}
-                  <ThemeText variant="body" style={styles.billAmount}>
-                    ₹{deliveryFee.toFixed(2)}
-                  </ThemeText>
-                </>
-              )}
-            </View>
-          </View>
-
-          {/* Platform Fee */}
-          <View style={styles.billRow}>
-            <ThemeText variant="body" style={styles.billLabel}>
-              Platform Fee
-            </ThemeText>
-            <View style={styles.feeRow}>
-              {platformFeeOriginal > platformFee && (
-                <ThemeText variant="body" style={[styles.crossedText, { color: getColor('text') }]}>
-                  ₹{platformFeeOriginal.toFixed(2)}
+          ) : (
+            <>
+              <View style={styles.billRow}>
+                <ThemeText variant="body" style={styles.billLabel}>
+                  Sub Total
                 </ThemeText>
-              )}
-              <ThemeText variant="body" style={styles.billAmount}>
-                ₹{platformFee.toFixed(2)}
-              </ThemeText>
-            </View>
-          </View>
-
-          {/* Packaging Charges */}
-          <View style={styles.billRow}>
-            <ThemeText variant="body" style={styles.billLabel}>
-              Packaging Charges
-            </ThemeText>
-            <View style={styles.feeRow}>
-              {packagingChargesOriginal > packagingCharges && (
-                <ThemeText variant="body" style={[styles.crossedText, { color: getColor('text') }]}>
-                  ₹{packagingChargesOriginal.toFixed(2)}
-                </ThemeText>
-              )}
-              <ThemeText variant="body" style={styles.billAmount}>
-                ₹{packagingCharges.toFixed(2)}
-              </ThemeText>
-            </View>
-          </View>
-
-          {/* COD Charges */}
-          {codCharges > 0 && (
-            <View style={styles.billRow}>
-              <ThemeText variant="body" style={styles.billLabel}>
-                Cash On Delivery Charges
-              </ThemeText>
-              <ThemeText variant="body" style={styles.billAmount}>
-                ₹{codCharges.toFixed(2)}
-              </ThemeText>
-            </View>
-          )}
-
-          {/* Taxes Component */}
-          {taxes > 0 && (
-            <View>
-              <Pressable style={styles.billRow} onPress={() => setShowTaxBreakdown(prev => !prev)}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <ThemeText variant="body" style={styles.billLabel}>
-                    Taxes (GST & Services)
-                  </ThemeText>
-                  <MaterialCommunityIcons
-                    name={showTaxBreakdown ? 'chevron-up' : 'information-outline'}
-                    size={14}
-                    color={getColor('subText')}
-                    style={{ marginLeft: 4 }}
-                  />
-                </View>
                 <ThemeText variant="body" style={styles.billAmount}>
-                  ₹{taxes.toFixed(2)}
+                  ₹{itemTotalAmount.toFixed(2)}
                 </ThemeText>
-              </Pressable>
+              </View>
 
-              {showTaxBreakdown && (
-                <View
-                  style={{
-                    backgroundColor: getColor('card'),
-                    borderWidth: 1,
-                    borderColor: getColor('border'),
-                    borderRadius: theme.borderRadius.sm,
-                    padding: 12,
-                    marginBottom: 10,
-                    gap: 4,
-                  }}
-                >
-                  <ThemeText variant="caption" color={getColor('subText')}>
-                    Commission ({(pricing.commissionRate * 100).toFixed(0)}%): ₹
-                    {commission.toFixed(2)}
+              {couponDiscount > 0 && (
+                <View style={styles.billRow}>
+                  <ThemeText variant="body" style={styles.billLabel}>
+                    Coupon Discount {selectedCoupon?.code ? `(${selectedCoupon.code})` : ''}
                   </ThemeText>
-                  <ThemeText variant="caption" color={getColor('subText')}>
-                    Delivery Component: ₹{deliveryFee.toFixed(2)}
-                  </ThemeText>
-                  <ThemeText variant="caption" color={getColor('subText')}>
-                    Platform Component: ₹{platformFee.toFixed(2)}
-                  </ThemeText>
-                  <View
-                    style={{
-                      borderTopWidth: 1,
-                      borderTopColor: getColor('border'),
-                      marginVertical: 4,
-                    }}
-                  />
-                  <ThemeText
-                    variant="caption"
-                    color={getColor('text')}
-                    style={{ fontWeight: '600' }}
-                  >
-                    Taxable Pool Base: ₹{taxableAmount.toFixed(2)}
-                  </ThemeText>
-                  <ThemeText
-                    variant="caption"
-                    color={getColor('primary')}
-                    style={{ fontWeight: '700' }}
-                  >
-                    GST Total ({(pricing.gstRate * 100).toFixed(0)}%): ₹{taxes.toFixed(2)}
+                  <ThemeText variant="body" style={styles.discountAmount}>
+                    -₹{couponDiscount.toFixed(2)}
                   </ThemeText>
                 </View>
               )}
-            </View>
+
+              <View style={styles.dottedLine} />
+
+              <View style={styles.billRow}>
+                <ThemeText variant="body" style={styles.billLabel}>
+                  Delivery Fee
+                </ThemeText>
+                <View style={styles.feeRow}>
+                  {isFreeDelivery ? (
+                    <>
+                      <ThemeText
+                        variant="body"
+                        style={[styles.crossedText, { color: getColor('text') }]}
+                      >
+                        ₹{actualDeliveryFee.toFixed(2)}
+                      </ThemeText>
+                      <ThemeText
+                        variant="body"
+                        style={[styles.discountAmount, { color: getColor('primary') }]}
+                      >
+                        FREE
+                      </ThemeText>
+                    </>
+                  ) : (
+                    <>
+                      {actualDeliveryFee > deliveryFee && (
+                        <ThemeText
+                          variant="body"
+                          style={[styles.crossedText, { color: getColor('text') }]}
+                        >
+                          ₹{actualDeliveryFee.toFixed(2)}
+                        </ThemeText>
+                      )}
+                      <ThemeText variant="body" style={styles.billAmount}>
+                        ₹{deliveryFee.toFixed(2)}
+                      </ThemeText>
+                    </>
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.billRow}>
+                <ThemeText variant="body" style={styles.billLabel}>
+                  Platform Fee
+                </ThemeText>
+                <ThemeText variant="body" style={styles.billAmount}>
+                  ₹{platformFee.toFixed(2)}
+                </ThemeText>
+              </View>
+
+              <View style={styles.billRow}>
+                <ThemeText variant="body" style={styles.billLabel}>
+                  Packaging Charges
+                </ThemeText>
+                <ThemeText variant="body" style={styles.billAmount}>
+                  ₹{packagingCharges.toFixed(2)}
+                </ThemeText>
+              </View>
+
+              {isCod && codCharges > 0 && (
+                <View style={styles.billRow}>
+                  <ThemeText variant="body" style={styles.billLabel}>
+                    Cash On Delivery Charges
+                  </ThemeText>
+                  <ThemeText variant="body" style={styles.billAmount}>
+                    ₹{codCharges.toFixed(2)}
+                  </ThemeText>
+                </View>
+              )}
+
+              {!isCod && razorpayCharges > 0 && (
+                <View style={styles.billRow}>
+                  <ThemeText variant="body" style={styles.billLabel}>
+                    Payment Gateway Charges
+                  </ThemeText>
+                  <ThemeText variant="body" style={styles.billAmount}>
+                    ₹{razorpayCharges.toFixed(2)}
+                  </ThemeText>
+                </View>
+              )}
+
+              {totalGst > 0 && (
+                <View>
+                  <Pressable
+                    style={styles.billRow}
+                    onPress={() => setShowTaxBreakdown(prev => !prev)}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <ThemeText variant="body" style={styles.billLabel}>
+                        Taxes (GST & Services)
+                      </ThemeText>
+                      <MaterialCommunityIcons
+                        name={showTaxBreakdown ? 'chevron-up' : 'information-outline'}
+                        size={14}
+                        color={getColor('subText')}
+                        style={{ marginLeft: 4 }}
+                      />
+                    </View>
+                    <ThemeText variant="body" style={styles.billAmount}>
+                      ₹{totalGst.toFixed(2)}
+                    </ThemeText>
+                  </Pressable>
+
+                  {showTaxBreakdown && (
+                    <View
+                      style={{
+                        backgroundColor: getColor('card'),
+                        borderWidth: 1,
+                        borderColor: getColor('border'),
+                        borderRadius: theme.borderRadius.sm,
+                        padding: 12,
+                        marginBottom: 10,
+                        gap: 4,
+                      }}
+                    >
+                      <ThemeText variant="caption" color={getColor('subText')}>
+                        Commission ({commissionRate.toFixed(0)}%): ₹{commission.toFixed(2)}
+                      </ThemeText>
+                      {commissionGst > 0 && (
+                        <ThemeText variant="caption" color={getColor('subText')}>
+                          Commission GST: ₹{commissionGst.toFixed(2)}
+                        </ThemeText>
+                      )}
+                      {deliveryGst > 0 && (
+                        <ThemeText variant="caption" color={getColor('subText')}>
+                          Delivery GST: ₹{deliveryGst.toFixed(2)}
+                        </ThemeText>
+                      )}
+                      {platformGst > 0 && (
+                        <ThemeText variant="caption" color={getColor('subText')}>
+                          Platform GST: ₹{platformGst.toFixed(2)}
+                        </ThemeText>
+                      )}
+                      {packagingGst > 0 && (
+                        <ThemeText variant="caption" color={getColor('subText')}>
+                          Packaging GST: ₹{packagingGst.toFixed(2)}
+                        </ThemeText>
+                      )}
+                      <View
+                        style={{
+                          borderTopWidth: 1,
+                          borderTopColor: getColor('border'),
+                          marginVertical: 4,
+                        }}
+                      />
+                      <ThemeText
+                        variant="caption"
+                        color={getColor('text')}
+                        style={{ fontWeight: '600' }}
+                      >
+                        Taxable Pool Base: ₹{taxableAmount.toFixed(2)}
+                      </ThemeText>
+                      <ThemeText
+                        variant="caption"
+                        color={getColor('primary')}
+                        style={{ fontWeight: '700' }}
+                      >
+                        GST Total ({serviceGstRate.toFixed(0)}%): ₹{totalGst.toFixed(2)}
+                      </ThemeText>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              <View style={styles.dottedLine} />
+
+              <View style={styles.billRowLast}>
+                <ThemeText variant="body" style={[styles.billLabel, { fontWeight: '700' }]}>
+                  To Pay
+                </ThemeText>
+                <ThemeText
+                  variant="body"
+                  style={[
+                    styles.billAmount,
+                    { color: getColor('text'), fontSize: 16, fontWeight: '700' },
+                  ]}
+                >
+                  ₹{finalTotal.toFixed(2)}
+                </ThemeText>
+              </View>
+            </>
           )}
-
-          <View style={styles.dottedLine} />
-
-          {/* Final Payable Amount Row */}
-          <View style={styles.billRowLast}>
-            <ThemeText variant="body" style={[styles.billLabel, { fontWeight: '700' }]}>
-              To Pay
-            </ThemeText>
-            <ThemeText
-              variant="body"
-              style={[
-                styles.billAmount,
-                { color: getColor('text'), fontSize: 16, fontWeight: '700' },
-              ]}
-            >
-              ₹{finalTotal.toFixed(2)}
-            </ThemeText>
-          </View>
         </View>
       </Animated.View>
     </View>

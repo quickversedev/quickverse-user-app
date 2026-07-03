@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -32,6 +32,7 @@ import { useOrders } from '../../hooks/useOrders';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { RootStackParamList } from '../../routes/AppStack';
 import couponService from '../../services/api/couponSevice';
+import cartApiService from '../../services/cartApiService';
 import orderService, { CreateOrderRequest } from '../../services/createOrderService';
 import createPaymentService, { CreatePaymentRequest } from '../../services/createPaymentService';
 import { getCODCharges } from '../../services/paymentService';
@@ -94,7 +95,12 @@ const CartScreen: React.FC = () => {
   const [selectedCoupon, setSelectedCoupon] = React.useState<any | null>(null);
   const couponCallbackRef = React.useRef<((coupon: any) => void) | null>(null);
 
-  const { getColor } = useTheme();
+  const [checkoutSummary, setCheckoutSummary] = React.useState<any>(null);
+  const [checkoutSummaryLoading, setCheckoutSummaryLoading] = React.useState(false);
+
+  const [couponErrorVisible, setCouponErrorVisible] = React.useState(false);
+
+  const { getColor, theme } = useTheme();
   const { orders, loading: ordersLoading, loadMoreOrders, hasMoreOrders } = useOrders();
   const getVendorById = useVendorStore(state => state.getVendorById);
   const pricingConfigs = usePricingStore(state => state.configs);
@@ -142,6 +148,10 @@ const CartScreen: React.FC = () => {
   const cartItems = useMemo(() => {
     return cart ? Object.values(cart.products) : [];
   }, [cart]);
+
+  const cartItemsKey = useMemo(() => {
+    return cartItems.map((item: any) => `${item.sku}:${item.quantity}`).join('|');
+  }, [cartItems]);
 
   const vendor = useMemo(() => {
     if (!cart?.cartId) return undefined;
@@ -322,6 +332,43 @@ const CartScreen: React.FC = () => {
       onApply: couponCallbackRef.current,
     } as any);
   }, [navigation, availableCoupons, couponLoading, selectedCoupon, cart]);
+
+  const handleCalculateCheckoutSummary = useCallback(async () => {
+    if (!cartItems || cartItems.length === 0) {
+      setCheckoutSummary(null);
+      return;
+    }
+    setCheckoutSummaryLoading(true);
+    try {
+      const payload = {
+        shopId: cartItems?.[0]?.shopId ?? null,
+        customerAddressId: selectedSmartBizAddress?.addressID ?? null,
+        couponId: selectedCoupon?.id ?? null,
+        couponCode: selectedCoupon?.code ?? null,
+        cartItems:
+          cartItems?.map((item: any) => ({
+            sku: item?.sku ?? null,
+            quantity: item?.quantity ?? null,
+          })) ?? [],
+      };
+      const result: any = await cartApiService.calculateCheckoutSummary(payload);
+      const summaryData = result?.response?.data;
+
+      setCheckoutSummary(summaryData);
+      if (summaryData?.couponError) {
+        setCouponErrorVisible(true);
+      }
+    } catch (error) {
+      console.log('Error : ', error);
+      setCheckoutSummary(null);
+    } finally {
+      setCheckoutSummaryLoading(false);
+    }
+  }, [cartItemsKey, selectedSmartBizAddress?.addressID, selectedCoupon?.id, selectedCoupon?.code]);
+
+  useEffect(() => {
+    handleCalculateCheckoutSummary();
+  }, [handleCalculateCheckoutSummary]);
 
   const handleCheckout = useCallback(async () => {
     if (!authData?.jwt) {
@@ -575,25 +622,28 @@ const CartScreen: React.FC = () => {
     fetchFeatured();
   }, [vendor?.shopId, getFeaturedProducts]);
 
-  React.useEffect(() => {
-    const fetchCoupons = async () => {
-      if (!vendor?.shopId) return;
-      setCouponLoading(true);
-      try {
-        const data = await couponService.getAvailableCoupons(
-          getRegionId() as string,
-          vendor.shopId,
-          vendor?.category?.toUpperCase()
-        );
-        setAvailableCoupons(data);
-      } catch (_err) {
-        setAvailableCoupons([]);
-      } finally {
-        setCouponLoading(false);
-      }
-    };
-    fetchCoupons();
-  }, [vendor?.shopId]);
+  const fetchCoupons = useCallback(async () => {
+    if (!vendor?.shopId) return;
+    setCouponLoading(true);
+    try {
+      const data = await couponService.getAvailableCoupons(
+        getRegionId() as string,
+        vendor.shopId,
+        vendor?.category?.toUpperCase()
+      );
+      setAvailableCoupons(data);
+    } catch (_err) {
+      setAvailableCoupons([]);
+    } finally {
+      setCouponLoading(false);
+    }
+  }, [vendor?.shopId, vendor?.category, getRegionId]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchCoupons();
+    }, [fetchCoupons])
+  );
 
   if (isOrderLoading) {
     return (
@@ -683,6 +733,17 @@ const CartScreen: React.FC = () => {
     );
   }
 
+  const couponTitle =
+    checkoutSummary?.couponError === 'COUPON_NOT_FOUND'
+      ? 'Invalid Coupon Code'
+      : checkoutSummary?.couponError === 'COUPON_INACTIVE'
+        ? 'Coupon Expired'
+        : checkoutSummary?.couponError === 'COUPON_MOV_NOT_MET'
+          ? 'Minimum Order Value Not Met'
+          : 'Coupon Error';
+
+  console.log('checkoutSummary?.couponError : ', checkoutSummary);
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: getColor('background') }}
@@ -737,10 +798,10 @@ const CartScreen: React.FC = () => {
           <PaymentSummary
             expanded={paymentExpanded}
             onToggle={() => setPaymentExpanded(e => !e)}
-            cart={cart}
+            summary={checkoutSummary}
+            summaryLoading={checkoutSummaryLoading}
             codCharges={codCharges}
             selectedPaymentOption={selectedPaymentOption}
-            vendorCategory={vendor?.category}
             selectedCoupon={selectedCoupon}
           />
         </AnimatedCard>
@@ -884,6 +945,55 @@ const CartScreen: React.FC = () => {
               activeOpacity={0.8}
             >
               <Text style={[styles.storeClosedBtnText, { color: getColor('background') }]}>
+                Got it
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* FIXED: Dynamic Coupon Error Modal */}
+      <Modal
+        visible={couponErrorVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCouponErrorVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: getColor('card') }]}>
+            <View style={[styles.modalIconBadge, { backgroundColor: 'rgba(239, 68, 68, 0.12)' }]}>
+              <MaterialCommunityIcons name="ticket-percent-outline" size={32} color="#EF4444" />
+            </View>
+            <Text
+              style={[
+                styles.modalTitle,
+                { color: getColor('text'), fontFamily: 'BricolageGrotesque-Bold' },
+              ]}
+            >
+              {couponTitle}
+            </Text>
+            <Text
+              style={[
+                styles.modalMessage,
+                { color: getColor('subText'), fontFamily: 'BricolageGrotesque-Regular' },
+              ]}
+            >
+              {checkoutSummary?.couponErrorMessage || 'Something went wrong with this coupon code.'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setCouponErrorVisible(false);
+                setSelectedCoupon(null);
+              }}
+              style={[styles.modalBtn, { backgroundColor: getColor('primary') }]}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.modalBtnText,
+                  { color: getColor('background'), fontFamily: 'BricolageGrotesque-Bold' },
+                ]}
+              >
                 Got it
               </Text>
             </TouchableOpacity>
@@ -1236,6 +1346,54 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   orderCardAmount: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalCard: {
+    width: '100%',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalIconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  modalBtn: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalBtnText: {
     fontSize: 16,
     fontWeight: '600',
   },
