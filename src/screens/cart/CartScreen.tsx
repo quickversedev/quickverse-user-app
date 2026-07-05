@@ -81,7 +81,7 @@ const CartScreen: React.FC = () => {
   const [paymentExpanded, setPaymentExpanded] = React.useState(false);
   const [showPaymentModal, setShowPaymentModal] = React.useState(false);
   const [selectedPaymentOption, setSelectedPaymentOption] = React.useState<string | undefined>(
-    'prepaid'
+    'PREPAID'
   );
   const [isOrderLoading, setIsOrderLoading] = React.useState(false);
   const [showDistanceModal, setShowDistanceModal] = React.useState(false);
@@ -271,45 +271,6 @@ const CartScreen: React.FC = () => {
     [cart]
   );
 
-  const handleAddSuggested = useCallback(
-    (item: { id: string; name: string; price: number; image: number }) => {
-      const index = featuredProducts.findIndex(p => p.sku === item.id);
-      const product = convertToProduct(item, index);
-      if (!cart || !authData?.jwt || !authData?.phone) return;
-      const cartProduct = {
-        sku: product.sku,
-        shopId: product.shopId,
-        name: product.name,
-        price: product.sellingPrice,
-        mrp: product.mrp,
-        image: product.imageUrl || '',
-        veg: product.veg,
-      };
-      addToCart(cart.cartId, cartProduct, authData.jwt, authData.phone);
-    },
-    [cart, authData, addToCart, featuredProducts, convertToProduct]
-  );
-
-  const handleIncrementSuggested = useCallback(
-    (item: { id: string; name: string; price: number; image: number }) => {
-      const index = featuredProducts.findIndex(p => p.name === item.name);
-      const product = convertToProduct(item, index);
-      if (!cart || !authData?.jwt || !authData?.phone) return;
-      increment(cart.cartId, product.sku, authData.jwt, authData.phone);
-    },
-    [cart, authData, increment, featuredProducts, convertToProduct]
-  );
-
-  const handleDecrementSuggested = useCallback(
-    (item: { id: string; name: string; price: number; image: number }) => {
-      const index = featuredProducts.findIndex(p => p.name === item.name);
-      const product = convertToProduct(item, index);
-      if (!cart || !authData?.jwt || !authData?.phone) return;
-      decrement(cart.cartId, product.sku, authData.jwt, authData.phone);
-    },
-    [cart, authData, decrement, featuredProducts, convertToProduct]
-  );
-
   const handleCouponNavigation = useCallback(() => {
     couponCallbackRef.current = (coupon: any) => {
       setSelectedCoupon(coupon);
@@ -341,6 +302,7 @@ const CartScreen: React.FC = () => {
         customerAddressId: selectedSmartBizAddress?.addressID ?? null,
         couponId: selectedCoupon?.id ?? null,
         couponCode: selectedCoupon?.code ?? null,
+        paymentMethod: selectedPaymentOption?.toUpperCase() ?? 'PREPAID',
         cartItems:
           cartItems?.map((item: any) => ({
             sku: item?.sku ?? null,
@@ -349,6 +311,7 @@ const CartScreen: React.FC = () => {
       };
       const result: any = await cartApiService.calculateCheckoutSummary(payload);
       const summaryData = result?.response?.data;
+      console.log(summaryData, 'summaryData');
       setCheckoutSummary(summaryData);
       if (summaryData?.couponError) {
         setCouponErrorVisible(true);
@@ -359,7 +322,13 @@ const CartScreen: React.FC = () => {
     } finally {
       setCheckoutSummaryLoading(false);
     }
-  }, [cartItemsKey, selectedSmartBizAddress?.addressID, selectedCoupon?.id, selectedCoupon?.code]);
+  }, [
+    cartItemsKey,
+    selectedSmartBizAddress?.addressID,
+    selectedCoupon?.id,
+    selectedCoupon?.code,
+    selectedPaymentOption,
+  ]);
 
   useEffect(() => {
     handleCalculateCheckoutSummary();
@@ -491,7 +460,7 @@ const CartScreen: React.FC = () => {
     setIsOrderLoading(true);
 
     try {
-      const calculatedTotal = checkoutSummary?.payableAmount ?? cart?.totalCartAmount ?? 0;
+      const calculatedTotal = cart?.totalCartAmount ?? 0;
 
       const orderRequest: CreateOrderRequest = {
         shopId: parseInt(vendor.shopId, 10),
@@ -506,13 +475,29 @@ const CartScreen: React.FC = () => {
         orderAmount: calculatedTotal,
       };
 
+      const orderPayload = {
+        createOrderRequest: orderRequest,
+        checkoutSummaryRequest: {
+          shopId: cartItems?.[0]?.shopId ?? null,
+          customerAddressId: selectedSmartBizAddress?.addressID ?? null,
+          couponId: selectedCoupon?.id ?? null,
+          couponCode: selectedCoupon?.code ?? null,
+          paymentMethod: selectedPaymentOption?.toUpperCase() ?? 'PREPAID',
+          cartItems:
+            cartItems?.map((item: any) => ({
+              sku: item?.sku ?? null,
+              quantity: item?.quantity ?? null,
+            })) ?? [],
+        },
+      };
+
       const orderResponse = await orderService.createOrder(
-        orderRequest,
+        orderPayload,
         authData.jwt,
         authData.phone
       );
 
-      if (selectedPaymentOption === 'prepaid') {
+      if (selectedPaymentOption === 'PREPAID') {
         await handleRazorpayPayment(orderResponse, calculatedTotal, vendor);
       } else {
         if (cart && authData?.jwt && authData?.phone) {
@@ -555,6 +540,15 @@ const CartScreen: React.FC = () => {
         (error as any)?.message ||
         (error instanceof Error ? error.message : 'Order creation failed. Please try again.');
 
+      const errorCode = (error as any)?.code;
+
+      if (
+        errorCode === 'COUPON_NOT_FOUND' ||
+        errorCode === 'COUPON_INACTIVE' ||
+        errorCode === 'COUPON_MOV_NOT_MET'
+      ) {
+        setSelectedCoupon(null);
+      }
       navigation.navigate('OrderFailure', { errorMessage });
     } finally {
       setIsOrderLoading(false);
@@ -637,8 +631,8 @@ const CartScreen: React.FC = () => {
 
   React.useEffect(() => {
     if (availableOptions.length > 0 && !selectedPaymentOption) {
-      const codOption = availableOptions.find(option => option.key === 'cod' && option.available);
-      if (codOption) setSelectedPaymentOption('cod');
+      const codOption = availableOptions.find(option => option.key === 'COD' && option.available);
+      if (codOption) setSelectedPaymentOption('COD');
     }
   }, [availableOptions, selectedPaymentOption]);
 
@@ -834,7 +828,6 @@ const CartScreen: React.FC = () => {
             onToggle={() => setPaymentExpanded(e => !e)}
             summary={checkoutSummary}
             summaryLoading={checkoutSummaryLoading}
-            codCharges={codCharges}
             selectedPaymentOption={selectedPaymentOption}
             selectedCoupon={selectedCoupon}
           />
@@ -876,7 +869,7 @@ const CartScreen: React.FC = () => {
           onClose={handlePaymentModalClose}
           onConfirm={handlePaymentConfirm}
           paymentMethods={paymentMethods}
-          selectedOption={selectedPaymentOption as 'phonepe' | 'gpay' | 'cod' | 'prepaid'}
+          selectedOption={selectedPaymentOption as 'COD' | 'PREPAID'}
           error={paymentMethodsError}
           loading={paymentMethodsLoading}
           onRetry={refetchPaymentMethods}

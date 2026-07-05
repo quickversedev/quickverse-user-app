@@ -21,6 +21,35 @@ export interface OrderAddress {
   };
 }
 
+export interface OrderFinance {
+  id: string;
+  itemTotalAmount: number;
+  couponId: string | null;
+  couponCode: string | null;
+  couponDiscount: number;
+  isFreeDelivery: boolean;
+  amountAfterCoupon: number;
+  packagingCharges: number;
+  actualDeliveryFee: number;
+  deliveryFee: number;
+  platformFee: number;
+  razorpayCharges: number;
+  serviceGstRate: number;
+  commissionGst: number;
+  deliveryGst: number;
+  packagingGst: number;
+  platformGst: number;
+  codGst: number;
+  totalGst: number;
+  taxableAmount: number;
+  payableAmount: number;
+  commissionRate: number;
+  commission: number;
+  codCharges: number;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
 export interface Order {
   orderId: string;
   customerId: string;
@@ -50,6 +79,7 @@ export interface Order {
   specialInstructions?: string;
   customerName: string;
   customerPhone: string;
+  finance: OrderFinance | null;
 }
 
 export interface OrderFilters {

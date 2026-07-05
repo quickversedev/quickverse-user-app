@@ -47,6 +47,8 @@ interface CheckoutSummary {
   couponError?: string | null;
   couponErrorMessage?: string | null;
   couponApplied?: boolean;
+  codCharges?: number;
+  codGst?: number;
 }
 
 interface PaymentSummaryProps {
@@ -54,7 +56,6 @@ interface PaymentSummaryProps {
   onToggle: () => void;
   summary?: CheckoutSummary | null;
   summaryLoading?: boolean;
-  codCharges?: number;
   selectedPaymentOption?: string | undefined;
   selectedCoupon?: Coupon;
 }
@@ -64,7 +65,6 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   onToggle,
   summary,
   summaryLoading = false,
-  codCharges = 0,
   selectedPaymentOption,
   selectedCoupon,
 }) => {
@@ -122,10 +122,11 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   const taxableAmount = summary?.taxableAmount ?? 0;
   const payableAmount = summary?.payableAmount ?? 0;
   const razorpayCharges = summary?.razorpayCharges ?? 0;
-
-  const isCod = selectedPaymentOption === 'cod';
-  const extraPaymentCharges = isCod ? codCharges : razorpayCharges;
-  const finalTotal = payableAmount + extraPaymentCharges;
+  const codCharges = summary?.codCharges ?? 0;
+  const codGst = summary?.codGst ?? 0;
+  const isCod = selectedPaymentOption === 'COD';
+  // const extraPaymentCharges = isCod ? codCharges : razorpayCharges;
+  const finalTotal = payableAmount;
 
   const styles = StyleSheet.create({
     paymentSummaryBox: {
@@ -367,14 +368,16 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
                 </ThemeText>
               </View>
 
-              <View style={styles.billRow}>
-                <ThemeText variant="body" style={styles.billLabel}>
-                  Packaging Charges
-                </ThemeText>
-                <ThemeText variant="body" style={styles.billAmount}>
-                  ₹{packagingCharges.toFixed(2)}
-                </ThemeText>
-              </View>
+              {packagingCharges > 0 && (
+                <View style={styles.billRow}>
+                  <ThemeText variant="body" style={styles.billLabel}>
+                    Packaging Charges
+                  </ThemeText>
+                  <ThemeText variant="body" style={styles.billAmount}>
+                    ₹{packagingCharges.toFixed(2)}
+                  </ThemeText>
+                </View>
+              )}
 
               {isCod && codCharges > 0 && (
                 <View style={styles.billRow}>
@@ -383,17 +386,6 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
                   </ThemeText>
                   <ThemeText variant="body" style={styles.billAmount}>
                     ₹{codCharges.toFixed(2)}
-                  </ThemeText>
-                </View>
-              )}
-
-              {!isCod && razorpayCharges > 0 && (
-                <View style={styles.billRow}>
-                  <ThemeText variant="body" style={styles.billLabel}>
-                    Payment Gateway Charges
-                  </ThemeText>
-                  <ThemeText variant="body" style={styles.billAmount}>
-                    ₹{razorpayCharges.toFixed(2)}
                   </ThemeText>
                 </View>
               )}
@@ -453,6 +445,11 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
                       {packagingGst > 0 && (
                         <ThemeText variant="caption" color={getColor('subText')}>
                           Packaging GST: ₹{packagingGst.toFixed(2)}
+                        </ThemeText>
+                      )}
+                      {codGst > 0 && (
+                        <ThemeText variant="caption" color={getColor('subText')}>
+                          COD GST: ₹{codGst.toFixed(2)}
                         </ThemeText>
                       )}
                       <View

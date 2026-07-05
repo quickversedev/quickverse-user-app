@@ -72,11 +72,12 @@ export interface CreateOrderError {
 
 class OrderService {
   async createOrder(
-    requestData: CreateOrderRequest,
+    requestData: any,
     sessionKey: string,
     phone: string
   ): Promise<CreateOrderResponse> {
     try {
+      console.log('Creating order with request data:', requestData);
       const response = await apiCall(
         axiosInstance.post<CreateOrderResponse>('/v2/order/placeOrder', requestData, {
           headers: {

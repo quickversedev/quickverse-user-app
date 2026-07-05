@@ -5,7 +5,7 @@ import { ThemeText } from '../../components/common/theme/ThemeText';
 import { getAvailablePaymentOptions } from '../../services/paymentService';
 import { useTheme } from '../../theme/ThemeContext';
 
-type PaymentOptionKey = 'phonepe' | 'gpay' | 'cod' | 'prepaid';
+type PaymentOptionKey = 'COD' | 'PREPAID';
 
 type PaymentOption = {
   key: PaymentOptionKey;
@@ -42,7 +42,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
   selectedOption,
 }) => {
   const { getColor, getButtonColor } = useTheme();
-  const [selected, setSelected] = useState<PaymentOptionKey>(selectedOption || 'prepaid');
+  const [selected, setSelected] = useState<PaymentOptionKey>(selectedOption || 'PREPAID');
   const [upiId, setUpiId] = useState<string>('');
 
   const options: PaymentOption[] = useMemo(() => {
@@ -115,12 +115,12 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           Prepaid
         </ThemeText>
         <TouchableOpacity
-          onPress={() => setSelected('prepaid')}
+          onPress={() => setSelected('PREPAID')}
           style={[
             styles.option,
             {
               backgroundColor: getColor('card'),
-              borderColor: getColor(selected === 'prepaid' ? 'primary' : 'border'),
+              borderColor: getColor(selected === 'PREPAID' ? 'primary' : 'border'),
             },
           ]}
         >
@@ -128,13 +128,13 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
             <View
               style={[
                 styles.radioOuter,
-                { borderColor: getColor(selected === 'prepaid' ? 'primary' : 'border') },
+                { borderColor: getColor(selected === 'PREPAID' ? 'primary' : 'border') },
               ]}
             >
               <View
                 style={[
                   styles.radioInner,
-                  { backgroundColor: getColor(selected === 'prepaid' ? 'primary' : 'background') },
+                  { backgroundColor: getColor(selected === 'PREPAID' ? 'primary' : 'background') },
                 ]}
               />
             </View>
@@ -153,12 +153,12 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           Cash on Delivery
         </ThemeText>
         <TouchableOpacity
-          onPress={() => setSelected('cod')}
+          onPress={() => setSelected('COD')}
           style={[
             styles.option,
             {
               backgroundColor: getColor('card'),
-              borderColor: getColor(selected === 'cod' ? 'primary' : 'border'),
+              borderColor: getColor(selected === 'COD' ? 'primary' : 'border'),
             },
           ]}
         >
@@ -166,13 +166,13 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
             <View
               style={[
                 styles.radioOuter,
-                { borderColor: getColor(selected === 'cod' ? 'primary' : 'border') },
+                { borderColor: getColor(selected === 'COD' ? 'primary' : 'border') },
               ]}
             >
               <View
                 style={[
                   styles.radioInner,
-                  { backgroundColor: getColor(selected === 'cod' ? 'primary' : 'background') },
+                  { backgroundColor: getColor(selected === 'COD' ? 'primary' : 'background') },
                 ]}
               />
             </View>
@@ -291,7 +291,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           Cash on Delivery
         </ThemeText> */}
         {/* {options
-          .filter(o => o.key === 'cod')
+          .filter(o => o.key === 'COD')
           .map(item => {
             const isActive = selected === item.key;
             const isDisabled = !item.available;

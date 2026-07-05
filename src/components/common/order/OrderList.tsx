@@ -146,7 +146,7 @@ const OrderList: React.FC<OrderListProps> = ({
       if (onOrderPress) {
         onOrderPress(order);
       } else if (navigation) {
-        navigation.navigate('OrderDetails', { orderId: order.orderId });
+        navigation.navigate('OrderDetails', { orderId: order.orderId, order: order });
       }
     },
     [onOrderPress, navigation]

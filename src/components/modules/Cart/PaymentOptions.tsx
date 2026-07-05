@@ -113,13 +113,9 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
     }
 
     switch (selectedOption) {
-      case 'phonepe':
-        return { title: 'PhonePe', subtitle: 'UPI Payment' };
-      case 'gpay':
-        return { title: 'Google Pay', subtitle: 'UPI Payment' };
-      case 'cod':
+      case 'COD':
         return { title: 'Cash on Delivery', subtitle: 'Pay using UPI only, on Delivery' };
-       case 'prepaid':
+      case 'PREPAID':
         return { title: 'Prepaid', subtitle: 'UPI Payment' };
       default:
         return { title: 'Select Payment Method', subtitle: 'Choose your preferred payment option' };
