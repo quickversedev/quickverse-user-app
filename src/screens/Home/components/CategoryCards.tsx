@@ -1,106 +1,194 @@
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import {
+  Dimensions,
+  Image,
+  ImageSourcePropType,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AppNavigationProp } from '../../../types/navigation';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2; // 2 columns
+const CARD_WIDTH = (width - 48) / 2;
+
+interface CardConfig {
+  title: string;
+  subtitle: string;
+  image: ImageSourcePropType;
+  bgColor: string;
+  category: string;
+  comingSoon?: boolean;
+}
+
+/* eslint-disable @typescript-eslint/no-require-imports */
+const CARDS: CardConfig[] = [
+  {
+    title: 'Food & Dining',
+    subtitle: 'Restaurant meals at menu prices',
+    image: require('../../../assets/images/food-logo.png'),
+    bgColor: '#FEE2E2',
+    category: 'Food',
+  },
+  {
+    title: 'Daily Needs',
+    subtitle: 'Groceries delivered fast',
+    image: require('../../../assets/images/daily-logo.png'),
+    bgColor: '#FEF9C3',
+    category: 'Grocery',
+  },
+  {
+    title: 'Quick Delivery',
+    subtitle: 'Quick when you need it',
+    image: require('../../../assets/images/delivery-logo.png'),
+    bgColor: '#DBEAFE',
+    category: 'QuickDelivery',
+    comingSoon: true,
+  },
+  {
+    title: 'Health & Care',
+    subtitle: 'Medicines & essentials',
+    image: require('../../../assets/images/med-logo.png'),
+    bgColor: '#D1FAE5',
+    category: 'Pharmacy',
+    comingSoon: true,
+  },
+];
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 const CategoryCards = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const { theme } = useTheme();
 
-  const handlePress = (category: string) => {
-    navigation.navigate('Category', { categoryName: category });
+  const handlePress = (card: CardConfig) => {
+    if (card.comingSoon) return;
+    navigation.navigate('Category', { categoryName: card.category });
   };
 
   return (
     <View style={styles.container}>
-      <Card
-        title="Food Delivery"
-        subtitle="On Restaurant Prices"
-        image={require('../../../assets/images/food_homeScreen-category.png')}
-        onPress={() => handlePress('Food')}
-        theme={theme}
-      />
-      <Card
-        title="Daily Essentials"
-        subtitle="Delivered in minutes"
-        image={require('../../../assets/images/grocery_homeScreen-category.png')}
-        onPress={() => handlePress('Grocery')}
-        theme={theme}
-      />
+      <View style={styles.grid}>
+        {CARDS.map(card => (
+          <Card key={card.category} config={card} onPress={() => handlePress(card)} theme={theme} />
+        ))}
+      </View>
     </View>
   );
 };
 
-const Card = ({ title, subtitle, onPress, theme, image }: any) => (
-  <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={styles.cardWrapper}>
-    <LinearGradient
-      colors={['#F9FAFB', '#FEDB51']}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={{
-        borderRadius: 16,
-        padding: 1, // Border width
-        flex: 1,
-      }}
+const Card = ({
+  config,
+  onPress,
+  theme,
+}: {
+  config: CardConfig;
+  onPress: () => void;
+  theme: ReturnType<typeof useTheme>['theme'];
+}) => (
+  <TouchableOpacity
+    onPress={onPress}
+    activeOpacity={config.comingSoon ? 1 : 0.8}
+    style={styles.cardWrapper}
+  >
+    <View
+      style={[
+        styles.cardContent,
+        { backgroundColor: config.comingSoon ? '#F3F4F6' : config.bgColor },
+      ]}
     >
-      <View style={[styles.cardContent, { backgroundColor: theme.colors.card }]}>
-        <View style={styles.textContainer}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
-          <Text style={[styles.subtitle, { color: theme.colors.subText }]}>{subtitle}</Text>
-        </View>
-        {image && <Image source={image} style={styles.cardImage} resizeMode="contain" />}
+      <View style={styles.textContainer}>
+        <Text style={[styles.title, { color: config.comingSoon ? '#9CA3AF' : theme.colors.text }]}>
+          {config.title}
+        </Text>
+        <Text
+          style={[styles.subtitle, { color: config.comingSoon ? '#D1D5DB' : theme.colors.subText }]}
+        >
+          {config.subtitle}
+        </Text>
       </View>
-    </LinearGradient>
+      {config.comingSoon && (
+        <View style={styles.comingSoonBanner}>
+          <Text style={styles.comingSoonText}>COMING SOON</Text>
+        </View>
+      )}
+      <Image
+        source={config.image}
+        style={[styles.cardImage, config.comingSoon && styles.cardImageGreyed]}
+        resizeMode="contain"
+      />
+    </View>
   </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 14,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 10,
   },
   cardWrapper: {
     width: CARD_WIDTH,
-    height: 140,
+    height: 110,
     borderRadius: 16,
-    // Elevation/Shadow needs to be on wrapper or handled carefully with gradient
     elevation: 2,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
   },
   cardContent: {
     flex: 1,
-    borderRadius: 15, // Slightly less than wrapper (16-1)
-    padding: 16,
-    justifyContent: 'space-between',
+    borderRadius: 16,
+    padding: 12,
+    overflow: 'hidden',
   },
   textContainer: {
     flex: 1,
+    paddingRight: 45,
   },
   title: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 10,
+    lineHeight: 14,
   },
   cardImage: {
     position: 'absolute',
-    bottom: -5,
-    right: -2,
-    width: 100,
-    height: 100,
-    borderBottomRightRadius: 15,
+    bottom: 0,
+    right: 0,
+    width: 70,
+    height: 70,
+    borderBottomRightRadius: 16,
+  },
+  cardImageGreyed: {
+    opacity: 0.3,
+  },
+  comingSoonBanner: {
+    position: 'absolute',
+    bottom: 10,
+    left: -20,
+    backgroundColor: '#9CA3AF',
+    paddingHorizontal: 24,
+    paddingVertical: 3,
+    transform: [{ rotate: '35deg' }],
+    zIndex: 10,
+  },
+  comingSoonText: {
+    color: '#FFFFFF',
+    fontSize: 7,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
 });
 

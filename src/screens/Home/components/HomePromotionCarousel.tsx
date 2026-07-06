@@ -126,7 +126,7 @@ const HomePromotionCarousel = () => {
           <PromoBanner
             key={banner.promoId ?? index}
             promo={{ ...banner, bannerImage: true }}
-            size={178}
+            size={150}
             style={[
               styles.bannerContainer,
               index === bannerItems.length - 1 && { marginRight: 0 },
@@ -142,7 +142,7 @@ const HomePromotionCarousel = () => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 6,
+    paddingVertical: 2,
   },
   bannerScrollContainer: {
     paddingHorizontal: SIDE_PADDING,

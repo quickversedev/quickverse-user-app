@@ -1,10 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useContext } from 'react';
-import { Image, Platform, StatusBar, StyleSheet, View } from 'react-native';
+import React, { useCallback } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Images } from '../../assets';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
-import { TabBarVisibilityContext } from '../../navigation/TabNavigation';
 
 import { SearchBar } from '../../components/modules/Header/SearchBar';
 import { useAuth } from '../../contexts/login/AuthProvider';
@@ -13,11 +11,10 @@ import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
 import CategoryCards from './components/CategoryCards';
+import FastPicks from './components/FastPicks';
 import HomeHeader from './components/HomeHeader';
 import HomePromotionCarousel from './components/HomePromotionCarousel';
-// @ts-ignore
-import { Dimensions } from 'react-native';
-const { width } = Dimensions.get('window');
+import TopStoresNearYou from './components/TopStoresNearYou';
 
 const HomeMainScreen_2 = React.memo(() => {
   const { theme } = useTheme();
@@ -49,39 +46,31 @@ const HomeMainScreen_2 = React.memo(() => {
     navigation.navigate('Search');
   }, [navigation]);
 
-  const tabBarContext = useContext(TabBarVisibilityContext);
-  const bottomHeight = tabBarContext?.tabBarHeight || 50;
-
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <HomeHeader />
 
-        <View style={styles.carouselContainer}>
-          <HomePromotionCarousel />
-        </View>
-
-        <View style={styles.searchContainer}>
-          <SearchBar onPress={handleSearchPress} />
-        </View>
-
-        <View style={styles.cardsContainer}>
-          <CategoryCards />
-        </View>
-
-        <View
-          style={[
-            styles.bottomIllustrationContainer,
-            { bottom: bottomHeight, height: width * 0.48, overflow: 'hidden' },
-          ]}
-          pointerEvents="none"
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
         >
-          <Image
-            source={Images.homeScreenIllustration}
-            style={{ width: width, height: width * 0.5 }}
-            resizeMode="contain"
-          />
-        </View>
+          <View style={styles.carouselContainer}>
+            <HomePromotionCarousel />
+          </View>
+
+          <View style={styles.searchContainer}>
+            <SearchBar onPress={handleSearchPress} />
+          </View>
+
+          <TopStoresNearYou />
+
+          <View style={styles.cardsContainer}>
+            <CategoryCards />
+          </View>
+
+          <FastPicks />
+        </ScrollView>
       </View>
 
       <FloatingCartsStack />
@@ -99,21 +88,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 16,
+  },
   carouselContainer: {
-    marginTop: 10,
-    marginBottom: 18,
+    marginTop: 6,
+    marginBottom: 10,
   },
   searchContainer: {
     paddingHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 14,
   },
   cardsContainer: {},
-  bottomIllustrationContainer: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    // zIndex: -1, // Removed to ensure visibility
-  },
 });
 
 export default HomeMainScreen_2;
