@@ -1,4 +1,5 @@
 import notifee, { AuthorizationStatus } from '@notifee/react-native';
+import Icon from '@react-native-vector-icons/material-design-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -19,7 +20,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from '@react-native-vector-icons/material-design-icons';
 import { SectionDivider } from '../../../components/common';
 import {
   BillSummaryCard,
@@ -65,7 +65,13 @@ const SkeletonBlock = ({
   return (
     <View
       style={[
-        { width: w as any, height: h, borderRadius, backgroundColor: baseColor, overflow: 'hidden' },
+        {
+          width: w as any,
+          height: h,
+          borderRadius,
+          backgroundColor: baseColor,
+          overflow: 'hidden',
+        },
         style,
       ]}
     >
@@ -98,9 +104,20 @@ const OrderDetailsSkeleton = ({ getColor }: { getColor: (key: string) => string 
   );
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ padding: 16 }}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Order Info Card */}
-      <View style={{ backgroundColor: getColor('card'), borderRadius: 12, padding: 16, marginBottom: 16 }}>
+      <View
+        style={{
+          backgroundColor: getColor('card'),
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 16,
+        }}
+      >
         {/* Address */}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
           <S w={36} h={36} borderRadius={18} />
@@ -111,7 +128,14 @@ const OrderDetailsSkeleton = ({ getColor }: { getColor: (key: string) => string 
           </View>
         </View>
         {/* Date + Status */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 16,
+          }}
+        >
           <S w={160} h={14} borderRadius={4} />
           <S w={90} h={28} borderRadius={14} />
         </View>
@@ -134,11 +158,25 @@ const OrderDetailsSkeleton = ({ getColor }: { getColor: (key: string) => string 
       </View>
 
       {/* Shop Details Card */}
-      <View style={{ backgroundColor: getColor('card'), borderRadius: 12, padding: 16, marginBottom: 16 }}>
+      <View
+        style={{
+          backgroundColor: getColor('card'),
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 16,
+        }}
+      >
         <S w={180} h={16} borderRadius={4} />
         <S w={screenWidth - 96} h={12} borderRadius={4} style={{ marginTop: 8 }} />
         <S w={screenWidth - 120} h={12} borderRadius={4} style={{ marginTop: 4 }} />
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: 12,
+          }}
+        >
           <S w={140} h={14} borderRadius={4} />
           <S w={90} h={32} borderRadius={16} />
         </View>
@@ -151,7 +189,14 @@ const OrderDetailsSkeleton = ({ getColor }: { getColor: (key: string) => string 
       </View>
 
       {/* Order Item rows */}
-      <View style={{ backgroundColor: getColor('card'), borderRadius: 12, padding: 16, marginBottom: 16 }}>
+      <View
+        style={{
+          backgroundColor: getColor('card'),
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 16,
+        }}
+      >
         {[0, 1].map(i => (
           <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }}>
             <S w={48} h={48} borderRadius={8} />
@@ -165,14 +210,32 @@ const OrderDetailsSkeleton = ({ getColor }: { getColor: (key: string) => string 
       </View>
 
       {/* Bill Summary */}
-      <View style={{ backgroundColor: getColor('card'), borderRadius: 12, padding: 16, marginBottom: 16 }}>
+      <View
+        style={{
+          backgroundColor: getColor('card'),
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 16,
+        }}
+      >
         {[0, 1, 2, 3].map(i => (
-          <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+          <View
+            key={i}
+            style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}
+          >
             <S w={100 + i * 10} h={12} borderRadius={4} />
             <S w={50} h={12} borderRadius={4} />
           </View>
         ))}
-        <View style={{ borderTopWidth: 1, borderTopColor: getColor('border'), paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View
+          style={{
+            borderTopWidth: 1,
+            borderTopColor: getColor('border'),
+            paddingTop: 10,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+          }}
+        >
           <S w={80} h={14} borderRadius={4} />
           <S w={60} h={14} borderRadius={4} />
         </View>
@@ -219,8 +282,8 @@ const OrderDetailsScreen = () => {
   }, [selectedOrder?.shopId, getVendorById]);
 
   const isGrocery = vendorDetails?.category?.toLowerCase().includes('grocery');
-  const serviceType = isGrocery ? 'GROCERY' as const : 'FOOD' as const;
-  
+  const serviceType = isGrocery ? ('GROCERY' as const) : ('FOOD' as const);
+
   // Select the stable array to trigger re-renders only when it changes.
   // Using getPricingValues directly in the selector returns a new object every time,
   // causing useSyncExternalStore to throw an infinite loop warning/error.
@@ -492,7 +555,6 @@ const OrderDetailsScreen = () => {
     // //console.log('Get help pressed');
   }, []);
 
-
   // Types to avoid 'any' and map API shape safely
   type DerivedItem = { id: string; name: string; quantity: number; price: number; image?: string };
   type ApiSkuGroup = {
@@ -582,7 +644,11 @@ const OrderDetailsScreen = () => {
     const taxes = Math.round(pricing.gstRate * taxableAmount);
 
     const total =
-      Number(subTotal) + pricing.deliveryFee + pricing.platformFee + pricing.packagingCharges + taxes;
+      Number(subTotal) +
+      pricing.deliveryFee +
+      pricing.platformFee +
+      pricing.packagingCharges +
+      taxes;
 
     return {
       subTotal,
@@ -804,6 +870,7 @@ const OrderDetailsScreen = () => {
           </View>
 
           <BillSummaryCard
+            finance={selectedOrder?.finance}
             totalAmount={summary.total}
             subtotal={summary.subTotal}
             deliveryFee={summary.deliveryFee}

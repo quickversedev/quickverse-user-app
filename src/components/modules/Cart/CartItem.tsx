@@ -103,7 +103,7 @@ const CartItem: React.FC<CartItemProps> = React.memo(
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             {showMRP && (
               <ThemeText variant="caption" color={getColor('subText')} style={styles.cartItemMRP}>
-                ₹{(mrp ?? 0).toFixed(2)}
+                ₹{(mrp * quantity).toFixed(2)}
               </ThemeText>
             )}
             <ThemeText
@@ -111,7 +111,7 @@ const CartItem: React.FC<CartItemProps> = React.memo(
               color={getButtonColor('default', 'background')}
               style={styles.cartItemPrice}
             >
-              ₹{(price ?? 0).toFixed(2)}
+              ₹{(price * quantity).toFixed(2)}
             </ThemeText>
           </View>
         </View>

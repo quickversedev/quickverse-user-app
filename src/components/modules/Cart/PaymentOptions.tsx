@@ -1,6 +1,6 @@
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '../../../theme/ThemeContext';
 
 interface PaymentOptionsProps {
@@ -68,11 +68,13 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
       color: getColor('text'),
       fontWeight: '600',
       fontSize: getTypography('body'),
+      fontFamily: theme.typography.fontFamily,
     },
     paymentOptionsSubtitle: {
       color: getColor('subText'),
       fontSize: getTypography('caption'),
       marginTop: 2,
+      fontFamily: theme.typography.fontFamily,
     },
     arrowBadge: {
       width: 32,
@@ -111,12 +113,10 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
     }
 
     switch (selectedOption) {
-      case 'phonepe':
-        return { title: 'PhonePe', subtitle: 'UPI Payment' };
-      case 'gpay':
-        return { title: 'Google Pay', subtitle: 'UPI Payment' };
-      case 'cod':
+      case 'COD':
         return { title: 'Cash on Delivery', subtitle: 'Pay using UPI only, on Delivery' };
+      case 'PREPAID':
+        return { title: 'Prepaid', subtitle: 'UPI Payment' };
       default:
         return { title: 'Select Payment Method', subtitle: 'Choose your preferred payment option' };
     }

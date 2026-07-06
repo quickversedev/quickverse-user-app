@@ -64,7 +64,7 @@ export const getAvailablePaymentOptions = (paymentMethods: PaymentMethod[]) => {
   // Check if COD is available
   if (isCODAvailable(paymentMethods)) {
     options.push({
-      key: 'cod',
+      key: 'COD',
       title: 'Cash on Delivery',
       subtitle: 'Pay with cash when your order arrives',
       available: true,

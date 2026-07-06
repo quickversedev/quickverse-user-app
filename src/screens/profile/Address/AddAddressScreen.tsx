@@ -1,14 +1,7 @@
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useState } from 'react';
-import {
-  Dimensions,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -85,6 +78,11 @@ const AddAddressScreen = () => {
 
   const handleAddressSaveSuccess = async () => {
     if (route.params?.source === 'modal') {
+      if (route.params?.screen === 'checkout') {
+        // Came from a checkout modal — go back to Checkout and auto-select the new address
+        navigation.goBack();
+        return;
+      }
       // Came from a header modal — go back to Home and auto-open the address selection modal
       useAddressStore.getState().setPendingOpenAddressModal(true);
       navigation.goBack();
@@ -195,11 +193,7 @@ const AddAddressScreen = () => {
       ) : step === 2 ? (
         <View style={themedStyles.header}>
           <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
-            <MaterialCommunityIcons
-              name="arrow-left-thick"
-              size={25}
-              color={getColor('primary')}
-            />
+            <MaterialCommunityIcons name="arrow-left-thick" size={25} color={getColor('primary')} />
           </TouchableOpacity>
           <Text style={themedStyles.title}>Add Address Details</Text>
           <View style={themedStyles.placeholder} />
@@ -207,11 +201,7 @@ const AddAddressScreen = () => {
       ) : (
         <View style={themedStyles.header}>
           <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
-            <MaterialCommunityIcons
-              name="arrow-left-thick"
-              size={25}
-              color={getColor('primary')}
-            />
+            <MaterialCommunityIcons name="arrow-left-thick" size={25} color={getColor('primary')} />
           </TouchableOpacity>
           <Text style={themedStyles.title}>Review Address</Text>
           <View style={themedStyles.placeholder} />

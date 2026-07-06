@@ -98,16 +98,17 @@ const useVendorStore = create<VendorStore>((set, get) => ({
 
       const authHeader = getAuthHeader();
       console.log('[VendorStore] Auth Header:', authHeader ? 'Present' : 'Missing');
-
+      console.log(params);
       const data = await apiCall(
         axiosInstance.get(VENDOR_API_URL, {
-          params,
+          params: { ...params, isTest: true },
           headers: {
             Authorization: authHeader,
           },
           signal: abortController.signal,
         })
       );
+      console.log(data);
 
       console.log(
         '[VendorStore] API Response data length:',

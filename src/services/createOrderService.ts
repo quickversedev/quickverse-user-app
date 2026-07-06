@@ -10,10 +10,14 @@ export interface CreateOrderRequest {
   notificationEmail: string | null;
   customerName: string;
   paymentMethod: string;
+  orderAmount?: number;
 }
 
 export interface CreateOrderResponse {
+  order_id: string;
+  payment_session_id: string;
   orderId: string;
+  id: string;
   customerId: string;
   totalOrderAmount: number;
   orderStatus: string;
@@ -68,13 +72,14 @@ export interface CreateOrderError {
 
 class OrderService {
   async createOrder(
-    requestData: CreateOrderRequest,
+    requestData: any,
     sessionKey: string,
     phone: string
   ): Promise<CreateOrderResponse> {
     try {
+      console.log('Creating order with request data:', requestData);
       const response = await apiCall(
-        axiosInstance.post<CreateOrderResponse>('/v2/order/createOrder', requestData, {
+        axiosInstance.post<CreateOrderResponse>('/v2/order/placeOrder', requestData, {
           headers: {
             SessionKey: sessionKey,
             Authorization: getAuthHeader(),
@@ -84,6 +89,7 @@ class OrderService {
       );
       return response;
     } catch (error: unknown) {
+      console.log('Create Order Error : ', error);
       console.error('Create Order Error:', {
         message: (error as any)?.message || 'Unknown error',
         code: (error as any)?.code || 'UNKNOWN',
@@ -95,6 +101,41 @@ class OrderService {
         sessionKey: sessionKey ? '***' : 'MISSING',
         phone: phone ? '***' : 'MISSING',
       });
+      throw error;
+    }
+  }
+
+  async captureOrder(paymentId: string, payload: any, sessionKey: string, phone: string) {
+    try {
+      const response = await apiCall(
+        axiosInstance.post(`v3/payment/${paymentId}/capture`, payload, {
+          headers: {
+            SessionKey: sessionKey,
+            Authorization: getAuthHeader(),
+            phone: phone,
+          },
+        })
+      );
+      return response;
+    } catch (error: unknown) {
+      console.log('Capture Payament Error : ', error);
+      throw error;
+    }
+  }
+
+  async getOrderStatus(cashFreeId: string, sessionKey: string): Promise<void> {
+    try {
+      const response = await apiCall(
+        axiosInstance.get(`v2/check-order-status?cashFreeId=${cashFreeId}`, {
+          headers: {
+            SessionKey: sessionKey,
+            Authorization: getAuthHeader(),
+          },
+        })
+      );
+      return response;
+    } catch (error) {
+      console.log('Get Order Status Error : ', error);
       throw error;
     }
   }

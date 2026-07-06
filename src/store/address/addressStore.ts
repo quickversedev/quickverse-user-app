@@ -36,6 +36,7 @@ const useAddressStore = create<AddressStore>((set, get) => ({
         throw new Error('Authentication required. Please login again.');
       }
       const response = await axiosInstance.get('/v2/addresses', {
+        params: { isSyncAddress: true },
         headers: {
           SessionKey: authSession.jwt,
           phone: authSession.phone,

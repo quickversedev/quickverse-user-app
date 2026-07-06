@@ -59,10 +59,7 @@ const HomePromotionCarousel = () => {
   const pauseUntilRef = useRef(0);
   const [, setCurrentIndex] = useState(0);
 
-  const bannerItems = useMemo(
-    () => promotions.filter(item => item.bannerImage),
-    [promotions]
-  );
+  const bannerItems = useMemo(() => promotions.filter(item => item.bannerImage), [promotions]);
 
   useEffect(() => {
     if (bannerItems.length <= 1) return;
