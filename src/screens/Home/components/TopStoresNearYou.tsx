@@ -16,69 +16,6 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 4;
 const LOGO_SIZE = 44;
 
-const STATIC_STORES: Vendor[] = [
-  {
-    shopId: 'static_1',
-    name: 'Shree Samarth',
-    logo: '',
-    banner: '',
-    owner: '',
-    phone: '',
-    openingTime: '9:00 AM',
-    closingTime: '11:30 PM',
-    preparationTime: '12 mins',
-    description: 'Food Gallery',
-    category: 'Food',
-    storeEnabled: true,
-    storeActive: true,
-  },
-  {
-    shopId: 'static_2',
-    name: 'Sai Foods',
-    logo: '',
-    banner: '',
-    owner: '',
-    phone: '',
-    openingTime: '9:00 AM',
-    closingTime: '11:00 PM',
-    preparationTime: '18 mins',
-    description: 'Food Restaurant',
-    category: 'Food',
-    storeEnabled: true,
-    storeActive: true,
-  },
-  {
-    shopId: 'static_3',
-    name: 'More Supermarket',
-    logo: '',
-    banner: '',
-    owner: '',
-    phone: '',
-    openingTime: '10:30 AM',
-    closingTime: '10:00 PM',
-    preparationTime: '18 mins',
-    description: 'Supermart',
-    category: 'Grocery',
-    storeEnabled: true,
-    storeActive: true,
-  },
-  {
-    shopId: 'static_4',
-    name: 'Patil Kirana Store',
-    logo: '',
-    banner: '',
-    owner: '',
-    phone: '',
-    openingTime: '8:00 AM',
-    closingTime: '10:00 PM',
-    preparationTime: '18 mins',
-    description: 'Kirana Store',
-    category: 'Grocery',
-    storeEnabled: true,
-    storeActive: true,
-  },
-];
-
 const StoreItem = React.memo(
   ({ vendor, onPress }: { vendor: Vendor; onPress: (v: Vendor) => void }) => {
     const storeStatus = useMemo(
@@ -137,18 +74,17 @@ const TopStoresNearYou = () => {
   }, [vendors.length, selectedAddress?.coordinates, fetchVendors]);
 
   const topVendors = useMemo(() => {
-    if (vendors.length === 0) return STATIC_STORES;
     const active = vendors.filter(v => v.storeEnabled !== false && v.storeActive !== false);
     const food = active.filter(v => v.category === 'Food').slice(0, 2);
     const grocery = active.filter(v => v.category === 'Grocery').slice(0, 2);
-    const live = [...food, ...grocery];
-    return live.length > 0 ? live : STATIC_STORES;
+    return [...food, ...grocery];
   }, [vendors]);
 
   const handlePress = (vendor: Vendor) => {
-    if (vendor.shopId.startsWith('static_')) return;
     navigation.navigate('VendorProduct', { vendor });
   };
+
+  if (topVendors.length === 0) return null;
 
   return (
     <View style={styles.container}>

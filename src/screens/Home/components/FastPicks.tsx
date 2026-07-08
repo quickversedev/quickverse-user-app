@@ -1,190 +1,181 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Animated, Dimensions, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
-import { Product } from '../../../types/product';
-import { AppNavigationProp } from '../../../types/navigation';
+import { FastPick } from '../../../types/fastPick';
 import { getCleanImageUri } from '../../../utils/imageUtils';
 import { ThemeText } from '../../../components/common/theme/ThemeText';
-import useVendorStore from '../../../store/vendorStore';
-import axiosInstance from '../../../config/api/axios.config';
-import { getAuthHeader } from '../../../config/api/axios.config';
+import { useAuth } from '../../../contexts/login/AuthProvider';
+import useCartStore from '../../../store/cart/cartStore';
+import useFastPicks from '../../../hooks/useFastPicks';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 
-const ITEM_WIDTH = 52;
+const COLUMNS = 4;
+const COLLAPSED_ROWS = 2;
+const HORIZONTAL_PADDING = 16;
+const GAP = 10;
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const ITEM_WIDTH = (SCREEN_WIDTH - HORIZONTAL_PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS;
 
-interface FastPickItem extends Product {
-  vendorName?: string;
-}
+const SkeletonTile = () => {
+  const pulseAnim = React.useRef(new Animated.Value(0.3)).current;
 
-const STATIC_PICKS: FastPickItem[] = [
-  {
-    sku: 'sp_milk',
-    shopId: '',
-    name: 'Milk',
-    mrp: 25,
-    sellingPrice: 25,
-    rating: 4.5,
-    discount: 0,
-    veg: true,
-    numberOfVariants: 0,
-    primarySKU: 'sp_milk',
-  },
-  {
-    sku: 'sp_bread',
-    shopId: '',
-    name: 'Bread',
-    mrp: 50,
-    sellingPrice: 50,
-    rating: 4.3,
-    discount: 0,
-    veg: true,
-    numberOfVariants: 0,
-    primarySKU: 'sp_bread',
-  },
-  {
-    sku: 'sp_banana',
-    shopId: '',
-    name: 'Banana',
-    mrp: 60,
-    sellingPrice: 60,
-    rating: 4.4,
-    discount: 0,
-    veg: true,
-    numberOfVariants: 0,
-    primarySKU: 'sp_banana',
-  },
-  {
-    sku: 'sp_egg',
-    shopId: '',
-    name: 'Egg',
-    mrp: 150,
-    sellingPrice: 150,
-    rating: 4.6,
-    discount: 0,
-    veg: false,
-    numberOfVariants: 0,
-    primarySKU: 'sp_egg',
-  },
-  {
-    sku: 'sp_maggi',
-    shopId: '',
-    name: 'Maggi',
-    mrp: 15,
-    sellingPrice: 15,
-    rating: 4.7,
-    discount: 0,
-    veg: true,
-    numberOfVariants: 0,
-    primarySKU: 'sp_maggi',
-  },
-  {
-    sku: 'sp_coke',
-    shopId: '',
-    name: 'Coke',
-    mrp: 40,
-    sellingPrice: 40,
-    rating: 4.2,
-    discount: 0,
-    veg: true,
-    numberOfVariants: 0,
-    primarySKU: 'sp_coke',
-  },
-];
-
-const PickItem = React.memo(({ product }: { product: FastPickItem }) => {
-  const { theme } = useTheme();
-  const imageUri = getCleanImageUri(product.imageUrl);
+  React.useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [pulseAnim]);
 
   return (
     <View style={styles.pickItem}>
-      <View style={[styles.imageContainer, { backgroundColor: theme.colors.card }]}>
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.productImage} resizeMode="contain" />
+      <Animated.View style={[styles.skeletonImage, { opacity: pulseAnim }]} />
+      <Animated.View style={[styles.skeletonText, { opacity: pulseAnim }]} />
+      <Animated.View style={[styles.skeletonPrice, { opacity: pulseAnim }]} />
+    </View>
+  );
+};
+
+const PickItem = React.memo(
+  ({
+    pick,
+    quantity,
+    onAdd,
+    onIncrement,
+    onDecrement,
+  }: {
+    pick: FastPick;
+    quantity: number;
+    onAdd: () => void;
+    onIncrement: () => void;
+    onDecrement: () => void;
+  }) => {
+    const { theme } = useTheme();
+    const imageUri = getCleanImageUri(pick.imageUrl);
+
+    return (
+      <View style={styles.pickItem}>
+        <View style={[styles.imageContainer, { backgroundColor: theme.colors.card }]}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.productImage} resizeMode="contain" />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <MaterialIcons name="shopping-bag" size={24} color="#D1D5DB" />
+            </View>
+          )}
+        </View>
+        <ThemeText style={styles.productName} numberOfLines={1}>
+          {pick.name}
+        </ThemeText>
+        <ThemeText style={styles.productPrice}>
+          {'₹'}
+          {pick.sellingPrice || pick.mrp}
+        </ThemeText>
+        {quantity === 0 ? (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={onAdd}
+            activeOpacity={0.7}
+            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+          >
+            <MaterialIcons name="add" size={16} color="#D97706" />
+          </TouchableOpacity>
         ) : (
-          <View style={styles.imagePlaceholder}>
-            <MaterialIcons name="shopping-bag" size={24} color="#D1D5DB" />
+          <View style={styles.quantityRow}>
+            <TouchableOpacity
+              onPress={onDecrement}
+              activeOpacity={0.7}
+              hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+            >
+              <MaterialIcons name="remove" size={14} color="#D97706" />
+            </TouchableOpacity>
+            <ThemeText style={styles.quantityText}>{quantity}</ThemeText>
+            <TouchableOpacity
+              onPress={onIncrement}
+              activeOpacity={0.7}
+              hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+            >
+              <MaterialIcons name="add" size={14} color="#D97706" />
+            </TouchableOpacity>
           </View>
         )}
       </View>
-      <ThemeText style={styles.productName} numberOfLines={1}>
-        {product.name}
-      </ThemeText>
-      <ThemeText style={styles.productPrice}>
-        {'₹'}
-        {product.sellingPrice || product.mrp}
-      </ThemeText>
-    </View>
-  );
-});
+    );
+  }
+);
 
 PickItem.displayName = 'PickItem';
 
 const FastPicks = () => {
-  const navigation = useNavigation<AppNavigationProp>();
   const { theme } = useTheme();
-  const vendors = useVendorStore(s => s.vendors);
-  const [products, setProducts] = useState<FastPickItem[]>(STATIC_PICKS);
-  const [fetchedShopId, setFetchedShopId] = useState<string | null>(null);
+  const { authData } = useAuth();
+  const { fastPicks, loading } = useFastPicks();
+  const carts = useCartStore(s => s.carts);
+  const addToCart = useCartStore(s => s.addToCart);
+  const increment = useCartStore(s => s.increment);
+  const decrement = useCartStore(s => s.decrement);
+  const [expanded, setExpanded] = useState(false);
 
-  const lastGroceryVendor = useMemo(() => {
-    const groceryVendors = vendors.filter(
-      v => v.category === 'Grocery' && v.storeEnabled !== false && v.storeActive !== false
-    );
-    return groceryVendors.length > 0 ? groceryVendors[groceryVendors.length - 1] : null;
-  }, [vendors]);
+  const visiblePicks = useMemo(() => {
+    if (expanded) return fastPicks;
+    return fastPicks.slice(0, COLUMNS * COLLAPSED_ROWS);
+  }, [fastPicks, expanded]);
 
-  const targetShopId = lastGroceryVendor?.shopId ?? null;
+  const hasMore = fastPicks.length > COLUMNS * COLLAPSED_ROWS;
 
-  useEffect(() => {
-    if (!targetShopId || fetchedShopId === targetShopId) return;
+  const getQuantity = useCallback(
+    (pick: FastPick) => {
+      const cartId = `vendor_${pick.shopId}`;
+      return carts[cartId]?.products[pick.sku]?.quantity || 0;
+    },
+    [carts]
+  );
 
-    let cancelled = false;
+  const handleAdd = useCallback(
+    (pick: FastPick) => {
+      const cartId = `vendor_${pick.shopId}`;
+      addToCart(
+        cartId,
+        {
+          sku: pick.sku,
+          shopId: pick.shopId,
+          name: pick.name,
+          price: pick.sellingPrice || pick.mrp,
+          mrp: pick.mrp,
+          image: pick.imageUrl || '',
+          veg: true,
+        },
+        authData?.jwt || '',
+        authData?.phone || ''
+      );
+    },
+    [addToCart, authData]
+  );
 
-    const fetchPicks = async () => {
-      try {
-        const authHeader = getAuthHeader();
-        const res = await axiosInstance.post(
-          `/v3/products?shopId=${targetShopId}`,
-          { filters: {}, offset: '0', limit: '12' },
-          { headers: { Authorization: authHeader } }
-        );
-        const data = res.data;
-        const raw: Product[] = Array.isArray(data) ? data : (data?.products ?? []);
-        const mapped: FastPickItem[] = raw.slice(0, 12).map(p => ({
-          sku: p.sku,
-          shopId: p.shopId,
-          name: p.name,
-          mrp: p.mrp,
-          sellingPrice: p.sellingPrice,
-          rating: p.rating ?? 0,
-          discount: p.discount ?? 0,
-          veg: p.veg ?? true,
-          numberOfVariants: p.numberOfVariants ?? 0,
-          primarySKU: p.primarySKU ?? p.sku,
-          imageUrl: p.imageUrl,
-          vendorName: lastGroceryVendor?.name,
-        }));
-        if (!cancelled) {
-          if (mapped.length > 0) setProducts(mapped);
-          setFetchedShopId(targetShopId);
-        }
-      } catch {
-        if (!cancelled) {
-          setFetchedShopId(targetShopId);
-        }
-      }
-    };
+  const handleIncrement = useCallback(
+    (pick: FastPick) => {
+      const cartId = `vendor_${pick.shopId}`;
+      increment(cartId, pick.sku, authData?.jwt || '', authData?.phone || '');
+    },
+    [increment, authData]
+  );
 
-    fetchPicks();
-    return () => {
-      cancelled = true;
-    };
-  }, [targetShopId, fetchedShopId, lastGroceryVendor?.name]);
+  const handleDecrement = useCallback(
+    (pick: FastPick) => {
+      const cartId = `vendor_${pick.shopId}`;
+      decrement(cartId, pick.sku, authData?.jwt || '', authData?.phone || '');
+    },
+    [decrement, authData]
+  );
 
-  const handleViewAll = useCallback(() => {
-    navigation.navigate('Search');
-  }, [navigation]);
+  const handleToggle = useCallback(() => {
+    setExpanded(prev => !prev);
+  }, []);
+
+  if (!loading && fastPicks.length === 0) return null;
 
   return (
     <View style={styles.container}>
@@ -192,18 +183,34 @@ const FastPicks = () => {
         <ThemeText style={[styles.sectionTitle, { color: theme.colors.text }]}>
           Fast Picks
         </ThemeText>
-        <TouchableOpacity onPress={handleViewAll} activeOpacity={0.7}>
-          <ThemeText style={[styles.viewAll, { color: theme.colors.subText }]}>View all</ThemeText>
-        </TouchableOpacity>
+        {hasMore && (
+          <TouchableOpacity onPress={handleToggle} activeOpacity={0.7}>
+            <ThemeText style={[styles.viewAll, { color: theme.colors.subText }]}>
+              {expanded ? 'Show less' : 'View all'}
+            </ThemeText>
+          </TouchableOpacity>
+        )}
       </View>
-      <FlatList
-        data={products}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(item, index) => `${item.sku}-${index}`}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => <PickItem product={item} />}
-      />
+      {loading && fastPicks.length === 0 ? (
+        <View style={styles.grid}>
+          {Array.from({ length: COLUMNS * COLLAPSED_ROWS }, (_, i) => (
+            <SkeletonTile key={`skeleton-${i}`} />
+          ))}
+        </View>
+      ) : (
+        <View style={styles.grid}>
+          {visiblePicks.map(item => (
+            <PickItem
+              key={`${item.shopId}-${item.sku}`}
+              pick={item}
+              quantity={getQuantity(item)}
+              onAdd={() => handleAdd(item)}
+              onIncrement={() => handleIncrement(item)}
+              onDecrement={() => handleDecrement(item)}
+            />
+          ))}
+        </View>
+      )}
     </View>
   );
 };
@@ -216,7 +223,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: HORIZONTAL_PADDING,
     marginBottom: 8,
   },
   sectionTitle: {
@@ -227,17 +234,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
-  listContent: {
-    paddingHorizontal: 16,
-    gap: 8,
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: HORIZONTAL_PADDING,
+    gap: GAP,
   },
   pickItem: {
     alignItems: 'center',
     width: ITEM_WIDTH,
+    marginBottom: 4,
   },
   imageContainer: {
-    width: ITEM_WIDTH,
-    height: ITEM_WIDTH,
+    width: ITEM_WIDTH - 8,
+    height: ITEM_WIDTH - 8,
     borderRadius: 10,
     overflow: 'hidden',
     elevation: 1,
@@ -272,6 +282,53 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#6B7280',
     marginTop: 1,
+  },
+  addButton: {
+    marginTop: 4,
+    width: 28,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#D97706',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quantityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 4,
+    paddingHorizontal: 2,
+    height: 20,
+    gap: 2,
+  },
+  quantityText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#D97706',
+    minWidth: 12,
+    textAlign: 'center',
+  },
+  skeletonImage: {
+    width: ITEM_WIDTH - 8,
+    height: ITEM_WIDTH - 8,
+    borderRadius: 10,
+    backgroundColor: '#E5E7EB',
+  },
+  skeletonText: {
+    width: 36,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E5E7EB',
+    marginTop: 4,
+  },
+  skeletonPrice: {
+    width: 24,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E5E7EB',
+    marginTop: 2,
   },
 });
 
