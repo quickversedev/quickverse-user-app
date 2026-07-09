@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 185,
   },
   carouselContainer: {
     marginTop: 6,

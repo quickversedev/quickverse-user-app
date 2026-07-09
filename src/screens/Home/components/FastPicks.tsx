@@ -261,8 +261,8 @@ const styles = StyleSheet.create({
     borderColor: '#F3F4F6',
   },
   productImage: {
-    width: '75%',
-    height: '75%',
+    width: '100%',
+    height: '100%',
   },
   imagePlaceholder: {
     width: '100%',
