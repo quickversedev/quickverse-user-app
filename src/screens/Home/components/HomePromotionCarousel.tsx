@@ -128,7 +128,7 @@ const HomePromotionCarousel = () => {
               styles.bannerContainer,
               index === bannerItems.length - 1 && { marginRight: 0 },
             ]}
-            aspectRatio={1.5}
+            aspectRatio={8 / 3}
             onPress={handleBannerPress}
           />
         ))}
