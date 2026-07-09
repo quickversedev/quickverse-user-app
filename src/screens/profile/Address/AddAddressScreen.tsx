@@ -5,6 +5,7 @@ import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import { RootStackParamList } from '../../../routes/AppStack';
 import { AddressComponents } from '../../../services/api/olaLocationService';
 import useAddressStore from '../../../store/address/addressStore';
@@ -40,6 +41,8 @@ const AddAddressScreen = () => {
   const route = useRoute<RouteProp<RootStackParamList, 'AddAddress'>>();
   const [step, setStep] = useState(1);
   const [location, setLocation] = useState<Location | null>(null);
+  const { setSelectedAddress } = useAuth();
+
   const [selectedAddressDescription, setSelectedAddressDescription] = useState<AddressComponents>({
     country: '',
     state: '',
@@ -76,10 +79,11 @@ const AddAddressScreen = () => {
     setStep(3);
   };
 
-  const handleAddressSaveSuccess = async () => {
+  const handleAddressSaveSuccess = async (data?: any) => {
     if (route.params?.source === 'modal') {
       if (route.params?.screen === 'checkout') {
         // Came from a checkout modal — go back to Checkout and auto-select the new address
+        setSelectedAddress(data);
         navigation.goBack();
         return;
       }
@@ -227,7 +231,9 @@ const AddAddressScreen = () => {
           details={addressDetails}
           onChangeAddress={() => setStep(2)}
           onChangeRecipient={() => setStep(2)}
-          onSuccess={handleAddressSaveSuccess}
+          onSuccess={(data) => {
+            handleAddressSaveSuccess(data);
+          }}
         />
       )}
     </View>
