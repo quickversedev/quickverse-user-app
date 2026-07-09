@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import React, { useCallback } from 'react';
 import {
   ActivityIndicator,
@@ -8,13 +9,13 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { useTheme } from '../../../theme/ThemeContext';
 import { TabBarVisibilityContext } from '../../../navigation/TabNavigation';
+import { useTheme } from '../../../theme/ThemeContext';
 
 interface CartFooterProps {
   address: string;
   addressTag?: string;
+  addressId?: string;
   onSelectAddress: () => void;
   onCheckout: () => void;
   disabled?: boolean;
@@ -25,6 +26,7 @@ interface CartFooterProps {
 const CartFooter: React.FC<CartFooterProps> = ({
   address,
   addressTag,
+  addressId,
   onSelectAddress,
   onCheckout,
   disabled = false,
@@ -36,7 +38,11 @@ const CartFooter: React.FC<CartFooterProps> = ({
   const tabBarContext = React.useContext(TabBarVisibilityContext);
   const extraBottom = tabBarContext?.fullTabBarHeight || 0;
 
-  const isAddressSelected = address !== 'Select delivery address';
+  const isValidUUID = (value?: string | null) =>
+    !!value &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+  const isAddressSelected = address !== 'Select delivery address' && isValidUUID(addressId);
 
   const styles = StyleSheet.create({
     footerBar: {
@@ -176,9 +182,7 @@ const CartFooter: React.FC<CartFooterProps> = ({
           />
         </View>
         <View style={styles.addressContent}>
-          <Text style={styles.addressLabel}>
-            Deliver to{addressTag ? ` • ${addressTag}` : ''}
-          </Text>
+          <Text style={styles.addressLabel}>Deliver to{addressTag ? ` • ${addressTag}` : ''}</Text>
           <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="tail">
             {address}
           </Text>

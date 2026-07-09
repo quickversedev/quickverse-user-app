@@ -303,6 +303,10 @@ const CartScreen: React.FC = () => {
         couponId: selectedCoupon?.id ?? null,
         couponCode: selectedCoupon?.code ?? null,
         paymentMethod: selectedPaymentOption?.toUpperCase() ?? 'PREPAID',
+        customerCoordinates: {
+          latitude: selectedSmartBizAddress?.coordinates?.latitude ?? null,
+          longitude: selectedSmartBizAddress?.coordinates?.longitude ?? null,
+        },
         cartItems:
           cartItems?.map((item: any) => ({
             sku: item?.sku ?? null,
@@ -353,6 +357,7 @@ const CartScreen: React.FC = () => {
   ) => {
     try {
       const RAZORPAY_KEY_ID = 'rzp_test_T2Z6i6Go29OJwg';
+      // const RAZORPAY_KEY_ID = 'rzp_live_TAGtNIHlg9alA6';
 
       const options = {
         description: 'QuickVerse Order Payment',
@@ -414,7 +419,13 @@ const CartScreen: React.FC = () => {
       return;
     }
 
-    if (!selectedSmartBizAddress) {
+    const isValidUUID = (value?: string | null) =>
+      !!value &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+    const isAddressSelected = isValidUUID(selectedSmartBizAddress?.addressID);
+
+    if (!isAddressSelected) {
       setShowSmartBizAddressModal(true);
       return;
     }
@@ -468,7 +479,7 @@ const CartScreen: React.FC = () => {
         orderSource: 'CONSTELLATION',
         customerAddressId: selectedSmartBizAddress?.addressID || '',
         fulfillmentOption: 'DELIVERY',
-        notificationMobileNumber: selectedAddress.phone,
+        notificationMobileNumber: authData?.phone || selectedAddress.phone,
         notificationEmail: null,
         customerName: selectedAddress.name || 'Customer',
         paymentMethod: selectedPaymentOption?.toUpperCase() || 'PREPAID',
@@ -483,6 +494,10 @@ const CartScreen: React.FC = () => {
           couponId: selectedCoupon?.id ?? null,
           couponCode: selectedCoupon?.code ?? null,
           paymentMethod: selectedPaymentOption?.toUpperCase() ?? 'PREPAID',
+          customerCoordinates: {
+            latitude: selectedSmartBizAddress?.coordinates?.latitude ?? null,
+            longitude: selectedSmartBizAddress?.coordinates?.longitude ?? null,
+          },
           cartItems:
             cartItems?.map((item: any) => ({
               sku: item?.sku ?? null,
@@ -835,8 +850,9 @@ const CartScreen: React.FC = () => {
       </ScrollView>
 
       <CartFooter
+        addressId={selectedSmartBizAddress?.addressID || ''}
         address={getFormattedAddress()}
-        addressTag={selectedSmartBizAddress?.tag || selectedSmartBizAddress?.name}
+        addressTag={selectedSmartBizAddress?.tag || selectedSmartBizAddress?.name || ''}
         onSelectAddress={() => setShowSmartBizAddressModal(true)}
         onCheckout={handleCheckout}
         disabled={isCheckoutDisabled}

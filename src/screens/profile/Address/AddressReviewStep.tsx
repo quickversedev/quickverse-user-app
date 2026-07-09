@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,7 +10,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import LoginPromptModal from '../../../components/common/LoginPromptModal';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useAddress } from '../../../hooks/useAddress';
@@ -39,7 +39,7 @@ interface AddressReviewStepProps {
   details: AddressDetails;
   onChangeAddress: () => void;
   onChangeRecipient: () => void;
-  onSuccess: () => void;
+  onSuccess: (data: any) => void;
 }
 
 const TAG_ICONS: Record<
@@ -82,10 +82,11 @@ const AddressReviewStep = ({
       longitude: location ? location.longitude.toString() : undefined,
     };
 
-    const result = await addAddress(newAddress);
+    const result: { success: boolean; data?: any; error?: { code: string; message: string } } =
+      await addAddress(newAddress);
 
     if (result.success) {
-      onSuccess();
+      onSuccess(result?.data);
     } else if (result.error) {
       if (result.error.code === '1052') {
         setSubmitError(`Tag "${details.tag}" already exists. Please change the tag.`);
@@ -275,7 +276,11 @@ const AddressReviewStep = ({
 
         {submitError && (
           <View style={s.errorBox}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={18} color={getColor('error')} />
+            <MaterialCommunityIcons
+              name="alert-circle-outline"
+              size={18}
+              color={getColor('error')}
+            />
             <Text style={s.errorText}>{submitError}</Text>
           </View>
         )}
@@ -300,7 +305,11 @@ const AddressReviewStep = ({
             <View style={s.changeRow}>
               <TouchableOpacity style={s.changeBtn} onPress={onChangeAddress} activeOpacity={0.7}>
                 <Text style={s.changeText}>Change</Text>
-                <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('primary')} />
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={16}
+                  color={getColor('primary')}
+                />
               </TouchableOpacity>
             </View>
           </View>
@@ -323,7 +332,11 @@ const AddressReviewStep = ({
             <View style={s.changeRow}>
               <TouchableOpacity style={s.changeBtn} onPress={onChangeRecipient} activeOpacity={0.7}>
                 <Text style={s.changeText}>Change</Text>
-                <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('primary')} />
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={16}
+                  color={getColor('primary')}
+                />
               </TouchableOpacity>
             </View>
           </View>
