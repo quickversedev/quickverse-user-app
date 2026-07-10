@@ -19,6 +19,7 @@ interface CardConfig {
   title: string;
   subtitle: string;
   image: ImageSourcePropType;
+  icon?: ImageSourcePropType;
   bgColor: string;
   category: string;
   comingSoon?: boolean;
@@ -30,6 +31,7 @@ const CARDS: CardConfig[] = [
     title: 'Food & Dining',
     subtitle: 'Restaurant meals at menu prices',
     image: require('../../../assets/images/food-logo.png'),
+    icon: require('../../../assets/images/icons/card-ikons/food-ikon.png'),
     bgColor: '#FEE2E2',
     category: 'Food',
   },
@@ -37,6 +39,7 @@ const CARDS: CardConfig[] = [
     title: 'Daily Needs',
     subtitle: 'Groceries delivered fast',
     image: require('../../../assets/images/daily-logo.png'),
+    icon: require('../../../assets/images/icons/card-ikons/daily-ikon.png'),
     bgColor: '#FEF9C3',
     category: 'Grocery',
   },
@@ -44,6 +47,7 @@ const CARDS: CardConfig[] = [
     title: 'Quick Delivery',
     subtitle: 'Quick when you need it',
     image: require('../../../assets/images/delivery-logo.png'),
+    icon: require('../../../assets/images/icons/card-ikons/quickDelivery-ikoon.png'),
     bgColor: '#DBEAFE',
     category: 'QuickDelivery',
     comingSoon: true,
@@ -52,6 +56,7 @@ const CARDS: CardConfig[] = [
     title: 'Health & Care',
     subtitle: 'Medicines & essentials',
     image: require('../../../assets/images/med-logo.png'),
+    icon: require('../../../assets/images/icons/card-ikons/health&care-ikon.png'),
     bgColor: '#D1FAE5',
     category: 'Pharmacy',
     comingSoon: true,
@@ -99,6 +104,12 @@ const Card = ({
         { backgroundColor: config.comingSoon ? '#F3F4F6' : config.bgColor },
       ]}
     >
+      {config.icon && (
+        <Image
+          source={config.icon}
+          style={[styles.categoryIcon, config.comingSoon && styles.categoryIconGreyed]}
+        />
+      )}
       <View style={styles.textContainer}>
         <Text style={[styles.title, { color: config.comingSoon ? '#9CA3AF' : theme.colors.text }]}>
           {config.title}
@@ -113,6 +124,12 @@ const Card = ({
         <View style={styles.comingSoonBanner}>
           <Text style={styles.comingSoonText}>COMING SOON</Text>
         </View>
+      )}
+      {!config.comingSoon && (
+        <Image
+          source={require('../../../assets/images/icons/card-ikons/arror.png')}
+          style={styles.arrowIcon}
+        />
       )}
       <Image
         source={config.image}
@@ -172,6 +189,23 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 16,
   },
   cardImageGreyed: {
+    opacity: 0.3,
+  },
+  arrowIcon: {
+    position: 'absolute',
+    bottom: 10,
+    left: 12,
+    width: 20,
+    height: 20,
+  },
+  categoryIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+  },
+  categoryIconGreyed: {
     opacity: 0.3,
   },
   comingSoonBanner: {

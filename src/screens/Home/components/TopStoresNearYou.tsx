@@ -5,6 +5,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
 import { AppNavigationProp } from '../../../types/navigation';
 import { getCleanImageUri } from '../../../utils/imageUtils';
+import { getDistanceInKm } from '../../../utils/distance';
 import { isStoreOpen } from '../../../utils/storeUtils';
 import { ThemeText } from '../../../components/common/theme/ThemeText';
 import { useAuth } from '../../../contexts/login/AuthProvider';
@@ -74,11 +75,26 @@ const TopStoresNearYou = () => {
   }, [vendors.length, selectedAddress?.coordinates, fetchVendors]);
 
   const topVendors = useMemo(() => {
-    const active = vendors.filter(v => v.storeEnabled !== false && v.storeActive !== false);
-    const food = active.filter(v => v.category === 'Food').slice(0, 2);
-    const grocery = active.filter(v => v.category === 'Grocery').slice(0, 2);
+    const active = vendors.filter(v => {
+      if (v.storeEnabled === false || v.storeActive === false) return false;
+      return isStoreOpen({ openingTime: v.openingTime, closingTime: v.closingTime, storeActive: v.storeActive }).isOpen;
+    });
+    const userLat = selectedAddress?.coordinates?.latitude;
+    const userLon = selectedAddress?.coordinates?.longitude;
+    const byDistance = (a: Vendor, b: Vendor) => {
+      if (!userLat || !userLon) return 0;
+      const aLat = a.coordinates?.latitude ?? a.location?.coordinates?.[1];
+      const aLon = a.coordinates?.longitude ?? a.location?.coordinates?.[0];
+      const bLat = b.coordinates?.latitude ?? b.location?.coordinates?.[1];
+      const bLon = b.coordinates?.longitude ?? b.location?.coordinates?.[0];
+      const aDist = aLat != null && aLon != null ? getDistanceInKm(userLat, userLon, aLat, aLon) : Infinity;
+      const bDist = bLat != null && bLon != null ? getDistanceInKm(userLat, userLon, bLat, bLon) : Infinity;
+      return aDist - bDist;
+    };
+    const food = active.filter(v => v.category === 'Food').sort(byDistance).slice(0, 2);
+    const grocery = active.filter(v => v.category === 'Grocery').sort(byDistance).slice(0, 2);
     return [...food, ...grocery];
-  }, [vendors]);
+  }, [vendors, selectedAddress?.coordinates?.latitude, selectedAddress?.coordinates?.longitude]);
 
   const handlePress = (vendor: Vendor) => {
     navigation.navigate('VendorProduct', { vendor });
