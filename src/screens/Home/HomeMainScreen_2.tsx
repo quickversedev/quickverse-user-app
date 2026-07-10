@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
@@ -7,6 +7,8 @@ import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack'
 import { SearchBar } from '../../components/modules/Header/SearchBar';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAppStateRefresh } from '../../hooks/useAppStateRefresh';
+import useCartStore from '../../store/cart/cartStore';
+import useOrderStore from '../../store/cart/orderStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
@@ -42,6 +44,16 @@ const HomeMainScreen_2 = React.memo(() => {
 
   const navigation = useNavigation<AppNavigationProp>();
 
+  const carts = useCartStore(s => s.carts);
+  const orders = useOrderStore(s => s.orders);
+  const hasFloatingCards = useMemo(() => {
+    const hasNonEmptyCart = Object.values(carts).some(
+      cart => Object.values(cart.products || {}).reduce((sum, p) => sum + (p?.quantity || 0), 0) > 0
+    );
+    const hasActiveOrder = orders.some(o => o.status !== 'delivered' && o.status !== 'cancelled');
+    return hasNonEmptyCart || hasActiveOrder;
+  }, [carts, orders]);
+
   const handleSearchPress = useCallback(() => {
     navigation.navigate('Search');
   }, [navigation]);
@@ -53,7 +65,7 @@ const HomeMainScreen_2 = React.memo(() => {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={{ paddingBottom: hasFloatingCards ? 130 : 50 }}
         >
           <View style={styles.carouselContainer}>
             <HomePromotionCarousel />
@@ -87,9 +99,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 185,
   },
   carouselContainer: {
     marginTop: 6,
