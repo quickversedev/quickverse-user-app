@@ -1,4 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import AntDesign from '@react-native-vector-icons/ant-design';
+import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   Animated,
   Dimensions,
@@ -9,9 +12,6 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import AntDesign from '@react-native-vector-icons/ant-design';
-import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import productsService from '../../../services/productsService';
 import useCartStore from '../../../store/cart/cartStore';
@@ -597,9 +597,7 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
       {isLoading ? (
         <ShowcaseSkeleton />
       ) : (
-        <View
-          pointerEvents={!isStoreActive ? 'none' : 'auto'}
-        >
+        <View pointerEvents={!isStoreActive ? 'none' : 'auto'}>
           {!isStoreActive && <View style={styles.disabledOverlay} />}
           {/* Categories */}
           <FlatList
@@ -657,7 +655,6 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
           )}
         </View>
       )}
-
     </View>
   );
 };
