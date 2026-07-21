@@ -1,10 +1,10 @@
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   Platform,
+  SectionList,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -23,7 +23,7 @@ export interface AvailableCoupon {
   code: string;
   mov: number;
   discountValue: number | null;
-  type: 'FREE_DELIVERY' | 'FIXED' | 'PERCENTAGE' | string; // Aligned with backend JSON
+  type: 'FREE_DELIVERY' | 'FIXED' | 'PERCENTAGE' | string;
   uptoValue: number | null;
   regionIds: string[];
   shopIds: string[];
@@ -295,6 +295,12 @@ const CouponCard: React.FC<CouponCardProps> = ({
   );
 };
 
+interface CouponSection {
+  title: string;
+  sectionType: 'discount' | 'delivery';
+  data: AvailableCoupon[];
+}
+
 const CouponsScreen: React.FC = () => {
   const route = useRoute<CouponsScreenRouteProp>();
   const navigation = useNavigation();
@@ -306,15 +312,27 @@ const CouponsScreen: React.FC = () => {
 
   const passedCoupons: AvailableCoupon[] | undefined = (route.params as any)?.coupons;
   const passedLoading: boolean = (route.params as any)?.loading ?? false;
-  const passedSelected: AvailableCoupon | null = (route.params as any)?.selectedCoupon ?? null;
-  const onApplyCallback: ((coupon: AvailableCoupon) => void) | undefined = (route.params as any)
-    ?.onApply;
+  const passedDiscountCoupon: AvailableCoupon | null =
+    (route.params as any)?.selectedDiscountCoupon ?? null;
+  const passedDeliveryCoupon: AvailableCoupon | null =
+    (route.params as any)?.selectedDeliveryCoupon ?? null;
+  const onApplyDiscountCallback: ((coupon: AvailableCoupon | null) => void) | undefined = (
+    route.params as any
+  )?.onApplyDiscount;
+  const onApplyDeliveryCallback: ((coupon: AvailableCoupon | null) => void) | undefined = (
+    route.params as any
+  )?.onApplyDelivery;
   const calculatedCartTotal = (route.params as any)?.cartTotal ?? 0;
 
   const [coupons, setCoupons] = useState<AvailableCoupon[]>(passedCoupons ?? []);
   const [loading, setLoading] = useState<boolean>(passedCoupons == null ? true : passedLoading);
   const [error, setError] = useState<string>('');
-  const [selectedId, setSelectedId] = useState<string | null>(passedSelected?.id ?? null);
+  const [selectedDiscountId, setSelectedDiscountId] = useState<string | null>(
+    passedDiscountCoupon?.id ?? null
+  );
+  const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(
+    passedDeliveryCoupon?.id ?? null
+  );
 
   const cart = activeCartId ? carts[activeCartId] : Object.values(carts)[0];
   const vendor = cart?.cartId
@@ -344,15 +362,43 @@ const CouponsScreen: React.FC = () => {
     fetchCoupons();
   }, []);
 
-  const handleApply = useCallback(
+  const sections: CouponSection[] = useMemo(() => {
+    const discountCoupons = coupons.filter(c => c.type === 'FIXED' || c.type === 'PERCENTAGE');
+    const deliveryCoupons = coupons.filter(c => c.type === 'FREE_DELIVERY');
+    const result: CouponSection[] = [];
+    if (discountCoupons.length > 0) {
+      result.push({ title: 'Discount Offers', sectionType: 'discount', data: discountCoupons });
+    }
+    if (deliveryCoupons.length > 0) {
+      result.push({ title: 'Free Delivery', sectionType: 'delivery', data: deliveryCoupons });
+    }
+    return result;
+  }, [coupons]);
+
+  const handleApplyDiscount = useCallback(
     (coupon: AvailableCoupon) => {
-      setSelectedId(coupon.id);
-      if (onApplyCallback) {
-        onApplyCallback(coupon);
+      if (selectedDiscountId === coupon.id) {
+        setSelectedDiscountId(null);
+        onApplyDiscountCallback?.(null);
+      } else {
+        setSelectedDiscountId(coupon.id);
+        onApplyDiscountCallback?.(coupon);
       }
-      navigation.goBack();
     },
-    [onApplyCallback, navigation]
+    [selectedDiscountId, onApplyDiscountCallback]
+  );
+
+  const handleApplyDelivery = useCallback(
+    (coupon: AvailableCoupon) => {
+      if (selectedDeliveryId === coupon.id) {
+        setSelectedDeliveryId(null);
+        onApplyDeliveryCallback?.(null);
+      } else {
+        setSelectedDeliveryId(coupon.id);
+        onApplyDeliveryCallback?.(coupon);
+      }
+    },
+    [selectedDeliveryId, onApplyDeliveryCallback]
   );
 
   if (!cart?.cartId) return null;
@@ -396,7 +442,22 @@ const CouponsScreen: React.FC = () => {
         >
           Available Coupons
         </Text>
-        <View style={styles.placeholder} />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.doneButton}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={{
+              fontFamily: ff,
+              fontWeight: '700',
+              fontSize: getTypography('body'),
+              color: getColor('primary'),
+            }}
+          >
+            Done
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -440,31 +501,59 @@ const CouponsScreen: React.FC = () => {
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={coupons}
+        <SectionList
+          sections={sections}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
+          stickySectionHeadersEnabled={false}
+          renderSectionHeader={({ section }) => (
+            <View style={styles.sectionHeader}>
+              <MaterialCommunityIcons
+                name={
+                  section.sectionType === 'delivery' ? 'truck-outline' : 'ticket-percent-outline'
+                }
+                size={18}
+                color={getColor('text')}
+              />
+              <Text
+                style={{
+                  fontFamily: ff,
+                  fontWeight: '700',
+                  fontSize: getTypography('body'),
+                  color: getColor('text'),
+                  marginLeft: 6,
+                }}
+              >
+                {section.title}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: ff,
+                  fontSize: getTypography('small'),
+                  color: getColor('subText'),
+                  marginLeft: 6,
+                }}
+              >
+                ({section.data.length})
+              </Text>
+            </View>
+          )}
+          renderItem={({ item, section }) => (
             <CouponCard
               coupon={item}
-              isSelected={item.id === selectedId}
-              onApply={handleApply}
+              isSelected={
+                section.sectionType === 'discount'
+                  ? item.id === selectedDiscountId
+                  : item.id === selectedDeliveryId
+              }
+              onApply={
+                section.sectionType === 'discount' ? handleApplyDiscount : handleApplyDelivery
+              }
               calculatedCartTotal={calculatedCartTotal}
             />
           )}
-          ListHeaderComponent={
-            <Text
-              style={{
-                fontFamily: ff,
-                fontSize: getTypography('caption'),
-                color: getColor('subText'),
-                marginBottom: 12,
-              }}
-            >
-              {coupons.length} offer{coupons.length > 1 ? 's' : ''} available
-            </Text>
-          }
+          renderSectionFooter={() => <View style={{ height: 12 }} />}
         />
       )}
     </SafeAreaView>
@@ -488,7 +577,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
   },
-  placeholder: { width: 40 },
+  doneButton: {
+    width: 40,
+    alignItems: 'flex-end',
+  },
   center: {
     flex: 1,
     justifyContent: 'center',
@@ -504,6 +596,12 @@ const styles = StyleSheet.create({
   list: {
     padding: 16,
     paddingTop: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 4,
   },
   card: {
     borderRadius: 12,

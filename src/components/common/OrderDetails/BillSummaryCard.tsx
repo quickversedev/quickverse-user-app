@@ -298,7 +298,7 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
           {couponDiscount > 0 && (
             <View style={styles.billRow}>
               <ThemeText variant="body" style={styles.billLabel}>
-                Coupon Discount
+                Coupon Discount{finance?.couponCode ? ` (${finance.couponCode})` : ''}
               </ThemeText>
               <ThemeText variant="body" style={styles.discountAmount}>
                 -₹{couponDiscount.toFixed(2)}
@@ -311,6 +311,9 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
           <View style={styles.billRow}>
             <ThemeText variant="body" style={styles.billLabel}>
               Delivery Fee
+              {isFreeDelivery && finance?.deliveryCouponCode
+                ? ` (${finance.deliveryCouponCode})`
+                : ''}
             </ThemeText>
             <View style={styles.feeRow}>
               {isFreeDelivery ? (

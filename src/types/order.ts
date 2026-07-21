@@ -27,6 +27,8 @@ export interface OrderFinance {
   couponId: string | null;
   couponCode: string | null;
   couponDiscount: number;
+  deliveryCouponId: string | null;
+  deliveryCouponCode: string | null;
   isFreeDelivery: boolean;
   amountAfterCoupon: number;
   packagingCharges: number;
