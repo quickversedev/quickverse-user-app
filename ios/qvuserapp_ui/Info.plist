@@ -42,6 +42,10 @@
       </dict>
     </dict>
     <key>NSPhotoLibraryUsageDescription</key>
+    <string>Allow access to photos to attach to feedback</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Allow camera access to attach a photo to feedback</string>
+    <key>NSPhotoLibraryUsageDescription</key>
     <string>QuickVerse needs access to your photo library so you can upload images when required.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>We need your location to provide accurate delivery services, show nearby vendors, and

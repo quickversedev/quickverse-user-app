@@ -1,16 +1,8 @@
+import Icon from '@react-native-vector-icons/material-design-icons';
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
-import {
-  Alert,
-  Platform,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from '@react-native-vector-icons/material-design-icons';
 import LoginButton from '../../components/common/LoginButton';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import deleteUserService from '../../services/deleteUserService';
@@ -109,6 +101,14 @@ const ProfileScreen = () => {
       icon: 'help-circle-outline',
       onPress: () => {
         navigation.navigate('HelpDesk');
+      },
+    },
+    {
+      id: 'feedback',
+      title: 'Feedback',
+      icon: 'message-text-outline',
+      onPress: () => {
+        navigation.navigate('Feedback');
       },
     },
     {

@@ -356,8 +356,8 @@ const CartScreen: React.FC = () => {
     vendor: VendorRef
   ) => {
     try {
-      const RAZORPAY_KEY_ID = 'rzp_test_T2Z6i6Go29OJwg';
-      // const RAZORPAY_KEY_ID = 'rzp_live_TAGtNIHlg9alA6';
+      // const RAZORPAY_KEY_ID = 'rzp_test_T2Z6i6Go29OJwg';
+      const RAZORPAY_KEY_ID = 'rzp_live_TAGtNIHlg9alA6';
 
       const options = {
         description: 'QuickVerse Order Payment',
