@@ -120,17 +120,21 @@ const HomePromotionCarousel = () => {
         }}
       >
         {bannerItems.map((banner, index) => (
-          <PromoBanner
+          <View
             key={banner.promoId ?? index}
-            promo={{ ...banner, bannerImage: true }}
-            size={150}
             style={[
-              styles.bannerContainer,
+              styles.bannerShadow,
               index === bannerItems.length - 1 && { marginRight: 0 },
             ]}
-            aspectRatio={8 / 3}
-            onPress={handleBannerPress}
-          />
+          >
+            <PromoBanner
+              promo={{ ...banner, bannerImage: true }}
+              size={150}
+              style={styles.bannerContainer}
+              aspectRatio={8 / 3}
+              onPress={handleBannerPress}
+            />
+          </View>
         ))}
       </ScrollView>
     </View>
@@ -139,19 +143,25 @@ const HomePromotionCarousel = () => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 2,
+    paddingVertical: 8,
   },
   bannerScrollContainer: {
     paddingHorizontal: SIDE_PADDING,
+    paddingVertical: 6,
   },
-  bannerContainer: {
+  bannerShadow: {
     width: BANNER_WIDTH,
     marginRight: BANNER_GAP,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+    borderRadius: 8,
+  },
+  bannerContainer: {
+    width: '100%',
+    borderRadius: 8,
   },
 });
 
