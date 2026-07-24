@@ -63,7 +63,7 @@ const CategoryScreen = () => {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [collectionsLoading, setCollectionsLoading] = useState(false);
 
-  const isCollectionAvailable = vendors.some(vendor => vendor.shopId === '68246');
+  const collectionsShopId = API_STORE_ID;
 
   useEffect(() => {
     const loadCollections = async () => {
@@ -74,7 +74,7 @@ const CategoryScreen = () => {
       setCollectionsLoading(true);
       try {
         // Collections grid is statically sourced from API_STORE_ID (68246)
-        const sections = await fetchCollectionsFromApi(API_STORE_ID);
+        const sections = await fetchCollectionsFromApi(collectionsShopId);
         if (sections.length > 0) {
           setCollections(sections[0].collections);
         } else {
@@ -172,9 +172,9 @@ const CategoryScreen = () => {
           )}
 
           {/* Collections Grid (Grocery Only) */}
-          {isCollectionAvailable && isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
-          {isCollectionAvailable && isGrocery && !collectionsLoading && collections.length > 0 && (
-            <CollectionsGrid collections={collections} shopId={API_STORE_ID} />
+          {isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
+          {isGrocery && !collectionsLoading && collections.length > 0 && (
+            <CollectionsGrid collections={collections} shopId={collectionsShopId} />
           )}
 
           {/* Horizontal list of store cards */}

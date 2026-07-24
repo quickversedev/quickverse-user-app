@@ -47,6 +47,11 @@ interface CheckoutSummary {
   couponError?: string | null;
   couponErrorMessage?: string | null;
   couponApplied?: boolean;
+  deliveryCouponId?: string | null;
+  deliveryCouponCode?: string | null;
+  isDeliveryCouponApplied?: boolean;
+  deliveryCouponError?: string | null;
+  deliveryCouponErrorMessage?: string | null;
   codCharges?: number;
   codGst?: number;
 }
@@ -58,6 +63,7 @@ interface PaymentSummaryProps {
   summaryLoading?: boolean;
   selectedPaymentOption?: string | undefined;
   selectedCoupon?: Coupon;
+  selectedDeliveryCoupon?: Coupon;
 }
 
 const PaymentSummary: React.FC<PaymentSummaryProps> = ({

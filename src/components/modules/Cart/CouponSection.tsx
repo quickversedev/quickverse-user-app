@@ -15,108 +15,155 @@ interface AvailableCoupon {
 interface CouponSectionProps {
   couponLoading: boolean;
   availableCoupons: AvailableCoupon[];
-  selectedCoupon: AvailableCoupon | null;
+  selectedDiscountCoupon: AvailableCoupon | null;
+  selectedDeliveryCoupon: AvailableCoupon | null;
   onCouponNavigation: () => void;
-  onRemoveCoupon: () => void;
+  onRemoveDiscountCoupon: () => void;
+  onRemoveDeliveryCoupon: () => void;
 }
+
+const getAppliedLabel = (coupon: AvailableCoupon): string => {
+  if (coupon.type === 'FREE_DELIVERY') {
+    return 'Free Delivery Applied';
+  }
+  if (coupon.type === 'FIXED' && coupon.discountValue != null) {
+    return `Flat ₹${coupon.discountValue} OFF Applied`;
+  }
+  if (coupon.type === 'PERCENTAGE' && coupon.discountValue != null) {
+    const uptoText = coupon.uptoValue ? ` (Up to ₹${coupon.uptoValue})` : '';
+    return `${coupon.discountValue}% OFF Applied${uptoText}`;
+  }
+  return 'Coupon Applied';
+};
+
+interface AppliedCouponCardProps {
+  coupon: AvailableCoupon;
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  onRemove: () => void;
+}
+
+const AppliedCouponCard: React.FC<AppliedCouponCardProps> = ({ coupon, icon, onRemove }) => {
+  const { getColor, getTypography, theme } = useTheme();
+  const ff = theme.typography.fontFamily;
+
+  return (
+    <View
+      style={[
+        styles.couponBox,
+        {
+          backgroundColor: getColor('card'),
+          borderColor: getColor('primary'),
+          borderRadius: theme.borderRadius.md,
+        },
+        Platform.select({
+          ios: {
+            shadowColor: theme.colors.shadow.color,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.12,
+            shadowRadius: 8,
+          },
+          android: { elevation: 4 },
+        }),
+      ]}
+    >
+      <View style={styles.couponLeft}>
+        <View style={[styles.iconBadge, { backgroundColor: `${getColor('primary')}18` }]}>
+          <MaterialCommunityIcons name={icon} size={22} color={getColor('primary')} />
+        </View>
+        <View style={styles.labelContainer}>
+          <Text
+            style={{
+              color: getColor('primary'),
+              fontWeight: '700',
+              fontSize: getTypography('body'),
+              fontFamily: ff,
+              letterSpacing: 0.5,
+            }}
+          >
+            {coupon.code}
+          </Text>
+          <Text
+            style={{
+              color: getColor('primary'),
+              fontSize: getTypography('caption'),
+              fontFamily: ff,
+              marginTop: 3,
+              fontWeight: '500',
+              lineHeight: 16,
+            }}
+          >
+            {getAppliedLabel(coupon)}
+          </Text>
+        </View>
+      </View>
+      <TouchableOpacity
+        onPress={onRemove}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        style={[styles.removeBtn, { borderColor: getColor('error') }]}
+        activeOpacity={0.7}
+      >
+        <MaterialCommunityIcons name="close" size={13} color={getColor('error')} />
+        <Text
+          style={{
+            color: getColor('error'),
+            fontSize: getTypography('small'),
+            fontFamily: ff,
+            fontWeight: '700',
+            marginLeft: 3,
+          }}
+        >
+          Remove
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 const CouponSection: React.FC<CouponSectionProps> = ({
   couponLoading,
   availableCoupons,
-  selectedCoupon,
+  selectedDiscountCoupon,
+  selectedDeliveryCoupon,
   onCouponNavigation,
-  onRemoveCoupon,
+  onRemoveDiscountCoupon,
+  onRemoveDeliveryCoupon,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
   const ff = theme.typography.fontFamily;
 
-  if (selectedCoupon) {
-    const getAppliedLabel = () => {
-      if (selectedCoupon.type === 'FREE_DELIVERY') {
-        return 'Free Delivery Applied';
-      }
-      if (selectedCoupon.type === 'FIXED' && selectedCoupon.discountValue != null) {
-        return `Flat ₹${selectedCoupon.discountValue} OFF Applied`;
-      }
-      if (selectedCoupon.type === 'PERCENTAGE' && selectedCoupon.discountValue != null) {
-        const uptoText = selectedCoupon.uptoValue ? ` (Up to ₹${selectedCoupon.uptoValue})` : '';
-        return `${selectedCoupon.discountValue}% OFF Applied${uptoText}`;
-      }
-      return 'Coupon Applied';
-    };
-
+  if (selectedDiscountCoupon || selectedDeliveryCoupon) {
     return (
-      <View
-        style={[
-          styles.couponBox,
-          {
-            backgroundColor: getColor('card'),
-            borderColor: getColor('primary'),
-            borderRadius: theme.borderRadius.md,
-          },
-          Platform.select({
-            ios: {
-              shadowColor: theme.colors.shadow.color,
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.12,
-              shadowRadius: 8,
-            },
-            android: { elevation: 4 },
-          }),
-        ]}
-      >
-        <View style={styles.couponLeft}>
-          <View style={[styles.iconBadge, { backgroundColor: `${getColor('primary')}18` }]}>
-            <MaterialCommunityIcons
-              name="check-circle-outline"
-              size={22}
-              color={getColor('primary')}
-            />
-          </View>
-          <View style={styles.labelContainer}>
-            <Text
-              style={{
-                color: getColor('primary'),
-                fontWeight: '700',
-                fontSize: getTypography('body'),
-                fontFamily: ff,
-                letterSpacing: 0.5,
-              }}
-            >
-              {selectedCoupon.code}
-            </Text>
-            <Text
-              style={{
-                color: getColor('primary'),
-                fontSize: getTypography('caption'),
-                fontFamily: ff,
-                marginTop: 3,
-                fontWeight: '500',
-                lineHeight: 16,
-              }}
-            >
-              {getAppliedLabel()}
-            </Text>
-          </View>
-        </View>
+      <View style={styles.appliedContainer}>
+        {selectedDiscountCoupon && (
+          <AppliedCouponCard
+            coupon={selectedDiscountCoupon}
+            icon="ticket-percent-outline"
+            onRemove={onRemoveDiscountCoupon}
+          />
+        )}
+        {selectedDeliveryCoupon && (
+          <AppliedCouponCard
+            coupon={selectedDeliveryCoupon}
+            icon="truck-outline"
+            onRemove={onRemoveDeliveryCoupon}
+          />
+        )}
         <TouchableOpacity
-          onPress={onRemoveCoupon}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={[styles.removeBtn, { borderColor: getColor('error') }]}
+          style={styles.changeLink}
+          onPress={onCouponNavigation}
           activeOpacity={0.7}
         >
-          <MaterialCommunityIcons name="close" size={13} color={getColor('error')} />
           <Text
             style={{
-              color: getColor('error'),
-              fontSize: getTypography('small'),
+              color: getColor('primary'),
+              fontSize: getTypography('caption'),
               fontFamily: ff,
-              fontWeight: '700',
-              marginLeft: 3,
+              fontWeight: '600',
             }}
           >
-            Remove
+            View / Change Coupons
           </Text>
+          <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('primary')} />
         </TouchableOpacity>
       </View>
     );
@@ -209,11 +256,14 @@ const CouponSection: React.FC<CouponSectionProps> = ({
 };
 
 const styles = StyleSheet.create({
-  couponBox: {
+  appliedContainer: {
     marginHorizontal: 16,
     marginTop: 20,
+    gap: 8,
+  },
+  couponBox: {
     paddingHorizontal: 16,
-    paddingVertical: 14, // Slightly increased padding for clean breathing room
+    paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -223,7 +273,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    marginRight: 16, // Added spacing to make sure text leaves a clean gap before the action item button
+    marginRight: 16,
   },
   iconBadge: {
     width: 40,
@@ -235,7 +285,7 @@ const styles = StyleSheet.create({
   labelContainer: {
     marginLeft: 12,
     flex: 1,
-    flexDirection: 'column', // Text stacks properly and handles vertical expansion clean
+    flexDirection: 'column',
     justifyContent: 'center',
   },
   removeBtn: {
@@ -245,7 +295,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 5,
-    alignSelf: 'center', // Centers nicely with the layout regardless of textual lines height
+    alignSelf: 'center',
+  },
+  changeLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
   },
 });
 

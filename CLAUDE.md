@@ -46,6 +46,7 @@ cd android && ./gradlew bundleRelease     # Release AAB (Play Store)
 - **HTTP:** Axios with centralized config in `src/config/api/axios.config.ts`
 - **Notifications:** Firebase Messaging + Notifee
 - **Maps:** React Native Maps + Ola Maps (geocoding via `src/services/api/olaLocationService.ts`)
+- **Payments:** Razorpay (`react-native-razorpay`) for online payments; COD also supported
 - **SVGs:** Imported as React components via `react-native-svg-transformer` (configured in metro.config.js)
 
 ### Project Structure
@@ -53,9 +54,9 @@ cd android && ./gradlew bundleRelease     # Release AAB (Play Store)
 ```
 src/
 ├── screens/        # UI screens organized by feature
-├── components/     # common/ (shared UI), modules/ (Cart, Header, Product, Vendor)
-├── store/          # Zustand stores (cart/, address/, products/, config, theme, vendor, pricing)
-├── services/       # API services (api/) + localStorage/MMKV wrapper
+├── components/     # common/ (shared UI), modules/ (Cart, Collection, Header, Product, Vendor)
+├── store/          # Zustand stores (cart/ [cart, coupon, order], address/, products/, pages/, config, theme, vendor, pricing)
+├── services/       # api/ (auth, config, pricing, search, ola), domain services (cart, coupon, order, payment, products), localStorage/MMKV wrapper
 ├── hooks/          # Custom hooks (+ Permissions/ subdirectory)
 ├── contexts/       # AuthProvider (login/JWT), TabContext (tab state)
 ├── navigation/     # Navigation config (HomeStack, TabNavigation, LoginNavigation)
@@ -128,6 +129,8 @@ AppStack
 - **Location:** Geolocation API + Ola Maps reverse geocoding, races GPS & network in parallel. Default fallback is Beed, Maharashtra (`DEFAULT_FALLBACK_COORDINATES` in `src/constants/location.ts`). `checkLocationPermission()` returns a PermissionStatus string (e.g. `'granted'`), not boolean — compare with `!== 'granted'`, not `!status`.
 - **SmartBiz addresses:** Singleton `SmartBizAddressService` (`src/store/address/smartBizAddressStore.ts`) with per-vendor 5-minute in-memory cache. Call `clearCache(vendorId)` before fetching when fresh data is needed (e.g., after adding an address).
 - **Ola Maps limitation:** Reverse geocode `formatted_address` omits sublocality/locality — build display addresses from individual `address_components` fields. Pincode accuracy can differ from expected values; this is an upstream data issue.
+- **Payment:** Eligible methods fetched per-cart from `/v3/payment/eligiblePaymentMethods`. Razorpay handles online payments; COD has configurable charges. Order creation via `createOrderService`, payment via `createPaymentService`.
+- **Pages/Home layout:** Server-driven home page sections via `pagesStore` — fetches page configs from `/v3/pages` by region; used by promotion carousels and home content.
 - **Search:** Local suggestions + API search (`v3/search`), recent searches persisted to MMKV (max 10)
 - **Error handling:** Centralized in axios.config with `ApiError` interface. Toast on Android, Alert on iOS.
 - **Theme:** Server-driven theme (fetched by `AppInitializer`) with `DefaultTheme` fallback. Always use `useTheme().getColor()` for colors — avoid hardcoded values. Primary: #D97706 (amber).

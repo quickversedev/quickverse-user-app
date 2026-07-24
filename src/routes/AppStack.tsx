@@ -54,7 +54,15 @@ export type RootStackParamList = {
   OrderDetails: { orderId: string; order: Order };
   OrderSuccess: { orderId: string; amount: number; date: string; shopId?: string };
   OrderFailure: { errorMessage?: string };
-  Coupons: { coupons: any; loading: boolean, cartTotal: number };
+  Coupons: {
+    coupons: any;
+    loading: boolean;
+    cartTotal: number;
+    selectedDiscountCoupon?: any;
+    selectedDeliveryCoupon?: any;
+    onApplyDiscount?: (coupon: any) => void;
+    onApplyDelivery?: (coupon: any) => void;
+  };
 
   Search: { restrictCategory?: 'Food' | 'Grocery' } | undefined;
   Address: undefined;

@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import {
   Animated,
   Dimensions,
@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import {
   Collection,
-  getCollectionsBySection,
+  API_STORE_ID,
   fetchCollectionsFromApi,
 } from '../../../../data/collectionsData';
 import { RootStackParamList } from '../../../../routes/AppStack';
@@ -78,22 +78,25 @@ const CollectionsContentComponent: React.FC<CollectionsContentProps> = ({
 }) => {
   const { theme } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const collectionsShopId = API_STORE_ID;
 
-  // State for dynamic collections
   const [sections, setSections] = React.useState<{ title: string; collections: Collection[] }[]>(
     []
   );
   const [loading, setLoading] = React.useState(true);
 
-  // Fetch collections on mount
   React.useEffect(() => {
+    if (!collectionsShopId) {
+      setLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     const loadCollections = async () => {
       try {
         setLoading(true);
-        // This fetch function now returns a Promise with the dynamic data
-        const fetchedSections = await fetchCollectionsFromApi();
+        const fetchedSections = await fetchCollectionsFromApi(collectionsShopId);
 
         if (mounted) {
           setSections(fetchedSections);
@@ -112,7 +115,7 @@ const CollectionsContentComponent: React.FC<CollectionsContentProps> = ({
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [collectionsShopId]);
 
   const handleCollectionPress = useCallback(
     (collection: Collection) => {
@@ -149,7 +152,7 @@ const CollectionsContentComponent: React.FC<CollectionsContentProps> = ({
   );
 
   const renderSection = useCallback(
-    (section: { title: string; collections: Collection[] }, index: number) => (
+    (section: { title: string; collections: Collection[] }, _index: number) => (
       <View key={section.title} style={themedStyles.sectionContainer}>
         <Text style={themedStyles.sectionTitle}>{section.title}</Text>
         <View style={themedStyles.grid}>

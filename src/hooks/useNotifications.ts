@@ -189,7 +189,7 @@ export const useNotifications = () => {
             id: 'default',
           },
           largeIcon: getNotificationIcon(payload.type), // Use appropriate icon based on type
-          smallIcon: 'logo_qv', // Use the default launcher icon as small icon
+          smallIcon: 'ic_stat_notification',
         },
         ios: {
           // Play the system default sound on iOS

@@ -46,6 +46,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { Address } from '../../types/address';
 import { Order } from '../../types/order';
 import { Product } from '../../types/product';
+import { Vendor } from '../../types/vendor';
 import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
 import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
 import PaymentScreen from './PaymentScreen';
@@ -92,12 +93,15 @@ const CartScreen: React.FC = () => {
   const [showLoginPromptModal, setShowLoginPromptModal] = React.useState(false);
   const [availableCoupons, setAvailableCoupons] = React.useState<any[]>([]);
   const [couponLoading, setCouponLoading] = React.useState(false);
-  const [selectedCoupon, setSelectedCoupon] = React.useState<any | null>(null);
-  const couponCallbackRef = React.useRef<((coupon: any) => void) | null>(null);
+  const [selectedDiscountCoupon, setSelectedDiscountCoupon] = React.useState<any | null>(null);
+  const [selectedDeliveryCoupon, setSelectedDeliveryCoupon] = React.useState<any | null>(null);
+  const discountCouponCallbackRef = React.useRef<((coupon: any) => void) | null>(null);
+  const deliveryCouponCallbackRef = React.useRef<((coupon: any) => void) | null>(null);
 
   const [checkoutSummary, setCheckoutSummary] = React.useState<any>(null);
   const [checkoutSummaryLoading, setCheckoutSummaryLoading] = React.useState(false);
   const [couponErrorVisible, setCouponErrorVisible] = React.useState(false);
+  const [deliveryCouponErrorVisible, setDeliveryCouponErrorVisible] = React.useState(false);
 
   const { getColor } = useTheme();
   const { orders, loading: ordersLoading, loadMoreOrders, hasMoreOrders } = useOrders();
@@ -154,8 +158,27 @@ const CartScreen: React.FC = () => {
 
   const vendor = useMemo(() => {
     if (!cart?.cartId) return undefined;
-    return vendors.find(v => v.shopId === cart.cartId.replace('vendor_', ''));
-  }, [vendors, cart?.cartId]);
+    const shopId = cart.cartId.replace('vendor_', '');
+    const found = vendors.find(v => v.shopId === shopId);
+    if (found) return found;
+    if (Object.keys(cart.products).length === 0) return undefined;
+    const firstProduct = Object.values(cart.products)[0];
+    return {
+      shopId,
+      name: firstProduct?.name ? 'Collections' : 'Store',
+      logo: '',
+      banner: '',
+      owner: '',
+      phone: '',
+      openingTime: '00:00',
+      closingTime: '23:59',
+      preparationTime: '30',
+      description: '',
+      category: 'Grocery',
+      storeEnabled: true,
+      storeActive: true,
+    } as Vendor;
+  }, [vendors, cart?.cartId, cart?.products]);
 
   const {
     paymentMethods,
@@ -272,8 +295,11 @@ const CartScreen: React.FC = () => {
   );
 
   const handleCouponNavigation = useCallback(() => {
-    couponCallbackRef.current = (coupon: any) => {
-      setSelectedCoupon(coupon);
+    discountCouponCallbackRef.current = (coupon: any) => {
+      setSelectedDiscountCoupon(coupon);
+    };
+    deliveryCouponCallbackRef.current = (coupon: any) => {
+      setSelectedDeliveryCoupon(coupon);
     };
     const apiSubtotal = cart?.totalCartAmount ?? 0;
     const localSubtotal = cartItems.reduce(
@@ -285,10 +311,19 @@ const CartScreen: React.FC = () => {
       cartTotal: calculatedSubtotal,
       coupons: availableCoupons,
       loading: couponLoading,
-      selectedCoupon: selectedCoupon,
-      onApply: couponCallbackRef.current,
+      selectedDiscountCoupon: selectedDiscountCoupon,
+      selectedDeliveryCoupon: selectedDeliveryCoupon,
+      onApplyDiscount: discountCouponCallbackRef.current,
+      onApplyDelivery: deliveryCouponCallbackRef.current,
     } as any);
-  }, [navigation, availableCoupons, couponLoading, selectedCoupon, cart]);
+  }, [
+    navigation,
+    availableCoupons,
+    couponLoading,
+    selectedDiscountCoupon,
+    selectedDeliveryCoupon,
+    cart,
+  ]);
 
   const handleCalculateCheckoutSummary = useCallback(async () => {
     if (!cartItems || cartItems.length === 0) {
@@ -300,8 +335,9 @@ const CartScreen: React.FC = () => {
       const payload = {
         shopId: cartItems?.[0]?.shopId ?? null,
         customerAddressId: selectedSmartBizAddress?.addressID ?? null,
-        couponId: selectedCoupon?.id ?? null,
-        couponCode: selectedCoupon?.code ?? null,
+        couponId: selectedDiscountCoupon?.id ?? null,
+        couponCode: selectedDiscountCoupon?.code ?? null,
+        deliveryCouponId: selectedDeliveryCoupon?.id ?? null,
         paymentMethod: selectedPaymentOption?.toUpperCase() ?? 'PREPAID',
         customerCoordinates: {
           latitude: selectedSmartBizAddress?.coordinates?.latitude ?? null,
@@ -315,13 +351,14 @@ const CartScreen: React.FC = () => {
       };
       const result: any = await cartApiService.calculateCheckoutSummary(payload);
       const summaryData = result?.response?.data;
-      console.log(summaryData, 'summaryData');
       setCheckoutSummary(summaryData);
       if (summaryData?.couponError) {
         setCouponErrorVisible(true);
       }
-    } catch (error) {
-      console.log('Error calculating checkout summary: ', error);
+      if (summaryData?.deliveryCouponError) {
+        setDeliveryCouponErrorVisible(true);
+      }
+    } catch (_error) {
       setCheckoutSummary(null);
     } finally {
       setCheckoutSummaryLoading(false);
@@ -329,8 +366,9 @@ const CartScreen: React.FC = () => {
   }, [
     cartItemsKey,
     selectedSmartBizAddress?.addressID,
-    selectedCoupon?.id,
-    selectedCoupon?.code,
+    selectedDiscountCoupon?.id,
+    selectedDiscountCoupon?.code,
+    selectedDeliveryCoupon?.id,
     selectedPaymentOption,
   ]);
 
@@ -491,8 +529,9 @@ const CartScreen: React.FC = () => {
         checkoutSummaryRequest: {
           shopId: cartItems?.[0]?.shopId ?? null,
           customerAddressId: selectedSmartBizAddress?.addressID ?? null,
-          couponId: selectedCoupon?.id ?? null,
-          couponCode: selectedCoupon?.code ?? null,
+          couponId: selectedDiscountCoupon?.id ?? null,
+          couponCode: selectedDiscountCoupon?.code ?? null,
+          deliveryCouponId: selectedDeliveryCoupon?.id ?? null,
           paymentMethod: selectedPaymentOption?.toUpperCase() ?? 'PREPAID',
           customerCoordinates: {
             latitude: selectedSmartBizAddress?.coordinates?.latitude ?? null,
@@ -562,7 +601,8 @@ const CartScreen: React.FC = () => {
         errorCode === 'COUPON_INACTIVE' ||
         errorCode === 'COUPON_MOV_NOT_MET'
       ) {
-        setSelectedCoupon(null);
+        setSelectedDiscountCoupon(null);
+        setSelectedDeliveryCoupon(null);
       }
       navigation.navigate('OrderFailure', { errorMessage });
     } finally {
@@ -787,6 +827,17 @@ const CartScreen: React.FC = () => {
           ? 'Minimum Order Value Not Met'
           : 'Coupon Error';
 
+  const deliveryCouponTitle =
+    checkoutSummary?.deliveryCouponError === 'COUPON_NOT_FOUND'
+      ? 'Invalid Delivery Coupon'
+      : checkoutSummary?.deliveryCouponError === 'COUPON_INACTIVE'
+        ? 'Delivery Coupon Expired'
+        : checkoutSummary?.deliveryCouponError === 'COUPON_MOV_NOT_MET'
+          ? 'Minimum Order Value Not Met'
+          : checkoutSummary?.deliveryCouponError === 'COUPON_WRONG_SLOT'
+            ? 'Invalid Coupon Type'
+            : 'Delivery Coupon Error';
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: getColor('background') }}
@@ -822,8 +873,10 @@ const CartScreen: React.FC = () => {
             couponLoading={couponLoading}
             availableCoupons={availableCoupons}
             onCouponNavigation={handleCouponNavigation}
-            selectedCoupon={selectedCoupon}
-            onRemoveCoupon={() => setSelectedCoupon(null)}
+            selectedDiscountCoupon={selectedDiscountCoupon}
+            selectedDeliveryCoupon={selectedDeliveryCoupon}
+            onRemoveDiscountCoupon={() => setSelectedDiscountCoupon(null)}
+            onRemoveDeliveryCoupon={() => setSelectedDeliveryCoupon(null)}
           />
         </AnimatedCard>
 
@@ -844,7 +897,8 @@ const CartScreen: React.FC = () => {
             summary={checkoutSummary}
             summaryLoading={checkoutSummaryLoading}
             selectedPaymentOption={selectedPaymentOption}
-            selectedCoupon={selectedCoupon}
+            selectedCoupon={selectedDiscountCoupon}
+            selectedDeliveryCoupon={selectedDeliveryCoupon}
           />
         </AnimatedCard>
       </ScrollView>
@@ -1026,7 +1080,56 @@ const CartScreen: React.FC = () => {
             <TouchableOpacity
               onPress={() => {
                 setCouponErrorVisible(false);
-                setSelectedCoupon(null);
+                setSelectedDiscountCoupon(null);
+              }}
+              style={[styles.modalBtn, { backgroundColor: getColor('primary') }]}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.modalBtnText,
+                  { color: getColor('background'), fontFamily: 'BricolageGrotesque-Bold' },
+                ]}
+              >
+                Got it
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={deliveryCouponErrorVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeliveryCouponErrorVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: getColor('card') }]}>
+            <View style={[styles.modalIconBadge, { backgroundColor: 'rgba(239, 68, 68, 0.12)' }]}>
+              <MaterialCommunityIcons name="truck-outline" size={32} color="#EF4444" />
+            </View>
+            <Text
+              style={[
+                styles.modalTitle,
+                { color: getColor('text'), fontFamily: 'BricolageGrotesque-Bold' },
+              ]}
+            >
+              {deliveryCouponTitle}
+            </Text>
+            <Text
+              style={[
+                styles.modalMessage,
+                { color: getColor('subText'), fontFamily: 'BricolageGrotesque-Regular' },
+              ]}
+            >
+              {checkoutSummary?.deliveryCouponErrorMessage ||
+                'Something went wrong with this delivery coupon.'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setDeliveryCouponErrorVisible(false);
+                setSelectedDeliveryCoupon(null);
               }}
               style={[styles.modalBtn, { backgroundColor: getColor('primary') }]}
               activeOpacity={0.8}

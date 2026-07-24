@@ -1,6 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React, { createContext, useMemo, useRef } from 'react';
-import { Animated, Platform, StyleSheet } from 'react-native';
+import { Animated, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CartScreen from '../screens/cart/CartScreen';
 import ExploreScreen from '../screens/Explore/ExploreScreen';
@@ -22,7 +22,7 @@ export const TabBarVisibilityContext = createContext<{
 } | null>(null);
 
 const Tab = createBottomTabNavigator();
-const TAB_BAR_HEIGHT = 50;
+const TAB_BAR_HEIGHT = 56;
 const SCROLL_THRESHOLD = 10;
 
 const TabNavigation = () => {
@@ -58,7 +58,7 @@ const TabNavigation = () => {
               transform: [{ translateY: tabBarTranslateY }],
               backgroundColor: getColor('tabBackground'),
               borderTopColor: getColor('border'),
-              height: TAB_BAR_HEIGHT + bottomInset,
+              height: fullTabBarHeight,
               paddingBottom: bottomInset,
             },
           ],
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: 6,
   },
   tabLabel: {
     fontSize: 10,
