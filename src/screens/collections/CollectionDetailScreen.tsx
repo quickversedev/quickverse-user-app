@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { Images } from '../../assets';
 import CartBar from '../../components/common/Cart/CartBar';
+import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import HorizontalProductCard from '../../components/modules/Product/HorizontalProductCard';
 import ProductDetailModal from '../../components/modules/Product/ProductDetailModal';
 import VariantsModal from '../../components/modules/Product/VariantsModal';
@@ -23,11 +24,10 @@ import VendorProductSkeleton from '../../components/modules/Vendor/VendorProduct
 import CategoryHeader from '../../components/vendor/CategoryHeader';
 import CategoryTabs, { CategoryItem } from '../../components/vendor/CategoryTabs';
 import { useAuth } from '../../contexts/login/AuthProvider';
-import { Collection } from '../../data/collectionsData';
+import { Collection, API_STORE_ID } from '../../data/collectionsData';
 import { RootStackParamList } from '../../routes/AppStack';
-import productsService from '../../services/productsService';
+import collectionsService, { CollectionCategoryApi } from '../../services/collectionsService';
 import useCartStore from '../../store/cart/cartStore';
-import { useProductsStore } from '../../store/products/productsStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Product } from '../../types/product';
@@ -44,7 +44,6 @@ type CollectionDetailRouteProp = RouteProp<
 const NUM_COLUMNS = 1;
 const ANIMATION_DURATION = 300;
 
-// Helper: create a row-based list with headers and product rows
 const getRowBasedProductList = (
   categories: CategoryItem[],
   products: Product[],
@@ -54,7 +53,6 @@ const getRowBasedProductList = (
     { type: 'header'; category: CategoryItem } | { type: 'products'; products: Product[] }
   > = [];
 
-  // Create a Map for O(1) product lookup by division
   const productsByDivision = new Map<string, Product[]>();
   products.forEach(product => {
     const division = product.division || '';
@@ -65,12 +63,11 @@ const getRowBasedProductList = (
   });
 
   categories.forEach((cat: CategoryItem) => {
+    const catProducts = productsByDivision.get(cat.id) || [];
+    if (catProducts.length === 0) return;
+
     rows.push({ type: 'header', category: cat });
 
-    // Get products for this category using Map lookup
-    const catProducts = productsByDivision.get(cat.id) || [];
-
-    // Sort products within each category: in-stock first, then out-of-stock
     const sortedCatProducts = catProducts.sort((a, b) => {
       if (a.inStock === b.inStock) return 0;
       return a.inStock ? -1 : 1;
@@ -90,269 +87,126 @@ const CollectionDetailScreen: React.FC = () => {
   const route = useRoute<CollectionDetailRouteProp>();
   const { collection } = route.params;
 
-  // Get the first Grocery vendor from store to use for collections
-  // Get the first Grocery vendor from store to use for collections
   const { getVendorsByCategory, vendors } = useVendorStore();
 
-  // Prioritize the specific API store, otherwise fallback to first Grocery vendor
   const collectionsVendorId = useMemo(() => {
-    // 1. Try to find the specific API store (SmartBiz 68246)
-    const apiVendor = vendors.find(v => v.shopId === '68246'); // Hardcoded ID matching data/collectionsData path
+    const apiVendor = vendors.find(v => v.shopId === API_STORE_ID);
     if (apiVendor) return apiVendor.shopId;
-
-    // 2. Fallback to first Grocery vendor
     const groceryVendors = getVendorsByCategory('Grocery');
     return groceryVendors.length > 0 ? groceryVendors[0].shopId : '';
   }, [vendors, getVendorsByCategory]);
 
   const vendor = vendors.find(v => v.shopId === collectionsVendorId);
 
-  // DEBUG: Visual indicator of vendor state (Remove later)
-  // console.log(`CollectionDetail: VendorID=${collectionsVendorId}, Categories=${vendorCategories.length}`);
-
   // Search state
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<TextInput>(null);
 
-  // Cross-vendor search results: lazily fetched once when the user starts
-  // searching, then filtered locally as they type.
-  const [crossVendorProducts, setCrossVendorProducts] = useState<Product[]>([]);
-  const [_crossVendorLoading, setCrossVendorLoading] = useState(false);
-  const crossVendorFetchedRef = useRef(false);
-
-  const otherGroceryShopIds = useMemo(() => {
-    const groceries = getVendorsByCategory('Grocery');
-    return groceries.filter(v => v.shopId && v.shopId !== collectionsVendorId).map(v => v.shopId);
-  }, [getVendorsByCategory, collectionsVendorId]);
-
-  useEffect(() => {
-    if (!searchQuery.trim()) return;
-    if (crossVendorFetchedRef.current) return;
-    if (otherGroceryShopIds.length === 0) return;
-
-    crossVendorFetchedRef.current = true;
-    setCrossVendorLoading(true);
-    productsService
-      .fetchProductsAcrossShops({ shopIds: otherGroceryShopIds, limitPerShop: 1000 })
-      .then(prods => setCrossVendorProducts(prods))
-      .catch(err => console.warn('Cross-vendor product fetch failed:', err))
-      .finally(() => setCrossVendorLoading(false));
-  }, [searchQuery, otherGroceryShopIds]);
+  // Data state (from backend)
+  const [products, setProducts] = useState<Product[]>([]);
+  const [apiCategories, setApiCategories] = useState<CollectionCategoryApi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Search bar animation
   const searchBarHeight = useRef(new Animated.Value(0)).current;
   const searchBarOpacity = useRef(new Animated.Value(0)).current;
 
-  // Products store integration
-  const {
-    products,
-    loading: productsLoading,
-    error: productsError,
-    fetchProducts,
-    resetProducts,
-    categories: vendorCategories,
-    fetchCategories,
-    setShopId,
-  } = useProductsStore();
-
-  // Memoized values
   const hasAuth = useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
   const isVendorConfigured = useMemo(() => Boolean(collectionsVendorId), [collectionsVendorId]);
 
-  // Fetch products and categories on mount (only if vendor is configured)
+  // Fetch products from backend
+  const fetchData = useCallback(
+    async (search?: string) => {
+      if (!collectionsVendorId || !collection.id) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await collectionsService.fetchCollectionProducts(
+          collectionsVendorId,
+          collection.id,
+          {
+            limit: 500,
+            offset: 0,
+            search: search || undefined,
+          }
+        );
+
+        setProducts(response.products || []);
+        if (!search) {
+          setApiCategories(response.categories || []);
+        }
+      } catch (err) {
+        console.error('[CollectionDetail] Fetch error:', err);
+        setError('Failed to load products');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [collectionsVendorId, collection.id]
+  );
+
   useEffect(() => {
-    if (!isVendorConfigured || !collectionsVendorId) return;
+    if (isVendorConfigured) {
+      fetchData();
+    }
+  }, [isVendorConfigured, fetchData]);
 
-    setShopId(collectionsVendorId);
-    resetProducts();
+  // Debounced search
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
 
-    // Check if this is a synthetic collection (categories-based) or legacy/API collection (productId-based)
-    const isSynthetic = !collection.productIds || collection.productIds.length === 0;
-
-    if (isSynthetic) {
-      // Synthetic: Fetch ALL products for the shop, we will filter locally
-      fetchProducts({
-        offset: 0,
-        limit: 1500, // Ensure we get enough products to cover the categories
-      });
+    if (searchQuery.trim()) {
+      searchTimerRef.current = setTimeout(() => {
+        fetchData(searchQuery.trim());
+      }, 400);
     } else {
-      // Legacy/Specific: Fetch products specifically for this collection
-      fetchProducts({
-        offset: 0,
-        limit: 1000,
-        filters: {
-          collection: collection.id,
-          skus: collection.productIds,
-        },
-      });
+      fetchData();
     }
 
-    fetchCategories(collectionsVendorId);
-  }, [
-    collectionsVendorId,
-    collection.id,
-    collection.productIds,
-    fetchProducts,
-    fetchCategories,
-    isVendorConfigured,
-    resetProducts,
-    setShopId,
-  ]);
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
-  // Map collection categories to vendor categories using "contains match"
+  // Map backend categories to CategoryItem, using first product image per division as icon
   const mappedCategories: CategoryItem[] = useMemo(() => {
-    if (!vendorCategories || vendorCategories.length === 0) {
-      return collection.categories.map(cat => ({
-        id: cat.id,
-        name: cat.name,
-        icon: Images.bg1,
-      }));
-    }
-
-    const matchedCategories: CategoryItem[] = [];
-
-    // For synthetic collections, we trust our mapping ID matches the vendor category ID/Name
-    // But we still want to grab images from the vendorCategories if possible
-    // or fallback to the manual list.
-
-    // Simplification: Just traverse our collection categories and find matches
-    collection.categories.forEach(colCat => {
-      // Try exact ID match first (most reliable for synthetic)
-      const exactMatch = vendorCategories.find(vc => vc.id === colCat.id);
-      if (exactMatch) {
-        matchedCategories.push({
-          id: exactMatch.id,
-          name: exactMatch.name,
-          icon: exactMatch.imageURLs?.[0] || Images.bg1,
-        });
-        return;
+    const imageByDivision = new Map<string, string>();
+    products.forEach(p => {
+      if (p.division && p.imageUrl && !imageByDivision.has(p.division)) {
+        imageByDivision.set(p.division, p.imageUrl);
       }
-
-      // Loose match mechanism (legacy support)
-      const colCatNameLower = colCat.name.toLowerCase();
-      const looseMatch = vendorCategories.find(vc => {
-        const vcName = vc.name.toLowerCase();
-        return vcName.includes(colCatNameLower) || colCatNameLower.includes(vcName);
-      });
-
-      if (looseMatch) {
-        matchedCategories.push({
-          id: looseMatch.id,
-          name: looseMatch.name,
-          icon: looseMatch.imageURLs?.[0] || Images.bg1,
-        });
-        return;
-      }
-
-      // If no match, include it as is (so tab appears) but it might be empty
-      // matchedCategories.push({ id: colCat.id, name: colCat.name, icon: Images.bg1 });
     });
 
-    // If we have some matches, return them. If purely synthetic and IDs align, this works.
-    if (matchedCategories.length > 0) return matchedCategories;
+    return apiCategories
+      .filter(c => (c.productCount ?? 0) > 0)
+      .map(c => ({
+        id: c.id,
+        name: c.name,
+        icon: imageByDivision.get(c.id) || Images.bg1,
+      }));
+  }, [apiCategories, products]);
 
-    // Legacy fallback logic (kept for safety)
-    const legacyMatched: CategoryItem[] = [];
-    for (const vendorCat of vendorCategories) {
-      const vendorCatNameLower = vendorCat.name.toLowerCase();
-      for (const collectionCat of collection.categories) {
-        const collectionCatNameLower = collectionCat.name.toLowerCase();
-        let isMatch =
-          vendorCatNameLower.includes(collectionCatNameLower) ||
-          collectionCatNameLower.includes(vendorCatNameLower);
-
-        if (!isMatch) {
-          const tokens = collectionCatNameLower.split(/[\s,&]+/);
-          const meaningfulTokens = tokens.filter(t => t.length > 2 && t !== 'and');
-          isMatch = meaningfulTokens.some(token => vendorCatNameLower.includes(token));
-        }
-
-        if (isMatch) {
-          legacyMatched.push({
-            id: vendorCat.id,
-            name: vendorCat.name,
-            icon: vendorCat.imageURLs?.[0] || Images.bg1,
-          });
-          break;
-        }
-      }
-    }
-
-    if (legacyMatched.length > 0) {
-      return legacyMatched;
-    }
-
-    console.log('No manual category matches found. Falling back to all vendor categories');
-    return vendorCategories.map(vc => ({
-      id: vc.id,
-      name: vc.name,
-      icon: vc.imageURLs?.[0] || Images.bg1,
-    }));
-  }, [vendorCategories, collection.categories]);
-
-  // Filter products matching search AND collection scope (for synthetic)
-  const filteredProducts = useMemo(() => {
-    let result = products;
-
-    // 1. Scope by Collection Categories (if synthetic)
-    const isSynthetic = !collection.productIds || collection.productIds.length === 0;
-    if (isSynthetic && collection.categories.length > 0) {
-      // Create a set of allowed category IDs for O(1) lookup
-      // We use the ID because in collectionsData.ts we mapped them from API IDs specifically
-      const allowedDivisionIds = new Set(collection.categories.map(c => c.id));
-
-      // Also allow matching by name for robustness if IDs fail?
-      // Let's stick to IDs first as it's cleaner.
-      result = result.filter(p => p.division && allowedDivisionIds.has(p.division));
-    }
-
-    // 2. Search Filter
-    if (searchQuery.trim()) {
-      const searchLower = searchQuery.toLowerCase();
-      result = result.filter(product => product.name.toLowerCase().includes(searchLower));
-    }
-    return result;
-  }, [products, searchQuery, collection.productIds, collection.categories]);
-
-  // Cross-vendor matches for the current search query, grouped by shopId.
-  // Only populated when search is active.
-  const crossVendorMatches = useMemo(() => {
-    const trimmed = searchQuery.trim();
-    if (!trimmed || crossVendorProducts.length === 0) return new Map<string, Product[]>();
-
-    const q = trimmed.toLowerCase();
-    const grouped = new Map<string, Product[]>();
-    for (const p of crossVendorProducts) {
-      if (!p.name || !p.name.toLowerCase().includes(q)) continue;
-      const arr = grouped.get(p.shopId) || [];
-      arr.push(p);
-      grouped.set(p.shopId, arr);
-    }
-    return grouped;
-  }, [crossVendorProducts, searchQuery]);
-
-  // Filter categories to only those with products
+  // Filter categories to only those with products in current results
   const categoriesWithProducts = useMemo(() => {
-    if (!mappedCategories) return [];
-
-    // Safety check for products without division
-    const productDivisions = new Set(filteredProducts.map(p => p.division).filter(Boolean));
+    const productDivisions = new Set(products.map(p => p.division).filter(Boolean));
     return mappedCategories.filter(cat => productDivisions.has(cat.id));
-  }, [mappedCategories, filteredProducts]);
+  }, [mappedCategories, products]);
 
   // Cart store integration
   const { addToCart, increment, decrement, setActiveCart, carts } = useCartStore();
 
-  // Create vendor-specific cart ID
   const cartId = useMemo(() => `vendor_${collectionsVendorId}`, [collectionsVendorId]);
 
-  // Set this cart as active when component mounts
   useEffect(() => {
     setActiveCart(cartId);
   }, [cartId, setActiveCart]);
 
-  // Get item count for this cart
   const itemCount = useMemo(
     () => Object.values(carts[cartId]?.products || {}).reduce((sum, p) => sum + p.quantity, 0),
     [carts, cartId]
@@ -360,7 +214,6 @@ const CollectionDetailScreen: React.FC = () => {
 
   const [selectedCategory, setSelectedCategory] = useState('');
 
-  // Update selected category when filtered categories change
   useEffect(() => {
     if (categoriesWithProducts.length > 0) {
       const isCurrentCategoryValid = categoriesWithProducts.some(
@@ -384,46 +237,16 @@ const CollectionDetailScreen: React.FC = () => {
   const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
 
-  // Memoized row product list. Includes the standard category rows plus
-  // appended "From <Vendor>" sections when cross-vendor search results exist.
   const rowProductList = useMemo(() => {
-    const rows = getRowBasedProductList(categoriesWithProducts, filteredProducts, NUM_COLUMNS);
+    return getRowBasedProductList(categoriesWithProducts, products, NUM_COLUMNS);
+  }, [categoriesWithProducts, products]);
 
-    if (crossVendorMatches.size > 0) {
-      crossVendorMatches.forEach((prods, shopId) => {
-        const v = vendors.find(vv => vv.shopId === shopId);
-        const vendorName = v?.name || 'Other Store';
-        rows.push({
-          type: 'header',
-          category: {
-            id: `crossvendor_${shopId}`,
-            name: `From ${vendorName}`,
-            icon: Images.bg1,
-          },
-        });
-        for (let i = 0; i < prods.length; i += NUM_COLUMNS) {
-          rows.push({ type: 'products', products: prods.slice(i, i + NUM_COLUMNS) });
-        }
-      });
-    }
-
-    return rows;
-  }, [categoriesWithProducts, filteredProducts, crossVendorMatches, vendors]);
-
-  // Lookup map from sku to product (covers both local + cross-vendor results)
-  // so handlers can route to the right vendor's cart.
   const productBySku = useMemo(() => {
     const map = new Map<string, Product>();
-    filteredProducts.forEach(p => map.set(p.sku, p));
-    crossVendorProducts.forEach(p => {
-      if (!map.has(p.sku)) map.set(p.sku, p);
-    });
+    products.forEach(p => map.set(p.sku, p));
     return map;
-  }, [filteredProducts, crossVendorProducts]);
+  }, [products]);
 
-  // Memoized product quantity map for O(1) lookup. Keyed by sku, with the
-  // quantity sourced from each product's own vendor cart (collection cart for
-  // local products, cross-vendor cart for federated search hits).
   const productQuantityMap = useMemo(() => {
     const map = new Map<string, number>();
     productBySku.forEach((product, sku) => {
@@ -440,7 +263,6 @@ const CollectionDetailScreen: React.FC = () => {
 
   const flatListRef = useRef<FlatList<RowProductListItem> | null>(null);
 
-  // Map category id to index in flatProductList for scrollToIndex
   const categoryIndexMap = useMemo(() => {
     const map: { [key: string]: number } = {};
     rowProductList.forEach((item, idx) => {
@@ -451,7 +273,6 @@ const CollectionDetailScreen: React.FC = () => {
     return map;
   }, [rowProductList]);
 
-  // Viewability config and handler
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 10,
   }).current;
@@ -471,7 +292,6 @@ const CollectionDetailScreen: React.FC = () => {
     }
   ).current;
 
-  // On category select, scroll to its header
   const handleCategorySelect = useCallback(
     (catId: string) => {
       setSelectedCategory(catId);
@@ -484,7 +304,6 @@ const CollectionDetailScreen: React.FC = () => {
     [categoryIndexMap]
   );
 
-  // Listen to scroll for category selection
   const handleScroll = useMemo(
     () =>
       Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
@@ -504,7 +323,6 @@ const CollectionDetailScreen: React.FC = () => {
     [scrollY, categoriesWithProducts, selectedCategory]
   );
 
-  // Search bar animation functions
   const showSearchBar = useCallback(() => {
     setIsSearchVisible(true);
     Animated.parallel([
@@ -552,18 +370,10 @@ const CollectionDetailScreen: React.FC = () => {
     }
   }, [searchQuery, hideSearchBar]);
 
-  const handleSearchChange = useCallback(
-    (text: string) => {
-      setSearchQuery(text);
-      if (text && categoriesWithProducts.length > 0) {
-        setSelectedCategory(categoriesWithProducts[0].id);
-      }
-    },
-    [categoriesWithProducts]
-  );
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+  }, []);
 
-  // Cart operation handlers. Cross-vendor search results route to their own
-  // vendor's cart (vendor_<product.shopId>) instead of the collection cart.
   const handleAddToCart = useCallback(
     (product: Product) => {
       if (!hasAuth || !product.inStock) return;
@@ -667,7 +477,6 @@ const CollectionDetailScreen: React.FC = () => {
     setProductDetailModalVisible(true);
   }, []);
 
-  // Memoize styles
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -862,9 +671,6 @@ const CollectionDetailScreen: React.FC = () => {
     ]
   );
 
-  // Create a vendor object for modals. In collection context we always allow ordering:
-  // use real vendor data but force storeActive: true and valid times so "Store is manually closed"
-  // never greys out products or disables add-to-cart in collection view.
   const mockVendor = useMemo(() => {
     const base = vendor
       ? { ...vendor }
@@ -875,6 +681,8 @@ const CollectionDetailScreen: React.FC = () => {
           banner: '',
           owner: '',
           phone: '',
+          openingTime: '00:00',
+          closingTime: '23:59',
           preparationTime: '30',
           description: '',
           category: 'Collections',
@@ -888,14 +696,12 @@ const CollectionDetailScreen: React.FC = () => {
     };
   }, [vendor, collection.name, collectionsVendorId]);
 
-  // Show configuration message if vendor ID is not set
   if (!isVendorConfigured) {
     return (
       <SafeAreaView
         style={{ flex: 1, backgroundColor: getColor('background'), paddingTop: safeAreaTop }}
       >
         <View style={styles.container}>
-          {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
               <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
@@ -905,10 +711,9 @@ const CollectionDetailScreen: React.FC = () => {
             </Text>
           </View>
 
-          {/* Collection Header Card */}
           <View style={styles.collectionHeader}>
             <View style={styles.collectionIconContainer}>
-              <MaterialCommunityIcons name={collection.icon} size={32} color="#6366F1" />
+              <MaterialCommunityIcons name={collection.icon as any} size={32} color="#6366F1" />
             </View>
             <View style={styles.collectionInfo}>
               <Text style={styles.collectionName}>{collection.name}</Text>
@@ -918,7 +723,6 @@ const CollectionDetailScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Configuration Message */}
           <View style={styles.emptyStateContainer}>
             <View style={styles.emptyStateIconContainer}>
               <Text style={styles.emptyStateIcon}>🏪</Text>
@@ -934,7 +738,7 @@ const CollectionDetailScreen: React.FC = () => {
     );
   }
 
-  if (productsLoading) {
+  if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background') }}>
         <VendorProductSkeleton showVendorCard={true} />
@@ -942,12 +746,12 @@ const CollectionDetailScreen: React.FC = () => {
     );
   }
 
-  if (productsError) {
+  if (error) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background') }}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ color: getColor('error'), fontSize: 16, textAlign: 'center' }}>
-            Error loading products: {productsError}
+            Error loading products: {error}
           </Text>
         </View>
       </SafeAreaView>
@@ -960,7 +764,6 @@ const CollectionDetailScreen: React.FC = () => {
         style={{ flex: 1, backgroundColor: getColor('background'), paddingTop: safeAreaTop }}
       >
         <View style={styles.container}>
-          {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
               <MaterialCommunityIcons name="arrow-left" size={24} color={getColor('text')} />
@@ -975,7 +778,6 @@ const CollectionDetailScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Search Bar */}
           {isSearchVisible && (
             <Animated.View
               style={[
@@ -1007,21 +809,19 @@ const CollectionDetailScreen: React.FC = () => {
             </Animated.View>
           )}
 
-          {/* Collection Header Card */}
           <View style={styles.collectionHeader}>
             <View style={styles.collectionIconContainer}>
-              <MaterialCommunityIcons name={collection.icon} size={32} color="#6366F1" />
+              <MaterialCommunityIcons name={collection.icon as any} size={32} color="#6366F1" />
             </View>
             <View style={styles.collectionInfo}>
               <Text style={styles.collectionName}>{collection.name}</Text>
               <Text style={styles.collectionCategories}>
-                {categoriesWithProducts.length} categories • {filteredProducts.length} products
+                {categoriesWithProducts.length} categories • {products.length} products
               </Text>
             </View>
           </View>
 
-          {/* Empty State */}
-          {!productsLoading && filteredProducts.length === 0 && (
+          {!loading && products.length === 0 && (
             <View style={styles.emptyStateContainer}>
               <View style={styles.emptyStateIconContainer}>
                 <Text style={styles.emptyStateIcon}>📦</Text>
@@ -1042,8 +842,7 @@ const CollectionDetailScreen: React.FC = () => {
             </View>
           )}
 
-          {/* Main Content: Categories + Products */}
-          {filteredProducts.length > 0 && (
+          {products.length > 0 && (
             <View style={styles.mainContent}>
               <View style={styles.categoryProductContainer}>
                 <CategoryTabs
@@ -1077,7 +876,10 @@ const CollectionDetailScreen: React.FC = () => {
 
                       setTimeout(() => {
                         if (rowProductList.length > 0) {
-                          flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+                          flatListRef.current?.scrollToIndex({
+                            index: info.index,
+                            animated: true,
+                          });
                         }
                       }, 100);
                     }}
@@ -1087,7 +889,6 @@ const CollectionDetailScreen: React.FC = () => {
             </View>
           )}
 
-          {/* CartBar at the bottom */}
           {itemCount > 0 && (
             <CartBar
               itemCount={itemCount}
@@ -1102,7 +903,6 @@ const CollectionDetailScreen: React.FC = () => {
             />
           )}
 
-          {/* Variants Modal */}
           {selectedProductForVariants && (
             <VariantsModal
               visible={variantsModalVisible}
@@ -1113,9 +913,9 @@ const CollectionDetailScreen: React.FC = () => {
             />
           )}
         </View>
+        <FloatingCartsStack />
       </SafeAreaView>
 
-      {/* Product Detail Modal */}
       {selectedProductForDetail && (
         <ProductDetailModal
           visible={productDetailModalVisible}

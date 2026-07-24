@@ -61,7 +61,7 @@ const CartBar: React.FC<CartBarProps> = ({
   }, [slideUpAnim, fadeAnim]);
   const getVendorById = useVendorStore(state => state.getVendorById);
   const vendor = getVendorById(shopId);
-  const vendorName = vendor?.name || shopId;
+  const vendorName = vendor?.name || 'Collections';
   const cart = useCartStore(state => state.carts[cartId]);
   const cartProducts = Object.values(cart?.products || {});
   const firstItemName = cartProducts[0]?.name;
@@ -237,10 +237,6 @@ const CartBar: React.FC<CartBarProps> = ({
       setIsRevealed(false);
     }
   };
-
-  if (!vendor) {
-    return null;
-  }
 
   return (
     <Animated.View

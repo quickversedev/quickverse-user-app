@@ -46,6 +46,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { Address } from '../../types/address';
 import { Order } from '../../types/order';
 import { Product } from '../../types/product';
+import { Vendor } from '../../types/vendor';
 import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
 import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
 import PaymentScreen from './PaymentScreen';
@@ -157,8 +158,27 @@ const CartScreen: React.FC = () => {
 
   const vendor = useMemo(() => {
     if (!cart?.cartId) return undefined;
-    return vendors.find(v => v.shopId === cart.cartId.replace('vendor_', ''));
-  }, [vendors, cart?.cartId]);
+    const shopId = cart.cartId.replace('vendor_', '');
+    const found = vendors.find(v => v.shopId === shopId);
+    if (found) return found;
+    if (Object.keys(cart.products).length === 0) return undefined;
+    const firstProduct = Object.values(cart.products)[0];
+    return {
+      shopId,
+      name: firstProduct?.name ? 'Collections' : 'Store',
+      logo: '',
+      banner: '',
+      owner: '',
+      phone: '',
+      openingTime: '00:00',
+      closingTime: '23:59',
+      preparationTime: '30',
+      description: '',
+      category: 'Grocery',
+      storeEnabled: true,
+      storeActive: true,
+    } as Vendor;
+  }, [vendors, cart?.cartId, cart?.products]);
 
   const {
     paymentMethods,
