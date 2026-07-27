@@ -1,24 +1,20 @@
+// components/common/PaymentOptions.tsx
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import React from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
+import { ThemeText } from '../../common/theme/ThemeText';
+
+export type PaymentOptionKey = 'COD' | 'PREPAID';
 
 interface PaymentOptionsProps {
-  onPress: () => void;
-  selectedOption?: string | undefined;
-  loading?: boolean;
-  error?: string | null;
-  onRetry?: () => void;
+  selectedOption?: PaymentOptionKey;
+  /** Called immediately when the user taps an option */
+  onSelect: (selectedOption: PaymentOptionKey) => void;
 }
 
-const PaymentOptions: React.FC<PaymentOptionsProps> = ({
-  onPress,
-  selectedOption,
-  loading = false,
-  error = null,
-  onRetry,
-}) => {
-  const { getColor, getTypography, theme, getButtonColor } = useTheme();
+const PaymentOptions: React.FC<PaymentOptionsProps> = ({ selectedOption, onSelect }) => {
+  const { getColor, getTypography, theme } = useTheme();
 
   const styles = StyleSheet.create({
     paymentOptionsBox: {
@@ -38,140 +34,114 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
           shadowOpacity: 0.12,
           shadowRadius: 8,
         },
-        android: {
-          elevation: 4,
-        },
+        android: { elevation: 4 },
       }),
     },
-    paymentOptionsHeader: {
+    sectionHeaderRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    paymentOptionsContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      flex: 1,
+      marginBottom: 12,
     },
     iconBadge: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 12,
-    },
-    paymentOptionsText: {
-      flex: 1,
-    },
-    paymentOptionsTitle: {
-      color: getColor('text'),
-      fontWeight: '600',
-      fontSize: getTypography('body'),
-      fontFamily: theme.typography.fontFamily,
-    },
-    paymentOptionsSubtitle: {
-      color: getColor('subText'),
-      fontSize: getTypography('caption'),
-      marginTop: 2,
-      fontFamily: theme.typography.fontFamily,
-    },
-    arrowBadge: {
       width: 32,
       height: 32,
       borderRadius: 16,
       alignItems: 'center',
       justifyContent: 'center',
-      marginLeft: 8,
+      marginRight: 10,
     },
-    retryButton: {
-      backgroundColor: getColor('primary'),
+    sectionHeader: {
+      color: getColor('text'),
+      fontWeight: 'bold',
+      fontSize: getTypography('body'),
+      fontFamily: theme.typography.fontFamily,
+    },
+    option: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
       borderRadius: theme.borderRadius.sm,
       paddingHorizontal: 12,
-      paddingVertical: 6,
-      marginTop: 8,
-      alignSelf: 'flex-end',
+      paddingVertical: 12,
     },
-    retryButtonText: {
-      color: getColor('white'),
-      fontSize: getTypography('caption'),
-      fontWeight: '600',
+    optionSpacing: {
+      marginBottom: 10,
+    },
+    radioOuter: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      marginRight: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    radioInner: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+    },
+    texts: { flex: 1 },
+    optionTitle: {
+      color: getColor('text'),
+      fontWeight: 'bold',
+      fontSize: getTypography('body'),
+      fontFamily: theme.typography.fontFamily,
+    },
+    optionSubtitle: {
+      color: getColor('text'),
+      fontWeight: 'bold',
+      fontSize: getTypography('small'),
+      fontFamily: theme.typography.fontFamily,
     },
   });
 
-  const getPaymentOptionDisplay = () => {
-    if (error) {
-      return { title: 'Payment Methods Unavailable', subtitle: error };
-    }
-
-    if (loading) {
-      return { title: 'Loading payment methods...', subtitle: 'Please wait' };
-    }
-
-    if (!selectedOption) {
-      return { title: 'Select Payment Method', subtitle: 'Choose your preferred payment option' };
-    }
-
-    switch (selectedOption) {
-      case 'COD':
-        return { title: 'Cash on Delivery', subtitle: 'Pay using UPI only, on Delivery' };
-      case 'PREPAID':
-        return { title: 'Prepaid', subtitle: 'UPI Payment' };
-      default:
-        return { title: 'Select Payment Method', subtitle: 'Choose your preferred payment option' };
-    }
+  const renderOption = (
+    key: PaymentOptionKey,
+    title: string,
+    subtitle: string,
+    isLast: boolean
+  ) => {
+    const isSelected = selectedOption === key;
+    return (
+      <TouchableOpacity
+        onPress={() => onSelect(key)}
+        activeOpacity={0.7}
+        style={[
+          styles.option,
+          !isLast && styles.optionSpacing,
+          { borderColor: getColor(isSelected ? 'primary' : 'border') },
+        ]}
+      >
+        <View
+          style={[styles.radioOuter, { borderColor: getColor(isSelected ? 'primary' : 'border') }]}
+        >
+          <View
+            style={[
+              styles.radioInner,
+              { backgroundColor: getColor(isSelected ? 'primary' : 'background') },
+            ]}
+          />
+        </View>
+        <View style={styles.texts}>
+          <ThemeText style={styles.optionTitle}>{title}</ThemeText>
+          <ThemeText style={styles.optionSubtitle}>{subtitle}</ThemeText>
+        </View>
+      </TouchableOpacity>
+    );
   };
-
-  const { title, subtitle } = getPaymentOptionDisplay();
 
   return (
     <View style={styles.paymentOptionsBox}>
-      <TouchableOpacity
-        onPress={onPress}
-        activeOpacity={loading || Boolean(error) ? 1 : 0.7}
-        disabled={loading || Boolean(error)}
-      >
-        <View style={styles.paymentOptionsHeader}>
-          <View style={styles.paymentOptionsContent}>
-            <View
-              style={[
-                styles.iconBadge,
-                {
-                  backgroundColor: error
-                    ? `${getColor('error')}15`
-                    : `${getButtonColor('default', 'background')}15`,
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                name={error ? 'alert-circle-outline' : 'credit-card-outline'}
-                size={22}
-                color={error ? getColor('error') : getButtonColor('default', 'background')}
-              />
-            </View>
-            <View style={styles.paymentOptionsText}>
-              <Text style={[styles.paymentOptionsTitle, error && { color: getColor('error') }]}>
-                {title}
-              </Text>
-              <Text style={[styles.paymentOptionsSubtitle, error && { color: getColor('error') }]}>
-                {subtitle}
-              </Text>
-            </View>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={24} color={getColor('primary')} />
+      <View style={styles.sectionHeaderRow}>
+        <View style={[styles.iconBadge, { backgroundColor: `${getColor('primary')}15` }]}>
+          <MaterialCommunityIcons name="wallet-outline" size={18} color={getColor('primary')} />
         </View>
-      </TouchableOpacity>
+        <ThemeText style={styles.sectionHeader}>Payment Options</ThemeText>
+      </View>
 
-      {error && onRetry && (
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={onRetry}
-          activeOpacity={0.8}
-          disabled={loading}
-        >
-          <Text style={styles.retryButtonText}>{loading ? 'Retrying...' : 'Retry'}</Text>
-        </TouchableOpacity>
-      )}
+      {renderOption('PREPAID', 'Prepaid', 'Pay securely using UPI', false)}
+      {renderOption('COD', 'Cash on Delivery', 'Pay using UPI only, on Delivery', true)}
     </View>
   );
 };

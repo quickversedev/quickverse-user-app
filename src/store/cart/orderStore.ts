@@ -309,6 +309,8 @@ const useOrderStore = create<OrderStore>((set, get) => ({
           apiOrder.customerMobileNumber || apiOrder.notificationDetail?.mobileNumber || ''
         ),
         finance: apiOrder.finance || undefined,
+        review: apiOrder.review || null,
+        complaint: apiOrder.complaint || null,
       };
 
       set(state => ({

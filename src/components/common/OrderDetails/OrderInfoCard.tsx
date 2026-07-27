@@ -1,8 +1,10 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
 import Icon from '@react-native-vector-icons/material-design-icons';
+import React from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Order } from '../../../types/order';
+import { Fonts } from '../theme/fonts';
+import { ThemeText } from '../theme/ThemeText';
 
 interface OrderInfoCardProps {
   order: Order;
@@ -13,35 +15,45 @@ const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, actionButton }) =>
   const { getColor } = useTheme();
 
   return (
-    <View style={[styles.orderCard, { backgroundColor: getColor('card') }]}>
+    <View
+      style={[
+        styles.orderCard,
+        { backgroundColor: getColor('card'), borderColor: getColor('border') },
+      ]}
+    >
       {/* Top Row with Location and Action Button */}
       <View style={styles.locationRow}>
         <View style={styles.leftSection}>
-          <View style={styles.iconContainer}>
-            <Icon name="home" size={20} color={getColor('primary')} />
+          <View style={[styles.iconContainer, { backgroundColor: `${getColor('primary')}14` }]}>
+            <Icon name="home" size={18} color={getColor('primary')} />
           </View>
           <View style={styles.locationInfo}>
-            <Text style={[styles.locationTitle, { color: getColor('text') }]}>
+            <ThemeText style={[styles.locationTitle, { color: getColor('text') }]}>
               Delivery Address
-            </Text>
-            <Text style={[styles.locationAddress, { color: getColor('subText') }]}>
+            </ThemeText>
+            <ThemeText style={[styles.locationAddress, { color: getColor('subText') }]}>
               {order.deliveryAddress.address}
               {order.deliveryAddress.addressLine2 && `, ${order.deliveryAddress.addressLine2}`}
               {order.deliveryAddress.addressLine3 && `, ${order.deliveryAddress.addressLine3}`}
-            </Text>
-            <Text style={[styles.locationCity, { color: getColor('subText') }]}>
+            </ThemeText>
+            <ThemeText style={[styles.locationCity, { color: getColor('subText') }]}>
               {order.deliveryAddress.city}, {order.deliveryAddress.state} -{' '}
               {order.deliveryAddress.postalCode}
-            </Text>
+            </ThemeText>
           </View>
         </View>
-        {actionButton && <View style={styles.actionButtonContainer}>{actionButton}</View>}
+        {/* actionButton now sits below on its own row when the card is
+            narrow, rather than being force-squeezed beside a long
+            address (previously flexDirection: row could clip the
+            Retry/Cancel buttons on smaller screens). */}
       </View>
+
+      {actionButton && <View style={styles.actionButtonRow}>{actionButton}</View>}
 
       {/* Delivery Details */}
       <View style={styles.deliveryStatusRow}>
         <View style={styles.deliveryDetails}>
-          <Text style={[styles.deliveryDate, { color: getColor('text') }]}>
+          <ThemeText style={[styles.deliveryDate, { color: getColor('text') }]}>
             {new Date(order.orderDate).toLocaleDateString('en-GB', {
               day: '2-digit',
               month: 'short',
@@ -53,37 +65,45 @@ const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, actionButton }) =>
               minute: '2-digit',
               hour12: true,
             })}
-          </Text>
+          </ThemeText>
           {order.actualDeliveryTime && (
-            <Text style={[styles.deliveryAgent, { color: getColor('subText') }]}>
+            <ThemeText style={[styles.deliveryAgent, { color: getColor('subText') }]}>
               By {order.customerName}
-            </Text>
+            </ThemeText>
           )}
         </View>
       </View>
 
       {/* Customer Contact Information */}
-      <View style={styles.contactRow}>
+      <View style={[styles.contactRow, { borderTopColor: getColor('border') }]}>
         <View style={styles.contactInfo}>
-          <View style={styles.contactIconContainer}>
-            <Icon name="account" size={16} color={getColor('primary')} />
+          <View
+            style={[styles.contactIconContainer, { backgroundColor: `${getColor('primary')}14` }]}
+          >
+            <Icon name="account" size={14} color={getColor('primary')} />
           </View>
           <View style={styles.contactDetails}>
-            <Text style={[styles.contactLabel, { color: getColor('subText') }]}>Customer</Text>
-            <Text style={[styles.contactValue, { color: getColor('text') }]}>
+            <ThemeText style={[styles.contactLabel, { color: getColor('subText') }]}>
+              Customer
+            </ThemeText>
+            <ThemeText style={[styles.contactValue, { color: getColor('text') }]}>
               {order.customerName}
-            </Text>
+            </ThemeText>
           </View>
         </View>
         <View style={styles.contactInfo}>
-          <View style={styles.contactIconContainer}>
-            <Icon name="phone" size={16} color={getColor('primary')} />
+          <View
+            style={[styles.contactIconContainer, { backgroundColor: `${getColor('primary')}14` }]}
+          >
+            <Icon name="phone" size={14} color={getColor('primary')} />
           </View>
           <View style={styles.contactDetails}>
-            <Text style={[styles.contactLabel, { color: getColor('subText') }]}>Phone</Text>
-            <Text style={[styles.contactValue, { color: getColor('text') }]}>
+            <ThemeText style={[styles.contactLabel, { color: getColor('subText') }]}>
+              Phone
+            </ThemeText>
+            <ThemeText style={[styles.contactValue, { color: getColor('text') }]}>
               {order.customerPhone}
-            </Text>
+            </ThemeText>
           </View>
         </View>
       </View>
@@ -97,39 +117,59 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
-  actionButtonContainer: {
-    marginLeft: 12,
-    alignSelf: 'center',
+  actionButtonRow: {
+    marginTop: 4,
+    marginBottom: 4,
+    alignItems: 'flex-start',
   },
   orderCard: {
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 18,
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   locationRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 16,
   },
   iconContainer: {
-    width: 24,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 12,
-    alignSelf: 'center',
+    alignSelf: 'flex-start',
   },
   locationInfo: {
     flex: 1,
   },
   locationTitle: {
+    fontFamily: Fonts.medium,
     fontSize: 16,
-    fontWeight: '600',
+    letterSpacing: 0.1,
   },
   locationAddress: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
+    marginTop: 4,
     marginBottom: 2,
+    lineHeight: 19,
   },
   locationCity: {
+    fontFamily: Fonts.regular,
     fontSize: 12,
   },
   deliveryStatusRow: {
@@ -142,11 +182,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   deliveryDate: {
+    fontFamily: Fonts.medium,
     fontSize: 14,
-    fontWeight: '500',
     marginBottom: 4,
   },
   deliveryAgent: {
+    fontFamily: Fonts.regular,
     fontSize: 12,
   },
   contactRow: {
@@ -155,7 +196,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E0E0E0',
   },
   contactInfo: {
     flexDirection: 'row',
@@ -163,20 +203,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactIconContainer: {
-    width: 20,
+    width: 26,
+    height: 26,
+    borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 8,
   },
   contactDetails: {
     flex: 1,
   },
   contactLabel: {
+    fontFamily: Fonts.regular,
     fontSize: 12,
     marginBottom: 2,
   },
   contactValue: {
+    fontFamily: Fonts.medium,
     fontSize: 14,
-    fontWeight: '500',
   },
 });
 

@@ -4,6 +4,7 @@ import { Animated, Easing, Pressable, StyleSheet, TouchableOpacity, View } from 
 import { useTheme } from '../../../theme/ThemeContext';
 import { OrderFinance } from '../../../types/order';
 import { ThemeText } from '../../common/theme/ThemeText';
+import { Fonts } from '../theme/fonts';
 
 interface BillSummaryCardProps {
   finance: OrderFinance | null;
@@ -140,7 +141,7 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
       color: getColor('text'),
       marginHorizontal: 12,
       textTransform: 'uppercase',
-      fontFamily: 'BricolageGrotesque-Medium',
+      fontFamily: Fonts.medium,
       letterSpacing: 0.5,
     },
     billBreakdown: {
@@ -162,15 +163,15 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
     },
     billLabel: {
       color: getColor('text'),
-      fontFamily: 'BricolageGrotesque-Regular',
+      fontFamily: Fonts.regular,
     },
     billAmount: {
       color: getColor('text'),
-      fontFamily: 'BricolageGrotesque-Medium',
+      fontFamily: Fonts.medium,
     },
     discountAmount: {
       color: getColor('primary'),
-      fontFamily: 'BricolageGrotesque-Medium',
+      fontFamily: Fonts.medium,
     },
     dottedLine: {
       borderStyle: 'dashed',
@@ -196,12 +197,12 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
     },
     billSummaryTitle: {
       color: getColor('text'),
-      fontFamily: 'BricolageGrotesque-Bold',
+      fontFamily: Fonts.bold,
     },
     billSummaryAmount: {
       color: getColor('primary'),
       marginTop: 2,
-      fontFamily: 'BricolageGrotesque-Bold',
+      fontFamily: Fonts.bold,
     },
     billSummaryDetails: { marginTop: 12 },
     crossedText: {
@@ -209,7 +210,7 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
       opacity: 0.5,
       marginRight: 6,
       fontSize: 13,
-      fontFamily: 'BricolageGrotesque-Regular',
+      fontFamily: Fonts.regular,
     },
     feeRow: {
       flexDirection: 'row',
@@ -230,21 +231,21 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
       marginVertical: 4,
     },
     taxBreakdownText: {
-      fontFamily: 'BricolageGrotesque-Regular',
+      fontFamily: Fonts.regular,
     },
     taxTotalLabel: {
-      fontFamily: 'BricolageGrotesque-Medium',
+      fontFamily: Fonts.medium,
     },
     taxTotalValue: {
-      fontFamily: 'BricolageGrotesque-Bold',
+      fontFamily: Fonts.bold,
     },
     toPayLabel: {
-      fontFamily: 'BricolageGrotesque-Bold',
+      fontFamily: Fonts.bold,
     },
     toPayAmount: {
       color: getColor('text'),
       fontSize: 16,
-      fontFamily: 'BricolageGrotesque-Bold',
+      fontFamily: Fonts.bold,
     },
   });
 

@@ -1,8 +1,10 @@
 import Icon from '@react-native-vector-icons/material-design-icons';
 import React, { useEffect, useState } from 'react';
-import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import type { Order } from '../../../types/order';
+import { Fonts } from '../theme/fonts';
+import { ThemeText } from '../theme/ThemeText';
 
 type OrderProgressProps = {
   status: Order['status'];
@@ -117,7 +119,12 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
     : undefined;
 
   return (
-    <View style={[styles.container, { backgroundColor: getColor('card') }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: getColor('card'), borderColor: getColor('border') },
+      ]}
+    >
       {/* Delivery Partner Card */}
       {deliveryPartnerName && (
         <View
@@ -130,16 +137,16 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
           ]}
         >
           <View style={styles.partnerInfo}>
-            <Text style={[styles.partnerLabel, { color: getColor('primary') }]}>
+            <ThemeText style={[styles.partnerLabel, { color: getColor('primary') }]}>
               Delivery Partner
-            </Text>
-            <Text style={[styles.partnerName, { color: getColor('text') }]}>
+            </ThemeText>
+            <ThemeText style={[styles.partnerName, { color: getColor('text') }]}>
               {deliveryPartnerName}
-            </Text>
+            </ThemeText>
             {deliveryPartnerPhone && (
-              <Text style={[styles.partnerPhone, { color: getColor('subText') }]}>
+              <ThemeText style={[styles.partnerPhone, { color: getColor('subText') }]}>
                 {deliveryPartnerPhone}
-              </Text>
+              </ThemeText>
             )}
           </View>
           {deliveryPartnerPhone && (
@@ -149,7 +156,7 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
               activeOpacity={0.8}
             >
               <Icon name="phone" size={16} color="#FFFFFF" />
-              <Text style={styles.callText}>Call</Text>
+              <ThemeText style={styles.callText}>Call</ThemeText>
             </TouchableOpacity>
           )}
         </View>
@@ -184,6 +191,7 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
           }
 
           const labelColor = isFuture ? getColor('subText') : getColor('text');
+          const labelFontFamily = isCompleted || isActive ? Fonts.medium : Fonts.regular;
 
           return (
             <View key={step.key} style={styles.stepColumn}>
@@ -232,24 +240,24 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
               </View>
 
               {/* Label */}
-              <Text
+              <ThemeText
                 style={[
                   styles.stepLabel,
                   {
                     color: labelColor,
-                    fontWeight: isCompleted || isActive ? '600' : '400',
+                    fontFamily: labelFontFamily,
                   },
                 ]}
                 numberOfLines={2}
               >
                 {step.label}
-              </Text>
+              </ThemeText>
 
               {/* Time for Order Placed */}
               {index === 0 && formattedOrderTime && (
-                <Text style={[styles.stepTime, { color: getColor('subText') }]}>
+                <ThemeText style={[styles.stepTime, { color: getColor('subText') }]}>
                   {formattedOrderTime}
-                </Text>
+                </ThemeText>
               )}
             </View>
           );
@@ -260,7 +268,7 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
       {isCancelled && (
         <View style={styles.cancelledRow}>
           <Icon name="close-circle" size={18} color={CANCELLED_COLOR} />
-          <Text style={styles.cancelledText}>Order Cancelled</Text>
+          <ThemeText style={styles.cancelledText}>Order Cancelled</ThemeText>
         </View>
       )}
 
@@ -276,9 +284,9 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
           >
             <View style={styles.timerRow}>
               <Icon name="clock-outline" size={18} color={COMPLETED_COLOR} />
-              <Text style={[styles.timerText, { color: getColor('text') }]}>
+              <ThemeText style={[styles.timerText, { color: getColor('text') }]}>
                 Estimated delivery in {formatTime(remainingSeconds)}
-              </Text>
+              </ThemeText>
             </View>
             <View style={[styles.progressBar, { backgroundColor: `${getColor('border')}60` }]}>
               <View
@@ -297,9 +305,9 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
               color="#856404"
               style={styles.delayIcon}
             />
-            <Text style={styles.delayText}>{DELAY_MESSAGES[delayMessageIndex].text}</Text>
-            <Text style={styles.delaySubtext}>Your order is taking a bit longer</Text>
-            <Text style={styles.delaySubtext}>Thank you for your patience</Text>
+            <ThemeText style={styles.delayText}>{DELAY_MESSAGES[delayMessageIndex].text}</ThemeText>
+            <ThemeText style={styles.delaySubtext}>Your order is taking a bit longer</ThemeText>
+            <ThemeText style={styles.delaySubtext}>Thank you for your patience</ThemeText>
           </View>
         ))}
     </View>
@@ -308,9 +316,21 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   partnerCard: {
     flexDirection: 'row',
@@ -324,15 +344,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   partnerLabel: {
+    fontFamily: Fonts.medium,
     fontSize: 12,
-    fontWeight: '600',
     marginBottom: 4,
   },
   partnerName: {
+    fontFamily: Fonts.bold,
     fontSize: 16,
-    fontWeight: '700',
   },
   partnerPhone: {
+    fontFamily: Fonts.regular,
     fontSize: 13,
     marginTop: 2,
   },
@@ -345,8 +366,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   callText: {
+    fontFamily: Fonts.bold,
     color: '#FFFFFF',
-    fontWeight: '700',
     fontSize: 14,
   },
   stepper: {
@@ -384,6 +405,7 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
   stepTime: {
+    fontFamily: Fonts.regular,
     fontSize: 9,
     textAlign: 'center',
     marginTop: 2,
@@ -396,9 +418,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   cancelledText: {
+    fontFamily: Fonts.bold,
     color: CANCELLED_COLOR,
     fontSize: 14,
-    fontWeight: '700',
   },
   timerBox: {
     borderRadius: 10,
@@ -412,8 +434,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   timerText: {
+    fontFamily: Fonts.medium,
     fontSize: 14,
-    fontWeight: '600',
     marginLeft: 8,
   },
   progressBar: {
@@ -437,12 +459,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   delayText: {
+    fontFamily: Fonts.bold,
     fontSize: 16,
-    fontWeight: '700',
     textAlign: 'center',
     color: '#856404',
   },
   delaySubtext: {
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: '#856404',
     textAlign: 'center',

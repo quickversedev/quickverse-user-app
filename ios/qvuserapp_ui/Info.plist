@@ -41,8 +41,6 @@
         </dict>
       </dict>
     </dict>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Allow access to photos to attach to feedback</string>
     <key>NSCameraUsageDescription</key>
     <string>Allow camera access to attach a photo to feedback</string>
     <key>NSPhotoLibraryUsageDescription</key>

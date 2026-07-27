@@ -882,11 +882,8 @@ const CartScreen: React.FC = () => {
 
         <AnimatedCard delay={200}>
           <PaymentOptions
-            onPress={handlePaymentOptionsPress}
-            selectedOption={selectedPaymentOption}
-            loading={paymentMethodsLoading}
-            error={paymentMethodsError}
-            onRetry={refetchPaymentMethods}
+            selectedOption={selectedPaymentOption as 'COD' | 'PREPAID'}
+            onSelect={option => setSelectedPaymentOption(option)}
           />
         </AnimatedCard>
 

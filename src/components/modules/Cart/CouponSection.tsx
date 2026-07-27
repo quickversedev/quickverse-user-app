@@ -263,6 +263,7 @@ const styles = StyleSheet.create({
   },
   couponBox: {
     paddingHorizontal: 16,
+    marginHorizontal: 16,
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',

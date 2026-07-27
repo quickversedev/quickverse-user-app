@@ -1,4 +1,5 @@
 import Clipboard from '@react-native-clipboard/clipboard';
+import Icon from '@react-native-vector-icons/material-design-icons';
 import React from 'react';
 import {
   Alert,
@@ -9,7 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Icon from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '../../../theme/ThemeContext';
 
 interface OrderHeaderProps {
