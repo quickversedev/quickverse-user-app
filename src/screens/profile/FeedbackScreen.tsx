@@ -255,7 +255,6 @@ const FeedbackScreen = () => {
     },
     safeArea: {
       flex: 1,
-      paddingTop: Platform.OS === 'android' ? 25 : 0,
     },
     listWrapper: {
       flex: 1,
@@ -268,7 +267,7 @@ const FeedbackScreen = () => {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 20,
-      paddingVertical: 16,
+      paddingVertical: 12,
       borderBottomWidth: 1,
       borderBottomColor: getColor('border'),
       backgroundColor: getColor('card'),
@@ -299,7 +298,7 @@ const FeedbackScreen = () => {
       elevation: 2,
     },
     headerTitle: {
-      fontSize: 22,
+      fontSize: 20,
       fontFamily: 'BricolageGrotesque-Bold',
       color: getColor('text'),
       flex: 1,
@@ -356,22 +355,27 @@ const FeedbackScreen = () => {
     inputSmall: {
       minHeight: 50,
     },
+    // NEW: spacing so the "Other" input doesn't sit flush under the category dropdown
+    otherCategoryInput: {
+      marginTop: 12,
+    },
     errorBorder: {
       borderColor: 'red',
     },
+    // UPDATED: smaller font + tighter margins so error text hugs the input
     errorText: {
       color: 'red',
       fontFamily: 'BricolageGrotesque-Medium',
-      fontSize: getTypography('body'),
-      marginBottom: 16,
-      marginTop: -4,
+      fontSize: getTypography('caption') ?? 12,
+      marginBottom: 8,
+      marginTop: 2,
     },
     charCounter: {
       alignSelf: 'flex-end',
       fontFamily: 'BricolageGrotesque-Medium',
       fontSize: getTypography('caption') ?? 12,
       color: getColor('placeholder'),
-      marginBottom: 12,
+      marginBottom: 8,
       marginTop: -2,
     },
     charCounterLimit: {
@@ -380,7 +384,7 @@ const FeedbackScreen = () => {
     attachBtn: {
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 16,
+      padding: 14,
       borderWidth: 1,
       borderColor: getColor('primary'),
       borderRadius: 12,
@@ -389,9 +393,10 @@ const FeedbackScreen = () => {
       justifyContent: 'center',
       gap: 8,
     },
+    // UPDATED: fixed smaller size instead of the large `body` typography token
     attachBtnText: {
       fontFamily: 'BricolageGrotesque-Medium',
-      fontSize: getTypography('body'),
+      fontSize: 14,
       color: getColor('primary'),
     },
     imagePreviewWrap: {
@@ -454,7 +459,7 @@ const FeedbackScreen = () => {
     submitBtnText: {
       color: '#FFFFFF',
       fontFamily: 'BricolageGrotesque-Bold',
-      fontSize: getTypography('h2'),
+      fontSize: 16,
     },
     disabledBtn: {
       opacity: 0.6,
@@ -699,7 +704,7 @@ const FeedbackScreen = () => {
     submitAnotherBtnText: {
       color: '#FFFFFF',
       fontFamily: 'BricolageGrotesque-Bold',
-      fontSize: getTypography('h2'),
+      fontSize: 16,
     },
     attachSheetOption: {
       flexDirection: 'row',
@@ -833,6 +838,7 @@ const FeedbackScreen = () => {
       <Modal
         visible={categoryDropdownVisible}
         transparent
+        statusBarTranslucent
         animationType="fade"
         onRequestClose={() => setCategoryDropdownVisible(false)}
       >
@@ -877,7 +883,12 @@ const FeedbackScreen = () => {
       {category === 'Other' && (
         <>
           <TextInput
-            style={[styles.textInput, styles.inputSmall, otherCategoryError && styles.errorBorder]}
+            style={[
+              styles.textInput,
+              styles.inputSmall,
+              styles.otherCategoryInput,
+              otherCategoryError && styles.errorBorder,
+            ]}
             placeholder="Please specify..."
             placeholderTextColor={getColor('placeholder')}
             value={otherCategory}
@@ -948,7 +959,7 @@ const FeedbackScreen = () => {
         </View>
       ) : (
         <TouchableOpacity style={styles.attachBtn} onPress={handleAttachImage}>
-          <Icon name="camera" size={24} color={getColor('primary')} />
+          <Icon name="camera" size={20} color={getColor('primary')} />
           <ThemeText style={styles.attachBtnText}>Attach Image</ThemeText>
         </TouchableOpacity>
       )}

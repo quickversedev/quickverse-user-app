@@ -1,3 +1,4 @@
+import Icon from '@react-native-vector-icons/material-design-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -9,7 +10,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from '@react-native-vector-icons/material-design-icons';
 import RaiseQueryModal from '../../components/common/RaiseQueryModal';
 import SectionDivider from '../../components/common/SectionDivider';
 import { ThemeText } from '../../components/common/theme/ThemeText';
@@ -513,6 +513,7 @@ const HelpDeskScreen: React.FC = () => {
           orderDate={selectedOrder.orderDate}
           customerName={selectedOrder.customerName}
           orderStatus={selectedOrder.status}
+          shopId={selectedOrder.shopId}
         />
       )}
     </SafeAreaView>

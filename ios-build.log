@@ -1,0 +1,30 @@
+
+> quickverse@3.0.1 ios
+> react-native run-ios
+
+- Installing CocoaPods dependencies  (this may take a few minutes)
+✖ Installing CocoaPods dependencies  (this may take a few minutes)
+error [NitroModules] 🔥 NitroMmkv is boosted by nitro!
+[NitroModules] 🔥 Your app is boosted by nitro modules!
+[NitroModules] Found react-native 0.84.1 (84) in /Users/mac/Desktop/code/quickverse/node_modules/react-native!
+
+[!] Invalid `Podfile` file: 
+[!] Invalid `RNReanimated.podspec` file: [Reanimated] Reanimated requires the New Architecture to be enabled. If you have `RCT_NEW_ARCH_ENABLED=0` set in your environment you should remove it..
+
+ #  from /Users/mac/Desktop/code/quickverse/node_modules/react-native-reanimated/RNReanimated.podspec:9
+ #  -------------------------------------------
+ #  $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] != '0'
+ >  assert_new_architecture_enabled($new_arch_enabled)
+ #  
+ #  -------------------------------------------
+.
+
+ #  from /Users/mac/Desktop/code/quickverse/ios/Podfile:45
+ #  -------------------------------------------
+ #  target 'qvuserapp_ui' do
+ >    config = use_native_modules!
+ #  
+ #  -------------------------------------------
+✖ Installing CocoaPods dependencies  (this may take a few minutes)
+error Something went wrong while installing CocoaPods. Please run pod install manually.
+info Run CLI with --verbose flag for more details.

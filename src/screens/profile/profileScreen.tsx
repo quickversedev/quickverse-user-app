@@ -93,6 +93,14 @@ const ProfileScreen = () => {
               navigation.navigate('Orders');
             },
           },
+          {
+            id: 'feedback',
+            title: 'Feedback',
+            icon: 'message-text-outline',
+            onPress: () => {
+              navigation.navigate('Feedback');
+            },
+          },
         ]
       : []),
     {
@@ -101,14 +109,6 @@ const ProfileScreen = () => {
       icon: 'help-circle-outline',
       onPress: () => {
         navigation.navigate('HelpDesk');
-      },
-    },
-    {
-      id: 'feedback',
-      title: 'Feedback',
-      icon: 'message-text-outline',
-      onPress: () => {
-        navigation.navigate('Feedback');
       },
     },
     {

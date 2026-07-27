@@ -82,6 +82,8 @@ export interface Order {
   customerName: string;
   customerPhone: string;
   finance: OrderFinance | null;
+  complaint: any;
+  review: any;
 }
 
 export interface OrderFilters {
