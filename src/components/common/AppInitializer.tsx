@@ -487,9 +487,11 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       prevAddressRef.current = curr;
 
       // On warm start, vendors are already cached — skip invalidation
+      // but still revalidate in background if TTL expired
       if (warmStartRef.current) {
         warmStartRef.current = false;
         if (!isInitialized) setIsInitialized(true);
+        fetchVendors(curr.coordinates).catch(() => {});
         return;
       }
 
