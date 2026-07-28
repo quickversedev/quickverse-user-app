@@ -299,7 +299,7 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
           {couponDiscount > 0 && (
             <View style={styles.billRow}>
               <ThemeText variant="body" style={styles.billLabel}>
-                Coupon Discount{finance?.couponCode ? ` (${finance.couponCode})` : ''}
+                Coupon Discount
               </ThemeText>
               <ThemeText variant="body" style={styles.discountAmount}>
                 -₹{couponDiscount.toFixed(2)}

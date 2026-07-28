@@ -39,6 +39,10 @@ const CATEGORIES = [
 const MESSAGE_MAX_LENGTH = 500;
 const OTHER_CATEGORY_MAX_LENGTH = 50;
 
+const CARD_MESSAGE_LINE_LIMIT = 3;
+const CARD_REPLY_LINE_LIMIT = 3;
+const TOGGLE_CHAR_THRESHOLD = 140;
+
 interface FeedbackItem {
   id?: string | number;
   feedbackId?: string;
@@ -53,6 +57,23 @@ interface FeedbackItem {
   repliedAt?: string | null;
 }
 type ViewMode = 'loading' | 'list' | 'form';
+
+const normalizeDisplayText = (text?: string | null): string => {
+  if (!text) return '';
+  return text
+    .replace(/[^\S\n]+/g, ' ')
+    .replace(/\n{2,}/g, '\n')
+    .trim();
+};
+
+const formatSafeDate = (value?: string | number | null): string => {
+  if (!value) return '';
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? '' : date.toLocaleDateString();
+};
+
+const getFeedbackKey = (item: FeedbackItem, index: number): string =>
+  String(item.id ?? item.feedbackId ?? `feedback-${index}`);
 
 const FeedbackScreen = () => {
   const { getColor, getTypography, theme } = useTheme();
@@ -79,6 +100,15 @@ const FeedbackScreen = () => {
   const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [attachSheetVisible, setAttachSheetVisible] = useState(false);
 
+  const [expandedMessageKeys, setExpandedMessageKeys] = useState<Set<string>>(new Set());
+  const [expandedReplyKeys, setExpandedReplyKeys] = useState<Set<string>>(new Set());
+
+  const [imageViewer, setImageViewer] = useState<{
+    visible: boolean;
+    uri: string | null;
+    error: boolean;
+  }>({ visible: false, uri: null, error: false });
+
   const mobileNumber = authData?.phone || '';
 
   const loadFeedbacks = useCallback(async () => {
@@ -91,7 +121,6 @@ const FeedbackScreen = () => {
       setViewMode(list.length > 0 ? 'list' : 'form');
     } catch (error: any) {
       setFetchError(true);
-      // Fall back to the submit form so the user is never stuck
       setViewMode('form');
     }
   }, [mobileNumber]);
@@ -123,9 +152,6 @@ const FeedbackScreen = () => {
     }
   };
 
-  // Android requires an explicit runtime request for CAMERA before launchCamera
-  // will work reliably. iOS surfaces its own system prompt automatically, driven
-  // by the NSCameraUsageDescription entry in Info.plist, so we just pass it through.
   const requestCameraPermission = async (): Promise<boolean> => {
     if (Platform.OS !== 'android') {
       return true;
@@ -212,6 +238,7 @@ const FeedbackScreen = () => {
 
     const finalCategory =
       category === 'Other' && otherCategory.trim() ? otherCategory.trim() : category;
+    const finalMessage = message.trim();
 
     setLoading(true);
     try {
@@ -220,7 +247,7 @@ const FeedbackScreen = () => {
           customerName: authData?.username || 'Customer',
           mobileNumber,
           category: finalCategory,
-          message,
+          message: finalMessage,
         },
         file
       );
@@ -228,7 +255,7 @@ const FeedbackScreen = () => {
       const newItem: FeedbackItem = {
         id: created?.id ?? `local-${Date.now()}`,
         category: finalCategory,
-        message,
+        message: finalMessage,
         createdAt: created?.createdAt ?? new Date().toISOString(),
         imageUrl: created?.imageUrl,
       };
@@ -246,6 +273,38 @@ const FeedbackScreen = () => {
   const closeSuccessModal = () => {
     setSuccessModalVisible(false);
     setViewMode('list');
+  };
+
+  const toggleMessageExpanded = (key: string) => {
+    setExpandedMessageKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const toggleReplyExpanded = (key: string) => {
+    setExpandedReplyKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const openImageViewer = (uri: string) => {
+    setImageViewer({ visible: true, uri, error: false });
+  };
+
+  const closeImageViewer = () => {
+    setImageViewer({ visible: false, uri: null, error: false });
   };
 
   const styles = StyleSheet.create({
@@ -355,14 +414,12 @@ const FeedbackScreen = () => {
     inputSmall: {
       minHeight: 50,
     },
-    // NEW: spacing so the "Other" input doesn't sit flush under the category dropdown
     otherCategoryInput: {
       marginTop: 12,
     },
     errorBorder: {
       borderColor: 'red',
     },
-    // UPDATED: smaller font + tighter margins so error text hugs the input
     errorText: {
       color: 'red',
       fontFamily: 'BricolageGrotesque-Medium',
@@ -393,7 +450,6 @@ const FeedbackScreen = () => {
       justifyContent: 'center',
       gap: 8,
     },
-    // UPDATED: fixed smaller size instead of the large `body` typography token
     attachBtnText: {
       fontFamily: 'BricolageGrotesque-Medium',
       fontSize: 14,
@@ -644,12 +700,33 @@ const FeedbackScreen = () => {
       color: getColor('placeholder'),
       marginTop: 6,
     },
-    feedbackAttachmentThumb: {
-      width: '100%',
-      height: 140,
-      borderRadius: 10,
+    // Compact row that replaces the old inline image thumbnail. A card's
+    // height no longer depends on whether — or how large — an attachment is.
+    attachmentRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
       marginTop: 10,
+      alignSelf: 'flex-start',
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 8,
       backgroundColor: getColor('background'),
+    },
+    attachmentRowText: {
+      fontFamily: 'BricolageGrotesque-Bold',
+      fontSize: getTypography('caption') ?? 12,
+      color: getColor('primary'),
+    },
+    expandToggleText: {
+      fontFamily: 'BricolageGrotesque-Bold',
+      fontSize: getTypography('caption') ?? 12,
+      color: getColor('primary'),
+      marginTop: 4,
+    },
+    feedbackMessageEmpty: {
+      fontStyle: 'italic',
+      color: getColor('placeholder'),
     },
     feedbackPendingNote: {
       flexDirection: 'row',
@@ -674,6 +751,7 @@ const FeedbackScreen = () => {
       borderRadius: 8,
       paddingHorizontal: 10,
       paddingVertical: 4,
+      maxWidth: '70%',
     },
     feedbackCategoryText: {
       fontFamily: 'BricolageGrotesque-Bold',
@@ -728,6 +806,38 @@ const FeedbackScreen = () => {
       borderTopColor: getColor('border'),
       backgroundColor: getColor('card'),
     },
+    // Full-screen attachment viewer opened from a card's eye icon.
+    imageViewerOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.92)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    imageViewerCloseBtn: {
+      position: 'absolute',
+      top: 50,
+      right: 20,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: 'rgba(255,255,255,0.15)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 10,
+    },
+    imageViewerImage: {
+      width: '100%',
+      height: '80%',
+    },
+    imageViewerErrorWrap: {
+      alignItems: 'center',
+      gap: 10,
+    },
+    imageViewerErrorText: {
+      color: '#FFFFFF',
+      fontFamily: 'BricolageGrotesque-Medium',
+      fontSize: 14,
+    },
   });
 
   const renderRequiredSectionTitle = (title: string, required = false) => (
@@ -739,15 +849,40 @@ const FeedbackScreen = () => {
     </View>
   );
 
-  const renderFeedbackItem = ({ item }: { item: FeedbackItem }) => {
+  const renderFeedbackItem = ({ item, index }: { item: FeedbackItem; index: number }) => {
     const isReviewed = item.status === 'REVIEWED';
+    const itemKey = getFeedbackKey(item, index);
+
+    const normalizedMessage = normalizeDisplayText(item.message);
+    const hasMessage = normalizedMessage.length > 0;
+    const displayMessage = hasMessage ? normalizedMessage : 'No message provided.';
+    const isMessageExpanded = expandedMessageKeys.has(itemKey);
+    const messageNeedsToggle =
+      hasMessage &&
+      (displayMessage.length > TOGGLE_CHAR_THRESHOLD ||
+        displayMessage.split('\n').length > CARD_MESSAGE_LINE_LIMIT);
+
+    const attachmentUri = item.imageUrl || item.attachmentUrl;
+
+    const normalizedReply = normalizeDisplayText(item.adminReply);
+    const hasReply = normalizedReply.length > 0;
+    const replyKey = `${itemKey}-reply`;
+    const isReplyExpanded = expandedReplyKeys.has(replyKey);
+    const replyNeedsToggle =
+      normalizedReply.length > TOGGLE_CHAR_THRESHOLD ||
+      normalizedReply.split('\n').length > CARD_REPLY_LINE_LIMIT;
+
+    const formattedDate = formatSafeDate(item.createdAt);
+    const formattedReplyDate = formatSafeDate(item.repliedAt || item.reviewedAt);
 
     return (
       <View style={styles.feedbackCard}>
         <View style={styles.feedbackCardHeader}>
           {!!item.category && (
             <View style={styles.feedbackCategoryBadge}>
-              <ThemeText style={styles.feedbackCategoryText}>{item.category}</ThemeText>
+              <ThemeText style={styles.feedbackCategoryText} numberOfLines={1} ellipsizeMode="tail">
+                {item.category}
+              </ThemeText>
             </View>
           )}
           {!!item.status && (
@@ -768,33 +903,66 @@ const FeedbackScreen = () => {
           )}
         </View>
 
-        {!!item.createdAt && (
-          <ThemeText style={styles.feedbackDate}>
-            {new Date(item.createdAt).toLocaleDateString()}
-          </ThemeText>
+        {!!formattedDate && <ThemeText style={styles.feedbackDate}>{formattedDate}</ThemeText>}
+
+        <ThemeText
+          style={[
+            styles.feedbackMessage,
+            { marginTop: 6 },
+            !hasMessage && styles.feedbackMessageEmpty,
+          ]}
+          numberOfLines={isMessageExpanded ? undefined : CARD_MESSAGE_LINE_LIMIT}
+        >
+          {displayMessage}
+        </ThemeText>
+        {messageNeedsToggle && (
+          <TouchableOpacity
+            onPress={() => toggleMessageExpanded(itemKey)}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            accessibilityLabel={isMessageExpanded ? 'Show less of message' : 'Read full message'}
+          >
+            <ThemeText style={styles.expandToggleText}>
+              {isMessageExpanded ? 'Show less' : 'Read more'}
+            </ThemeText>
+          </TouchableOpacity>
         )}
 
-        <ThemeText style={[styles.feedbackMessage, { marginTop: 6 }]}>{item.message}</ThemeText>
-
-        {!!(item.imageUrl || item.attachmentUrl) && (
-          <Image
-            source={{ uri: item.imageUrl || item.attachmentUrl }}
-            style={styles.feedbackAttachmentThumb}
-            resizeMode="cover"
-          />
+        {!!attachmentUri && (
+          <TouchableOpacity
+            style={styles.attachmentRow}
+            onPress={() => openImageViewer(attachmentUri)}
+            accessibilityLabel="View attached image"
+          >
+            <Icon name="eye-outline" size={18} color={getColor('primary')} />
+            <ThemeText style={styles.attachmentRowText}>View attachment</ThemeText>
+          </TouchableOpacity>
         )}
 
-        {item.adminReply ? (
+        {hasReply ? (
           <View style={styles.feedbackReplyBox}>
             <View style={styles.feedbackReplyHeader}>
               <Icon name="reply" size={14} color="#10B981" />
               <ThemeText style={styles.feedbackReplyLabel}>Support Team Reply</ThemeText>
             </View>
-            <ThemeText style={styles.feedbackReplyText}>{item.adminReply}</ThemeText>
-            {!!item.repliedAt && (
-              <ThemeText style={styles.feedbackReplyDate}>
-                {new Date(item.repliedAt).toLocaleDateString()}
-              </ThemeText>
+            <ThemeText
+              style={styles.feedbackReplyText}
+              numberOfLines={isReplyExpanded ? undefined : CARD_REPLY_LINE_LIMIT}
+            >
+              {normalizedReply}
+            </ThemeText>
+            {replyNeedsToggle && (
+              <TouchableOpacity
+                onPress={() => toggleReplyExpanded(replyKey)}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                accessibilityLabel={isReplyExpanded ? 'Show less of reply' : 'Read full reply'}
+              >
+                <ThemeText style={styles.expandToggleText}>
+                  {isReplyExpanded ? 'Show less' : 'Read more'}
+                </ThemeText>
+              </TouchableOpacity>
+            )}
+            {!!formattedReplyDate && (
+              <ThemeText style={styles.feedbackReplyDate}>{formattedReplyDate}</ThemeText>
             )}
           </View>
         ) : isReviewed ? (
@@ -966,8 +1134,6 @@ const FeedbackScreen = () => {
     </ScrollView>
   );
 
-  // Fixed footer, rendered outside the ScrollView so it always stays pinned
-  // to the bottom of the screen instead of scrolling with the form content.
   const renderSubmitFooter = () => (
     <View style={styles.footer}>
       <TouchableOpacity
@@ -990,7 +1156,7 @@ const FeedbackScreen = () => {
         style={{ flex: 1 }}
         contentContainerStyle={styles.listContentContainer}
         data={feedbacks}
-        keyExtractor={item => String(item.id)}
+        keyExtractor={(item, index) => getFeedbackKey(item, index)}
         renderItem={renderFeedbackItem}
         ListHeaderComponent={<ThemeText style={styles.subTitle}>Your previous feedback</ThemeText>}
         ListFooterComponent={
@@ -1073,7 +1239,6 @@ const FeedbackScreen = () => {
           </TouchableOpacity>
         </Modal>
 
-        {/* Custom success modal, replaces Alert.alert */}
         <Modal
           visible={successModalVisible}
           transparent
@@ -1093,6 +1258,36 @@ const FeedbackScreen = () => {
                 <ThemeText style={styles.successBtnText}>OK</ThemeText>
               </TouchableOpacity>
             </View>
+          </View>
+        </Modal>
+
+        <Modal
+          visible={imageViewer.visible}
+          transparent
+          animationType="fade"
+          onRequestClose={closeImageViewer}
+        >
+          <View style={styles.imageViewerOverlay}>
+            <TouchableOpacity
+              style={styles.imageViewerCloseBtn}
+              onPress={closeImageViewer}
+              accessibilityLabel="Close image preview"
+            >
+              <Icon name="close" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
+            {imageViewer.uri && !imageViewer.error ? (
+              <Image
+                source={{ uri: imageViewer.uri }}
+                style={styles.imageViewerImage}
+                resizeMode="contain"
+                onError={() => setImageViewer(prev => ({ ...prev, error: true }))}
+              />
+            ) : (
+              <View style={styles.imageViewerErrorWrap}>
+                <Icon name="image-off-outline" size={40} color="#FFFFFF" />
+                <ThemeText style={styles.imageViewerErrorText}>Unable to load image</ThemeText>
+              </View>
+            )}
           </View>
         </Modal>
       </View>

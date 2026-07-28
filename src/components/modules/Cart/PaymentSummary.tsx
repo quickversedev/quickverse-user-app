@@ -317,7 +317,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
               {couponDiscount > 0 && (
                 <View style={styles.billRow}>
                   <ThemeText variant="body" style={styles.billLabel}>
-                    Coupon Discount {selectedCoupon?.code ? `(${selectedCoupon.code})` : ''}
+                    Coupon Discount
                   </ThemeText>
                   <ThemeText variant="body" style={styles.discountAmount}>
                     -₹{couponDiscount.toFixed(2)}
