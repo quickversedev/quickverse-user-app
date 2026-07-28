@@ -1,22 +1,40 @@
-import Icon from '@react-native-vector-icons/material-design-icons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LoginButton from '../../components/common/LoginButton';
+import { Fonts } from '../../components/common/theme/fonts';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import deleteUserService from '../../services/deleteUserService';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
-import FeatureButton, { FeatureItem } from './components/FeatureButton';
-import ProfileHeader from './components/ProfileHeader';
+
+// ---- Types ----
+type FeatureItem = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  icon: string;
+  onPress: () => void;
+};
 
 const ProfileScreen = () => {
   const { signOut, authData } = useAuth();
-  const { getColor, toggleTheme, isDarkMode } = useTheme();
+  const { getColor } = useTheme();
   const navigation = useNavigation<AppNavigationProp>();
   const [isDangerZoneExpanded, setIsDangerZoneExpanded] = React.useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = React.useState(false);
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = React.useState(false);
 
   const isLoggedIn = Boolean(authData?.jwt);
 
@@ -30,10 +48,7 @@ const ProfileScreen = () => {
       'Delete Account',
       'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
@@ -41,20 +56,10 @@ const ProfileScreen = () => {
             setIsDeletingAccount(true);
             try {
               await deleteUserService.deleteUser(authData.jwt);
-
-              // Show success message
               Alert.alert(
                 'Account Deleted',
                 'Your account has been successfully deleted. You will be logged out.',
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => {
-                      // Sign out the user
-                      signOut();
-                    },
-                  },
-                ]
+                [{ text: 'OK', onPress: () => signOut() }]
               );
             } catch (error) {
               Alert.alert(
@@ -74,56 +79,94 @@ const ProfileScreen = () => {
     );
   };
 
-  const features: FeatureItem[] = [
-    ...(isLoggedIn
-      ? [
-          {
-            id: 'addresses',
-            title: 'Addresses',
-            icon: 'map-marker-outline',
-            onPress: () => {
-              navigation.navigate('Address');
-            },
-          },
-          {
-            id: 'orders',
-            title: 'Orders',
-            icon: 'package-variant',
-            onPress: () => {
-              navigation.navigate('Orders');
-            },
-          },
-          {
-            id: 'feedback',
-            title: 'Feedback',
-            icon: 'message-text-outline',
-            onPress: () => {
-              navigation.navigate('Feedback');
-            },
-          },
-        ]
-      : []),
+  const handleConfirmLogout = () => {
+    setIsLogoutModalVisible(false);
+    signOut();
+  };
+
+  const accountFeatures: FeatureItem[] = isLoggedIn
+    ? [
+        {
+          id: 'addresses',
+          title: 'Addresses',
+          subtitle: 'Manage delivery locations',
+          icon: 'location-on',
+          onPress: () => navigation.navigate('Address'),
+        },
+        {
+          id: 'orders',
+          title: 'Orders',
+          subtitle: 'Track and review your orders',
+          icon: 'inventory-2',
+          onPress: () => navigation.navigate('Orders'),
+        },
+        {
+          id: 'feedback',
+          title: 'Feedback',
+          subtitle: 'Tell us what you think',
+          icon: 'chat-bubble-outline',
+          onPress: () => navigation.navigate('Feedback'),
+        },
+      ]
+    : [];
+
+  const supportFeatures: FeatureItem[] = [
     {
       id: 'help',
       title: 'Help',
-      icon: 'help-circle-outline',
-      onPress: () => {
-        navigation.navigate('HelpDesk');
-      },
+      subtitle: 'FAQs and support',
+      icon: 'help-outline',
+      onPress: () => navigation.navigate('HelpDesk'),
     },
     {
       id: 'about',
       title: 'About Us',
-      icon: 'information-outline',
-      onPress: () => {
-        navigation.navigate('AboutUs');
-      },
+      subtitle: 'Learn more about the app',
+      icon: 'info-outline',
+      onPress: () => navigation.navigate('AboutUs'),
     },
   ];
 
+  const initials = (authData?.username || '?')
+    .trim()
+    .split(' ')
+    .map(w => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  const renderFeatureRow = (item: FeatureItem, isLast: boolean) => (
+    <TouchableOpacity
+      key={item.id}
+      style={[
+        styles.row,
+        !isLast && [styles.rowDivider, { borderBottomColor: getColor('border') }],
+      ]}
+      onPress={item.onPress}
+      activeOpacity={0.6}
+      accessibilityRole="button"
+      accessibilityLabel={item.title}
+    >
+      <View style={[styles.rowIconWrap, { backgroundColor: getColor('primary') + '1A' }]}>
+        <MaterialIcons name={item.icon as any} size={20} color={getColor('primary')} />
+      </View>
+      <View style={styles.rowTextWrap}>
+        <Text style={[styles.rowTitle, { color: getColor('text') }]}>{item.title}</Text>
+        {!!item.subtitle && (
+          <Text style={[styles.rowSubtitle, { color: getColor('text') }]} numberOfLines={1}>
+            {item.subtitle}
+          </Text>
+        )}
+      </View>
+      <MaterialIcons name="chevron-right" size={22} color={getColor('text')} />
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: getColor('background') }]}>
-      <View style={styles.container}>
+      {/* Top bar */}
+      <View style={styles.topBar}>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: getColor('card') }]}
           onPress={() => navigation.goBack()}
@@ -131,102 +174,163 @@ const ProfileScreen = () => {
           accessibilityLabel="Go back"
           activeOpacity={0.7}
         >
-          <Icon name="arrow-left" size={24} color={getColor('text')} />
+          <MaterialIcons name="arrow-back" size={22} color={getColor('text')} />
         </TouchableOpacity>
+        <Text style={[styles.topBarTitle, { color: getColor('text') }]}>Profile</Text>
+        <View style={styles.backButton} />
+      </View>
 
+      <View style={styles.container}>
+        {/* Profile header card */}
         {isLoggedIn ? (
-          <ProfileHeader username={authData?.username} phone={authData?.phone} />
+          <View style={[styles.profileCard, { backgroundColor: getColor('card') }]}>
+            <View style={[styles.avatar, { backgroundColor: getColor('primary') }]}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={[styles.profileName, { color: getColor('text') }]} numberOfLines={1}>
+                {authData?.username || 'Your Account'}
+              </Text>
+              {!!authData?.phone && (
+                <Text style={[styles.profilePhone, { color: getColor('text') }]}>
+                  {authData.phone}
+                </Text>
+              )}
+            </View>
+            <MaterialIcons name="verified" size={20} color={getColor('primary')} />
+          </View>
         ) : (
-          <LoginButton />
+          <View style={[styles.loginCard, { backgroundColor: getColor('card') }]}>
+            <View style={[styles.avatar, { backgroundColor: getColor('border') }]}>
+              <MaterialIcons name="person-outline" size={28} color={getColor('text')} />
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={[styles.profileName, { color: getColor('text') }]}>Welcome</Text>
+              <Text style={[styles.profilePhone, { color: getColor('text') }]}>
+                Sign in to access your account
+              </Text>
+            </View>
+            <LoginButton />
+          </View>
         )}
 
-        {/* Features Section */}
-        <View style={[styles.featuresContainer, { backgroundColor: getColor('card') }]}>
-          {features.map(item => (
-            <FeatureButton key={item.id} item={item} />
-          ))}
+        {/* Account section */}
+        {accountFeatures.length > 0 && (
+          <>
+            <Text style={[styles.sectionLabel, { color: getColor('text') }]}>ACCOUNT</Text>
+            <View style={[styles.sectionCard, { backgroundColor: getColor('card') }]}>
+              {accountFeatures.map((item, i) =>
+                renderFeatureRow(item, i === accountFeatures.length - 1)
+              )}
+            </View>
+          </>
+        )}
+
+        {/* Support section */}
+        <Text style={[styles.sectionLabel, { color: getColor('text') }]}>SUPPORT</Text>
+        <View style={[styles.sectionCard, { backgroundColor: getColor('card') }]}>
+          {supportFeatures.map((item, i) =>
+            renderFeatureRow(item, i === supportFeatures.length - 1)
+          )}
         </View>
 
-        {/* Theme Toggle Section */}
-        {/* <View style={[styles.themeToggleContainer, { backgroundColor: getColor('card') }]}>
-          <View style={styles.themeToggleContent}>
-            <Icon
-              name={isDarkMode ? 'weather-night' : 'weather-sunny'}
-              size={24}
-              color={getColor('primary')}
-            />
-            <Text style={[styles.themeToggleText, { color: getColor('text') }]}>
-              {isDarkMode ? 'Dark Mode' : 'Light Mode'}
-            </Text>
-          </View>
-          <Switch
-            value={isDarkMode}
-            onValueChange={toggleTheme}
-            trackColor={{ false: '#E0E0E0', true: getColor('primary') }}
-            thumbColor={isDarkMode ? '#FFF' : '#FFF'}
-            ios_backgroundColor="#E0E0E0"
-          />
-        </View> */}
-
-        {/* Delete Account Section */}
+        {/* Danger zone */}
         {isLoggedIn && (
-          <View style={[styles.deleteAccountContainer, { backgroundColor: getColor('card') }]}>
+          <View
+            style={[
+              styles.dangerCard,
+              { backgroundColor: getColor('card'), borderColor: 'rgba(255, 68, 68, 0.25)' },
+            ]}
+          >
             <TouchableOpacity
-              style={styles.deleteAccountHeader}
+              style={styles.dangerHeader}
               onPress={() => setIsDangerZoneExpanded(!isDangerZoneExpanded)}
               activeOpacity={0.7}
             >
-              <View style={styles.deleteAccountHeaderContent}>
-                <Icon name="alert-circle-outline" size={20} color="#FF4444" />
-                <Text style={[styles.deleteAccountTitle, { color: getColor('text') }]}>
-                  Danger Zone
-                </Text>
+              <View style={styles.dangerHeaderContent}>
+                <MaterialIcons name="warning-amber" size={18} color="#FF4444" />
+                <Text style={styles.dangerTitle}>Danger Zone</Text>
               </View>
-              <Icon
-                name={isDangerZoneExpanded ? 'chevron-up' : 'chevron-down'}
-                size={20}
+              <MaterialIcons
+                name={isDangerZoneExpanded ? 'expand-less' : 'expand-more'}
+                size={22}
                 color="#FF4444"
               />
             </TouchableOpacity>
 
             {isDangerZoneExpanded && (
               <TouchableOpacity
-                style={[styles.deleteAccountButton, { borderColor: getColor('border') }]}
+                style={[styles.dangerRow, { borderTopColor: 'rgba(255, 68, 68, 0.12)' }]}
                 onPress={handleDeleteAccount}
                 disabled={isDeletingAccount}
                 activeOpacity={0.7}
               >
-                <View style={styles.featureContent}>
-                  <Icon name="delete-forever" size={24} color="#FF4444" />
-                  <Text style={styles.deleteAccountText}>
-                    {isDeletingAccount ? 'Deleting...' : 'Delete Account'}
-                  </Text>
+                <View style={[styles.rowIconWrap, { backgroundColor: 'rgba(255, 68, 68, 0.12)' }]}>
+                  <MaterialIcons name="delete-forever" size={20} color="#FF4444" />
                 </View>
-                <Icon name="chevron-right" size={24} color="#FF4444" />
+                <Text style={styles.dangerRowText}>
+                  {isDeletingAccount ? 'Deleting account…' : 'Delete Account'}
+                </Text>
+                <MaterialIcons name="chevron-right" size={22} color="#FF4444" />
               </TouchableOpacity>
             )}
           </View>
         )}
 
-        {/* Logout Button */}
+        {/* Logout */}
         {isLoggedIn && (
           <TouchableOpacity
             style={[styles.logoutButton, { backgroundColor: getColor('card') }]}
-            onPress={() => {
-              Alert.alert('Logout', 'Are you sure you want to logout?', [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Logout', style: 'destructive', onPress: signOut },
-              ]);
-            }}
+            onPress={() => setIsLogoutModalVisible(true)}
+            activeOpacity={0.7}
           >
-            <View style={styles.featureContent}>
-              <Icon name="logout" size={24} color="#FF4444" />
-              <Text style={[styles.logoutText]}>Logout</Text>
+            <View style={[styles.rowIconWrap, { backgroundColor: 'rgba(255, 68, 68, 0.12)' }]}>
+              <MaterialIcons name="logout" size={20} color="#FF4444" />
             </View>
-            <Icon name="chevron-right" size={24} color="#FF4444" />
+            <Text style={styles.logoutText}>Log Out</Text>
+            <MaterialIcons name="chevron-right" size={22} color="#FF4444" />
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Logout confirmation modal */}
+      <Modal
+        visible={isLogoutModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsLogoutModalVisible(false)}
+        statusBarTranslucent
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setIsLogoutModalVisible(false)}>
+          <Pressable style={[styles.modalCard, { backgroundColor: getColor('card') }]}>
+            <View style={styles.modalIconWrap}>
+              <MaterialIcons name="logout" size={26} color="#FF4444" />
+            </View>
+
+            <Text style={[styles.modalTitle, { color: getColor('text') }]}>Log Out</Text>
+            <Text style={[styles.modalMessage, { color: getColor('text') }]}>
+              Are you sure you want to log out of your account?
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalCancelButton, { borderColor: getColor('border') }]}
+                onPress={() => setIsLogoutModalVisible(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalCancelText, { color: getColor('text') }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirmButton}
+                onPress={handleConfirmLogout}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalConfirmText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -234,153 +338,239 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? 25 : 0,
   },
-  container: {
-    flex: 1,
-    padding: 16,
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? 12 : 4,
+    paddingBottom: 8,
+  },
+  topBarTitle: {
+    fontSize: 24,
+    fontFamily: Fonts.bold,
   },
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginBottom: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
-  userSection: {
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    borderRadius: 18,
+    padding: 16,
+    marginTop: 4,
     marginBottom: 24,
   },
-  userInfoContainer: {
+  loginCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    marginRight: 12,
+    borderRadius: 18,
+    padding: 16,
+    marginTop: 4,
+    marginBottom: 24,
+    gap: 12,
   },
-  avatarContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
-    flexShrink: 0,
+    marginRight: 14,
   },
-  userInfo: {
-    flex: 1,
-    marginRight: 8,
-  },
-  userName: {
+  avatarText: {
     fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontFamily: Fonts.bold,
+    color: '#FFFFFF',
   },
-  userPhone: {
-    fontSize: 14,
+  profileInfo: {
+    flex: 1,
   },
-  logo: {
-    width: 40,
-    height: 40,
-    flexShrink: 0,
+  profileName: {
+    fontSize: 18,
+    fontFamily: Fonts.bold,
+    marginBottom: 2,
   },
-  featuresContainer: {
-    borderRadius: 12,
+  profilePhone: {
+    fontSize: 13,
+    fontFamily: Fonts.regular,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontFamily: Fonts.bold,
+    letterSpacing: 0.8,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  sectionCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 24,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+  },
+  rowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  rowIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  rowTextWrap: {
+    flex: 1,
+  },
+  rowTitle: {
+    fontSize: 15,
+    fontFamily: Fonts.medium,
+  },
+  rowSubtitle: {
+    fontSize: 12,
+    fontFamily: Fonts.regular,
+    marginTop: 1,
+  },
+  dangerCard: {
+    borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 16,
+    borderWidth: 1,
   },
-  themeToggleContainer: {
+  dangerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
   },
-  themeToggleContent: {
+  dangerHeaderContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
-  themeToggleText: {
-    marginLeft: 12,
-    fontSize: 16,
-    fontWeight: '500',
+  dangerTitle: {
+    marginLeft: 8,
+    fontSize: 13,
+    fontFamily: Fonts.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    color: '#FF4444',
   },
-  featureContent: {
+  dangerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
-  featureText: {
-    marginLeft: 12,
-    fontSize: 16,
-    fontWeight: '500',
+  dangerRowText: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: Fonts.medium,
+    color: '#FF4444',
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: 24,
   },
   logoutText: {
-    marginLeft: 12,
-    fontSize: 16,
-    fontWeight: '500',
+    flex: 1,
+    fontSize: 15,
+    fontFamily: Fonts.medium,
     color: '#FF4444',
   },
-  deleteAccountContainer: {
-    borderRadius: 12,
-    overflow: 'hidden',
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  modalIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 68, 68, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 68, 68, 0.2)',
   },
-  deleteAccountHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 68, 68, 0.1)',
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: Fonts.bold,
+    marginBottom: 6,
   },
-  deleteAccountHeaderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  deleteAccountTitle: {
-    marginLeft: 8,
+  modalMessage: {
     fontSize: 14,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontFamily: Fonts.regular,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
   },
-  deleteAccountButton: {
+  modalActions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderTopWidth: 1,
+    width: '100%',
+    gap: 12,
   },
-  deleteAccountText: {
-    marginLeft: 12,
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#FF4444',
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontFamily: Fonts.medium,
+  },
+  modalConfirmButton: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 14,
+    alignItems: 'center',
+    backgroundColor: '#FF4444',
+  },
+  modalConfirmText: {
+    fontSize: 15,
+    fontFamily: Fonts.medium,
+    color: '#FFFFFF',
   },
 });
 
