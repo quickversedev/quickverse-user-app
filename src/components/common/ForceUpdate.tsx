@@ -33,14 +33,18 @@ const ForceUpdateChecker: React.FC<{ children: React.ReactNode }> = ({ children 
   const { updateData, loading, error, retry } = useFetchUpdateData();
   const isMounted = useRef(true);
   const appState = useRef(AppState.currentState);
+  const lastCheckRef = useRef(Date.now());
+  const VERSION_CHECK_INTERVAL = 30 * 60 * 1000;
 
   useEffect(() => {
     isMounted.current = true;
 
-    // Check update when app returns from background
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        retry?.();
+        if (Date.now() - lastCheckRef.current >= VERSION_CHECK_INTERVAL) {
+          lastCheckRef.current = Date.now();
+          retry?.();
+        }
       }
       appState.current = nextAppState;
     });

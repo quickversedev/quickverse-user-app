@@ -28,6 +28,7 @@ import useCouponStore from '../../store/cart/couponStore';
 import useOrderStore from '../../store/cart/orderStore';
 import useConfigStore from '../../store/configStore';
 import usePagesStore from '../../store/pages/pagesStore';
+import usePricingStore from '../../store/pricingStore';
 import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
 import { useProductsStore } from '../../store/products/productsStore';
 import useThemeStore from '../../store/themeStore';
@@ -180,6 +181,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         config: null,
         loading: false,
         error: null,
+        _lastFetchedAt: 0,
       });
 
       // Reset pages store
@@ -187,6 +189,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         pages: [],
         loading: false,
         error: null,
+        _lastFetchedAt: 0,
       });
 
       // Reset theme store
@@ -194,6 +197,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         theme: DefaultTheme,
         loading: false,
         error: null,
+        _lastFetchedAt: 0,
       });
 
       // Reset address store
@@ -251,6 +255,15 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         error: null,
         filters: {},
         userLocation: null,
+        _lastFetchedAt: 0,
+      });
+
+      // Reset pricing store
+      usePricingStore.setState({
+        configs: { FOOD: [], GROCERY: [] },
+        loading: false,
+        error: null,
+        _lastFetchedAt: { FOOD: 0, GROCERY: 0 },
       });
     } catch (error) {
       console.error('Error resetting stores:', error);

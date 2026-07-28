@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import { useAuth } from '../../contexts/login/AuthProvider';
@@ -7,6 +7,8 @@ import { useDeviceInfo } from '../../hooks/useDeviceInfo';
 import { AppStack } from '../../routes/AppStack';
 import Registration from '../../screens/Login/Registration';
 import PermissionsScreen from '../../screens/permission/PermissionsScreen';
+import useConfigStore from '../../store/configStore';
+import useVendorStore from '../../store/vendorStore';
 import AppInitializer from './AppInitializer';
 import ErrorState from './ErrorState';
 import { HomeScreenSkeleton } from './skeleton';
@@ -39,18 +41,28 @@ const LocationResolvingIndicator: React.FC = () => (
  */
 const AppBootstrap: React.FC = () => {
   const { isNewUser, authData } = useAuth();
-  const [permissionsCompleted, setPermissionsCompleted] = useState(false);
   const { getPermissionAndLocation, isGranted, hasSkippedLocation } = useLocation();
-  const [permissionData, setLocalPermissionData] = useState<PermissionAndLocation | null>(null);
-  const [bootstrapped, setBootstrapped] = useState(false);
-  // Set to true only after the post-PermissionsScreen location re-fetch has
-  // completed. Gates AppInitializer mount so locationData is never stale.
-  const [locationRefreshed, setLocationRefreshed] = useState(false);
   const { setPermissionDataInAuth } = useAuth();
-  const [bootError, setBootError] = useState<string | null>(null);
   const { updateDeviceInfo } = useDeviceInfo();
-  // eslint-disable-next-line no-console
-  //console.log('auth jwt :', authData?.jwt);
+
+  // Warm start: returning user with cached store data — bypass all bootstrap
+  // gates so AppInitializer mounts immediately showing cached content.
+  const isWarmStart = useMemo(() => {
+    if (isNewUser || !authData?.jwt) return false;
+    const configOk =
+      useConfigStore.persist.hasHydrated() && useConfigStore.getState().config !== null;
+    const vendorOk =
+      useVendorStore.persist.hasHydrated() && useVendorStore.getState().vendors.length > 0;
+    return configOk && vendorOk;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [permissionsCompleted, setPermissionsCompleted] = useState(isWarmStart);
+  const [permissionData, setLocalPermissionData] = useState<PermissionAndLocation | null>(null);
+  const [bootstrapped, setBootstrapped] = useState(isWarmStart);
+  const [locationRefreshed, setLocationRefreshed] = useState(isWarmStart);
+  const [bootError, setBootError] = useState<string | null>(null);
+
   const bootstrap = async () => {
     setBootError(null);
     try {
