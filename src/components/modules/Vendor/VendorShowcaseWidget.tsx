@@ -334,8 +334,6 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   const [fetchedProducts, setFetchedProducts] = React.useState<Product[]>([]);
   const [fetchedCategories, setFetchedCategories] = React.useState<CategoryItem[]>([]);
 
-  // UI State for category switching
-  const [isSwitchingCat, setIsSwitchingCat] = React.useState(false);
   const productsListRef = React.useRef<FlatList>(null);
 
   // Scroll indicators + haptic feedback on page change
@@ -503,19 +501,11 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   const handleCategorySelect = useCallback(
     (categoryId: string) => {
       if (selectedCategory === categoryId) return;
-
-      setIsSwitchingCat(true);
       setSelectedCategory(categoryId);
 
-      // Reset scroll position
       if (productsListRef.current) {
         productsListRef.current.scrollToOffset({ offset: 0, animated: false });
       }
-
-      // Brief delay to show loading state
-      setTimeout(() => {
-        setIsSwitchingCat(false);
-      }, 500);
     },
     [selectedCategory]
   );
@@ -621,38 +611,30 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
           />
 
           {/* Products */}
-          {isSwitchingCat ? (
-            <View style={{ paddingTop: 8 }}>
-              <ProductRowSkeleton />
-            </View>
-          ) : (
-            <>
-              <FlatList
-                ref={productsListRef}
-                horizontal
-                data={displayedProducts}
-                renderItem={renderProductItem}
-                keyExtractor={(item, index) => `${item.sku}-${index}`}
-                showsHorizontalScrollIndicator={false}
-                style={styles.productsContainer}
-                contentContainerStyle={{ paddingRight: 10 }}
-                initialNumToRender={4}
-                maxToRenderPerBatch={4}
-                windowSize={3}
-                removeClippedSubviews={true}
-                onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: prodScrollX } } }], {
-                  useNativeDriver: false,
-                })}
-                scrollEventThrottle={16}
-              />
-              <ScrollDots
-                scrollX={prodScrollX}
-                itemWidth={152}
-                itemCount={displayedProducts.length}
-                visibleCount={2}
-              />
-            </>
-          )}
+          <FlatList
+            ref={productsListRef}
+            horizontal
+            data={displayedProducts}
+            renderItem={renderProductItem}
+            keyExtractor={(item, index) => `${item.sku}-${index}`}
+            showsHorizontalScrollIndicator={false}
+            style={styles.productsContainer}
+            contentContainerStyle={{ paddingRight: 10 }}
+            initialNumToRender={4}
+            maxToRenderPerBatch={4}
+            windowSize={3}
+            removeClippedSubviews={true}
+            onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: prodScrollX } } }], {
+              useNativeDriver: false,
+            })}
+            scrollEventThrottle={16}
+          />
+          <ScrollDots
+            scrollX={prodScrollX}
+            itemWidth={152}
+            itemCount={displayedProducts.length}
+            visibleCount={2}
+          />
         </View>
       )}
     </View>
