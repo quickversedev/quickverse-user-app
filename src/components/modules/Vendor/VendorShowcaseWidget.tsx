@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../../contexts/login/AuthProvider';
+import { storage } from '../../../services/localStorage/storage.service';
 import productsService from '../../../services/productsService';
 import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -61,6 +62,46 @@ const MOCK_VENDOR: Vendor = {
 };
 
 const MOCK_IMAGE = 'https://loremflickr.com/320/240/pizza';
+
+const WIDGET_CACHE_TTL = 5 * 60 * 1000;
+const MMKV_PREFIX = 'vsw-cache-';
+
+interface WidgetCacheEntry {
+  categories: CategoryItem[];
+  products: Product[];
+  firstCategoryId: string;
+  ts: number;
+}
+
+const memCache = new Map<string, WidgetCacheEntry>();
+
+function getWidgetCache(shopId: string): WidgetCacheEntry | null {
+  const mem = memCache.get(shopId);
+  if (mem && Date.now() - mem.ts < WIDGET_CACHE_TTL) return mem;
+
+  try {
+    const raw = storage.getString(MMKV_PREFIX + shopId);
+    if (raw) {
+      const entry: WidgetCacheEntry = JSON.parse(raw);
+      if (Date.now() - entry.ts < WIDGET_CACHE_TTL) {
+        memCache.set(shopId, entry);
+        return entry;
+      }
+    }
+  } catch {
+    // corrupted — ignore
+  }
+  return null;
+}
+
+function setWidgetCache(shopId: string, entry: WidgetCacheEntry) {
+  memCache.set(shopId, entry);
+  try {
+    storage.set(MMKV_PREFIX + shopId, JSON.stringify(entry));
+  } catch {
+    // storage full — in-memory still works
+  }
+}
 
 // --- Extracted & Memoized Components ---
 
@@ -330,9 +371,15 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   onPressExplore,
 }) => {
   const _theme = useTheme(); // kept for potential future use
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [fetchedProducts, setFetchedProducts] = React.useState<Product[]>([]);
-  const [fetchedCategories, setFetchedCategories] = React.useState<CategoryItem[]>([]);
+  const cached = !products && !categories ? getWidgetCache(vendor.shopId) : null;
+
+  const [isLoading, setIsLoading] = React.useState(!cached);
+  const [fetchedProducts, setFetchedProducts] = React.useState<Product[]>(
+    cached?.products ?? []
+  );
+  const [fetchedCategories, setFetchedCategories] = React.useState<CategoryItem[]>(
+    cached?.categories ?? []
+  );
 
   const productsListRef = React.useRef<FlatList>(null);
 
@@ -372,7 +419,9 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
     [allCategories, activeProducts]
   );
 
-  const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = React.useState<string>(
+    cached?.firstCategoryId ?? 'all'
+  );
 
   // Auto-select first category if current selection has no products
   React.useEffect(() => {
@@ -401,11 +450,12 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   }, [activeProducts, selectedCategory]);
 
   React.useEffect(() => {
-    // If props are provided, don't fetch
     if (products && categories) {
       setIsLoading(false);
       return;
     }
+
+    if (getWidgetCache(vendor.shopId)) return;
 
     const loadData = async () => {
       if (!vendor?.shopId) return;
@@ -417,7 +467,6 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
           productsService.fetchAllProducts({ shopId: vendor.shopId, limit: 100 }),
         ]);
 
-        // Map API categories to UI model
         const mappedCategories = cats.map(c => ({
           id: c.id,
           name: c.name,
@@ -429,15 +478,22 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
 
         const prods = Array.isArray(prodsResponse) ? prodsResponse : prodsResponse.products || [];
 
-        setFetchedCategories(mappedCategories);
-        setFetchedProducts(prods);
-
-        // Select first category that has products
         const firstWithProducts = mappedCategories.find(cat =>
           prods.some((p: Product) => p.division === cat.id)
         );
+        const firstId = firstWithProducts?.id || 'all';
+
+        setWidgetCache(vendor.shopId, {
+          categories: mappedCategories,
+          products: prods,
+          firstCategoryId: firstId,
+          ts: Date.now(),
+        });
+
+        setFetchedCategories(mappedCategories);
+        setFetchedProducts(prods);
         if (firstWithProducts) {
-          setSelectedCategory(firstWithProducts.id);
+          setSelectedCategory(firstId);
         }
       } catch (err) {
         console.error('Failed to load vendor showcase data', err);
