@@ -1,6 +1,33 @@
 import { create } from 'zustand';
 import productsService, { Category } from '../../services/productsService';
+import { storage } from '../../services/localStorage/storage.service';
 import { Product } from '../../types/product';
+
+const CACHE_TTL = 5 * 60 * 1000;
+const PRODUCTS_PREFIX = 'ps-products-';
+const CATEGORIES_PREFIX = 'ps-categories-';
+
+interface CacheEntry<T> {
+  data: T;
+  ts: number;
+}
+
+function readCache<T>(key: string): T | null {
+  try {
+    const raw = storage.getString(key);
+    if (raw) {
+      const entry: CacheEntry<T> = JSON.parse(raw);
+      if (Date.now() - entry.ts < CACHE_TTL) return entry.data;
+    }
+  } catch {}
+  return null;
+}
+
+function writeCache<T>(key: string, data: T) {
+  try {
+    storage.set(key, JSON.stringify({ data, ts: Date.now() }));
+  } catch {}
+}
 
 interface ProductsStore {
   products: Product[];
@@ -48,7 +75,20 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
   categoriesError: null,
 
   fetchProducts: async ({ offset, limit, append } = {}) => {
-    set({ loading: true, fullyLoaded: false, error: null });
+    const shopId = get().shopId;
+    let hasCachedData = false;
+
+    if (!append) {
+      const cached = readCache<Product[]>(PRODUCTS_PREFIX + shopId);
+      if (cached) {
+        set({ products: cached, loading: false, fullyLoaded: true, total: cached.length, error: null });
+        hasCachedData = true;
+      }
+    }
+
+    if (!hasCachedData) {
+      set({ loading: true, fullyLoaded: false, error: null });
+    }
 
     try {
       const currentOffset = offset !== undefined ? offset : get().offset;
@@ -88,6 +128,10 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
         finalProducts = filterUniqueProducts(newProducts);
       }
 
+      if (!append) {
+        writeCache(PRODUCTS_PREFIX + shopId, finalProducts);
+      }
+
       set(state => ({
         products: finalProducts,
         offset: currentOffset + finalProducts.length,
@@ -118,22 +162,36 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
         }
       }
 
-      set({ loading: false, fullyLoaded: false, error: message });
+      if (!hasCachedData) {
+        set({ loading: false, fullyLoaded: false, error: message });
+      }
     }
   },
 
   // Fetch categories for a given shop. In the real API, the category "id" maps to the product "division" field
   fetchCategories: async (shopIdOverride?: string) => {
     const shopId = shopIdOverride || get().shopId;
-    set({ categoriesLoading: true, categoriesError: null });
+    let hasCachedData = false;
+
+    const cached = readCache<Category[]>(CATEGORIES_PREFIX + shopId);
+    if (cached) {
+      set({ categories: cached, categoriesLoading: false, categoriesError: null });
+      hasCachedData = true;
+    }
+
+    if (!hasCachedData) {
+      set({ categoriesLoading: true, categoriesError: null });
+    }
 
     try {
-      // Use the products service to fetch categories
       const categories = await productsService.fetchCategories(shopId);
+      writeCache(CATEGORIES_PREFIX + shopId, categories);
       set({ categories, categoriesLoading: false, categoriesError: null });
     } catch (error: unknown) {
       console.error('Fetch categories error:', error);
-      set({ categoriesLoading: false, categoriesError: 'Failed to fetch categories' });
+      if (!hasCachedData) {
+        set({ categoriesLoading: false, categoriesError: 'Failed to fetch categories' });
+      }
     }
   },
 
@@ -180,7 +238,19 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
   },
 
   fetchCollectionProducts: async (shopId: string, categoryIds: string[]) => {
-    set({ loading: true, fullyLoaded: false, error: null, products: [] });
+    const cacheKey = PRODUCTS_PREFIX + 'col-' + shopId;
+    let hasCachedData = false;
+
+    const cached = readCache<Product[]>(cacheKey);
+    if (cached) {
+      set({ products: cached, loading: false, fullyLoaded: true, total: cached.length, error: null });
+      hasCachedData = true;
+    }
+
+    if (!hasCachedData) {
+      set({ loading: true, fullyLoaded: false, error: null, products: [] });
+    }
+
     try {
       const productPromises = categoryIds.map(categoryId =>
         productsService.fetchProductsForCollection({ shopId, categoryId })
@@ -218,16 +288,20 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
             product.imageUrl || normalizeImageUrl(product as Product & Record<string, unknown>),
         }));
 
+      writeCache(cacheKey, uniqueProducts);
+
       set({
         products: uniqueProducts,
         loading: false,
-        fullyLoaded: true, // Assuming we fetched everything for these categories
+        fullyLoaded: true,
         total: uniqueProducts.length,
         shopId,
       });
     } catch (error) {
       console.error('[ProductsStore] Error fetching collection products:', error);
-      set({ loading: false, error: 'Failed to fetch collection products' });
+      if (!hasCachedData) {
+        set({ loading: false, error: 'Failed to fetch collection products' });
+      }
     }
   },
 }));
