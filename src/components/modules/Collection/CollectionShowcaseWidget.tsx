@@ -3,11 +3,11 @@ import {
   Animated,
   Dimensions,
   FlatList,
-  Image,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import CachedImage from '../../common/CachedImage';
 import LinearGradient from 'react-native-linear-gradient';
 import AntDesign from '@react-native-vector-icons/ant-design';
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
@@ -92,8 +92,8 @@ const CategoryChipBase = ({ item, isSelected, onPress }: CategoryChipProps) => (
         isSelected && { borderColor: '#1E6B50', borderWidth: 1.5 },
       ]}
     >
-      <Image
-        source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+      <CachedImage
+        uri={typeof item.image === 'object' && item.image?.uri ? item.image.uri : typeof item.image === 'string' ? item.image : undefined}
         style={styles.categoryImage}
       />
     </View>
@@ -129,7 +129,7 @@ const ProductCardBase: React.FC<ProductCardProps> = ({
 }) => (
   <TouchableOpacity style={styles.productCard} onPress={() => onPress(item)}>
     <View style={styles.productImageWrapper}>
-      <Image source={{ uri: item.imageUrl || PLACEHOLDER_IMAGE }} style={styles.productImage} />
+      <CachedImage uri={item.imageUrl || PLACEHOLDER_IMAGE} style={styles.productImage} />
       {item.discount > 0 && (
         <View style={styles.discountBadge}>
           <ThemeText style={styles.discountText}>{item.discount}% OFF</ThemeText>

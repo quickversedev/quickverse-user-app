@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Animated, Dimensions, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
+import CachedImage from '../../../components/common/CachedImage';
 import { useTheme } from '../../../theme/ThemeContext';
 import { FastPick } from '../../../types/fastPick';
 import { getCleanImageUri } from '../../../utils/imageUtils';
@@ -60,7 +61,7 @@ const PickItem = React.memo(
       <View style={styles.pickItem}>
         <View style={[styles.imageContainer, { backgroundColor: theme.colors.card }]}>
           {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.productImage} resizeMode="contain" />
+            <CachedImage uri={imageUri} style={styles.productImage} resizeMode="contain" />
           ) : (
             <View style={styles.imagePlaceholder}>
               <MaterialIcons name="shopping-bag" size={24} color="#D1D5DB" />

@@ -6,11 +6,11 @@ import {
   Animated,
   Dimensions,
   FlatList,
-  Image,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import CachedImage from '../../common/CachedImage';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { storage } from '../../../services/localStorage/storage.service';
@@ -119,8 +119,8 @@ const CategoryRenderItem = React.memo(({ item, isSelected, onPress }: CategoryRe
         isSelected && { borderColor: '#003F66', borderWidth: 1.5 },
       ]}
     >
-      <Image
-        source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+      <CachedImage
+        uri={typeof item.image === 'object' && item.image?.uri ? item.image.uri : typeof item.image === 'string' ? item.image : undefined}
         style={styles.categoryImage}
       />
     </View>
@@ -148,7 +148,7 @@ const ProductRenderItem = React.memo(
   ({ item, quantity, onPress, onAddToCart, onIncrement, onDecrement }: ProductRenderItemProps) => (
     <TouchableOpacity style={styles.productCard} onPress={() => onPress(item)}>
       <View style={styles.productImageWrapper}>
-        <Image source={{ uri: item.imageUrl || MOCK_IMAGE }} style={styles.productImage} />
+        <CachedImage uri={item.imageUrl || MOCK_IMAGE} style={styles.productImage} />
         {item.discount > 0 && (
           <View style={styles.discountBadge}>
             <ThemeText style={styles.discountText}>{item.discount}% OFF</ThemeText>

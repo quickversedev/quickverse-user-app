@@ -1,5 +1,6 @@
 import React, { memo, useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import CachedImage from '../../common/CachedImage';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
@@ -247,10 +248,9 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
           {/* Product Image */}
           <View style={styles.imageContainer}>
             {imageUrl && !imageError ? (
-              <Image
-                source={{ uri: imageUrl }}
+              <CachedImage
+                uri={imageUrl}
                 style={styles.image}
-                resizeMode="cover"
                 onError={() => setImageError(true)}
               />
             ) : (
