@@ -35,48 +35,42 @@ const ProfileScreen = () => {
   const [isDangerZoneExpanded, setIsDangerZoneExpanded] = React.useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = React.useState(false);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = React.useState(false);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = React.useState(false);
 
   const isLoggedIn = Boolean(authData?.jwt);
 
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = () => {
     if (!authData?.jwt) {
       Alert.alert('Error', 'You must be logged in to delete your account.');
       return;
     }
+    setIsDeleteModalVisible(true);
+  };
 
-    Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setIsDeletingAccount(true);
-            try {
-              await deleteUserService.deleteUser(authData.jwt);
-              Alert.alert(
-                'Account Deleted',
-                'Your account has been successfully deleted. You will be logged out.',
-                [{ text: 'OK', onPress: () => signOut() }]
-              );
-            } catch (error) {
-              Alert.alert(
-                'Error',
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to delete account. Please try again.',
-                [{ text: 'OK' }]
-              );
-            } finally {
-              setIsDeletingAccount(false);
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
+  const handleConfirmDeleteAccount = async () => {
+    if (!authData?.jwt) {
+      setIsDeleteModalVisible(false);
+      return;
+    }
+
+    setIsDeleteModalVisible(false);
+    setIsDeletingAccount(true);
+    try {
+      await deleteUserService.deleteUser(authData.jwt);
+      Alert.alert(
+        'Account Deleted',
+        'Your account has been successfully deleted. You will be logged out.',
+        [{ text: 'OK', onPress: () => signOut() }]
+      );
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to delete account. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   const handleConfirmLogout = () => {
@@ -326,6 +320,46 @@ const ProfileScreen = () => {
                 activeOpacity={0.85}
               >
                 <Text style={styles.modalConfirmText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Delete account confirmation modal */}
+      <Modal
+        visible={isDeleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsDeleteModalVisible(false)}
+        statusBarTranslucent
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setIsDeleteModalVisible(false)}>
+          <Pressable style={[styles.modalCard, { backgroundColor: getColor('card') }]}>
+            <View style={styles.modalIconWrap}>
+              <MaterialIcons name="delete-forever" size={26} color="#FF4444" />
+            </View>
+
+            <Text style={[styles.modalTitle, { color: getColor('text') }]}>Delete Account</Text>
+            <Text style={[styles.modalMessage, { color: getColor('text') }]}>
+              Are you sure you want to delete your account? This action cannot be undone and will
+              permanently remove all your data.
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalCancelButton, { borderColor: getColor('border') }]}
+                onPress={() => setIsDeleteModalVisible(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalCancelText, { color: getColor('text') }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirmButton}
+                onPress={handleConfirmDeleteAccount}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalConfirmText}>Delete</Text>
               </TouchableOpacity>
             </View>
           </Pressable>

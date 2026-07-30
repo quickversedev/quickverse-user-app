@@ -1,9 +1,10 @@
+import Icon from '@react-native-vector-icons/material-design-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useCallback } from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from '@react-native-vector-icons/material-design-icons';
 import OrderList from '../../../components/common/order/OrderList';
+import { ThemeText } from '../../../components/common/theme/ThemeText';
 import useOrderStore from '../../../store/cart/orderStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AppNavigationProp } from '../../../types/navigation';
@@ -11,9 +12,52 @@ import { Order } from '../../../types/order';
 
 const OrdersScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
-  const { getColor, getTypography } = useTheme();
+  const { getColor, theme } = useTheme();
   const { setSelectedOrder } = useOrderStore();
   // Initial load handled inside OrderList via its own hook
+
+  const themedStyles = StyleSheet.create({
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: getColor('border'),
+      backgroundColor: getColor('card'),
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: {
+        width: theme.colors.shadow.offset_width,
+        height: theme.colors.shadow.offset_height,
+      },
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
+      elevation: 4,
+    },
+    backButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: getColor('background'),
+      marginRight: 16,
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: {
+        width: theme.colors.shadow.offset_width,
+        height: theme.colors.shadow.offset_height,
+      },
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
+      elevation: 2,
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontFamily: 'BricolageGrotesque-Bold',
+      color: getColor('text'),
+      flex: 1,
+    },
+  });
 
   const handleOrderPress = useCallback(
     (order: Order) => {
@@ -30,28 +74,16 @@ const OrdersScreen = () => {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: getColor('background') }]}>
       <View style={[styles.container, { backgroundColor: getColor('background') }]}>
-        {/* Header */}
-        <View style={styles.header}>
+        <View style={[themedStyles.header, { borderBottomColor: getColor('border') }]}>
           <TouchableOpacity
-            style={[styles.backButton, { backgroundColor: getColor('card') }]}
-            onPress={handleBackPress}
-            activeOpacity={0.7}
+            style={[themedStyles.backButton, { backgroundColor: getColor('card') }]}
+            onPress={() => navigation.goBack()}
           >
             <Icon name="arrow-left" size={24} color={getColor('text')} />
           </TouchableOpacity>
-          <Text
-            style={[
-              styles.headerTitle,
-              {
-                color: getColor('text'),
-                fontSize: getTypography('subtitle'),
-                fontFamily: 'BricolageGrotesque-Regular',
-              },
-            ]}
-          >
+          <ThemeText variant="h2" color={getColor('text')} style={themedStyles.headerTitle}>
             Orders
-          </Text>
-          <View style={styles.placeholder} />
+          </ThemeText>
         </View>
 
         {/* Order List */}
@@ -68,10 +100,10 @@ const OrdersScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    // paddingTop: Platform.OS === 'android' ? 25 : 0,
   },
   container: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 0 : 25, // Android status bar height
   },
   header: {
     flexDirection: 'row',

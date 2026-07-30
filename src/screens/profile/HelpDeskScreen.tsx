@@ -28,7 +28,7 @@ interface FAQItem {
 }
 
 const HelpDeskScreen: React.FC = () => {
-  const { getColor, getTypography } = useTheme();
+  const { getColor, getTypography, theme } = useTheme();
   const { authData } = useAuth();
   const navigation = useNavigation<AppNavigationProp>();
   const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
@@ -156,28 +156,45 @@ const HelpDeskScreen: React.FC = () => {
     },
     safeArea: {
       flex: 1,
-      paddingTop: Platform.OS === 'android' ? 25 : 0,
+      // paddingTop: Platform.OS === 'android' ? 25 : 0,
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 16,
+      paddingHorizontal: 20,
       paddingVertical: 12,
       borderBottomWidth: 1,
       borderBottomColor: getColor('border'),
+      backgroundColor: getColor('card'),
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: {
+        width: theme.colors.shadow.offset_width,
+        height: theme.colors.shadow.offset_height,
+      },
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
+      elevation: 4,
     },
     backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 8,
+      width: 44,
+      height: 44,
+      borderRadius: 12,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: getColor('card'),
-      marginRight: 12,
+      backgroundColor: getColor('background'),
+      marginRight: 16,
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: {
+        width: theme.colors.shadow.offset_width,
+        height: theme.colors.shadow.offset_height,
+      },
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
+      elevation: 2,
     },
     headerTitle: {
-      fontSize: getTypography('h2'),
-      fontWeight: 'bold',
+      fontSize: 20,
+      fontFamily: 'BricolageGrotesque-Bold',
       color: getColor('text'),
       flex: 1,
     },
