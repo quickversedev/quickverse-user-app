@@ -32,7 +32,9 @@ cd android
 
 ## Build Release AAB (for Play Store)
 
-**Important:** Before each release build, bump `versionCode` in `android/app/build.gradle` → `defaultConfig` block. The Play Store rejects uploads with a previously used version code.
+**Important:** Before each release build:
+1. Bump `versionCode` and `versionName` in `android/app/build.gradle` → `defaultConfig` block. The Play Store rejects uploads with a previously used version code.
+2. Set `isTest: false` in `src/store/vendorStore.ts` (line 99) so test shops are hidden from real customers.
 
 ```bash
 cd android
