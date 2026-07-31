@@ -1,67 +1,72 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import axiosInstance, { apiCall, getAuthHeader } from '../../config/api/axios.config';
 import { Page, PagesStore } from '../../types/pages';
+import { CACHE_TTL, createPersistedConfig, isCacheFresh } from '../../utils/cache';
 
-const usePagesStore = create<PagesStore>((set, get) => ({
-  // Initial state
-  pages: [],
+const initialState = {
+  pages: [] as Page[],
   loading: false,
-  error: null,
+  error: null as string | null,
+  _lastFetchedAt: 0,
+};
 
-  // Actions
-  setLoading: (loading: boolean) => set({ loading }),
-  setError: (error: string | null) => set({ error }),
-  clearError: () => set({ error: null }),
+const usePagesStore = create<PagesStore>()(
+  persist(
+    (set, get) => ({
+      ...initialState,
 
-  fetchPages: async (regionId: string) => {
-    try {
-      set({ loading: true, error: null });
+      setLoading: (loading: boolean) => set({ loading }),
+      setError: (error: string | null) => set({ error }),
+      clearError: () => set({ error: null }),
 
-      const authHeader = getAuthHeader();
+      fetchPages: async (regionId: string) => {
+        if (isCacheFresh(get()._lastFetchedAt, CACHE_TTL.PAGES) && get().pages.length > 0) {
+          return;
+        }
 
-      const data = await apiCall(
-        axiosInstance.get(`/v3/pages?regionId=${regionId}`, {
-          headers: {
-            Authorization: authHeader,
-          },
-        })
-      );
+        try {
+          set({ loading: true, error: null });
 
-      const pagesArr: Page[] = data || [];
-      const totalBanners = pagesArr.reduce(
-        (sum, p) => sum + (Array.isArray(p.promotion) ? p.promotion.length : 0),
-        0
-      );
-      console.warn(
-        `[pagesStore] /v3/pages?regionId=${regionId} → ${pagesArr.length} pages, ${totalBanners} banners`
-      );
-      pagesArr.forEach(p => {
-        const banners = Array.isArray(p.promotion) ? p.promotion : [];
-        console.warn(
-          `[pagesStore] page "${p.pageName}" → ${banners.length} banner(s):`,
-          JSON.stringify(banners, null, 2)
-        );
-      });
+          const authHeader = getAuthHeader();
 
-      set({
-        pages: pagesArr,
-        loading: false,
-        error: null,
-      });
-    } catch (err) {
-      console.error('Error fetching pages:', err);
-      set({
-        error: 'Failed to fetch pages configuration. Please try again.',
-        loading: false,
-      });
-    }
-  },
+          const data = await apiCall(
+            axiosInstance.get(`/v3/pages?regionId=${regionId}`, {
+              headers: {
+                Authorization: authHeader,
+              },
+            })
+          );
 
-  // Get page by pageId
-  getPageById: (pageId: string): Page | undefined => {
-    const { pages } = get();
-    return pages.find(p => p.pageName === pageId);
-  },
-}));
+          const pagesArr: Page[] = data || [];
+
+          set({
+            pages: pagesArr,
+            loading: false,
+            error: null,
+            _lastFetchedAt: Date.now(),
+          });
+        } catch (err) {
+          console.error('Error fetching pages:', err);
+          set({
+            error: 'Failed to fetch pages configuration. Please try again.',
+            loading: false,
+          });
+        }
+      },
+
+      getPageById: (pageId: string): Page | undefined => {
+        const { pages } = get();
+        return pages.find(p => p.pageName === pageId);
+      },
+
+      reset: () => set(initialState),
+    }),
+    createPersistedConfig<PagesStore>('pages-storage', state => ({
+      pages: state.pages,
+      _lastFetchedAt: state._lastFetchedAt,
+    }))
+  )
+);
 
 export default usePagesStore;

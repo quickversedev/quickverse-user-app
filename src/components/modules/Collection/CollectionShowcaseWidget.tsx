@@ -3,16 +3,17 @@ import {
   Animated,
   Dimensions,
   FlatList,
-  Image,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import CachedImage from '../../common/CachedImage';
 import LinearGradient from 'react-native-linear-gradient';
 import AntDesign from '@react-native-vector-icons/ant-design';
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
+import { storage } from '../../../services/localStorage/storage.service';
 import productsService from '../../../services/productsService';
 import useCartStore from '../../../store/cart/cartStore';
 import { Product } from '../../../types/product';
@@ -35,6 +36,46 @@ interface CollectionShowcaseWidgetProps {
 
 const PLACEHOLDER_IMAGE = 'https://loremflickr.com/320/240/food';
 
+const WIDGET_CACHE_TTL = 5 * 60 * 1000;
+const MMKV_PREFIX = 'csw-cache-';
+
+interface WidgetCacheEntry {
+  categories: CategoryItem[];
+  products: Product[];
+  firstCategoryId: string;
+  ts: number;
+}
+
+const memCache = new Map<string, WidgetCacheEntry>();
+
+function getWidgetCache(shopId: string): WidgetCacheEntry | null {
+  const mem = memCache.get(shopId);
+  if (mem && Date.now() - mem.ts < WIDGET_CACHE_TTL) return mem;
+
+  try {
+    const raw = storage.getString(MMKV_PREFIX + shopId);
+    if (raw) {
+      const entry: WidgetCacheEntry = JSON.parse(raw);
+      if (Date.now() - entry.ts < WIDGET_CACHE_TTL) {
+        memCache.set(shopId, entry);
+        return entry;
+      }
+    }
+  } catch {
+    // corrupted data — ignore
+  }
+  return null;
+}
+
+function setWidgetCache(shopId: string, entry: WidgetCacheEntry) {
+  memCache.set(shopId, entry);
+  try {
+    storage.set(MMKV_PREFIX + shopId, JSON.stringify(entry));
+  } catch {
+    // storage full — in-memory still works
+  }
+}
+
 // --- Extracted & Memoized Components ---
 
 interface CategoryChipProps {
@@ -51,8 +92,8 @@ const CategoryChipBase = ({ item, isSelected, onPress }: CategoryChipProps) => (
         isSelected && { borderColor: '#1E6B50', borderWidth: 1.5 },
       ]}
     >
-      <Image
-        source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+      <CachedImage
+        uri={typeof item.image === 'object' && item.image?.uri ? item.image.uri : typeof item.image === 'string' ? item.image : undefined}
         style={styles.categoryImage}
       />
     </View>
@@ -88,7 +129,7 @@ const ProductCardBase: React.FC<ProductCardProps> = ({
 }) => (
   <TouchableOpacity style={styles.productCard} onPress={() => onPress(item)}>
     <View style={styles.productImageWrapper}>
-      <Image source={{ uri: item.imageUrl || PLACEHOLDER_IMAGE }} style={styles.productImage} />
+      <CachedImage uri={item.imageUrl || PLACEHOLDER_IMAGE} style={styles.productImage} />
       {item.discount > 0 && (
         <View style={styles.discountBadge}>
           <ThemeText style={styles.discountText}>{item.discount}% OFF</ThemeText>
@@ -309,12 +350,16 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
   onPressProduct,
   onPressExplore,
 }) => {
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [fetchedProducts, setFetchedProducts] = React.useState<Product[]>([]);
-  const [fetchedCategories, setFetchedCategories] = React.useState<CategoryItem[]>([]);
+  const cached = getWidgetCache(vendor.shopId);
 
-  // UI State for category switching
-  const [isSwitchingCat, setIsSwitchingCat] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(!cached);
+  const [fetchedProducts, setFetchedProducts] = React.useState<Product[]>(
+    cached?.products ?? []
+  );
+  const [fetchedCategories, setFetchedCategories] = React.useState<CategoryItem[]>(
+    cached?.categories ?? []
+  );
+
   const productsListRef = React.useRef<FlatList>(null);
 
   // Scroll indicators + haptic feedback on page change
@@ -352,7 +397,9 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
     [allCategories, fetchedProducts]
   );
 
-  const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = React.useState<string>(
+    cached?.firstCategoryId ?? 'all'
+  );
 
   // Auto-select first category if current selection has no products
   React.useEffect(() => {
@@ -380,16 +427,15 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
     return fetchedProducts.filter(p => p.division === selectedCategory);
   }, [fetchedProducts, selectedCategory]);
 
-  // Fetch data using collection-specific API
   React.useEffect(() => {
     if (!vendor?.shopId) return;
+    if (getWidgetCache(vendor.shopId)) return;
 
     const loadData = async () => {
       setIsLoading(true);
       try {
         const cats = await productsService.fetchCategories(vendor.shopId);
 
-        // Fetch products for each category in parallel using collection API
         const categoryIds = cats.map(c => c.id);
         const productPromises = categoryIds.map(categoryId =>
           productsService
@@ -400,7 +446,6 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
         const results = await Promise.all(productPromises);
         const allProducts = results.flat();
 
-        // Deduplicate by SKU
         const seenSkus = new Set<string>();
         const uniqueProducts = allProducts.filter(p => {
           if (seenSkus.has(p.sku)) return false;
@@ -408,12 +453,8 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
           return true;
         });
 
-        // Map API categories to UI model. Grocery shops often return empty
-        // imageURLs for categories — fall back to the first in-category
-        // product's image so each chip gets a representative thumbnail.
         const mappedCategories = cats.map(c => {
-          const apiImage =
-            c.imageURLs && c.imageURLs.length > 0 ? c.imageURLs[0] : null;
+          const apiImage = c.imageURLs && c.imageURLs.length > 0 ? c.imageURLs[0] : null;
           const sampleProduct = uniqueProducts.find(p => p.division === c.id && p.imageUrl);
           return {
             id: c.id,
@@ -422,15 +463,22 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
           };
         });
 
-        setFetchedCategories(mappedCategories);
-        setFetchedProducts(uniqueProducts);
-
-        // Select first category that has products
         const firstWithProducts = mappedCategories.find(cat =>
           uniqueProducts.some((p: Product) => p.division === cat.id)
         );
+        const firstId = firstWithProducts?.id || 'all';
+
+        setWidgetCache(vendor.shopId, {
+          categories: mappedCategories,
+          products: uniqueProducts,
+          firstCategoryId: firstId,
+          ts: Date.now(),
+        });
+
+        setFetchedCategories(mappedCategories);
+        setFetchedProducts(uniqueProducts);
         if (firstWithProducts) {
-          setSelectedCategory(firstWithProducts.id);
+          setSelectedCategory(firstId);
         }
       } catch (err) {
         console.error('Failed to load collection showcase data', err);
@@ -494,17 +542,11 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
   const handleCategorySelect = useCallback(
     (categoryId: string) => {
       if (selectedCategory === categoryId) return;
-
-      setIsSwitchingCat(true);
       setSelectedCategory(categoryId);
 
       if (productsListRef.current) {
         productsListRef.current.scrollToOffset({ offset: 0, animated: false });
       }
-
-      setTimeout(() => {
-        setIsSwitchingCat(false);
-      }, 500);
     },
     [selectedCategory]
   );
@@ -613,39 +655,31 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
           />
 
           {/* Products */}
-          {isSwitchingCat ? (
-            <View style={{ paddingTop: 8 }}>
-              <CollectionProductRowSkeleton />
-            </View>
-          ) : (
-            <>
-              <FlatList
-                ref={productsListRef}
-                horizontal
-                nestedScrollEnabled={true}
-                data={displayedProducts}
-                renderItem={renderProductItem}
-                keyExtractor={(item, index) => `${item.sku}-${index}`}
-                showsHorizontalScrollIndicator={false}
-                style={styles.productsContainer}
-                contentContainerStyle={{ paddingRight: 10 }}
-                initialNumToRender={4}
-                maxToRenderPerBatch={4}
-                windowSize={3}
-                removeClippedSubviews={true}
-                onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: prodScrollX } } }], {
-                  useNativeDriver: false,
-                })}
-                scrollEventThrottle={16}
-              />
-              <ScrollDots
-                scrollX={prodScrollX}
-                itemWidth={132}
-                itemCount={displayedProducts.length}
-                visibleCount={2}
-              />
-            </>
-          )}
+          <FlatList
+            ref={productsListRef}
+            horizontal
+            nestedScrollEnabled={true}
+            data={displayedProducts}
+            renderItem={renderProductItem}
+            keyExtractor={(item, index) => `${item.sku}-${index}`}
+            showsHorizontalScrollIndicator={false}
+            style={styles.productsContainer}
+            contentContainerStyle={{ paddingRight: 10 }}
+            initialNumToRender={4}
+            maxToRenderPerBatch={4}
+            windowSize={3}
+            removeClippedSubviews={true}
+            onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: prodScrollX } } }], {
+              useNativeDriver: false,
+            })}
+            scrollEventThrottle={16}
+          />
+          <ScrollDots
+            scrollX={prodScrollX}
+            itemWidth={132}
+            itemCount={displayedProducts.length}
+            visibleCount={2}
+          />
         </View>
       )}
 

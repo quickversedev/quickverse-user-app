@@ -51,7 +51,6 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
   const [region, setRegion] = useState({
     latitude: DEFAULT_FALLBACK_COORDINATES.latitude,
     longitude: DEFAULT_FALLBACK_COORDINATES.longitude,
@@ -111,33 +110,35 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     }
   };
 
-  // On mount, resolve coordinates before showing the map
+  // On mount, show map immediately with fallback, then animate to user location
   useEffect(() => {
-    const fallback = {
-      latitude: DEFAULT_FALLBACK_COORDINATES.latitude,
-      longitude: DEFAULT_FALLBACK_COORDINATES.longitude,
-    };
-
-    const applyLocation = (loc: { latitude: number; longitude: number }) => {
-      setRegion(getRegionFromLocation(loc));
-      updateSelectedLocationAndAddress(loc);
-      setMapReady(true);
-    };
-
     (async () => {
       const status = await checkLocationPermission();
       if (status !== 'granted') {
         const result = await requestLocationPermission();
         if (result !== 'granted') {
-          applyLocation(fallback);
+          updateSelectedLocationAndAddress({
+            latitude: DEFAULT_FALLBACK_COORDINATES.latitude,
+            longitude: DEFAULT_FALLBACK_COORDINATES.longitude,
+          });
           return;
         }
       }
       try {
         const coords = await getCurrentLocation();
-        applyLocation({ latitude: coords.latitude, longitude: coords.longitude });
+        const loc = { latitude: coords.latitude, longitude: coords.longitude };
+        const newRegion = getRegionFromLocation(loc);
+        if (mapRef.current) {
+          mapRef.current.animateToRegion(newRegion, 800);
+        } else {
+          setRegion(newRegion);
+        }
+        updateSelectedLocationAndAddress(loc);
       } catch {
-        applyLocation(fallback);
+        updateSelectedLocationAndAddress({
+          latitude: DEFAULT_FALLBACK_COORDINATES.latitude,
+          longitude: DEFAULT_FALLBACK_COORDINATES.longitude,
+        });
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -489,23 +490,10 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       >
         {/* Map with rounded top corners */}
         <View style={themedStyles.mapContainer}>
-          {!mapReady ? (
-            <View
-              style={{
-                flex: 1,
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: getColor('card'),
-              }}
-            >
-              <ActivityIndicator size="large" color={getColor('primary')} />
-            </View>
-          ) : (
-            <>
               <MapView
                 ref={mapRef}
                 style={themedStyles.map}
-                region={region}
+                initialRegion={region}
                 onRegionChangeComplete={handleRegionChangeComplete}
                 showsUserLocation={true}
                 showsMyLocationButton={false}
@@ -545,8 +533,6 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                   />
                 </View>
               )}
-            </>
-          )}
           {/* Search Bar Overlay */}
           <View pointerEvents="box-none" style={themedStyles.searchBarContainer}>
             <View style={themedStyles.searchBar}>
@@ -611,14 +597,16 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                           longitude: result.geometry.location.lng,
                         };
 
-                        setRegion({
+                        const searchRegion = {
                           latitude: newLocation.latitude,
                           longitude: newLocation.longitude,
                           latitudeDelta: 0.01,
                           longitudeDelta: 0.01,
-                        });
+                        };
+                        if (mapRef.current) {
+                          mapRef.current.animateToRegion(searchRegion, 800);
+                        }
 
-                        // Update selected location and get address
                         updateSelectedLocationAndAddress(newLocation);
                         setSearchQuery(result.structured_formatting.main_text);
                         setSearchResults([]);

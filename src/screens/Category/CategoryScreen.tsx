@@ -17,7 +17,12 @@ import CollectionShowcaseWidget from '../../components/modules/Collection/Collec
 import { SearchBar } from '../../components/modules/Header/SearchBar';
 import VendorCard2 from '../../components/modules/Vendor/VendorCard2'; // Updated to V2
 import VendorShowcaseWidget from '../../components/modules/Vendor/VendorShowcaseWidget';
-import { API_STORE_ID, Collection, fetchCollectionsFromApi } from '../../data/collectionsData';
+import {
+  API_STORE_ID,
+  Collection,
+  fetchCollectionsFromApi,
+  getCachedCollections,
+} from '../../data/collectionsData';
 import { RootStackParamList } from '../../routes/AppStack';
 import useVendorStore from '../../store/vendorStore';
 import { Vendor } from '../../types/vendor';
@@ -52,28 +57,22 @@ const CategoryScreen = () => {
   // the first grocery vendor if 94728 isn't in the list.
   const showcaseVendors = React.useMemo(() => {
     if (!isGrocery) return categoryVendors;
-    console.log(categoryVendors);
-    // const preferred = categoryVendors.find(v => String(v.shopId) === '94728');
-    // if (preferred) return [preferred];
     return categoryVendors.filter(v => v.shopId !== '68246').reverse();
   }, [isGrocery, categoryVendors]);
 
-  // Cart Logic
-  // Collections Logic (Grocery Only)
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [collectionsLoading, setCollectionsLoading] = useState(false);
-
   const collectionsShopId = API_STORE_ID;
+  const cachedCols = isGrocery ? getCachedCollections(collectionsShopId) : null;
+
+  const [collections, setCollections] = useState<Collection[]>(cachedCols ?? []);
+  const [collectionsLoading, setCollectionsLoading] = useState(isGrocery && !cachedCols);
 
   useEffect(() => {
+    if (!isGrocery) return;
+    if (getCachedCollections(collectionsShopId)) return;
+
     const loadCollections = async () => {
-      if (!isGrocery) {
-        setCollectionsLoading(false);
-        return;
-      }
       setCollectionsLoading(true);
       try {
-        // Collections grid is statically sourced from API_STORE_ID (68246)
         const sections = await fetchCollectionsFromApi(collectionsShopId);
         if (sections.length > 0) {
           setCollections(sections[0].collections);
@@ -125,7 +124,7 @@ const CategoryScreen = () => {
   const hasNoVendors = categoryVendors.length === 0;
   const otherCategoryLabel = isGrocery ? 'Food' : 'Grocery';
 
-  const renderHeader = () => (
+  const headerElement = (
     <View>
       {/* Back Button + Search Bar */}
       <View style={styles.headerRow}>
@@ -260,7 +259,7 @@ const CategoryScreen = () => {
         data={!showStoresList || hasNoVendors ? [] : categoryVendors}
         renderItem={renderItem}
         keyExtractor={item => item.shopId}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={headerElement}
         ListEmptyComponent={hasNoVendors || showStoresList ? renderEmpty : null}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

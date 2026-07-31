@@ -1,8 +1,8 @@
 import { Address } from '../types/address';
 
 export const DEFAULT_FALLBACK_COORDINATES: { latitude: number; longitude: number } = {
-  latitude: 18.9957059,
-  longitude: 75.7521886,
+  latitude: 18.990088,
+  longitude: 75.753132,
 };
 
 export const DEFAULT_FALLBACK_ADDRESS: Address = {

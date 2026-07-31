@@ -18,6 +18,7 @@ export interface PagesState {
   pages: Page[];
   loading: boolean;
   error: string | null;
+  _lastFetchedAt: number;
 }
 
 export interface PagesActions {
@@ -25,6 +26,7 @@ export interface PagesActions {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
+  reset: () => void;
 
   getPageById: (pageId: string) => Page | undefined;
 }
