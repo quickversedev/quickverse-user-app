@@ -25,6 +25,8 @@ MYAPP_RELEASE_STORE_FILE=../../quickverseRelease.keystore
 
 ## Build Release APK
 
+APK builds are for internal testing — always keep `isTest: true` in `src/store/vendorStore.ts` (line 99) so test shops are visible.
+
 ```bash
 cd android
 ./gradlew assembleRelease
