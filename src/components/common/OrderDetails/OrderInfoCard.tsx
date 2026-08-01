@@ -66,7 +66,7 @@ const OrderInfoCard: React.FC<OrderInfoCardProps> = ({ order, actionButton }) =>
               hour12: true,
             })}
           </ThemeText>
-          {order.actualDeliveryTime && (
+          {Boolean(order.actualDeliveryTime) && (
             <ThemeText style={[styles.deliveryAgent, { color: getColor('subText') }]}>
               By {order.customerName}
             </ThemeText>

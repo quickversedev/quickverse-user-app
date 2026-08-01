@@ -126,8 +126,13 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         });
       }
     } catch (err: unknown) {
-      // Extensive error logging
       const error: any = err;
+
+      // Silently ignore cancelled requests (user navigated away)
+      if (error.isCancelled || error.code === 'CANCELLED' || error.name === 'AbortError') {
+        return;
+      }
+
       console.error('[VendorStore] API Error Details:', {
         message: error.message,
         status: error.status,
@@ -135,12 +140,6 @@ const useVendorStore = create<VendorStore>((set, get) => ({
         endpoint: error.apiEndpoint,
         responsedata: error.response?.data || 'No data',
       });
-
-      // Don't update state if request was aborted
-      if (error.name === 'AbortError') {
-        console.log('[VendorStore] Request aborted');
-        return;
-      }
 
       // Only update error state if this is still the current request
       if (requestId === currentRequestId) {

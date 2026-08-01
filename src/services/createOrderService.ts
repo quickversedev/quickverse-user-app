@@ -1,4 +1,5 @@
 import axiosInstance, { apiCall, getAuthHeader } from '../config/api/axios.config';
+import { OrderTrackingInfo } from '../types/order';
 
 export interface CreateOrderRequest {
   shopId: number;
@@ -137,6 +138,28 @@ class OrderService {
     } catch (error) {
       console.log('Get Order Status Error : ', error);
       throw error;
+    }
+  }
+
+  async getOrderTracking(
+    orderId: string,
+    sessionKey: string,
+    phone: string
+  ): Promise<OrderTrackingInfo | null> {
+    try {
+      const response = await axiosInstance.get<OrderTrackingInfo>(
+        `/v1/order-master/tracking/${orderId}`,
+        {
+          headers: {
+            SessionKey: sessionKey,
+            Authorization: getAuthHeader(),
+            phone,
+          },
+        }
+      );
+      return response.data;
+    } catch {
+      return null;
     }
   }
 

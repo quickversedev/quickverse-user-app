@@ -34,6 +34,7 @@
   import { useNotifications } from '../../../hooks/useNotifications';
   import { useOrders } from '../../../hooks/useOrders';
   import orderService from '../../../services/createOrderService';
+  import { OrderTrackingInfo } from '../../../types/order';
   import createPaymentService, { PaymentTender } from '../../../services/createPaymentService';
   import usePricingStore from '../../../store/pricingStore';
   import useVendorStore from '../../../store/vendorStore';
@@ -305,6 +306,9 @@
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const POLLING_INTERVAL_MS = 30000; // 30 seconds
 
+    // Live tracking data (rider info, shop location, stage timestamps)
+    const [trackingInfo, setTrackingInfo] = useState<OrderTrackingInfo | null>(null);
+
     // Custom dialog state
     const [dialogVisible, setDialogVisible] = useState(false);
     const [dialogConfig, setDialogConfig] = useState<{
@@ -346,16 +350,29 @@
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [orderId]);
 
-    // Poll for status updates while order is active
+    // Poll for status & tracking updates while order is active
     useEffect(() => {
+      const jwt = authData?.jwt;
+      const phone = authData?.phone;
       const shouldPoll =
         selectedOrder?.status &&
         selectedOrder.status !== 'delivered' &&
         selectedOrder.status !== 'cancelled';
 
+      const fetchTracking = async () => {
+        if (orderId && jwt && phone) {
+          const info = await orderService.getOrderTracking(orderId, jwt, phone);
+          if (info) setTrackingInfo(info);
+        }
+      };
+
       if (shouldPoll) {
+        // Immediate fetch on mount/active order
+        fetchTracking();
+
         pollingIntervalRef.current = setInterval(() => {
           loadOrderById(orderId, shopIdRef.current);
+          fetchTracking();
         }, POLLING_INTERVAL_MS);
       }
 
@@ -365,7 +382,7 @@
           pollingIntervalRef.current = null;
         }
       };
-    }, [selectedOrder?.status, orderId, loadOrderById]);
+    }, [selectedOrder?.status, orderId, loadOrderById, authData?.jwt, authData?.phone]);
 
     // Check notification permission on component mount
     useEffect(() => {
@@ -820,6 +837,21 @@
               }
             />
 
+            {/* Savings banner */}
+            {(selectedOrder.finance?.couponDiscount ?? 0) > 0 && (
+              <View style={styles.savingsBanner}>
+                <Icon name="tag-outline" size={18} color="#15803D" />
+                <ThemeText style={styles.savingsBannerText}>
+                  You saved ₹{selectedOrder.finance!.couponDiscount!.toFixed(0)} on this order!
+                </ThemeText>
+                <View style={styles.savingsAmountBadge}>
+                  <ThemeText style={styles.savingsAmountText}>
+                    ₹{selectedOrder.finance!.couponDiscount!.toFixed(0)}
+                  </ThemeText>
+                </View>
+              </View>
+            )}
+
             <OrderProgress
               status={selectedOrder.status}
               orderCreationTime={selectedOrder.orderDate}
@@ -827,6 +859,7 @@
               preparationTime={vendorDetails?.preparationTime}
               orderMasterStatus={selectedOrder.orderMasterStatus}
               orderDate={selectedOrder.orderDate}
+              tracking={trackingInfo || selectedOrder.tracking}
             />
 
             {/* Shop Details Section */}
@@ -845,7 +878,7 @@
                   <ThemeText style={[styles.shopInfo, { color: getColor('subText') }]}>
                     {vendorDetails.description}
                   </ThemeText>
-                  {vendorDetails.phone && (
+                  {Boolean(vendorDetails.phone) && (
                     <View style={styles.contactRow}>
                       <ThemeText style={[styles.shopContact, { color: getColor('text') }]}>
                         Contact: {vendorDetails.phone}
@@ -860,7 +893,7 @@
                       </TouchableOpacity>
                     </View>
                   )}
-                  {vendorDetails.shopAddress && (
+                  {Boolean(vendorDetails.shopAddress) && (
                     <ThemeText style={[styles.shopAddress, { color: getColor('subText') }]}>
                       {vendorDetails.shopAddress.address}, {vendorDetails.shopAddress.city}
                     </ThemeText>
@@ -1310,6 +1343,35 @@
     modalButtonText: {
       fontFamily: Fonts.bold,
       fontSize: 15,
+    },
+    savingsBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#F0FDF4',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#BBF7D0',
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      marginBottom: 12,
+      gap: 8,
+    },
+    savingsBannerText: {
+      flex: 1,
+      fontFamily: Fonts.medium,
+      fontSize: 13,
+      color: '#15803D',
+    },
+    savingsAmountBadge: {
+      backgroundColor: '#22C55E',
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    savingsAmountText: {
+      color: '#FFF',
+      fontFamily: Fonts.bold,
+      fontSize: 12,
     },
     contactRow: {
       flexDirection: 'row',
