@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAddress, useAppStateRefresh, useConfig, usePages } from '../../hooks';
 import { useNetworkRecovery } from '../../hooks/useNetworkRecovery';
@@ -6,6 +6,7 @@ import { PermissionAndLocation } from '../../hooks/Permissions/useLocation';
 import { getAddressFromCoordinates } from '../../services/api/olaLocationService';
 import { getUserAddresses } from '../../services/localStorage/storage.service';
 import useAddressStore from '../../store/address/addressStore';
+import useConfigStore from '../../store/configStore';
 import useOrderStore from '../../store/cart/orderStore';
 import usePricingStore from '../../store/pricingStore';
 import useThemeStore from '../../store/themeStore';
@@ -17,47 +18,49 @@ import LocationRequiredModal from './LocationRequiredModal';
 import NoInternetOverlay from './NoInternetOverlay';
 import { HomeScreenSkeleton } from './skeleton';
 
-/**
- * Props for the AppInitializer component
- */
 interface AppInitializerProps {
-  /** Optional children to render after initialization is complete */
   locationData: PermissionAndLocation | null;
   children?: React.ReactNode;
 }
 
-/**
- * AppInitializer Component
- *
- * This component is responsible for bootstrapping the application by:
- * 1. Loading addresses from MMKV storage first
- * 2. Fetching essential data (vendors, addresses, config, theme)
- * 3. Initializing user's selected address based on various scenarios
- * 4. Managing loading and error states during initialization
- * 5. Providing retry functionality for failed initialization
- *
- * Initialization Flow:
- * - Load addresses from MMKV storage
- * - Parallel API calls for vendors, addresses (if logged in), config, and theme
- * - Address selection based on location permissions and saved addresses
- * - Graceful fallbacks for each service failure
- *
- * Address Selection Priority:
- * 1. Existing selected address (don't override)
- * 2. Reverse geocoded current location (if permission granted + GPS available)
- * 3. Default address from auth data (using defaultAddressId) when no GPS
- * 4. First saved address (if no defaultAddressId)
- * 5. No location set → open LocationRequiredModal (user must select; no default Pune/fallback)
- */
+type PersistStore = {
+  persist: {
+    hasHydrated: () => boolean;
+    onFinishHydration: (fn: () => void) => () => void;
+  };
+};
+
+function waitForHydration(): Promise<void> {
+  const stores: PersistStore[] = [useConfigStore, useVendorStore, useThemeStore, usePricingStore];
+  const pending = stores.filter(s => !s.persist.hasHydrated());
+  if (pending.length === 0) return Promise.resolve();
+  return Promise.all(
+    pending.map(
+      s =>
+        new Promise<void>(resolve => {
+          const unsub = s.persist.onFinishHydration(() => {
+            unsub();
+            resolve();
+          });
+        })
+    )
+  ).then(() => {});
+}
+
 const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData }) => {
-  // UI state
   const [isInitialized, setIsInitialized] = useState(false);
   const [initComplete, setInitComplete] = useState(false);
   const initializationRef = useRef(false);
   const prevAddressRef = useRef<Address | null>(null);
+  const warmStartRef = useRef(false);
 
-  // Store hooks for data fetching
-  const { fetchVendors, loading: vendorLoading, error: vendorError, setError } = useVendorStore();
+  const {
+    fetchVendors,
+    loading: vendorLoading,
+    error: vendorError,
+    setError,
+    invalidateCache: invalidateVendorCache,
+  } = useVendorStore();
   const {
     fetchAddresses,
     loading: addressLoading,
@@ -70,17 +73,13 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   const { fetchOrders } = useOrderStore();
   const { fetchPricing } = usePricingStore();
 
-  // Authentication and address selection
   const { setSelectedAddress, selectedAddress, authData } = useAuth();
   const isLoggedIn = Boolean(authData?.jwt);
 
-  // Auto-refresh when app comes back from background
   const refreshAppData = useCallback(async () => {
     if (!isLoggedIn) return;
     try {
-      // Refresh critical data when app comes back from background
       const vendorPromise = fetchVendors(selectedAddress?.coordinates || undefined).catch(() => {
-        // Do not surface vendor errors to global error UI when already initialized
         if (isInitialized) setError(null);
       });
 
@@ -126,7 +125,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
 
   useAppStateRefresh({
     onForeground: refreshAppData,
-    refreshThreshold: 120000, // Refresh after 2 minute in background
+    refreshThreshold: 120000,
     enabled: isLoggedIn && isInitialized,
   });
 
@@ -135,12 +134,9 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     enabled: isLoggedIn && isInitialized,
   });
 
-  // Get cached addresses once
   const cachedAddresses = isLoggedIn ? getUserAddresses() : undefined;
   const hasCachedAddresses = cachedAddresses && cachedAddresses.length > 0;
 
-  // Combined loading and error states for UI
-  // Exclude addressLoading if we have cached addresses (non-blocking API call)
   const isLoading =
     (!isInitialized && vendorLoading) ||
     (!initComplete && !hasCachedAddresses && addressLoading) ||
@@ -148,29 +144,16 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   const error = !isInitialized ? vendorError : null;
   const { longitude: currentLongitude, latitude: currentLatitude } = locationData?.location || {};
   const permissionStatus = locationData?.permission;
+
   const initializeSelectedAddress = useCallback(async (): Promise<void> => {
     try {
-      console.log('🔵 [AppInitializer] initializeSelectedAddress called');
-      console.log('🔵 [AppInitializer] permissionStatus:', permissionStatus);
-      console.log('🔵 [AppInitializer] currentLatitude:', currentLatitude, 'currentLongitude:', currentLongitude);
-      console.log('🔵 [AppInitializer] existing selectedAddress:', selectedAddress ? JSON.stringify({
-        addressID: selectedAddress.addressID,
-        city: selectedAddress.city,
-        state: selectedAddress.state,
-        addressLine1: selectedAddress.addressLine1,
-        tag: selectedAddress.tag,
-      }) : null);
-
       if (selectedAddress) {
-        console.log('🔵 [AppInitializer] selectedAddress already exists, skipping');
         return;
       }
 
       const addresses: Address[] = useAddressStore.getState().addresses as unknown as Address[];
 
       const applyCurrentLocationFallback = async () => {
-        console.log('🟡 [AppInitializer] applyCurrentLocationFallback called, coords:', currentLatitude, currentLongitude);
-        // Use current GPS coordinates if available
         if (currentLatitude && currentLongitude) {
           try {
             const components = await getAddressFromCoordinates({
@@ -196,9 +179,8 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
             };
             setSelectedAddress(currentAddress);
             return;
-          } catch (geocodeError) {
-            console.warn('Reverse geocoding failed in fallback:', geocodeError);
-            // Use coordinates without address details
+          } catch (_geocodeError) {
+            console.warn('Reverse geocoding failed in fallback:', _geocodeError);
             const gpsAddress: Address = {
               addressID: 'current-location',
               name: 'Current Location',
@@ -221,30 +203,21 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
           }
         }
 
-        // No GPS coordinates available — use first saved address if any
         if (addresses && addresses.length > 0) {
           setSelectedAddress(addresses[0]);
           return;
         }
 
-        // No location, no saved addresses — use default fallback location
         setSelectedAddress(DEFAULT_FALLBACK_ADDRESS);
       };
 
       if (permissionStatus === 'granted' && currentLatitude && currentLongitude) {
-        // Always default to reverse-geocoded current GPS location on launch
-        // when permission is granted. Saved addresses are never auto-selected
-        // over the user's actual current location — the user can explicitly
-        // switch to a saved one from the address selection modal.
         try {
-          console.log('🔵 [AppInitializer] Reverse geocoding for:', currentLatitude, currentLongitude);
           const components = await getAddressFromCoordinates({
             latitude: currentLatitude,
             longitude: currentLongitude,
           });
-          console.log('🔵 [AppInitializer] Geocode result:', JSON.stringify(components));
 
-          // If reverse geocoding didn't return useful city/state, use coordinates directly
           if (!components.city || components.city === 'unknown') {
             await applyCurrentLocationFallback();
             return;
@@ -269,12 +242,11 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
           };
           setSelectedAddress(currentAddress);
           return;
-        } catch (geocodeError) {
+        } catch (_geocodeError) {
           console.warn(
             'Failed to reverse geocode current location, using default config:',
-            geocodeError
+            _geocodeError
           );
-          // Reverse geocoding failed, use current location fallback
           await applyCurrentLocationFallback();
           return;
         }
@@ -283,8 +255,6 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
         addresses &&
         addresses.length > 0
       ) {
-        // Do not auto-select first/default saved address on new device.
-        // Provide the default location so it doesn't get stuck asking via modal.
         await applyCurrentLocationFallback();
         return;
       } else if (
@@ -312,15 +282,52 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   const initializeApp = useCallback(async (): Promise<void> => {
     if (initializationRef.current) return;
     initializationRef.current = true;
-    console.log('isLoggedIn in app initializer', selectedAddress);
+
     try {
+      // Wait for Zustand persist to finish rehydrating from MMKV
+      await waitForHydration();
+
+      const hasPersistedData =
+        useConfigStore.getState().hasConfig() && useVendorStore.getState().vendors.length > 0;
+
       let storedAddresses: Address[] = [];
-      // Step 1: Load addresses from MMKV storage first
       if (isLoggedIn) {
         storedAddresses = await loadAddressesFromStorage();
       }
 
-      // Step 2: Fetch config in parallel - use selectedAddress if available, otherwise use locationData
+      if (hasPersistedData) {
+        warmStartRef.current = true;
+        setInitComplete(true);
+        setIsInitialized(true);
+
+        // Address init + background revalidation — non-blocking
+        // selectedAddress is null here (AuthProvider restores it after this effect),
+        // so don't await geocoding — let the prevAddressRef effect handle it.
+        initializeSelectedAddress().catch(() => {});
+        Promise.allSettled([
+          fetchInitialConfig({
+            longitude:
+              selectedAddress?.coordinates?.longitude?.toString() ||
+              locationData?.location?.longitude?.toString() ||
+              String(DEFAULT_FALLBACK_COORDINATES.longitude),
+            latitude:
+              selectedAddress?.coordinates?.latitude?.toString() ||
+              locationData?.location?.latitude?.toString() ||
+              String(DEFAULT_FALLBACK_COORDINATES.latitude),
+          }),
+          isLoggedIn ? fetchAddresses() : Promise.resolve(),
+          fetchTheme(),
+          fetchPages(),
+          fetchPricing('FOOD'),
+          fetchPricing('GROCERY'),
+          isLoggedIn && authData?.jwt && authData?.phone
+            ? fetchOrders(authData.jwt, authData.phone, null, 5)
+            : Promise.resolve(),
+        ]).catch(() => {});
+        return;
+      }
+
+      // Cold start: no persisted data — sequential fetch with skeleton
       const configPromise = fetchInitialConfig({
         longitude:
           selectedAddress?.coordinates?.longitude?.toString() ||
@@ -331,36 +338,34 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
           locationData?.location?.latitude?.toString() ||
           String(DEFAULT_FALLBACK_COORDINATES.latitude),
       });
-      // Step 3: Handle address fetching based on MMKV storage state
+
       const addressPromise = isLoggedIn
         ? (async () => {
             if (!storedAddresses || storedAddresses.length === 0) {
-              // MMKV storage is empty, wait for API call to resolve
               await fetchAddresses();
             } else {
-              fetchAddresses().catch(() => {
-                // Silently handle API errors for non-blocking calls
-              });
+              fetchAddresses().catch(() => {});
             }
           })()
         : Promise.resolve();
 
       await Promise.allSettled([configPromise, addressPromise]);
 
-      // Step 4: Fetch theme, pages, and pricing configs
-      await Promise.allSettled([fetchTheme(), fetchPages(), fetchPricing('FOOD'), fetchPricing('GROCERY')]);
+      await Promise.allSettled([
+        fetchTheme(),
+        fetchPages(),
+        fetchPricing('FOOD'),
+        fetchPricing('GROCERY'),
+      ]);
 
-      // Step 5: Initialize selected address
       await initializeSelectedAddress();
 
-      // Step 6: Fetch orders if user is logged in
       if (isLoggedIn && authData?.jwt && authData?.phone) {
         await fetchOrders(authData.jwt, authData.phone, null, 5);
       }
 
       setInitComplete(true);
     } catch (e) {
-      // Silent catch; UI handles error states from stores
       console.error('app initializer initializeApp error', e);
     }
   }, [
@@ -393,15 +398,27 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     }
   }, [initializeApp, fetchVendors, selectedAddress?.coordinates, setError]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // Synchronous warm-start promotion — runs before first paint.
+    // If stores are already hydrated with cached data, mark initialized
+    // immediately so the skeleton never appears on screen.
+    if (
+      !isInitialized &&
+      useConfigStore.persist.hasHydrated() &&
+      useVendorStore.persist.hasHydrated() &&
+      useConfigStore.getState().config !== null &&
+      useVendorStore.getState().vendors.length > 0
+    ) {
+      warmStartRef.current = true;
+      setIsInitialized(true);
+      setInitComplete(true);
+    }
     initializeApp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initializeApp]);
 
   // Reactively set the current GPS location as the selected address the
   // moment location permission is granted and coordinates become available.
-  // This handles the case where initializeApp ran before locationData was
-  // populated (async permission + GPS lookup), which would otherwise leave
-  // selectedAddress null and pop the LocationRequiredModal.
   useEffect(() => {
     if (selectedAddress) return;
     if (permissionStatus !== 'granted') return;
@@ -467,19 +484,29 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     const curr = selectedAddress;
 
     if (!prev && curr) {
-      // null → address (first set) — re-fetch config + pages with correct coords, then vendors
       prevAddressRef.current = curr;
+
+      // On warm start, vendors are already cached — skip invalidation
+      // but still revalidate in background if TTL expired
+      if (warmStartRef.current) {
+        warmStartRef.current = false;
+        if (!isInitialized) setIsInitialized(true);
+        fetchVendors(curr.coordinates).catch(() => {});
+        return;
+      }
+
       (async () => {
         try {
+          useConfigStore.getState().invalidateCache();
           await fetchInitialConfig({
             latitude: curr.coordinates?.latitude?.toString(),
             longitude: curr.coordinates?.longitude?.toString(),
           });
-          // Re-fetch pages with updated regionId
           await fetchPages();
         } catch (e) {
           console.warn('Config/pages re-fetch on first address set failed:', e);
         }
+        invalidateVendorCache();
         fetchVendors(curr.coordinates).then(() => {
           setIsInitialized(true);
         });
@@ -490,8 +517,11 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     if (prev && curr && prev.addressID !== curr.addressID) {
       setIsInitialized(false);
       initializationRef.current = false;
+      useConfigStore.getState().invalidateCache();
+      invalidateVendorCache();
 
       initializeApp().then(() => {
+        invalidateVendorCache();
         fetchVendors(curr.coordinates).then(() => {
           setIsInitialized(true);
         });
@@ -499,14 +529,20 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     }
 
     prevAddressRef.current = curr;
-  }, [selectedAddress, initializeApp, fetchVendors, fetchInitialConfig, fetchPages]);
+  }, [
+    selectedAddress,
+    initializeApp,
+    fetchVendors,
+    fetchInitialConfig,
+    fetchPages,
+    invalidateVendorCache,
+    isInitialized,
+  ]);
 
-  // Show skeleton loader during initialization
   if (isLoading) {
     return <HomeScreenSkeleton />;
   }
 
-  // Show error state with retry option if initialization failed
   if (error) {
     return (
       <ErrorState
@@ -517,12 +553,6 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     );
   }
 
-  // Location not configured: show the location-required modal only if we
-  // genuinely can't auto-resolve a current location. Whenever permission
-  // is 'granted' we stay optimistic — coords may still be propagating from
-  // the permission re-fetch — and let the reactive effect above set
-  // selectedAddress as soon as coords arrive. This avoids the split-second
-  // modal flash between initComplete flipping and the effect completing.
   const canAutoResolveCurrentLocation = permissionStatus === 'granted';
   if (initComplete && !selectedAddress && !canAutoResolveCurrentLocation) {
     return (
@@ -533,11 +563,9 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     );
   }
   if (initComplete && !selectedAddress && canAutoResolveCurrentLocation) {
-    // Auto-resolve in flight — render children without the modal.
     return <>{children}</>;
   }
 
-  // Show main app content when initialization successful and location is set
   if (isInitialized) {
     return (
       <>
@@ -547,7 +575,6 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     );
   }
 
-  // Fallback/loading state while initializing
   return <HomeScreenSkeleton />;
 };
 

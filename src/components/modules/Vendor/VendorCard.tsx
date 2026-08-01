@@ -1,12 +1,11 @@
 import React from 'react';
 import {
   Dimensions,
-  Image,
-  ImageSourcePropType,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import CachedImage from '../../common/CachedImage';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
@@ -167,12 +166,7 @@ const VendorCard: React.FC<VendorCardProps> = ({
 
   const bannerUri = getCleanImageUri(vendor.banner as string);
   const logoUri = getCleanImageUri(vendor.logo as string);
-
-  const imageSource: ImageSourcePropType | undefined = bannerUri
-    ? { uri: bannerUri }
-    : logoUri
-      ? { uri: logoUri }
-      : undefined;
+  const imageUri = bannerUri || logoUri || undefined;
   return (
     <TouchableOpacity
       style={[styles.vendorCard, disabled && styles.vendorCardDisabled]}
@@ -194,7 +188,7 @@ const VendorCard: React.FC<VendorCardProps> = ({
             )}
           </View>
         )}
-        {imageSource && <Image source={imageSource} style={styles.vendorImage} />}
+        {imageUri && <CachedImage uri={imageUri} style={styles.vendorImage} />}
         {/* <TouchableOpacity style={styles.favoriteButton} onPress={() => onFavoritePress?.(vendor)}>
           <MaterialCommunityIcons
             name={_isFavorite ? 'heart' : 'heart-outline'}

@@ -6,13 +6,14 @@ import {
   Animated,
   Dimensions,
   FlatList,
-  Image,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import CachedImage from '../../common/CachedImage';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../../contexts/login/AuthProvider';
+import { storage } from '../../../services/localStorage/storage.service';
 import productsService from '../../../services/productsService';
 import useCartStore from '../../../store/cart/cartStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -62,6 +63,46 @@ const MOCK_VENDOR: Vendor = {
 
 const MOCK_IMAGE = 'https://loremflickr.com/320/240/pizza';
 
+const WIDGET_CACHE_TTL = 5 * 60 * 1000;
+const MMKV_PREFIX = 'vsw-cache-';
+
+interface WidgetCacheEntry {
+  categories: CategoryItem[];
+  products: Product[];
+  firstCategoryId: string;
+  ts: number;
+}
+
+const memCache = new Map<string, WidgetCacheEntry>();
+
+function getWidgetCache(shopId: string): WidgetCacheEntry | null {
+  const mem = memCache.get(shopId);
+  if (mem && Date.now() - mem.ts < WIDGET_CACHE_TTL) return mem;
+
+  try {
+    const raw = storage.getString(MMKV_PREFIX + shopId);
+    if (raw) {
+      const entry: WidgetCacheEntry = JSON.parse(raw);
+      if (Date.now() - entry.ts < WIDGET_CACHE_TTL) {
+        memCache.set(shopId, entry);
+        return entry;
+      }
+    }
+  } catch {
+    // corrupted — ignore
+  }
+  return null;
+}
+
+function setWidgetCache(shopId: string, entry: WidgetCacheEntry) {
+  memCache.set(shopId, entry);
+  try {
+    storage.set(MMKV_PREFIX + shopId, JSON.stringify(entry));
+  } catch {
+    // storage full — in-memory still works
+  }
+}
+
 // --- Extracted & Memoized Components ---
 
 interface CategoryRenderItemProps {
@@ -78,8 +119,8 @@ const CategoryRenderItem = React.memo(({ item, isSelected, onPress }: CategoryRe
         isSelected && { borderColor: '#003F66', borderWidth: 1.5 },
       ]}
     >
-      <Image
-        source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+      <CachedImage
+        uri={typeof item.image === 'object' && item.image?.uri ? item.image.uri : typeof item.image === 'string' ? item.image : undefined}
         style={styles.categoryImage}
       />
     </View>
@@ -107,7 +148,7 @@ const ProductRenderItem = React.memo(
   ({ item, quantity, onPress, onAddToCart, onIncrement, onDecrement }: ProductRenderItemProps) => (
     <TouchableOpacity style={styles.productCard} onPress={() => onPress(item)}>
       <View style={styles.productImageWrapper}>
-        <Image source={{ uri: item.imageUrl || MOCK_IMAGE }} style={styles.productImage} />
+        <CachedImage uri={item.imageUrl || MOCK_IMAGE} style={styles.productImage} />
         {item.discount > 0 && (
           <View style={styles.discountBadge}>
             <ThemeText style={styles.discountText}>{item.discount}% OFF</ThemeText>
@@ -330,12 +371,16 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   onPressExplore,
 }) => {
   const _theme = useTheme(); // kept for potential future use
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [fetchedProducts, setFetchedProducts] = React.useState<Product[]>([]);
-  const [fetchedCategories, setFetchedCategories] = React.useState<CategoryItem[]>([]);
+  const cached = !products && !categories ? getWidgetCache(vendor.shopId) : null;
 
-  // UI State for category switching
-  const [isSwitchingCat, setIsSwitchingCat] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(!cached);
+  const [fetchedProducts, setFetchedProducts] = React.useState<Product[]>(
+    cached?.products ?? []
+  );
+  const [fetchedCategories, setFetchedCategories] = React.useState<CategoryItem[]>(
+    cached?.categories ?? []
+  );
+
   const productsListRef = React.useRef<FlatList>(null);
 
   // Scroll indicators + haptic feedback on page change
@@ -374,7 +419,9 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
     [allCategories, activeProducts]
   );
 
-  const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = React.useState<string>(
+    cached?.firstCategoryId ?? 'all'
+  );
 
   // Auto-select first category if current selection has no products
   React.useEffect(() => {
@@ -403,11 +450,12 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   }, [activeProducts, selectedCategory]);
 
   React.useEffect(() => {
-    // If props are provided, don't fetch
     if (products && categories) {
       setIsLoading(false);
       return;
     }
+
+    if (getWidgetCache(vendor.shopId)) return;
 
     const loadData = async () => {
       if (!vendor?.shopId) return;
@@ -419,7 +467,6 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
           productsService.fetchAllProducts({ shopId: vendor.shopId, limit: 100 }),
         ]);
 
-        // Map API categories to UI model
         const mappedCategories = cats.map(c => ({
           id: c.id,
           name: c.name,
@@ -431,15 +478,22 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
 
         const prods = Array.isArray(prodsResponse) ? prodsResponse : prodsResponse.products || [];
 
-        setFetchedCategories(mappedCategories);
-        setFetchedProducts(prods);
-
-        // Select first category that has products
         const firstWithProducts = mappedCategories.find(cat =>
           prods.some((p: Product) => p.division === cat.id)
         );
+        const firstId = firstWithProducts?.id || 'all';
+
+        setWidgetCache(vendor.shopId, {
+          categories: mappedCategories,
+          products: prods,
+          firstCategoryId: firstId,
+          ts: Date.now(),
+        });
+
+        setFetchedCategories(mappedCategories);
+        setFetchedProducts(prods);
         if (firstWithProducts) {
-          setSelectedCategory(firstWithProducts.id);
+          setSelectedCategory(firstId);
         }
       } catch (err) {
         console.error('Failed to load vendor showcase data', err);
@@ -503,19 +557,11 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   const handleCategorySelect = useCallback(
     (categoryId: string) => {
       if (selectedCategory === categoryId) return;
-
-      setIsSwitchingCat(true);
       setSelectedCategory(categoryId);
 
-      // Reset scroll position
       if (productsListRef.current) {
         productsListRef.current.scrollToOffset({ offset: 0, animated: false });
       }
-
-      // Brief delay to show loading state
-      setTimeout(() => {
-        setIsSwitchingCat(false);
-      }, 500);
     },
     [selectedCategory]
   );
@@ -621,38 +667,30 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
           />
 
           {/* Products */}
-          {isSwitchingCat ? (
-            <View style={{ paddingTop: 8 }}>
-              <ProductRowSkeleton />
-            </View>
-          ) : (
-            <>
-              <FlatList
-                ref={productsListRef}
-                horizontal
-                data={displayedProducts}
-                renderItem={renderProductItem}
-                keyExtractor={(item, index) => `${item.sku}-${index}`}
-                showsHorizontalScrollIndicator={false}
-                style={styles.productsContainer}
-                contentContainerStyle={{ paddingRight: 10 }}
-                initialNumToRender={4}
-                maxToRenderPerBatch={4}
-                windowSize={3}
-                removeClippedSubviews={true}
-                onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: prodScrollX } } }], {
-                  useNativeDriver: false,
-                })}
-                scrollEventThrottle={16}
-              />
-              <ScrollDots
-                scrollX={prodScrollX}
-                itemWidth={152}
-                itemCount={displayedProducts.length}
-                visibleCount={2}
-              />
-            </>
-          )}
+          <FlatList
+            ref={productsListRef}
+            horizontal
+            data={displayedProducts}
+            renderItem={renderProductItem}
+            keyExtractor={(item, index) => `${item.sku}-${index}`}
+            showsHorizontalScrollIndicator={false}
+            style={styles.productsContainer}
+            contentContainerStyle={{ paddingRight: 10 }}
+            initialNumToRender={4}
+            maxToRenderPerBatch={4}
+            windowSize={3}
+            removeClippedSubviews={true}
+            onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: prodScrollX } } }], {
+              useNativeDriver: false,
+            })}
+            scrollEventThrottle={16}
+          />
+          <ScrollDots
+            scrollX={prodScrollX}
+            itemWidth={152}
+            itemCount={displayedProducts.length}
+            visibleCount={2}
+          />
         </View>
       )}
     </View>

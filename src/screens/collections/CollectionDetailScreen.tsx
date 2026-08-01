@@ -27,10 +27,37 @@ import { useAuth } from '../../contexts/login/AuthProvider';
 import { Collection, API_STORE_ID } from '../../data/collectionsData';
 import { RootStackParamList } from '../../routes/AppStack';
 import collectionsService, { CollectionCategoryApi } from '../../services/collectionsService';
+import { storage } from '../../services/localStorage/storage.service';
 import useCartStore from '../../store/cart/cartStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Product } from '../../types/product';
+
+const CD_CACHE_TTL = 5 * 60 * 1000;
+const CD_CACHE_PREFIX = 'cd-cache-';
+
+interface CDCacheEntry {
+  products: Product[];
+  categories: CollectionCategoryApi[];
+  ts: number;
+}
+
+function getCDCache(collectionId: string, shopId: string): CDCacheEntry | null {
+  try {
+    const raw = storage.getString(CD_CACHE_PREFIX + collectionId + '-' + shopId);
+    if (raw) {
+      const entry: CDCacheEntry = JSON.parse(raw);
+      if (Date.now() - entry.ts < CD_CACHE_TTL) return entry;
+    }
+  } catch {}
+  return null;
+}
+
+function setCDCache(collectionId: string, shopId: string, entry: CDCacheEntry) {
+  try {
+    storage.set(CD_CACHE_PREFIX + collectionId + '-' + shopId, JSON.stringify(entry));
+  } catch {}
+}
 
 interface CollectionDetailRouteParams {
   collection: Collection;
@@ -103,10 +130,11 @@ const CollectionDetailScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<TextInput>(null);
 
-  // Data state (from backend)
-  const [products, setProducts] = useState<Product[]>([]);
-  const [apiCategories, setApiCategories] = useState<CollectionCategoryApi[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Data state (from backend) — initialize from MMKV cache to avoid skeleton flash
+  const cached = useMemo(() => getCDCache(collection.id, collectionsVendorId), [collection.id, collectionsVendorId]);
+  const [products, setProducts] = useState<Product[]>(cached?.products ?? []);
+  const [apiCategories, setApiCategories] = useState<CollectionCategoryApi[]>(cached?.categories ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
 
   // Search bar animation
@@ -116,12 +144,16 @@ const CollectionDetailScreen: React.FC = () => {
   const hasAuth = useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
   const isVendorConfigured = useMemo(() => Boolean(collectionsVendorId), [collectionsVendorId]);
 
+  const hasCachedRef = useRef(!!cached);
+
   // Fetch products from backend
   const fetchData = useCallback(
     async (search?: string) => {
       if (!collectionsVendorId || !collection.id) return;
 
-      setLoading(true);
+      if (!hasCachedRef.current) {
+        setLoading(true);
+      }
       setError(null);
 
       try {
@@ -138,12 +170,20 @@ const CollectionDetailScreen: React.FC = () => {
         setProducts(response.products || []);
         if (!search) {
           setApiCategories(response.categories || []);
+          setCDCache(collection.id, collectionsVendorId, {
+            products: response.products || [],
+            categories: response.categories || [],
+            ts: Date.now(),
+          });
         }
       } catch (err) {
         console.error('[CollectionDetail] Fetch error:', err);
-        setError('Failed to load products');
+        if (!hasCachedRef.current) {
+          setError('Failed to load products');
+        }
       } finally {
         setLoading(false);
+        hasCachedRef.current = false;
       }
     },
     [collectionsVendorId, collection.id]
