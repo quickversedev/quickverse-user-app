@@ -6,7 +6,6 @@ import {
   Alert,
   Dimensions,
   FlatList,
-  Image,
   Platform,
   StyleSheet,
   Text,
@@ -15,7 +14,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Icons } from '../../../assets';
+import Icon from '@react-native-vector-icons/material-design-icons';
+import { ThemeText } from '../../../components/common/theme/ThemeText';
 import { useAddress } from '../../../hooks/useAddress';
 import { RootStackParamList } from '../../../routes/AppStack';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -26,28 +26,25 @@ const { width, height } = Dimensions.get('window');
 const AddressScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { getColor, getTypography, theme } = useTheme();
-  const { addresses, loading, fetchError, retryFetch, fetchAddresses, deleteAddress } = useAddress();
+  const { addresses, loading, fetchError, retryFetch, fetchAddresses, deleteAddress } =
+    useAddress();
   const insets = useSafeAreaInsets();
 
   const handleDelete = useCallback(
     (addr: import('../../../types/address').Address) => {
-      Alert.alert(
-        'Delete Address',
-        `Are you sure you want to delete "${addr.tag}" address?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              const result = await deleteAddress(addr.addressID);
-              if (!result.success) {
-                Alert.alert('Error', result.error?.message || 'Failed to delete address.');
-              }
-            },
+      Alert.alert('Delete Address', `Are you sure you want to delete "${addr.tag}" address?`, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await deleteAddress(addr.addressID);
+            if (!result.success) {
+              Alert.alert('Error', result.error?.message || 'Failed to delete address.');
+            }
           },
-        ]
-      );
+        },
+      ]);
     },
     [deleteAddress]
   );
@@ -65,51 +62,44 @@ const AddressScreen = () => {
       backgroundColor: getColor('background'),
     },
     header: {
-      backgroundColor: getColor('card'),
-      paddingTop: Platform.OS === 'ios' ? insets.top + 16 : insets.top + 8,
-      paddingBottom: 16,
-      paddingHorizontal: Math.max(16, width * 0.04),
-      borderBottomWidth: 1,
-      borderBottomColor: getColor('border'),
-      justifyContent: 'center',
-      ...Platform.select({
-        android: {
-          elevation: 2,
-        },
-        ios: {
-          shadowColor: theme.colors.shadow.color,
-          shadowOffset: theme.colors.shadow.offset,
-          shadowOpacity: theme.colors.shadow.opacity,
-          shadowRadius: theme.colors.shadow.radius,
-        },
-      }),
-    },
-    headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: getColor('border'),
+      backgroundColor: getColor('card'),
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: {
+        width: theme.colors.shadow.offset_width,
+        height: theme.colors.shadow.offset_height,
+      },
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
+      elevation: 4,
     },
-    headerSide: {
-      width: 40,
-      alignItems: 'flex-start',
+    backButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 12,
       justifyContent: 'center',
-      paddingVertical: 4,
-      paddingHorizontal: 4,
-    },
-    backIcon: {
-      width: 24,
-      height: 24,
-      resizeMode: 'contain',
-      tintColor: getColor('text'),
+      alignItems: 'center',
+      backgroundColor: getColor('background'),
+      marginRight: 16,
+      shadowColor: theme.colors.shadow.color,
+      shadowOffset: {
+        width: theme.colors.shadow.offset_width,
+        height: theme.colors.shadow.offset_height,
+      },
+      shadowOpacity: theme.colors.shadow.opacity,
+      shadowRadius: theme.colors.shadow.radius,
+      elevation: 2,
     },
     headerTitle: {
-      flex: 1,
-      fontSize: Math.min(getTypography('h1'), 24),
-      fontWeight: 'bold',
+      fontSize: 20,
+      fontFamily: 'BricolageGrotesque-Bold',
       color: getColor('text'),
-      textAlign: 'center',
-      includeFontPadding: false,
-      textAlignVertical: 'center',
+      flex: 1,
     },
     content: {
       flex: 1,
@@ -189,7 +179,7 @@ const AddressScreen = () => {
         },
         ios: {
           shadowColor: theme.colors.shadow.color,
-          shadowOffset: theme.colors.shadow.offset,
+          // shadowOffset: theme.colors.shadow.offset,
           shadowOpacity: theme.colors.shadow.opacity,
           shadowRadius: theme.colors.shadow.radius,
         },
@@ -238,23 +228,16 @@ const AddressScreen = () => {
       accessible={true}
       accessibilityLabel="Saved addresses screen"
     >
-      <View style={themedStyles.header}>
-        <View style={themedStyles.headerRow}>
-          <View style={themedStyles.headerSide}>
-            <TouchableOpacity onPress={handleBack}>
-              <Image source={Icons.backArrow} style={themedStyles.backIcon} />
-            </TouchableOpacity>
-          </View>
-          <Text
-            style={themedStyles.headerTitle}
-            accessible={true}
-            accessibilityRole="header"
-            accessibilityLabel="Saved addresses"
-          >
-            Saved Addresses
-          </Text>
-          <View style={themedStyles.headerSide} />
-        </View>
+      <View style={[themedStyles.header, { borderBottomColor: getColor('border') }]}>
+        <TouchableOpacity
+          style={[themedStyles.backButton, { backgroundColor: getColor('card') }]}
+          onPress={() => navigation.goBack()}
+        >
+          <Icon name="arrow-left" size={24} color={getColor('text')} />
+        </TouchableOpacity>
+        <ThemeText variant="h2" color={getColor('text')} style={themedStyles.headerTitle}>
+          Saved Addresses
+        </ThemeText>
       </View>
 
       <View style={themedStyles.content}>
@@ -297,7 +280,7 @@ const AddressScreen = () => {
               renderItem={({ item }) => (
                 <AddressCard
                   address={item}
-                  onEdit={(addr) => navigation.navigate('EditAddress', { address: addr })}
+                  onEdit={addr => navigation.navigate('EditAddress', { address: addr })}
                   onDelete={handleDelete}
                 />
               )}

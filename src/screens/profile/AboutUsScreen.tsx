@@ -1,15 +1,8 @@
+import Icon from '@react-native-vector-icons/material-design-icons';
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
-import {
-  Image,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from '@react-native-vector-icons/material-design-icons';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
@@ -25,13 +18,13 @@ const AboutUsScreen: React.FC = () => {
     },
     safeArea: {
       flex: 1,
-      paddingTop: Platform.OS === 'android' ? 25 : 0,
+      // paddingTop: Platform.OS === 'android' ? 25 : 0,
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 20,
-      paddingVertical: 16,
+      paddingVertical: 12,
       borderBottomWidth: 1,
       borderBottomColor: getColor('border'),
       backgroundColor: getColor('card'),
@@ -62,8 +55,8 @@ const AboutUsScreen: React.FC = () => {
       elevation: 2,
     },
     headerTitle: {
-      fontSize: getTypography('h2'),
-      fontWeight: 'bold',
+      fontSize: 20,
+      fontFamily: 'BricolageGrotesque-Bold',
       color: getColor('text'),
       flex: 1,
     },
