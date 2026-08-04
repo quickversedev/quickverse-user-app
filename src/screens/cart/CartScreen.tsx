@@ -23,6 +23,7 @@ import {
   CouponSection,
   PaymentOptions,
   PaymentSummary,
+  TotalSavingsCard,
 } from '../../components/modules/Cart';
 import {
   AddressSelectionModal,
@@ -375,6 +376,29 @@ const CartScreen: React.FC = () => {
   useEffect(() => {
     handleCalculateCheckoutSummary();
   }, [handleCalculateCheckoutSummary]);
+
+  const totalSavingsAmount = useMemo(() => {
+    if (checkoutSummary?.totalSavings !== undefined && checkoutSummary?.totalSavings !== null) {
+      return Number(checkoutSummary.totalSavings);
+    }
+    const couponDiscount = Number(checkoutSummary?.couponDiscount ?? 0);
+    const actualFee = Number(checkoutSummary?.actualDeliveryFee ?? 0);
+    const fee = Number(checkoutSummary?.deliveryFee ?? 0);
+    const freeDeliverySavings = checkoutSummary?.isFreeDelivery ? actualFee : Math.max(0, actualFee - fee);
+
+    let itemSavings = 0;
+    if (cartItems && Array.isArray(cartItems)) {
+      cartItems.forEach((item: any) => {
+        const mrp = Number(item?.mrp || item?.originalPrice || item?.skuDetails?.mrp || 0);
+        const price = Number(item?.price || item?.skuDetails?.price || 0);
+        if (mrp > price) {
+          itemSavings += (mrp - price) * Number(item.quantity || 1);
+        }
+      });
+    }
+
+    return couponDiscount + freeDeliverySavings + itemSavings;
+  }, [checkoutSummary, cartItems]);
 
   interface OrderResponse {
     payment_session_id: string;
@@ -879,6 +903,12 @@ const CartScreen: React.FC = () => {
             onRemoveDeliveryCoupon={() => setSelectedDeliveryCoupon(null)}
           />
         </AnimatedCard>
+
+        {totalSavingsAmount > 0 && (
+          <AnimatedCard delay={150}>
+            <TotalSavingsCard savings={totalSavingsAmount} />
+          </AnimatedCard>
+        )}
 
         <AnimatedCard delay={200}>
           <PaymentOptions

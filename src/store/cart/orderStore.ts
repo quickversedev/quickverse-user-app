@@ -311,6 +311,23 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         finance: apiOrder.finance || undefined,
         review: apiOrder.review || null,
         complaint: apiOrder.complaint || null,
+        tracking: apiOrder.tracking || (apiOrder.deliveryPartnerDetails || apiOrder.deliveryPartner || apiOrder.riderDetail || apiOrder.rider || apiOrder.deliveryPartnerName ? {
+          orderMasterStatus: apiOrder.orderMasterStatus || null,
+          riderName: apiOrder.deliveryPartnerDetails?.name || apiOrder.deliveryPartner?.name || apiOrder.riderDetail?.name || apiOrder.rider?.name || apiOrder.deliveryPartnerName || null,
+          riderPhone: String(apiOrder.deliveryPartnerDetails?.mobileNumber || apiOrder.deliveryPartnerDetails?.phone || apiOrder.deliveryPartner?.mobileNumber || apiOrder.deliveryPartner?.phone || apiOrder.riderDetail?.mobileNumber || apiOrder.rider?.phone || apiOrder.deliveryPartnerPhone || ''),
+          riderProfilePicture: apiOrder.deliveryPartnerDetails?.profilePicture || apiOrder.deliveryPartner?.profilePicture || apiOrder.riderDetail?.profilePicture || apiOrder.rider?.profilePicture || null,
+          riderLatitude: apiOrder.deliveryPartnerDetails?.latitude || apiOrder.deliveryPartner?.latitude || apiOrder.riderDetail?.latitude || apiOrder.rider?.latitude || null,
+          riderLongitude: apiOrder.deliveryPartnerDetails?.longitude || apiOrder.deliveryPartner?.longitude || apiOrder.riderDetail?.longitude || apiOrder.rider?.longitude || null,
+          shopName: apiOrder.shopName || null,
+          shopLatitude: null,
+          shopLongitude: null,
+          preparationTime: apiOrder.preparationTime ? `${apiOrder.preparationTime} mins` : null,
+          assignedAt: apiOrder.assignedAt || null,
+          arrivedAtStoreAt: apiOrder.arrivedAtStoreAt || null,
+          pickedUpAt: apiOrder.pickedUpAt || null,
+          reachedLocationAt: apiOrder.reachedLocationAt || null,
+          deliveredAt: apiOrder.deliveredAt || null,
+        } : null),
       };
 
       set(state => ({

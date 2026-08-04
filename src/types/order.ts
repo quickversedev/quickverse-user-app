@@ -84,6 +84,25 @@ export interface Order {
   finance: OrderFinance | null;
   complaint: any;
   review: any;
+  tracking?: OrderTrackingInfo | null;
+}
+
+export interface OrderTrackingInfo {
+  orderMasterStatus: string | null;
+  riderName: string | null;
+  riderPhone: string | null;
+  riderProfilePicture: string | null;
+  riderLatitude: string | null;
+  riderLongitude: string | null;
+  shopName: string | null;
+  shopLatitude: string | null;
+  shopLongitude: string | null;
+  preparationTime: string | null;
+  assignedAt: string | null;
+  arrivedAtStoreAt: string | null;
+  pickedUpAt: string | null;
+  reachedLocationAt: string | null;
+  deliveredAt: string | null;
 }
 
 export interface OrderFilters {

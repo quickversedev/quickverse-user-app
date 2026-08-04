@@ -185,6 +185,45 @@ const useVendorStore = create<VendorStoreWithCache>()(
           });
           return storeStatus.isOpen && vendor.storeEnabled;
         });
+      }
+    } catch (err: unknown) {
+      const error: any = err;
+
+      // Silently ignore cancelled requests (user navigated away)
+      if (error.isCancelled || error.code === 'CANCELLED' || error.name === 'AbortError') {
+        return;
+      }
+
+      console.error('[VendorStore] API Error Details:', {
+        message: error.message,
+        status: error.status,
+        code: error.code,
+        endpoint: error.apiEndpoint,
+        responsedata: error.response?.data || 'No data',
+      });
+
+      // Only update error state if this is still the current request
+      if (requestId === currentRequestId) {
+        set({ error: 'Failed to fetch vendors', loading: false });
+      }
+    } finally {
+      // Clear pending request if this was the current one
+      if (requestId === currentRequestId) {
+        pendingRequest = null;
+      }
+    }
+  },
+
+  fetchVendorById: async (shopId: string) => {
+    set({ loading: true, error: null });
+
+    if (USE_VENDOR_MOCKS) {
+      setTimeout(() => {
+        const vendor = mockVendors.find((v: Vendor) => v.shopId === shopId);
+        if (vendor) {
+          set({ selectedVendor: vendor, loading: false });
+        } else {
+          set({ error: 'Vendor not found', loading: false });
       },
 
       getVendorsByCategory: (category: string) => {
