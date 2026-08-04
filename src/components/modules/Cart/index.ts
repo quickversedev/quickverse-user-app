@@ -6,4 +6,5 @@ export { default as CouponSection } from './CouponSection';
 export { default as PaymentOptions } from './PaymentOptions';
 export { default as PaymentSummary } from './PaymentSummary';
 export { default as SuggestedItems } from './SuggestedItems';
+export { default as TotalSavingsCard } from './TotalSavingsCard';
 export { default as VendorPill } from './VendorPill';
