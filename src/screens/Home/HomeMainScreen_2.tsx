@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useMemo } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 
@@ -14,14 +14,24 @@ import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
 import CategoryCards from './components/CategoryCards';
 import FastPicks from './components/FastPicks';
+import HomeCategoryStrip from './components/HomeCategoryStrip';
+import HomeGradientBand from './components/HomeGradientBand';
 import HomeHeader from './components/HomeHeader';
 import HomePromotionCarousel from './components/HomePromotionCarousel';
 import TopStoresNearYou from './components/TopStoresNearYou';
+import { DEFAULT_HOME_CATEGORY_ID, type HomeCategoryId } from './homeCategories';
 
 const HomeMainScreen_2 = React.memo(() => {
   const { theme } = useTheme();
   const { getVendorsNearLocation } = useVendorStore();
   const { selectedAddress } = useAuth();
+
+  /**
+   * Drives the gradient band only — selection is presentation-only for now.
+   * See the note at the top of homeCategories.ts.
+   */
+  const [activeCategoryId, setActiveCategoryId] =
+    useState<HomeCategoryId>(DEFAULT_HOME_CATEGORY_ID);
 
   // Auto-refresh vendors when app comes back from background
   useAppStateRefresh({
@@ -58,24 +68,47 @@ const HomeMainScreen_2 = React.memo(() => {
     navigation.navigate('Search');
   }, [navigation]);
 
-  return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <HomeHeader />
+  /**
+   * No combined-vendor screen exists, and this section deliberately mixes Food and
+   * Grocery, so there is no single category to pass. Explore is the closest existing
+   * destination — swap this if a dedicated listing screen gets built.
+   */
+  const handleViewAllVendors = useCallback(() => {
+    navigation.navigate('MainApp', { screen: 'Explore' });
+  }, [navigation]);
 
+  return (
+    /**
+     * edges={['bottom']} — the top inset is applied by HomeGradientBand instead, so the
+     * gradient reaches pixel 0 behind a translucent status bar rather than being clipped
+     * below a flat safe-area strip.
+     */
+    <SafeAreaView
+      edges={['bottom']}
+      style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
+    >
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: hasFloatingCards ? 130 : 50 }}
         >
-          <View style={styles.carouselContainer}>
-            <HomePromotionCarousel />
-          </View>
+          <HomeGradientBand activeId={activeCategoryId}>
+            <HomeHeader />
 
-          <View style={styles.searchContainer}>
-            <SearchBar onPress={handleSearchPress} />
-          </View>
+            <View style={styles.searchContainer}>
+              <SearchBar onPress={handleSearchPress} />
+            </View>
 
-          <TopStoresNearYou />
+            <HomeCategoryStrip activeId={activeCategoryId} onSelect={setActiveCategoryId} />
+
+            <View style={styles.carouselContainer}>
+              <HomePromotionCarousel />
+            </View>
+
+            <TopStoresNearYou onViewAll={handleViewAllVendors} />
+          </HomeGradientBand>
 
           <View style={styles.cardsContainer}>
             <CategoryCards />
@@ -101,14 +134,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   carouselContainer: {
-    marginTop: 6,
-    marginBottom: 10,
+    marginTop: 0,
+    marginBottom: 2,
   },
   searchContainer: {
     paddingHorizontal: 16,
     marginBottom: 14,
   },
-  cardsContainer: {},
+  cardsContainer: {
+    marginTop: 2,
+  },
 });
 
 export default HomeMainScreen_2;

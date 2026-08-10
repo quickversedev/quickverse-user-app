@@ -6,6 +6,9 @@ export interface Promotion {
   backgroundColor: string;
   bannerImage: boolean;
   imageURL: string | number;
+  /** Sent by the server's PromotionResponseDTO; used as the carousel's React key. */
+  promoId?: number;
+  sequence?: number;
 }
 
 export interface Page {

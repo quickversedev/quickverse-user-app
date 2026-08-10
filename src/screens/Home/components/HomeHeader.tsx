@@ -3,11 +3,20 @@ import { StyleSheet, View } from 'react-native';
 import { LocationSelector } from '../../../components/modules/Header/LocationSelector';
 import { ProfileIcon } from '../../../components/modules/Header/ProfileIcon';
 
+/**
+ * Placeholder delivery ETA shown in place of the greeting.
+ *
+ * TODO: there is no ETA source on this screen today — vendor.preparationTime is
+ * per-vendor and only reaches TopStoresNearYou. Replace this with a real value
+ * (nearest-vendor prep time, or a server-provided zone ETA) when one exists.
+ */
+const DELIVERY_ETA_LABEL = '20 mins';
+
 const HomeHeader = () => {
   return (
     <View style={styles.container}>
-      <LocationSelector />
-      <ProfileIcon />
+      <LocationSelector titleOverride={DELIVERY_ETA_LABEL} />
+      <ProfileIcon variant="avatar" />
     </View>
   );
 };

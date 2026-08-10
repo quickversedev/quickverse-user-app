@@ -107,11 +107,11 @@ export const HomeScreenSkeleton: React.FC = () => {
     locationText: {
       gap: 6,
     },
-    // Match HomeMainScreen_2 carouselContainer marginTop:10, marginBottom:18
-    // plus HomePromotionCarousel inner paddingVertical:6 → visual 24px gaps
+    // Match HomeMainScreen_2 carouselContainer marginTop:0, marginBottom:2
+    // plus HomePromotionCarousel inner paddingVertical 2 + 4 → visual 6px gaps
     carouselContainer: {
-      marginTop: 10,
-      marginBottom: 18,
+      marginTop: 2,
+      marginBottom: 6,
       paddingHorizontal: 16,
     },
     bannerShadowWrap: {
@@ -128,6 +128,17 @@ export const HomeScreenSkeleton: React.FC = () => {
       alignItems: 'center',
       gap: 6,
       marginTop: 10,
+    },
+    // Mirrors HomeCategoryStrip: 6 chips, 16px gutters, 18px gap
+    categoryStrip: {
+      flexDirection: 'row',
+      paddingHorizontal: 16,
+      gap: 18,
+      marginBottom: 14,
+    },
+    categoryChip: {
+      width: 56,
+      alignItems: 'center',
     },
     searchContainer: {
       paddingHorizontal: 16,
@@ -184,6 +195,21 @@ export const HomeScreenSkeleton: React.FC = () => {
           <S width={40} height={40} borderRadius={20} />
         </View>
 
+        {/* Search bar — sits directly under the header, above the carousel */}
+        <View style={styles.searchContainer}>
+          <S width={width - 32} height={48} borderRadius={24} />
+        </View>
+
+        {/* Category strip */}
+        <View style={styles.categoryStrip}>
+          {[0, 1, 2, 3, 4, 5].map(i => (
+            <View key={i} style={styles.categoryChip}>
+              <S width={34} height={34} borderRadius={10} />
+              <S width={36} height={9} borderRadius={3} style={{ marginTop: 5 }} />
+            </View>
+          ))}
+        </View>
+
         {/* Promotion carousel banner with page dots */}
         <View style={styles.carouselContainer}>
           <View style={styles.bannerShadowWrap}>
@@ -194,11 +220,6 @@ export const HomeScreenSkeleton: React.FC = () => {
             <S width={6} height={6} borderRadius={3} />
             <S width={6} height={6} borderRadius={3} />
           </View>
-        </View>
-
-        {/* Search bar */}
-        <View style={styles.searchContainer}>
-          <S width={width - 32} height={48} borderRadius={24} />
         </View>
 
         {/* Category cards with inner text placeholders */}

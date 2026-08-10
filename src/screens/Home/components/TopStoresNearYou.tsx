@@ -61,7 +61,12 @@ const StoreItem = React.memo(
 
 StoreItem.displayName = 'StoreItem';
 
-const TopStoresNearYou = () => {
+interface TopStoresNearYouProps {
+  /** Renders the "View all" affordance when provided. */
+  onViewAll?: () => void;
+}
+
+const TopStoresNearYou = ({ onViewAll }: TopStoresNearYouProps) => {
   const navigation = useNavigation<AppNavigationProp>();
   const { theme } = useTheme();
   const { selectedAddress } = useAuth();
@@ -77,7 +82,11 @@ const TopStoresNearYou = () => {
   const topVendors = useMemo(() => {
     const active = vendors.filter(v => {
       if (v.storeEnabled === false || v.storeActive === false) return false;
-      return isStoreOpen({ openingTime: v.openingTime, closingTime: v.closingTime, storeActive: v.storeActive }).isOpen;
+      return isStoreOpen({
+        openingTime: v.openingTime,
+        closingTime: v.closingTime,
+        storeActive: v.storeActive,
+      }).isOpen;
     });
     const userLat = selectedAddress?.coordinates?.latitude;
     const userLon = selectedAddress?.coordinates?.longitude;
@@ -87,12 +96,20 @@ const TopStoresNearYou = () => {
       const aLon = a.coordinates?.longitude ?? a.location?.coordinates?.[0];
       const bLat = b.coordinates?.latitude ?? b.location?.coordinates?.[1];
       const bLon = b.coordinates?.longitude ?? b.location?.coordinates?.[0];
-      const aDist = aLat != null && aLon != null ? getDistanceInKm(userLat, userLon, aLat, aLon) : Infinity;
-      const bDist = bLat != null && bLon != null ? getDistanceInKm(userLat, userLon, bLat, bLon) : Infinity;
+      const aDist =
+        aLat != null && aLon != null ? getDistanceInKm(userLat, userLon, aLat, aLon) : Infinity;
+      const bDist =
+        bLat != null && bLon != null ? getDistanceInKm(userLat, userLon, bLat, bLon) : Infinity;
       return aDist - bDist;
     };
-    const food = active.filter(v => v.category === 'Food').sort(byDistance).slice(0, 2);
-    const grocery = active.filter(v => v.category === 'Grocery').sort(byDistance).slice(0, 2);
+    const food = active
+      .filter(v => v.category === 'Food')
+      .sort(byDistance)
+      .slice(0, 2);
+    const grocery = active
+      .filter(v => v.category === 'Grocery')
+      .sort(byDistance)
+      .slice(0, 2);
     return [...food, ...grocery];
   }, [vendors, selectedAddress?.coordinates?.latitude, selectedAddress?.coordinates?.longitude]);
 
@@ -104,9 +121,16 @@ const TopStoresNearYou = () => {
 
   return (
     <View style={styles.container}>
-      <ThemeText style={[styles.sectionTitle, { color: theme.colors.text }]}>
-        Top Stores Near You
-      </ThemeText>
+      <View style={styles.titleRow}>
+        <ThemeText style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          Featured Vendors
+        </ThemeText>
+        {onViewAll ? (
+          <TouchableOpacity onPress={onViewAll} activeOpacity={0.7} accessibilityRole="button">
+            <ThemeText style={styles.viewAll}>View all</ThemeText>
+          </TouchableOpacity>
+        ) : null}
+      </View>
       <View style={styles.listContent}>
         {topVendors.map(vendor => (
           <StoreItem key={vendor.shopId} vendor={vendor} onPress={handlePress} />
@@ -118,13 +142,23 @@ const TopStoresNearYou = () => {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 14,
+    marginBottom: 6,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    paddingHorizontal: 16,
-    marginBottom: 8,
+  },
+  viewAll: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#111827',
   },
   listContent: {
     flexDirection: 'row',

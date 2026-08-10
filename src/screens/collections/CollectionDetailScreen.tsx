@@ -658,15 +658,12 @@ const CollectionDetailScreen: React.FC = () => {
     [getColor, getTypography]
   );
 
-  const safeAreaTop = useMemo(
-    () =>
-      Platform.select({
-        ios: 0,
-        android: StatusBar.currentHeight || 0,
-        default: 0,
-      }),
-    []
-  );
+  /**
+   * With edgeToEdgeEnabled=true the wrapping SafeAreaView reports a real top inset on
+   * Android, so the old manual StatusBar.currentHeight padding would double up. Kept as
+   * 0 rather than deleted so the style objects below stay untouched.
+   */
+  const safeAreaTop = 0;
 
   const keyExtractor = useCallback((item: RowProductListItem, idx: number) => {
     if (item.type === 'header') return `header-${item.category.id}`;

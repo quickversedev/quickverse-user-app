@@ -31,10 +31,16 @@ export const Route = () => {
 
   return (
     <>
+      {/*
+        translucent + transparent: with edgeToEdgeEnabled=true the system bar is always
+        transparent and `backgroundColor` is ignored, so setting it here only created a
+        second, conflicting regime. Screens that need their own bar treatment (Home)
+        render their own <StatusBar/> later in the tree, which wins.
+      */}
       <StatusBar
         barStyle={isDarkBackground ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundColor}
-        translucent={false}
+        backgroundColor="transparent"
+        translucent
       />
       <ForceUpdateChecker>
         {authData || skipUserLogin ? <AppBootstrap /> : <AuthStack />}

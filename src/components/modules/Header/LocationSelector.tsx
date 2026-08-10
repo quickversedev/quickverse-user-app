@@ -7,9 +7,17 @@ import { useTheme } from '../../../theme/ThemeContext';
 import type { Address } from '../../../types/address';
 import { ThemeText } from '../../common/theme/ThemeText';
 import { AddressSelectionModal } from './AddressSelectionModal';
-import MapIcon from '../../../assets/svg/homeHeader-mapIcon.svg';
+import MapIcon from '../../../assets/svg/header/location-pin.svg';
 
-export const LocationSelector = () => {
+interface LocationSelectorProps {
+  /**
+   * Replaces the "Hey, {name}" greeting with arbitrary text — the home screen passes
+   * a delivery ETA here. Omit to keep the greeting (Header.tsx relies on that).
+   */
+  titleOverride?: string;
+}
+
+export const LocationSelector = ({ titleOverride }: LocationSelectorProps = {}) => {
   const { theme } = useTheme();
   const { selectedAddress, setSelectedAddress, authData } = useAuth();
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -100,7 +108,7 @@ export const LocationSelector = () => {
         <MapIcon width={24} height={24} style={styles.icon} />
         <View style={styles.textContainer}>
           <ThemeText variant="body" style={styles.greeting}>
-            {getDisplayName()}
+            {titleOverride ?? getDisplayName()}
           </ThemeText>
           <View style={styles.addressRow}>
             <ThemeText variant="caption" color={theme.colors.subText} style={styles.address}>

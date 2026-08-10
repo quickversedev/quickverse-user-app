@@ -143,11 +143,12 @@ const HomePromotionCarousel = () => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 8,
+    paddingVertical: 2,
   },
   bannerScrollContainer: {
     paddingHorizontal: SIDE_PADDING,
-    paddingVertical: 6,
+    // Kept non-zero so the banner card's drop shadow isn't clipped.
+    paddingVertical: 4,
   },
   bannerShadow: {
     width: BANNER_WIDTH,
