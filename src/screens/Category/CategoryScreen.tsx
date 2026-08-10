@@ -29,6 +29,7 @@ import { Vendor } from '../../types/vendor';
 import PromotionCarousel from '../Home/components/PromotionCarousel';
 import CollectionsGrid from './components/CollectionsGrid';
 import CollectionsGridSkeleton from './components/CollectionsGridSkeleton';
+import QuickSearchStrip from './components/QuickSearchStrip';
 
 type CategoryScreenRouteProp = RouteProp<RootStackParamList, 'Category'>;
 
@@ -112,9 +113,25 @@ const CategoryScreen = () => {
     [getVendorById, vendors, navigation]
   );
 
+  const restrictCategory: 'Food' | 'Grocery' = isGrocery ? 'Grocery' : 'Food';
+
   const handleSearchPress = React.useCallback(() => {
-    navigation.navigate('Search', { restrictCategory: isGrocery ? 'Grocery' : 'Food' });
-  }, [navigation, isGrocery]);
+    navigation.navigate('Search', { restrictCategory });
+  }, [navigation, restrictCategory]);
+
+  /**
+   * Quick Search chip tap. Sends restrictCategory alongside the query — it is
+   * threaded through several filters in useSearch, so without it a Grocery
+   * "Bread" chip would surface bakery restaurants and vice versa.
+   * useCallback is required, not stylistic: headerElement is rebuilt on every
+   * render, and a fresh handler would defeat QuickSearchStrip's React.memo.
+   */
+  const handleQuickSearchSelect = React.useCallback(
+    (query: string) => {
+      navigation.navigate('Search', { restrictCategory, query });
+    },
+    [navigation, restrictCategory]
+  );
 
   const navigateToOtherCategory = React.useCallback(() => {
     const otherCategory = isGrocery ? 'Food' : 'Grocery';
@@ -138,6 +155,9 @@ const CategoryScreen = () => {
           />
         </View>
       </View>
+
+      {/* Quick Search keyword chips */}
+      <QuickSearchStrip category={restrictCategory} onSelect={handleQuickSearchSelect} />
 
       {/* Promo Banners */}
       <View style={styles.promoContainer}>

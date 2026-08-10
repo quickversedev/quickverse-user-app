@@ -21,6 +21,8 @@ const SearchScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<RootStackParamList, 'Search'>>();
   const restrictCategory = route.params?.restrictCategory;
+  /** Set by the CategoryScreen Quick Search chips — runs a search on arrival. */
+  const presetQuery = route.params?.query;
 
   const {
     searchQuery,
@@ -106,11 +108,34 @@ const SearchScreen: React.FC = () => {
     },
   });
 
-  const handleSearchPress = async (searchText: string) => {
-    setSearchQuery(searchText);
-    await searchOnSuggestionSelect(searchText);
-    addSearch(searchText);
-  };
+  const handleSearchPress = React.useCallback(
+    async (searchText: string) => {
+      setSearchQuery(searchText);
+      await searchOnSuggestionSelect(searchText);
+      addSearch(searchText);
+    },
+    [setSearchQuery, searchOnSuggestionSelect, addSearch]
+  );
+
+  /**
+   * Run the Quick Search keyword once on arrival.
+   *
+   * The guard is keyed on the query VALUE rather than a boolean: navigating to
+   * Search while it is already mounted updates params in place without
+   * remounting, so a boolean would permanently swallow every later keyword.
+   * It is set before the await so React StrictMode's double-invoke still fires
+   * a single search. Clearing the input cannot re-trigger this — clearSearch
+   * only touches hook state, leaving route.params.query untouched.
+   */
+  const consumedQueryRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    const query = presetQuery?.trim();
+    if (!query || consumedQueryRef.current === query) return;
+
+    consumedQueryRef.current = query;
+    void handleSearchPress(query);
+  }, [presetQuery, handleSearchPress]);
 
   const handleSearchSubmit = async () => {
     if (searchQuery.trim()) {
@@ -156,6 +181,9 @@ const SearchScreen: React.FC = () => {
         onSuggestionPress={handleSearchPress}
         onClearSearch={handleClearSearch}
         onSubmitEditing={handleSearchSubmit}
+        // Arriving from a Quick Search chip already has results — focusing would
+        // open the suggestion dropdown over them and raise the keyboard.
+        autoFocus={!presetQuery}
       />
 
       <ScrollView

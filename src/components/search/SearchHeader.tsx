@@ -19,6 +19,13 @@ interface SearchHeaderProps {
   onClearSearch?: () => void;
   onSubmitEditing?: () => void;
   placeholder?: string;
+  /**
+   * Focus the input on mount. Defaults to true (the normal "user tapped the
+   * search bar" path). Pass false when arriving with results already on screen —
+   * programmatic focus fires onFocus, which opens the suggestion dropdown over
+   * those results and raises the keyboard.
+   */
+  autoFocus?: boolean;
 }
 
 const SearchHeader: React.FC<SearchHeaderProps> = ({
@@ -28,6 +35,7 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
   onClearSearch,
   onSubmitEditing,
   placeholder = 'Search for vendors and products...',
+  autoFocus = true,
 }) => {
   const { getColor } = useTheme();
   const navigation = useNavigation();
@@ -40,12 +48,14 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
 
   // Auto-focus the search input when component mounts
   useEffect(() => {
+    if (!autoFocus) return;
+
     const timer = setTimeout(() => {
       searchInputRef.current?.focus();
     }, 100);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [autoFocus]);
 
   const handleBackPress = () => {
     navigation.goBack();

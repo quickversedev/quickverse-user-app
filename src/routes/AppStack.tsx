@@ -64,7 +64,8 @@ export type RootStackParamList = {
     onApplyDelivery?: (coupon: any) => void;
   };
 
-  Search: { restrictCategory?: 'Food' | 'Grocery' } | undefined;
+  /** `query` pre-runs a search on arrival — used by the Quick Search strip. */
+  Search: { restrictCategory?: 'Food' | 'Grocery'; query?: string } | undefined;
   Address: undefined;
   AddAddress: { source?: 'modal'; screen?: string } | undefined;
   EditAddress: { address: import('../types/address').Address };
