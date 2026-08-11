@@ -21,6 +21,12 @@ interface SuggestedItem {
 interface SuggestedItemsProps {
   categories?: string; // Comma-separated categories
   products?: Product[]; // Direct products to show
+  /**
+   * SKUs to keep out of the suggestions — the product detail screen passes the
+   * product being viewed (and its selected variant), which the category lookup
+   * would otherwise return as a suggestion for itself.
+   */
+  excludeSkus?: string[];
   onItemPress: (item: SuggestedItem) => void;
   onAdd: (item: SuggestedItem) => void;
   onIncrement: (item: SuggestedItem) => void;
@@ -31,6 +37,7 @@ interface SuggestedItemsProps {
 const SuggestedItems: React.FC<SuggestedItemsProps> = ({
   categories,
   products,
+  excludeSkus,
   onItemPress,
   onAdd,
   onIncrement,
@@ -48,37 +55,48 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
     const activeCart = activeCartId ? carts[activeCartId] : null;
     const cartProducts = activeCart?.products || {};
 
+    // Filtered before slicing, so excluding an item doesn't shrink the row to 9.
+    const isExcluded = (sku: string) => (excludeSkus ? excludeSkus.includes(sku) : false);
+
     if (products && products.length > 0) {
-      const fromProducts: SuggestedItem[] = products.slice(0, 10).map(p => ({
-        id: p.sku,
-        name: p.name,
-        price: p.sellingPrice,
-        mrp: p.mrp,
-        rating: (p.rating as number) || 4.5,
-        image: (p.imageUrl as unknown as number) || 0,
-        quantity: cartProducts[p.sku]?.quantity || 0,
-      }));
+      const fromProducts: SuggestedItem[] = products
+        .filter(p => !isExcluded(p.sku))
+        .slice(0, 10)
+        .map(p => ({
+          id: p.sku,
+          name: p.name,
+          price: p.sellingPrice,
+          mrp: p.mrp,
+          rating: (p.rating as number) || 4.5,
+          image: (p.imageUrl as unknown as number) || 0,
+          quantity: cartProducts[p.sku]?.quantity || 0,
+        }));
       setSuggestedProducts(fromProducts);
       return;
     }
 
     if (categories && categories.trim()) {
       const categoryProducts = getProductsByCategories(categories);
-      const convertedItems: SuggestedItem[] = categoryProducts.slice(0, 10).map(product => ({
-        id: product.sku,
-        name: product.name,
-        price: product.sellingPrice,
-        mrp: product.mrp,
-        rating: 4.5,
-        image: (product.imageUrl as unknown as number) || 0,
-        quantity: cartProducts[product.sku]?.quantity || 0,
-      }));
+      const convertedItems: SuggestedItem[] = categoryProducts
+        .filter(product => !isExcluded(product.sku))
+        .slice(0, 10)
+        .map(product => ({
+          id: product.sku,
+          name: product.name,
+          price: product.sellingPrice,
+          mrp: product.mrp,
+          rating: 4.5,
+          image: (product.imageUrl as unknown as number) || 0,
+          quantity: cartProducts[product.sku]?.quantity || 0,
+        }));
       setSuggestedProducts(convertedItems);
       return;
     }
 
     setSuggestedProducts([]);
-  }, [products, categories, getProductsByCategories, activeCartId, carts]);
+    // NOTE: callers must pass a referentially stable `excludeSkus` (useMemo) —
+    // a fresh array literal each render would re-run this effect indefinitely.
+  }, [products, categories, excludeSkus, getProductsByCategories, activeCartId, carts]);
 
   const styles = StyleSheet.create({
     container: {
