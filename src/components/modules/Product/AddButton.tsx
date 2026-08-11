@@ -35,8 +35,8 @@ const AddButton: React.FC<AddButtonProps> = ({
   };
 
   // Unified dimensions matching QuantitySelector
-  const buttonWidth = size === 'xs' ? 60 : size === 'small' ? 70 : 80;
-  const buttonHeight = size === 'xs' ? 28 : size === 'small' ? 32 : 36;
+  const buttonWidth = size === 'xs' ? 52 : size === 'small' ? 70 : 80;
+  const buttonHeight = size === 'xs' ? 24 : size === 'small' ? 32 : 36;
 
   const styles = StyleSheet.create({
     addButton: {
@@ -71,6 +71,12 @@ const AddButton: React.FC<AddButtonProps> = ({
     },
     addButtonTextWithVariants: {
       marginLeft: 0,
+    },
+    addButtonTextXs: {
+      color: getColor('primary'),
+      fontWeight: '700',
+      fontSize: getTypography('small') - 2,
+      marginLeft: 1,
     },
     variantsText: {
       color: getColor('subText'),
@@ -109,7 +115,6 @@ const AddButton: React.FC<AddButtonProps> = ({
     },
   });
 
-
   // Small button with variants - show badge
   if (shouldShowBadge) {
     return (
@@ -122,8 +127,6 @@ const AddButton: React.FC<AddButtonProps> = ({
             </ThemeText>
           </View>
         </TouchableOpacity>
-
-
       </>
     );
   }
@@ -146,7 +149,6 @@ const AddButton: React.FC<AddButtonProps> = ({
           <View style={styles.divider} />
           <Text style={styles.variantsText}>{numberOfVariants} OPTIONS</Text>
         </TouchableOpacity>
-
       </>
     );
   }
@@ -155,7 +157,14 @@ const AddButton: React.FC<AddButtonProps> = ({
   return (
     <>
       <TouchableOpacity style={styles.addButton} onPress={handleSafePress}>
-        {size === 'xs' || size === 'small' ? (
+        {size === 'xs' ? (
+          <>
+            <MaterialCommunityIcons name="plus" size={13} color={getColor('primary')} />
+            <ThemeText variant="caption" color={getColor('primary')} style={styles.addButtonTextXs}>
+              Add
+            </ThemeText>
+          </>
+        ) : size === 'small' ? (
           <MaterialCommunityIcons name="plus" size={18} color={getColor('primary')} />
         ) : (
           <>
@@ -166,7 +175,6 @@ const AddButton: React.FC<AddButtonProps> = ({
           </>
         )}
       </TouchableOpacity>
-
     </>
   );
 };

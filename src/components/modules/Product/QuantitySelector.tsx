@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleProp, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { ThemeText } from '../../common/theme/ThemeText';
 
@@ -9,6 +9,12 @@ interface QuantitySelectorProps {
   onDecrement: () => void;
   size?: 'xs' | 'small' | 'regular';
   disabled?: boolean;
+  /**
+   * Overrides on the root container. The default style absolutely positions this
+   * bottom-right inside a ProductCard image; pass this to re-place it elsewhere
+   * (ProductDetailModal uses it as a centred pill straddling the hero's edge).
+   */
+  containerStyle?: StyleProp<ViewStyle>;
 }
 
 const QuantitySelector: React.FC<QuantitySelectorProps> = ({
@@ -17,6 +23,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   onDecrement,
   size = 'regular',
   disabled = false,
+  containerStyle,
 }) => {
   const { getColor, theme } = useTheme();
 
@@ -28,8 +35,9 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       borderWidth: 1.5,
       borderColor: getColor('primary'),
       borderRadius: theme.borderRadius.sm,
-      minWidth: size === 'xs' ? 56 : size === 'small' ? 64 : 72,
-      height: size === 'xs' ? 26 : size === 'small' ? 30 : 34,
+      // xs matches AddButton's 52x24 so the card doesn't resize on first add
+      minWidth: size === 'xs' ? 52 : size === 'small' ? 64 : 72,
+      height: size === 'xs' ? 24 : size === 'small' ? 30 : 34,
       paddingHorizontal: 0,
       paddingVertical: 0,
       flexDirection: 'row',
@@ -44,8 +52,8 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       elevation: 2,
     },
     qtyBtn: {
-      minWidth: size === 'xs' ? 24 : size === 'small' ? 28 : 32,
-      minHeight: size === 'xs' ? 26 : size === 'small' ? 30 : 34,
+      minWidth: size === 'xs' ? 20 : size === 'small' ? 28 : 32,
+      minHeight: size === 'xs' ? 24 : size === 'small' ? 30 : 34,
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: size === 'xs' ? 2 : size === 'small' ? 3 : 4,
@@ -76,7 +84,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   };
 
   return (
-    <View style={styles.quantitySelector}>
+    <View style={[styles.quantitySelector, containerStyle]}>
       <TouchableOpacity style={styles.qtyBtn} onPress={onDecrement} disabled={disabled}>
         <ThemeText
           variant={getVariant()}

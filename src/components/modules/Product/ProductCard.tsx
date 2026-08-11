@@ -22,7 +22,10 @@ const PRODUCT_LIST_PADDING = 8;
 const AVAILABLE_WIDTH = SCREEN_WIDTH - SIDEBAR_WIDTH - PRODUCT_LIST_PADDING * 2;
 const CARD_WIDTH = ((SCREEN_WIDTH - CARD_MARGIN * 4) / 3) * 0.92;
 const CARD_WIDTH_SMALL = CARD_WIDTH * 0.8;
-const EXTRA_SMALL_CARD_WIDTH = ((SCREEN_WIDTH - CARD_MARGIN * 6) / 4) * 0.9;
+// 'xs' is used only by the "Add a little somethin'" suggestion strips
+// (modules/Cart/SuggestedItems and modules/Product/SuggestedItems). Sized to show
+// ~3.7 cards so the next one is visibly clipped, hinting that the row scrolls.
+const EXTRA_SMALL_CARD_WIDTH = (SCREEN_WIDTH - CARD_MARGIN * 6) / 3.7;
 const CARD_WIDTH_BIG = (AVAILABLE_WIDTH - CARD_MARGIN * 3) / 2; // 2 cards per row with sidebar
 
 interface ProductCardProps {
@@ -75,7 +78,10 @@ const createStyles = (
     },
     imageContainer: {
       width: '100%',
-      aspectRatio: size === 'small' ? 4.8 / 5 : size === 'big' ? 1 : 7 / 5,
+      // 'xs' is square rather than the default 7/5 landscape — the suggestion
+      // strip's photos were the smallest thing on the card, so height was the
+      // cheapest way to give the food more presence.
+      aspectRatio: size === 'xs' ? 1 : size === 'small' ? 4.8 / 5 : size === 'big' ? 1 : 7 / 5,
       borderRadius: theme.borderRadius.sm,
       overflow: 'hidden',
       marginBottom: size === 'xs' ? 4 : 8,
@@ -139,7 +145,16 @@ const createStyles = (
         2,
       fontWeight: 'bold',
       flex: 1,
-      maxWidth: size === 'xs' ? 90 : size === 'small' ? 110 : size === 'big' ? 180 : 130,
+      // xs tracks the wider card so two-line names like "Sabudana Khichadi" use
+      // the full width instead of truncating at the old 90px cap.
+      maxWidth:
+        size === 'xs'
+          ? EXTRA_SMALL_CARD_WIDTH - 8
+          : size === 'small'
+            ? 110
+            : size === 'big'
+              ? 180
+              : 130,
     },
     priceRow: {
       flexDirection: 'row',
