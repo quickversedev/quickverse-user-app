@@ -1,9 +1,15 @@
 import React from 'react';
-import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { ThemeText } from '../../common/theme/ThemeText';
+
+/**
+ * Thumbnail size. Each search result sits in a ~48%-wide column, so this leaves
+ * roughly 115px for the vendor tag and the two-line product name.
+ */
+const IMAGE_SIZE = 56;
 
 interface ProductItemOnSearchProps {
   product: Product;
@@ -15,6 +21,16 @@ const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPr
   const getVendorNameById = useVendorStore(state => state.getVendorNameById);
   const vendorName = product.shopId ? getVendorNameById(product.shopId) : undefined;
 
+  /**
+   * GET /v3/search does not return prices — its SearchResponseDTO carries only
+   * sku/name/shopId/image — and useSearch coerces the missing value to 0. Only
+   * the federated and collection results arrive priced. So render the price only
+   * when it is real: a wrong "₹0" on a storefront is worse than no price, and
+   * this keeps working unchanged once the backend query selects the columns.
+   */
+  const hasPrice = (product.sellingPrice ?? 0) > 0;
+  const hasDiscount = hasPrice && (product.mrp ?? 0) > product.sellingPrice;
+
   const styles = StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -24,11 +40,11 @@ const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPr
       paddingHorizontal: 8,
     },
     imageContainer: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: IMAGE_SIZE,
+      height: IMAGE_SIZE,
+      borderRadius: IMAGE_SIZE / 2,
       backgroundColor: getColor('card'),
-      marginRight: 8,
+      marginRight: 10,
       overflow: 'hidden',
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
@@ -39,7 +55,7 @@ const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPr
     image: {
       width: '100%',
       height: '100%',
-      borderRadius: 20,
+      borderRadius: IMAGE_SIZE / 2,
     },
     textContainer: {
       flex: 1,
@@ -53,6 +69,24 @@ const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPr
     productName: {
       color: getColor('text'),
       lineHeight: 16 * 1.2,
+    },
+    // Mirrors HorizontalProductCard (the vendor product list) so a product looks
+    // the same priced in search as it does on the store page.
+    priceRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 2,
+    },
+    mrpText: {
+      fontSize: 12,
+      color: getColor('subText'),
+      textDecorationLine: 'line-through',
+      marginRight: 6,
+    },
+    sellingPrice: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: getColor('text'),
     },
   });
 
@@ -75,6 +109,12 @@ const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPr
         >
           {product.name}
         </ThemeText>
+        {hasPrice && (
+          <View style={styles.priceRow}>
+            {hasDiscount && <Text style={styles.mrpText}>₹{product.mrp}</Text>}
+            <Text style={styles.sellingPrice}>₹{product.sellingPrice}</Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );

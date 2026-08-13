@@ -198,11 +198,14 @@ const VendorCard: React.FC<VendorCardProps> = ({
         </TouchableOpacity> */}
       </View>
       <View style={styles.vendorInfo}>
+        {/* Always one line: a wrapped name made cards in the same row different
+            heights. Long names truncate with an ellipsis instead. */}
         <ThemeText
           variant={size === 'small' ? 'caption' : 'body'}
           color={getColor('text')}
           style={styles.nameText}
-          numberOfLines={size === 'small' ? 1 : 2}
+          numberOfLines={1}
+          ellipsizeMode="tail"
         >
           {vendor.name}
         </ThemeText>

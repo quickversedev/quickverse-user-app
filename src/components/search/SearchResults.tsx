@@ -33,8 +33,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const { getColor } = useTheme();
   const { vendors: storeVendors } = useVendorStore();
 
-  // State for pagination
-  const [visibleProducts, setVisibleProducts] = React.useState(10);
+  // State for pagination. 8 = 4 rows of 2, keeping the Vendors section reachable
+  // without much scrolling; "Show More" pages in the rest.
+  const [visibleProducts, setVisibleProducts] = React.useState(8);
   const [showMoreVisible, setShowMoreVisible] = React.useState(true);
 
   // Handle show more button press
@@ -61,15 +62,16 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       paddingHorizontal: 8,
       paddingVertical: 4,
     },
+    // Centred rather than space-between: the card now sets its own width, and
+    // space-between would shove a lone trailing card to the left edge.
     vendorsGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      rowGap: 12,
+      justifyContent: 'center',
+      columnGap: 16,
     },
     vendorGridItem: {
-      width: '48%',
+      alignItems: 'center',
     },
     vendorCardContainer: {
       width: '32%',
@@ -113,13 +115,17 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     },
     showMoreButton: {
       backgroundColor: 'transparent',
-      paddingHorizontal: 20,
-      paddingVertical: 12,
+      paddingHorizontal: 16,
+      // Kept reasonably tall despite the smaller label — this is the tap target,
+      // and the text itself is only 13px.
+      paddingVertical: 10,
       alignSelf: 'center',
-      marginTop: 8,
+      marginTop: 4,
     },
     showMoreText: {
       color: getColor('primary'),
+      fontSize: 13,
+      fontWeight: '400',
     },
     productsContainer: {
       flexDirection: 'row',
@@ -179,7 +185,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     <View style={styles.section}>
       {products.length > 0 && (
         <View style={styles.section}>
-          <SectionDivider text="Products" fontSize={14} style={{ marginVertical: 8 }} />
           <View style={styles.productsGrid}>
             {displayedProducts.map(product => (
               <View key={`search-${product.sku}`} style={styles.productGridItem}>
@@ -190,7 +195,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           {showMoreVisible && visibleProducts < products.length && (
             <View style={styles.showMoreButton}>
               <ThemeText
-                variant="body"
+                variant="caption"
                 color={getColor('primary')}
                 style={styles.showMoreText}
                 onPress={handleShowMore}
@@ -212,11 +217,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
               return (
                 <View key={`search-${vendor.shopId}`} style={styles.vendorGridItem}>
+                  {/* 'medium' sizes the card for a 2-column grid ((width-48)/2);
+                      'small' is sized for 3 columns and left it undersized here. */}
                   <VendorCard
                     vendor={vendorDetails}
                     onPress={onVendorPress}
                     onFavoritePress={onFavoritePress}
-                    size="small"
+                    size="medium"
                   />
                 </View>
               );
