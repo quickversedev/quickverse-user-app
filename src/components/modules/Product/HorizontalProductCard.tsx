@@ -19,6 +19,8 @@ interface HorizontalProductCardProps {
   onPress?: () => void;
   disabled?: boolean;
   showVariantsCount?: boolean;
+  /** Tints the row — used to point out the product the user arrived here searching for. */
+  isHighlighted?: boolean;
 }
 
 const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
@@ -31,6 +33,7 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
     onPress,
     disabled = false,
     showVariantsCount = false,
+    isHighlighted = false,
   }) => {
     const { getColor, theme } = useTheme();
     const [imageError, setImageError] = useState(false);
@@ -66,11 +69,20 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 12,
-        paddingLeft: 0,
+        paddingLeft: isHighlighted ? 10 : 0,
         paddingRight: 12,
         borderBottomWidth: 1,
         borderBottomColor: getColor('border'),
         opacity: isDisabled ? 0.5 : 1,
+        // Amber wash + leading rule, so the row the user searched for is obvious
+        // among its category siblings without looking like a different component.
+        ...(isHighlighted
+          ? {
+              backgroundColor: `${getColor('primary')}14`,
+              borderLeftWidth: 3,
+              borderLeftColor: getColor('primary'),
+            }
+          : null),
       },
       imageContainer: {
         width: IMAGE_SIZE,

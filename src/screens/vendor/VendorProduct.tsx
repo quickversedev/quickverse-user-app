@@ -65,7 +65,9 @@ const ANIMATION_DURATION = 300;
 const getRowBasedProductList = (
   categories: Category[],
   products: Product[],
-  numColumns: number
+  numColumns: number,
+  /** Pinned to the top of its category — the product the user arrived here searching for. */
+  focusedSku?: string
 ) => {
   const rows: Array<
     { type: 'header'; category: Category } | { type: 'products'; products: Product[] }
@@ -101,8 +103,13 @@ const getRowBasedProductList = (
       catProducts = productsByDivision.get(cat.id || '') || [];
     }
 
-    // Sort products within each category: in-stock first, then out-of-stock
-    const sortedCatProducts = catProducts.sort((a, b) => {
+    // Sort within each category: the searched-for product first (so the highlighted
+    // row is never buried), then in-stock, then out-of-stock.
+    const sortedCatProducts = [...catProducts].sort((a, b) => {
+      if (focusedSku) {
+        if (a.sku === focusedSku) return -1;
+        if (b.sku === focusedSku) return 1;
+      }
       if (a.inStock === b.inStock) return 0;
       return a.inStock ? -1 : 1;
     });
@@ -284,11 +291,37 @@ const VendorProductComponent: React.FC = () => {
     });
   }, [products, searchQuery, categoryMap]);
 
-  // Always show filtered products when searching, or all products when not searching
-  const productsToShow = useMemo(
-    () => (searchQuery ? filteredProducts : products),
-    [searchQuery, filteredProducts, products]
-  );
+  /**
+   * The product the user tapped in global search, if we arrived that way.
+   *
+   * Only set while the search box still holds the exact query we arrived with —
+   * the moment the user edits it, this clears and normal filtering resumes.
+   */
+  const focusedProduct = useMemo(() => {
+    const arrived = initialSearchQuery?.trim().toLowerCase();
+    if (!arrived || searchQuery.trim().toLowerCase() !== arrived) return null;
+
+    return (
+      products.find(p => p.name?.toLowerCase() === arrived) ??
+      products.find(p => p.name?.toLowerCase().includes(arrived)) ??
+      null
+    );
+  }, [initialSearchQuery, searchQuery, products]);
+
+  /**
+   * Arriving from search shows the matched product's WHOLE category rather than
+   * just the match — a one-row screen gives no sense of what else the shop sells,
+   * and the match itself is highlighted so it is still easy to find. Typing in the
+   * vendor's own search box keeps the old filtering behaviour.
+   */
+  const productsToShow = useMemo(() => {
+    if (focusedProduct) {
+      const division = focusedProduct.division;
+      const siblings = division ? products.filter(p => p.division === division) : [];
+      return siblings.length > 0 ? siblings : filteredProducts;
+    }
+    return searchQuery ? filteredProducts : products;
+  }, [focusedProduct, searchQuery, filteredProducts, products]);
 
   // Map categories to CategoryTabs items; use store category imageURLs when available (regular mode or after fetch in collection mode).
   // Grocery shops typically return empty imageURLs, so fall back to the
@@ -455,8 +488,9 @@ const VendorProductComponent: React.FC = () => {
 
   // Memoized row product list with optimized dependencies
   const rowProductList = useMemo(
-    () => getRowBasedProductList(filteredCategories, productsToShow, NUM_COLUMNS),
-    [filteredCategories, productsToShow]
+    () =>
+      getRowBasedProductList(filteredCategories, productsToShow, NUM_COLUMNS, focusedProduct?.sku),
+    [filteredCategories, productsToShow, focusedProduct]
   );
 
   // Memoized product quantity map for O(1) lookup
@@ -1145,6 +1179,7 @@ const VendorProductComponent: React.FC = () => {
                 disabled={collection ? false : !isStoreActive || !product.inStock}
                 showVariantsCount={true}
                 onPress={() => handleProductPress(product)}
+                isHighlighted={product.sku === focusedProduct?.sku}
               />
             ))}
           </View>
@@ -1159,6 +1194,7 @@ const VendorProductComponent: React.FC = () => {
       getProductQuantity,
       isStoreActive,
       handleProductPress,
+      focusedProduct,
       MemoizedHorizontalProductCard,
     ]
   );

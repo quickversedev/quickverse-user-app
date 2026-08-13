@@ -11,6 +11,7 @@ import {
 import useVendorStore from '../store/vendorStore';
 import { Product } from '../types/product';
 import { Vendor } from '../types/vendor';
+import { isStoreOpen } from '../utils/storeUtils';
 
 // Toggle for using real API vs mock data
 const USE_REAL_SEARCH_API = true; // Set to true to use real API
@@ -73,6 +74,8 @@ const mapSearchProductToProduct = (product: SearchProduct): Product =>
     veg: product.veg ?? true,
     numberOfVariants: 1,
     primarySKU: product.productSKU,
+    // Carried through so out-of-stock items can be filtered out below.
+    inStock: product.inStock ?? true,
   }) as Product;
 
 export const useSearch = (options?: UseSearchOptions): UseSearchReturn => {
@@ -186,7 +189,32 @@ export const useSearch = (options?: UseSearchOptions): UseSearchReturn => {
          */
         const allowedShopIds = new Set(validShopIds);
         if (API_STORE_ID) allowedShopIds.add(API_STORE_ID);
-        const filteredProducts = merged.filter(p => allowedShopIds.has(p.shopId));
+
+        /**
+         * Shops that are currently shut. Computed here rather than server-side because
+         * "closed" is a function of the CURRENT TIME against opening/closing hours —
+         * the server only knows the store_active flag, not whether the shop is open
+         * right now. A vendor absent from the store is left in: we cannot evaluate its
+         * hours, and dropping it would remove the SmartBiz collection store entirely.
+         */
+        const closedShopIds = new Set(
+          eligibleVendors
+            .filter(
+              v =>
+                !isStoreOpen({
+                  openingTime: v.openingTime,
+                  closingTime: v.closingTime,
+                  storeActive: v.storeActive,
+                }).isOpen
+            )
+            .map(v => v.shopId)
+        );
+
+        // Don't surface what the user cannot buy: out-of-stock items, or anything
+        // from a shop that is closed right now.
+        const filteredProducts = merged.filter(
+          p => allowedShopIds.has(p.shopId) && p.inStock !== false && !closedShopIds.has(p.shopId)
+        );
 
         // Round-robin interleave by vendor so the first slots aren't dominated by
         // whichever shop returned the most matches — only 8 are shown before
