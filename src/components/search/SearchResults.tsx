@@ -14,6 +14,15 @@ import RecentSearches from './RecentSearches';
 interface SearchResultsProps {
   vendors: Vendor[];
   products: Product[];
+  /**
+   * Server-side match count, shown next to "Show More".
+   *
+   * It is NOT interchangeable with products.length: the server caps its list at 100
+   * while counting all matches, and SmartBiz contributes products the count never
+   * saw. So it is used for the LABEL only — pagination stays driven by the local
+   * array, or "Show More" would never stop offering more.
+   */
+  totalProductMatches?: number;
   nearbyStores: Vendor[];
   onVendorPress: (vendor: Vendor) => void;
   onProductPress: (product: Product) => void;
@@ -22,6 +31,7 @@ interface SearchResultsProps {
 }
 
 const SearchResults: React.FC<SearchResultsProps> = ({
+  totalProductMatches,
   vendors,
   products,
   nearbyStores,
@@ -51,6 +61,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
   // Get visible products
   const displayedProducts = products.slice(0, visibleProducts);
+
+  /**
+   * " (66)" next to Show More. Falls back to the local length when the server sends
+   * no count (REST path), and never reports fewer than we actually hold — SmartBiz
+   * products are absent from the server's COUNT, so the raw value can undershoot.
+   */
+  const totalMatches = Math.max(totalProductMatches ?? 0, products.length);
+  const matchCountLabel = totalMatches > 0 ? ` (${totalMatches})` : '';
 
   // Get vendor details from store using shopId
   const getVendorDetails = (shopId: string): Vendor | undefined => {
@@ -200,7 +218,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 style={styles.showMoreText}
                 onPress={handleShowMore}
               >
-                Show More
+                {`Show More${matchCountLabel}`}
               </ThemeText>
             </View>
           )}

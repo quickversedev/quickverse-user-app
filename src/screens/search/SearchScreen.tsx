@@ -58,36 +58,13 @@ const SearchScreen: React.FC = () => {
     ? searchVendorsByQuery(searchQuery).slice(0, 6) // Show up to 6 nearby stores
     : [];
 
-  // Derive the Vendors section from the product results: any shop that
-  // carries a matching product should appear, deduped and merged with the
-  // text-match results from searchVendorsByQuery so a query like "milk" surfaces
-  // every vendor that actually sells milk (not just vendors named "milk").
-  const productVendors = React.useMemo(() => {
-    const seen = new Set<string>();
-    const out: Vendor[] = [];
-
-    // Vendors whose products matched
-    (searchResults.products || []).forEach(p => {
-      if (!p?.shopId || seen.has(p.shopId)) return;
-      const v = getVendorById(p.shopId);
-      if (v) {
-        seen.add(p.shopId);
-        out.push(v);
-      }
-    });
-
-    // Plus vendors whose name/description matched the query directly
-    if (searchQuery.trim()) {
-      searchVendorsByQuery(searchQuery).forEach(v => {
-        if (!v?.shopId || seen.has(v.shopId)) return;
-        if (restrictCategory && v.category !== restrictCategory) return;
-        seen.add(v.shopId);
-        out.push(v);
-      });
-    }
-
-    return out;
-  }, [searchResults.products, searchQuery, getVendorById, searchVendorsByQuery, restrictCategory]);
+  /**
+   * The Vendors section now comes from the hook, which builds it from the server's
+   * vendor list (ordered by relevance, carrying startingPrice/logo/banner) unioned
+   * with name matches. It used to be re-derived here from the product results —
+   * that duplicated work the server now does properly.
+   */
+  const productVendors = searchResults.vendors;
 
   const styles = StyleSheet.create({
     container: {
@@ -199,6 +176,7 @@ const SearchScreen: React.FC = () => {
               <SearchResults
                 vendors={productVendors}
                 products={searchResults.products}
+                totalProductMatches={searchResults.totalProductMatches}
                 nearbyStores={[]}
                 onVendorPress={handleVendorPress}
                 onProductPress={handleProductPress}
