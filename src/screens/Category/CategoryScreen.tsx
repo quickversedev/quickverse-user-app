@@ -29,6 +29,7 @@ import { Vendor } from '../../types/vendor';
 import PromotionCarousel from '../Home/components/PromotionCarousel';
 import CollectionsGrid from './components/CollectionsGrid';
 import CollectionsGridSkeleton from './components/CollectionsGridSkeleton';
+import TagStrip from '../Home/components/TagStrip';
 import QuickSearchStrip from './components/QuickSearchStrip';
 
 type CategoryScreenRouteProp = RouteProp<RootStackParamList, 'Category'>;
@@ -167,6 +168,9 @@ const CategoryScreen = () => {
         />
       </View>
 
+      {/* Tag strip — Food only */}
+      {!isGrocery && <TagStrip />}
+
       {/* Conditional Content if Vendors Exist */}
       {!hasNoVendors && (
         <>
@@ -231,7 +235,7 @@ const CategoryScreen = () => {
               {/* Full store list with showcase */}
               <SectionDivider
                 text="Stores for you"
-                style={{ marginVertical: 16, paddingHorizontal: 40 }}
+                style={{ marginTop: 16, marginBottom: 4, paddingHorizontal: 40 }}
                 textStyle={{
                   color: '#4B5563',
                   fontWeight: '600',

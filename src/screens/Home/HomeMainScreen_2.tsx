@@ -17,7 +17,6 @@ import FastPicks from './components/FastPicks';
 import HomeGradientBand from './components/HomeGradientBand';
 import HomeHeader from './components/HomeHeader';
 import HomePromotionCarousel from './components/HomePromotionCarousel';
-import TagStrip from './components/TagStrip';
 import TopStoresNearYou from './components/TopStoresNearYou';
 import type { HomeCategoryId } from './homeCategories';
 
@@ -95,8 +94,6 @@ const HomeMainScreen_2 = React.memo(() => {
             <View style={styles.searchContainer}>
               <SearchBar onPress={handleSearchPress} />
             </View>
-
-            <TagStrip />
 
             <View style={styles.carouselContainer}>
               <HomePromotionCarousel />

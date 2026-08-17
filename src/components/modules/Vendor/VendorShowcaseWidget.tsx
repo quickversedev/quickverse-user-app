@@ -335,6 +335,8 @@ interface ScrollDotsProps {
   visibleCount: number;
 }
 
+const MAX_DOTS = 5;
+
 const ScrollDotsBase: React.FC<ScrollDotsProps> = ({
   scrollX,
   itemWidth,
@@ -345,10 +347,11 @@ const ScrollDotsBase: React.FC<ScrollDotsProps> = ({
   if (pageCount <= 1) return null;
 
   const pageWidth = itemWidth * visibleCount;
+  const dotCount = Math.min(pageCount, MAX_DOTS);
 
   return (
     <View style={styles.dotsRow}>
-      {Array.from({ length: pageCount }).map((_, i) => {
+      {Array.from({ length: dotCount }).map((_, i) => {
         const inputRange = [(i - 1) * pageWidth, i * pageWidth, (i + 1) * pageWidth];
         const opacity = scrollX.interpolate({
           inputRange,
