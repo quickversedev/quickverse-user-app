@@ -18,6 +18,7 @@ import HomeCategoryStrip from './components/HomeCategoryStrip';
 import HomeGradientBand from './components/HomeGradientBand';
 import HomeHeader from './components/HomeHeader';
 import HomePromotionCarousel from './components/HomePromotionCarousel';
+import TagStrip from './components/TagStrip';
 import TopStoresNearYou from './components/TopStoresNearYou';
 import { DEFAULT_HOME_CATEGORY_ID, type HomeCategoryId } from './homeCategories';
 
@@ -113,6 +114,8 @@ const HomeMainScreen_2 = React.memo(() => {
           <View style={styles.cardsContainer}>
             <CategoryCards />
           </View>
+
+          <TagStrip />
 
           <FastPicks />
         </ScrollView>

@@ -1,6 +1,6 @@
 import axios from 'axios'; // Import axios directly
 import axiosInstance, { apiCall, getAuthHeader } from '../config/api/axios.config';
-import { Product } from '../types/product';
+import { Product, ProductTagOption } from '../types/product';
 
 // Mock data toggle
 const USE_PRODUCTS_MOCKS = false; // Set to false for real API
@@ -492,6 +492,47 @@ class ProductsService {
       );
       return [];
     }
+  }
+
+  /**
+   * Fetch the fixed tag vocabulary from the server.
+   */
+  async fetchProductTags(): Promise<ProductTagOption[]> {
+    const authHeader = getAuthHeader();
+    const response = await apiCall(
+      axiosInstance.get<ProductTagOption[]>('/v3/product-tags', {
+        headers: { Authorization: authHeader },
+      })
+    );
+    return Array.isArray(response) ? response : [];
+  }
+
+  /**
+   * Fetch products filtered by a tag, optionally scoped to specific shops.
+   */
+  async fetchProductsByTag({
+    tagCode,
+    shopIds,
+    limit = 20,
+    offset = 0,
+  }: {
+    tagCode: string;
+    shopIds?: string[];
+    limit?: number;
+    offset?: number;
+  }): Promise<Product[]> {
+    const authHeader = getAuthHeader();
+    const params: Record<string, string | number> = { tag: tagCode, limit, offset };
+    if (shopIds && shopIds.length > 0) {
+      params.shopIds = shopIds.join(',');
+    }
+    const response = await apiCall(
+      axiosInstance.get<Product[]>('/v3/products/by-tag', {
+        params,
+        headers: { Authorization: authHeader },
+      })
+    );
+    return Array.isArray(response) ? response : [];
   }
 
   /**
