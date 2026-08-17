@@ -1,22 +1,14 @@
 <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Bowl -->
-  <path d="M8 22h32c0 10-7 18-16 18S8 32 8 22Z" fill="#FFF8EE"/>
-  <path d="M8 22h32c0 10-7 18-16 18S8 32 8 22Z" stroke="#B8894A" stroke-width="1.2"/>
+  <path d="M7 24h34c0 9-7.5 16-17 16S7 33 7 24Z" fill="#FFF8EE" stroke="#C8A882" stroke-width="1.5"/>
   <!-- Bowl rim -->
-  <ellipse cx="24" cy="22" rx="16" ry="3" fill="#E8D5B7"/>
-  <!-- Salad greens -->
-  <ellipse cx="20" cy="24" rx="5" ry="3" fill="#66BB6A"/>
-  <ellipse cx="28" cy="25" rx="5" ry="3" fill="#43A047"/>
-  <!-- Tomato slice -->
-  <circle cx="24" cy="22" r="3" fill="#EF5350"/>
-  <circle cx="24" cy="22" r="1.5" fill="#E53935"/>
-  <!-- Avocado slice -->
-  <ellipse cx="17" cy="27" rx="3" ry="2" fill="#8BC34A" transform="rotate(-20 17 27)"/>
-  <!-- Seed/grain sprinkle -->
-  <circle cx="30" cy="23" r="1" fill="#FDD835"/>
-  <circle cx="26" cy="27" r="0.8" fill="#FDD835"/>
-  <circle cx="22" cy="29" r="0.8" fill="#FDD835"/>
-  <!-- Leaf on top -->
-  <path d="M32 16c-3 0-5 2-5 5 3 0 5-2 5-5Z" fill="#4CAF50"/>
-  <path d="M32 16c-2.5 2.5-5 5-5 5" stroke="#2E7D32" stroke-width="0.8" stroke-linecap="round"/>
+  <ellipse cx="24" cy="24" rx="17" ry="3.5" fill="#E8D5B7"/>
+  <!-- Greens -->
+  <ellipse cx="19" cy="26" rx="6" ry="3.5" fill="#4CAF50"/>
+  <ellipse cx="29" cy="27" rx="6" ry="3.5" fill="#388E3C"/>
+  <!-- Tomato -->
+  <circle cx="24" cy="24" r="3.5" fill="#EF5350"/>
+  <!-- Leaf -->
+  <path d="M33 14c-4 0-6.5 3-6.5 6.5 4 0 6.5-3 6.5-6.5Z" fill="#66BB6A"/>
+  <path d="M33 14q-3.5 3.5-6.5 6.5" stroke="#2E7D32" stroke-width="1" stroke-linecap="round"/>
 </svg>
