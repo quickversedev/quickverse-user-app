@@ -1,0 +1,9 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fire / flame -->
+  <path d="M24 6c-8 10-14 16-14 24a14 14 0 0 0 28 0c0-8-6-14-14-24Z" fill="#FF9800"/>
+  <path d="M24 14c-5 7-9 11-9 17a9 9 0 0 0 18 0c0-6-4-10-9-17Z" fill="#FF5722"/>
+  <path d="M24 22c-3 4-5 7-5 11a5 5 0 0 0 10 0c0-4-2-7-5-11Z" fill="#FFCC02"/>
+  <!-- Star badge -->
+  <circle cx="24" cy="34" r="5" fill="#FFF"/>
+  <path d="M24 30l1.2 3 3.3.3-2.5 2.2.7 3.2L24 37l-2.7 1.7.7-3.2-2.5-2.2 3.3-.3Z" fill="#FF9800"/>
+</svg>

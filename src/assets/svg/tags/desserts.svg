@@ -1,0 +1,19 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Cupcake base -->
+  <path d="M14 28h20l-2 12H16L14 28Z" fill="#E0A03A"/>
+  <path d="M14 28h20l-2 12H16L14 28Z" stroke="#C48820" stroke-width="1"/>
+  <!-- Wrapper lines -->
+  <path d="M16 30l2 8" stroke="#C48820" stroke-width="0.8"/>
+  <path d="M20 29l1 9" stroke="#C48820" stroke-width="0.8"/>
+  <path d="M24 28.5v10" stroke="#C48820" stroke-width="0.8"/>
+  <path d="M28 29l-1 9" stroke="#C48820" stroke-width="0.8"/>
+  <path d="M32 30l-2 8" stroke="#C48820" stroke-width="0.8"/>
+  <!-- Frosting swirl -->
+  <path d="M13 28c0-5 3-9 7-10 2 3 6 3 8 0 4 1 7 5 7 10" fill="#F8BBD0"/>
+  <path d="M13 28c0-5 3-9 7-10 2 3 6 3 8 0 4 1 7 5 7 10" stroke="#E91E63" stroke-width="0.8"/>
+  <!-- Cherry -->
+  <circle cx="24" cy="14" r="3" fill="#E53935"/>
+  <circle cx="23" cy="13" r="1" fill="#EF9A9A" opacity="0.7"/>
+  <!-- Stem -->
+  <path d="M24 11c1-2 3-3 4-3" stroke="#4CAF50" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+</svg>

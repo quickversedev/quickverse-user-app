@@ -1,0 +1,10 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fried egg sunny-side-up -->
+  <ellipse cx="24" cy="27" rx="14" ry="11" fill="#FFF3DC"/>
+  <circle cx="24" cy="27" r="6.5" fill="#F59E0B"/>
+  <circle cx="24" cy="26.5" r="4" fill="#FBBF24"/>
+  <!-- Steam wisps -->
+  <path d="M16 14c0-2 1.5-3 1.5-5" stroke="#D4A06A" stroke-width="1.6" stroke-linecap="round" opacity="0.6"/>
+  <path d="M24 12c0-2 1.5-3 1.5-5" stroke="#D4A06A" stroke-width="1.6" stroke-linecap="round" opacity="0.6"/>
+  <path d="M32 14c0-2 1.5-3 1.5-5" stroke="#D4A06A" stroke-width="1.6" stroke-linecap="round" opacity="0.6"/>
+</svg>

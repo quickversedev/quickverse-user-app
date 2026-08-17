@@ -1,0 +1,15 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Samosa -->
+  <path d="M24 10L10 38h28Z" fill="#E0A03A"/>
+  <path d="M24 10L10 38h28Z" stroke="#C48820" stroke-width="1.2"/>
+  <!-- Texture lines -->
+  <path d="M20 22l4-6 4 6" stroke="#C48820" stroke-width="1" stroke-linecap="round" fill="none"/>
+  <path d="M18 28l6-6 6 6" stroke="#C48820" stroke-width="1" stroke-linecap="round" fill="none"/>
+  <!-- Filling peek -->
+  <circle cx="21" cy="30" r="1.5" fill="#4CAF50" opacity="0.8"/>
+  <circle cx="27" cy="30" r="1.5" fill="#4CAF50" opacity="0.8"/>
+  <circle cx="24" cy="33" r="1.2" fill="#4CAF50" opacity="0.8"/>
+  <!-- Chutney dot -->
+  <circle cx="34" cy="36" r="3" fill="#2E7D32"/>
+  <circle cx="34" cy="36" r="1.5" fill="#43A047"/>
+</svg>
