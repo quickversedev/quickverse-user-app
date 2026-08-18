@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -47,6 +48,7 @@ const TagProductsScreen: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const offsetRef = useRef(0);
 
   const [variantsModalVisible, setVariantsModalVisible] = useState(false);
@@ -56,13 +58,14 @@ const TagProductsScreen: React.FC = () => {
   const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
 
-  const hasAuth = useMemo(() => Boolean(authData?.jwt), [authData?.jwt]);
+  const shopIds = useMemo(() => vendors.map(v => v.shopId), [vendors]);
 
   const fetchProducts = useCallback(
     async (offset: number) => {
       try {
         const batch = await productsService.fetchProductsByTag({
           tagCode,
+          shopIds,
           limit: PAGE_SIZE,
           offset,
         });
@@ -72,7 +75,7 @@ const TagProductsScreen: React.FC = () => {
         throw err;
       }
     },
-    [tagCode]
+    [tagCode, shopIds]
   );
 
   useEffect(() => {
@@ -123,6 +126,22 @@ const TagProductsScreen: React.FC = () => {
     }
   }, [loadingMore, hasMore, fetchProducts]);
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setError(null);
+    offsetRef.current = 0;
+    try {
+      const batch = await fetchProducts(0);
+      setProducts(batch);
+      setHasMore(batch.length >= PAGE_SIZE);
+      offsetRef.current = batch.length;
+    } catch {
+      setError('Failed to load products');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchProducts]);
+
   const vendorNameMap = useMemo(() => {
     const map = new Map<string, string>();
     vendors.forEach(v => map.set(v.shopId, v.name));
@@ -164,7 +183,7 @@ const TagProductsScreen: React.FC = () => {
 
   const handleAddToCart = useCallback(
     (product: Product) => {
-      if (!hasAuth || !product.inStock) return;
+      if (!product.inStock) return;
       if (product.numberOfVariants && product.numberOfVariants > 1) {
         setSelectedProductForVariants(product);
         setVariantsModalVisible(true);
@@ -182,16 +201,16 @@ const TagProductsScreen: React.FC = () => {
           image: typeof product.imageUrl === 'string' ? product.imageUrl : '',
           veg: product.veg,
         },
-        authData!.jwt,
-        authData!.phone
+        authData?.jwt || '',
+        authData?.phone || ''
       );
     },
-    [hasAuth, addToCart, authData]
+    [addToCart, authData]
   );
 
   const handleVariantSelect = useCallback(
     (variant: Product) => {
-      if (!selectedProductForVariants || !hasAuth) return;
+      if (!selectedProductForVariants) return;
       const cartId = `vendor_${selectedProductForVariants.shopId || variant.shopId}`;
       addToCart(
         cartId,
@@ -207,29 +226,28 @@ const TagProductsScreen: React.FC = () => {
               : '',
           veg: selectedProductForVariants.veg ?? true,
         },
-        authData!.jwt,
-        authData!.phone
+        authData?.jwt || '',
+        authData?.phone || ''
       );
     },
-    [selectedProductForVariants, hasAuth, addToCart, authData]
+    [selectedProductForVariants, addToCart, authData]
   );
 
   const handleIncrement = useCallback(
     (product: Product) => {
-      if (!hasAuth || !product.inStock) return;
+      if (!product.inStock) return;
       const cartId = `vendor_${product.shopId}`;
-      increment(cartId, product.sku, authData!.jwt, authData!.phone);
+      increment(cartId, product.sku, authData?.jwt || '', authData?.phone || '');
     },
-    [hasAuth, increment, authData]
+    [increment, authData]
   );
 
   const handleDecrement = useCallback(
     (product: Product) => {
-      if (!hasAuth) return;
       const cartId = `vendor_${product.shopId}`;
-      decrement(cartId, product.sku, authData!.jwt, authData!.phone);
+      decrement(cartId, product.sku, authData?.jwt || '', authData?.phone || '');
     },
-    [hasAuth, decrement, authData]
+    [decrement, authData]
   );
 
   const handleProductPress = useCallback((product: Product) => {
@@ -388,6 +406,13 @@ const TagProductsScreen: React.FC = () => {
               onEndReached={loadMore}
               onEndReachedThreshold={0.3}
               ListFooterComponent={renderFooter}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={['#D97706']}
+                />
+              }
               removeClippedSubviews={true}
               initialNumToRender={15}
               maxToRenderPerBatch={10}

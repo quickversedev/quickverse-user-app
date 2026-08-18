@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import type { SvgProps } from 'react-native-svg';
 import { ThemeText } from '../../../components/common/theme/ThemeText';
@@ -90,16 +90,22 @@ const TagChip = React.memo(
 
 TagChip.displayName = 'TagChip';
 
+let cachedTags: ProductTagOption[] | null = null;
+
 const TagStrip: React.FC = () => {
   const navigation = useNavigation<AppNavigationProp>();
-  const [tags, setTags] = useState<ProductTagOption[]>([]);
+  const [tags, setTags] = useState<ProductTagOption[]>(cachedTags || []);
 
   useEffect(() => {
+    if (cachedTags) return;
     let cancelled = false;
     productsService
       .fetchProductTags()
       .then(result => {
-        if (!cancelled) setTags(result);
+        if (!cancelled) {
+          cachedTags = result;
+          setTags(result);
+        }
       })
       .catch(() => {});
     return () => {
@@ -107,8 +113,8 @@ const TagStrip: React.FC = () => {
     };
   }, []);
 
-  const handlePress = useMemo(
-    () => (tag: ProductTagOption) => {
+  const handlePress = useCallback(
+    (tag: ProductTagOption) => {
       navigation.navigate('TagProducts', {
         tagCode: tag.id,
         tagLabel: tag.label,
