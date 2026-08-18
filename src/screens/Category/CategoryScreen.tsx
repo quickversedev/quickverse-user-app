@@ -169,7 +169,7 @@ const CategoryScreen = () => {
       </View>
 
       {/* Tag strip — Food only */}
-      {!isGrocery && <TagStrip />}
+      {!isGrocery && <TagStrip shopCategory={categoryName} />}
 
       {/* Conditional Content if Vendors Exist */}
       {!hasNoVendors && (

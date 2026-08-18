@@ -38,9 +38,9 @@ const TagProductsScreen: React.FC = () => {
   const { authData } = useAuth();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<TagProductsRouteProp>();
-  const { tagCode, tagLabel } = route.params;
+  const { tagCode, tagLabel, shopCategory } = route.params;
 
-  const { vendors } = useVendorStore();
+  const { vendors, getVendorsByCategory } = useVendorStore();
   const { addToCart, increment, decrement, carts } = useCartStore();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -58,7 +58,10 @@ const TagProductsScreen: React.FC = () => {
   const [productDetailModalVisible, setProductDetailModalVisible] = useState(false);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
 
-  const shopIds = useMemo(() => vendors.map(v => v.shopId), [vendors]);
+  const shopIds = useMemo(() => {
+    const list = shopCategory ? getVendorsByCategory(shopCategory) : vendors;
+    return list.map(v => v.shopId);
+  }, [vendors, shopCategory, getVendorsByCategory]);
 
   const fetchProducts = useCallback(
     async (offset: number) => {
@@ -393,7 +396,7 @@ const TagProductsScreen: React.FC = () => {
                 No {tagLabel} items yet
               </Text>
               <Text style={[styles.emptyMessage, { color: getColor('subText') }]}>
-                {`Products tagged as "${tagLabel}" will appear here.`}
+                {`Check back later for ${tagLabel} products.`}
               </Text>
             </View>
           ) : (

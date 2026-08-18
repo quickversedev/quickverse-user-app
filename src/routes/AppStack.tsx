@@ -49,7 +49,7 @@ export type RootStackParamList = {
   VendorDetails: { vendor: Vendor };
   // CollectionProduct removed
   CollectionDetail: { collection: Collection };
-  TagProducts: { tagCode: string; tagLabel: string };
+  TagProducts: { tagCode: string; tagLabel: string; shopCategory?: string };
   ProductDetailDemo: undefined;
   Cart: { cartId: string } | undefined;
   Orders: undefined;

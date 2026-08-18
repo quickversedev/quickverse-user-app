@@ -98,7 +98,7 @@ TagChip.displayName = 'TagChip';
 
 let cachedTags: ProductTagOption[] | null = null;
 
-const TagStrip: React.FC = () => {
+const TagStrip: React.FC<{ shopCategory?: string }> = ({ shopCategory }) => {
   const navigation = useNavigation<AppNavigationProp>();
   const [tags, setTags] = useState<ProductTagOption[]>(cachedTags || []);
 
@@ -124,9 +124,10 @@ const TagStrip: React.FC = () => {
       navigation.navigate('TagProducts', {
         tagCode: tag.id,
         tagLabel: tag.label,
+        shopCategory,
       });
     },
-    [navigation]
+    [navigation, shopCategory]
   );
 
   if (tags.length === 0) return null;
