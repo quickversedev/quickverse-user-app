@@ -17,6 +17,9 @@ import HealthyIcon from '../../../assets/svg/tags/healthy.svg';
 import LunchIcon from '../../../assets/svg/tags/lunch.svg';
 import SnacksIcon from '../../../assets/svg/tags/snacks.svg';
 import StreetFoodIcon from '../../../assets/svg/tags/street-food.svg';
+import Under99Icon from '../../../assets/svg/tags/under-99.svg';
+import Under199Icon from '../../../assets/svg/tags/under-199.svg';
+import Under299Icon from '../../../assets/svg/tags/under-299.svg';
 
 const TAG_ICONS: Record<string, React.FC<SvgProps>> = {
   breakfast: BreakfastIcon,
@@ -29,6 +32,9 @@ const TAG_ICONS: Record<string, React.FC<SvgProps>> = {
   healthy: HealthyIcon,
   combo: ComboIcon,
   'best-seller': BestSellerIcon,
+  'under-99': Under99Icon,
+  'under-199': Under199Icon,
+  'under-299': Under299Icon,
 };
 
 const ICON_SIZE = 40;

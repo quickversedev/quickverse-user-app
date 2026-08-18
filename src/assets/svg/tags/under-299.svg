@@ -1,0 +1,10 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Coin -->
+  <circle cx="24" cy="24" r="17" fill="#D1FAE5" stroke="#059669" stroke-width="2"/>
+  <circle cx="24" cy="24" r="13" fill="none" stroke="#34D399" stroke-width="1"/>
+  <!-- ₹ symbol -->
+  <path d="M17 15H31" stroke="#065F46" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M17 21H31" stroke="#065F46" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M25 15Q32 15 32 18Q32 21 25 21" stroke="#065F46" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+  <path d="M19 21L28 35" stroke="#065F46" stroke-width="2.8" stroke-linecap="round"/>
+</svg>
