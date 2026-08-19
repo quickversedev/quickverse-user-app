@@ -409,22 +409,6 @@ const BillSummaryCard: React.FC<BillSummaryCardProps> = ({
 
               {showTaxBreakdown && (
                 <View style={styles.taxBreakdownBox}>
-                  <ThemeText
-                    variant="caption"
-                    color={getColor('subText')}
-                    style={styles.taxBreakdownText}
-                  >
-                    Commission ({commissionPct}): ₹{resolvedCommission.toFixed(2)}
-                  </ThemeText>
-                  {commissionGst > 0 && (
-                    <ThemeText
-                      variant="caption"
-                      color={getColor('subText')}
-                      style={styles.taxBreakdownText}
-                    >
-                      Commission GST: ₹{commissionGst.toFixed(2)}
-                    </ThemeText>
-                  )}
                   {platformGst > 0 && (
                     <ThemeText
                       variant="caption"

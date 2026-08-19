@@ -122,8 +122,7 @@ const CartScreen: React.FC = () => {
       const serviceType = isGrocery ? 'GROCERY' : 'FOOD';
       const pricing = usePricingStore.getState().getPricingValues(serviceType);
 
-      const commission = pricing.commissionRate * subTotal;
-      const taxableAmount = commission + pricing.deliveryFee + pricing.platformFee;
+      const taxableAmount = pricing.deliveryFee + pricing.platformFee;
       const taxes = Math.round(pricing.gstRate * taxableAmount);
       return (
         subTotal + pricing.deliveryFee + pricing.platformFee + pricing.packagingCharges + taxes
@@ -180,6 +179,12 @@ const CartScreen: React.FC = () => {
       storeActive: true,
     } as Vendor;
   }, [vendors, cart?.cartId, cart?.products]);
+
+  const currentPricing = useMemo(() => {
+    const isGrocery = vendor?.category?.toLowerCase().includes('grocery');
+    const serviceType = isGrocery ? 'GROCERY' : 'FOOD';
+    return usePricingStore.getState().getPricingValues(serviceType);
+  }, [vendor, pricingConfigs]);
 
   const {
     paymentMethods,
@@ -926,6 +931,8 @@ const CartScreen: React.FC = () => {
             selectedPaymentOption={selectedPaymentOption}
             selectedCoupon={selectedDiscountCoupon}
             selectedDeliveryCoupon={selectedDeliveryCoupon}
+            platformFeeOriginal={currentPricing.platformFeeOriginal}
+            packagingChargesOriginal={currentPricing.packagingChargesOriginal}
           />
         </AnimatedCard>
       </ScrollView>

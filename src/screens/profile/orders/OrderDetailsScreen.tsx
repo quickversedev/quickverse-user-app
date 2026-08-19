@@ -696,7 +696,7 @@
 
       // Fee structure from dynamic pricing config
       const commission = pricing.commissionRate * Number(subTotal);
-      const taxableAmount = commission + pricing.deliveryFee + pricing.platformFee;
+      const taxableAmount = pricing.deliveryFee + pricing.platformFee;
       const taxes = Math.round(pricing.gstRate * taxableAmount);
 
       const total =

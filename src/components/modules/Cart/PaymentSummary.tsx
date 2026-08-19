@@ -64,6 +64,8 @@ interface PaymentSummaryProps {
   selectedPaymentOption?: string | undefined;
   selectedCoupon?: Coupon;
   selectedDeliveryCoupon?: Coupon;
+  platformFeeOriginal?: number;
+  packagingChargesOriginal?: number;
 }
 
 const PaymentSummary: React.FC<PaymentSummaryProps> = ({
@@ -73,6 +75,8 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   summaryLoading = false,
   selectedPaymentOption,
   selectedCoupon,
+  platformFeeOriginal,
+  packagingChargesOriginal,
 }) => {
   const { getColor, theme } = useTheme();
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
@@ -369,9 +373,19 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
                 <ThemeText variant="body" style={styles.billLabel}>
                   Platform Fee
                 </ThemeText>
-                <ThemeText variant="body" style={styles.billAmount}>
-                  ₹{platformFee.toFixed(2)}
-                </ThemeText>
+                <View style={styles.feeRow}>
+                  {platformFeeOriginal != null && platformFeeOriginal > platformFee && (
+                    <ThemeText
+                      variant="body"
+                      style={[styles.crossedText, { color: getColor('text') }]}
+                    >
+                      ₹{platformFeeOriginal.toFixed(2)}
+                    </ThemeText>
+                  )}
+                  <ThemeText variant="body" style={styles.billAmount}>
+                    ₹{platformFee.toFixed(2)}
+                  </ThemeText>
+                </View>
               </View>
 
               {packagingCharges > 0 && (
@@ -379,9 +393,19 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
                   <ThemeText variant="body" style={styles.billLabel}>
                     Packaging Charges
                   </ThemeText>
-                  <ThemeText variant="body" style={styles.billAmount}>
-                    ₹{packagingCharges.toFixed(2)}
-                  </ThemeText>
+                  <View style={styles.feeRow}>
+                    {packagingChargesOriginal != null && packagingChargesOriginal > packagingCharges && (
+                      <ThemeText
+                        variant="body"
+                        style={[styles.crossedText, { color: getColor('text') }]}
+                      >
+                        ₹{packagingChargesOriginal.toFixed(2)}
+                      </ThemeText>
+                    )}
+                    <ThemeText variant="body" style={styles.billAmount}>
+                      ₹{packagingCharges.toFixed(2)}
+                    </ThemeText>
+                  </View>
                 </View>
               )}
 
@@ -430,22 +454,14 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
                         gap: 4,
                       }}
                     >
-                      <ThemeText variant="caption" color={getColor('subText')}>
-                        Commission ({commissionRate.toFixed(0)}%): ₹{commission.toFixed(2)}
-                      </ThemeText>
-                      {commissionGst > 0 && (
+                      {platformGst > 0 && (
                         <ThemeText variant="caption" color={getColor('subText')}>
-                          Commission GST: ₹{commissionGst.toFixed(2)}
+                          Platform GST: ₹{platformGst.toFixed(2)}
                         </ThemeText>
                       )}
                       {deliveryGst > 0 && (
                         <ThemeText variant="caption" color={getColor('subText')}>
                           Delivery GST: ₹{deliveryGst.toFixed(2)}
-                        </ThemeText>
-                      )}
-                      {platformGst > 0 && (
-                        <ThemeText variant="caption" color={getColor('subText')}>
-                          Platform GST: ₹{platformGst.toFixed(2)}
                         </ThemeText>
                       )}
                       {packagingGst > 0 && (
@@ -488,7 +504,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
 
               <View style={styles.billRowLast}>
                 <ThemeText variant="body" style={[styles.billLabel, { fontWeight: '700' }]}>
-                  To Pay
+                  Total Pay
                 </ThemeText>
                 <ThemeText
                   variant="body"

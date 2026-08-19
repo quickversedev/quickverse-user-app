@@ -51,8 +51,7 @@ const OrderList: React.FC<OrderListProps> = ({
       const serviceType = isGrocery ? 'GROCERY' : 'FOOD';
       const pricing = usePricingStore.getState().getPricingValues(serviceType);
 
-      const commission = pricing.commissionRate * subTotal;
-      const taxableAmount = commission + pricing.deliveryFee + pricing.platformFee;
+      const taxableAmount = pricing.deliveryFee + pricing.platformFee;
       const taxes = Math.round(pricing.gstRate * taxableAmount);
       return (
         subTotal + pricing.deliveryFee + pricing.platformFee + pricing.packagingCharges + taxes
