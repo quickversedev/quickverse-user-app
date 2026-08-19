@@ -7,6 +7,7 @@ export interface Product {
   sellingPrice: number;
   sku: string;
   shopId: string;
+  shopName?: string;
   gst?: number;
   category?: string;
   division?: string;
@@ -33,8 +34,15 @@ export interface Product {
   }>;
 
   tags?: Array<{
+    id?: string;
+    label?: string;
     tagName: string;
   }>;
+}
+
+export interface ProductTagOption {
+  id: string;
+  label: string;
 }
 
 export interface Category {

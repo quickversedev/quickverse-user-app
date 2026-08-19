@@ -1,0 +1,13 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Cup -->
+  <path d="M13 18h20l-2.5 20h-15Z" fill="#FFF8EE" stroke="#C48820" stroke-width="1.8"/>
+  <!-- Coffee fill -->
+  <path d="M14.5 22h17l-2 13h-13Z" fill="#7C4A1E"/>
+  <!-- Foam -->
+  <ellipse cx="23" cy="22" rx="8.5" ry="2" fill="#D4A06A"/>
+  <!-- Handle -->
+  <path d="M33 22c3.5 0 5.5 2.5 5.5 5s-2 5-5.5 5" stroke="#C48820" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Steam -->
+  <path d="M20 12q1.5-3 0-5" stroke="#CDAA70" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <path d="M27 12q1.5-3 0-5" stroke="#CDAA70" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.5"/>
+</svg>

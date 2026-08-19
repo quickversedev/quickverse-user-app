@@ -12,6 +12,7 @@ import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
 import CouponsScreen from '../screens/cart/CouponsScreen';
 import CollectionDetailScreen from '../screens/collections/CollectionDetailScreen';
+import TagProductsScreen from '../screens/TagProducts/TagProductsScreen';
 import OrderFailureScreen from '../screens/order/OrderFailureScreen';
 import OrderSuccessScreen from '../screens/order/OrderSuccessScreen';
 import AboutUsScreen from '../screens/profile/AboutUsScreen';
@@ -48,6 +49,7 @@ export type RootStackParamList = {
   VendorDetails: { vendor: Vendor };
   // CollectionProduct removed
   CollectionDetail: { collection: Collection };
+  TagProducts: { tagCode: string; tagLabel: string; shopCategory?: string };
   ProductDetailDemo: undefined;
   Cart: { cartId: string } | undefined;
   Orders: undefined;
@@ -172,6 +174,11 @@ export const AppStack = () => {
       <Stack.Screen
         name="CollectionDetail"
         component={CollectionDetailScreen}
+        options={slideFromRightOptions}
+      />
+      <Stack.Screen
+        name="TagProducts"
+        component={TagProductsScreen}
         options={slideFromRightOptions}
       />
 

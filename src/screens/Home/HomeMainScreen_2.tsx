@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
@@ -14,24 +14,18 @@ import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
 import CategoryCards from './components/CategoryCards';
 import FastPicks from './components/FastPicks';
-import HomeCategoryStrip from './components/HomeCategoryStrip';
 import HomeGradientBand from './components/HomeGradientBand';
 import HomeHeader from './components/HomeHeader';
 import HomePromotionCarousel from './components/HomePromotionCarousel';
 import TopStoresNearYou from './components/TopStoresNearYou';
-import { DEFAULT_HOME_CATEGORY_ID, type HomeCategoryId } from './homeCategories';
+import type { HomeCategoryId } from './homeCategories';
 
 const HomeMainScreen_2 = React.memo(() => {
   const { theme } = useTheme();
   const { getVendorsNearLocation } = useVendorStore();
   const { selectedAddress } = useAuth();
 
-  /**
-   * Drives the gradient band only — selection is presentation-only for now.
-   * See the note at the top of homeCategories.ts.
-   */
-  const [activeCategoryId, setActiveCategoryId] =
-    useState<HomeCategoryId>(DEFAULT_HOME_CATEGORY_ID);
+  const activeCategoryId: HomeCategoryId = 'grocery';
 
   // Auto-refresh vendors when app comes back from background
   useAppStateRefresh({
@@ -100,8 +94,6 @@ const HomeMainScreen_2 = React.memo(() => {
             <View style={styles.searchContainer}>
               <SearchBar onPress={handleSearchPress} />
             </View>
-
-            <HomeCategoryStrip activeId={activeCategoryId} onSelect={setActiveCategoryId} />
 
             <View style={styles.carouselContainer}>
               <HomePromotionCarousel />

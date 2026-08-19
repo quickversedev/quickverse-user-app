@@ -1,0 +1,8 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Flame outer -->
+  <path d="M24 5c-9 11-15 18-15 26a15 15 0 0 0 30 0c0-8-6-15-15-26Z" fill="#FF9800"/>
+  <!-- Flame mid -->
+  <path d="M24 15c-5.5 7-9 12-9 17a9 9 0 0 0 18 0c0-5-3.5-10-9-17Z" fill="#FF5722"/>
+  <!-- Flame inner -->
+  <path d="M24 24c-3 4-5 7-5 10a5 5 0 0 0 10 0c0-3-2-6-5-10Z" fill="#FFC107"/>
+</svg>
