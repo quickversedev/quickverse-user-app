@@ -62,6 +62,14 @@ const CategoryScreen = () => {
     return categoryVendors.filter(v => v.shopId !== '68246').reverse();
   }, [isGrocery, categoryVendors]);
 
+  const browseColumns = React.useMemo(() => {
+    const cols: [Vendor, Vendor | undefined][] = [];
+    for (let i = 0; i < categoryVendors.length; i += 2) {
+      cols.push([categoryVendors[i], categoryVendors[i + 1]]);
+    }
+    return cols;
+  }, [categoryVendors]);
+
   const collectionsShopId = API_STORE_ID;
   const cachedCols = isGrocery ? getCachedCollections(collectionsShopId) : null;
 
@@ -217,13 +225,16 @@ const CategoryScreen = () => {
 
               <FlatList
                 horizontal
-                data={categoryVendors}
-                renderItem={({ item }) => (
-                  <View style={{ marginRight: 16 }}>
-                    <VendorCard2 vendor={item} size={160} onPress={handleVendorPress} />
+                data={browseColumns}
+                renderItem={({ item: [top, bottom] }) => (
+                  <View style={{ marginRight: 10, gap: 10 }}>
+                    <VendorCard2 vendor={top} size={(SCREEN_WIDTH - 32 - 20) / 3} onPress={handleVendorPress} />
+                    {bottom && (
+                      <VendorCard2 vendor={bottom} size={(SCREEN_WIDTH - 32 - 20) / 3} onPress={handleVendorPress} />
+                    )}
                   </View>
                 )}
-                keyExtractor={item => item.shopId}
+                keyExtractor={(_, i) => `col-${i}`}
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalList}
                 initialNumToRender={3}

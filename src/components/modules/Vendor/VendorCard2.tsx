@@ -61,7 +61,7 @@ const VendorCard2: React.FC<VendorCardProps> = ({
   };
 
   const cardWidth = typeof size === 'number' ? size : getCardWidth();
-  const imageHeight = 120; // Fixed reasonable height for the image part, matches screenshot proportions roughly
+  const imageHeight = cardWidth * 0.75;
 
   const bannerUri = getCleanImageUri(vendor.banner as string);
   const logoUri = getCleanImageUri(vendor.logo as string);
@@ -135,14 +135,13 @@ const VendorCard2: React.FC<VendorCardProps> = ({
       padding: 4,
     },
     contentContainer: {
-      padding: 10,
-      paddingBottom: 12,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
     },
     title: {
-      fontSize: 16,
+      fontSize: 12,
       fontWeight: '700',
       color: COLORS.title,
-      marginBottom: 4,
       fontFamily: 'Inter-Bold', // Assuming Inter or system bold
     },
     ratingRow: {
@@ -184,6 +183,23 @@ const VendorCard2: React.FC<VendorCardProps> = ({
       color: COLORS.metaText,
       fontSize: 10,
     },
+    timeBadge: {
+      position: 'absolute',
+      top: 6,
+      left: 6,
+      zIndex: 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255,255,255,0.9)',
+      paddingHorizontal: 6,
+      paddingVertical: 3,
+      borderRadius: 6,
+    },
+    timeBadgeText: {
+      fontSize: 9,
+      fontWeight: '700',
+      color: '#1F2937',
+    },
     closedCard: {
       opacity: 0.6,
     },
@@ -208,6 +224,20 @@ const VendorCard2: React.FC<VendorCardProps> = ({
             </View>
           )}
           {imageUri && <CachedImage uri={imageUri} style={styles.vendorImage} />}
+          {!isStoreClosed && (
+            <View style={styles.timeBadge}>
+              <FontAwesome6
+                name="bolt-lightning"
+                iconStyle="solid"
+                size={8}
+                color="#D97706"
+                style={{ marginRight: 3 }}
+              />
+              <ThemeText style={styles.timeBadgeText}>
+                {vendor.preparationTime || '30 mins'}
+              </ThemeText>
+            </View>
+          )}
           {/* <TouchableOpacity
                         style={styles.favoriteButton}
                         onPress={() => onFavoritePress && onFavoritePress(vendor)}
@@ -224,19 +254,6 @@ const VendorCard2: React.FC<VendorCardProps> = ({
           <ThemeText style={styles.title} numberOfLines={1}>
             {vendor.name}
           </ThemeText>
-
-          <View style={styles.metaRow}>
-            <FontAwesome6
-              name="bolt-lightning"
-              iconStyle="solid"
-              size={14}
-              color={COLORS.metaIcon}
-              style={{ marginRight: 4 }}
-            />
-            <ThemeText style={styles.metaText}>{vendor.preparationTime || '30 mins'}</ThemeText>
-            <ThemeText style={styles.dot}>•</ThemeText>
-            <ThemeText style={styles.metaText}>{vendor.shopAddress?.city || 'Location'}</ThemeText>
-          </View>
         </View>
       </View>
     </TouchableOpacity>

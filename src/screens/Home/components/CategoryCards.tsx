@@ -6,11 +6,13 @@ import {
   ImageSourcePropType,
   StyleSheet,
   Text,
+  ToastAndroid,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AppNavigationProp } from '../../../types/navigation';
+import useVendorStore from '../../../store/vendorStore';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -23,6 +25,7 @@ interface CardConfig {
   bgColor: string;
   category: string;
   comingSoon?: boolean;
+  compact?: boolean;
 }
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -50,7 +53,7 @@ const CARDS: CardConfig[] = [
     icon: require('../../../assets/images/icons/card-ikons/quickDelivery-ikoon.png'),
     bgColor: '#DBEAFE',
     category: 'QuickDelivery',
-    comingSoon: true,
+    compact: true,
   },
   {
     title: 'Health & Care',
@@ -59,17 +62,37 @@ const CARDS: CardConfig[] = [
     icon: require('../../../assets/images/icons/card-ikons/health&care-ikon.png'),
     bgColor: '#D1FAE5',
     category: 'Pharmacy',
-    comingSoon: true,
+    compact: true,
   },
 ];
 /* eslint-enable @typescript-eslint/no-require-imports */
 
+const PHARMACY_SHOP_ID = '110802';
+
 const CategoryCards = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const { theme } = useTheme();
+  const getVendorById = useVendorStore(s => s.getVendorById);
+  const fetchVendorById = useVendorStore(s => s.fetchVendorById);
 
-  const handlePress = (card: CardConfig) => {
-    if (card.comingSoon) return;
+  const handlePress = async (card: CardConfig) => {
+    if (card.category === 'QuickDelivery') {
+      ToastAndroid.show('Coming Soon!', ToastAndroid.SHORT);
+      return;
+    }
+    if (card.category === 'Pharmacy') {
+      let vendor = getVendorById(PHARMACY_SHOP_ID);
+      if (!vendor) {
+        await fetchVendorById(PHARMACY_SHOP_ID);
+        vendor = useVendorStore.getState().selectedVendor;
+      }
+      if (vendor) {
+        navigation.navigate('VendorProduct', { vendor });
+      } else {
+        ToastAndroid.show('Store not available', ToastAndroid.SHORT);
+      }
+      return;
+    }
     navigation.navigate('Category', { categoryName: card.category });
   };
 
@@ -95,47 +118,44 @@ const Card = ({
 }) => (
   <TouchableOpacity
     onPress={onPress}
-    activeOpacity={config.comingSoon ? 1 : 0.8}
-    style={styles.cardWrapper}
+    activeOpacity={0.8}
+    style={[styles.cardWrapper, config.compact && styles.cardWrapperSmall]}
   >
     <View
       style={[
         styles.cardContent,
-        { backgroundColor: config.comingSoon ? '#F3F4F6' : config.bgColor },
+        { backgroundColor: config.bgColor },
       ]}
     >
       {config.icon && (
         <Image
           source={config.icon}
-          style={[styles.categoryIcon, config.comingSoon && styles.categoryIconGreyed]}
+          style={styles.categoryIcon}
         />
       )}
       <View style={styles.textContainer}>
-        <Text style={[styles.title, { color: config.comingSoon ? '#9CA3AF' : theme.colors.text }]}>
+        <Text style={[styles.title, { color: theme.colors.text }]}>
           {config.title}
         </Text>
-        <Text
-          style={[styles.subtitle, { color: config.comingSoon ? '#D1D5DB' : theme.colors.subText }]}
-        >
-          {config.subtitle}
-        </Text>
+        {!config.compact && (
+          <Text style={[styles.subtitle, { color: theme.colors.subText }]}>
+            {config.subtitle}
+          </Text>
+        )}
       </View>
-      {config.comingSoon && (
-        <View style={styles.comingSoonBanner}>
-          <Text style={styles.comingSoonText}>COMING SOON</Text>
-        </View>
-      )}
-      {!config.comingSoon && (
+      {!config.compact && (
         <Image
           source={require('../../../assets/images/icons/card-ikons/arror.png')}
           style={styles.arrowIcon}
         />
       )}
-      <Image
-        source={config.image}
-        style={[styles.cardImage, config.comingSoon && styles.cardImageGreyed]}
-        resizeMode="contain"
-      />
+      {!config.compact && (
+        <Image
+          source={config.image}
+          style={styles.cardImage}
+          resizeMode="contain"
+        />
+      )}
     </View>
   </TouchableOpacity>
 );
@@ -160,6 +180,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
+  },
+  cardWrapperSmall: {
+    height: 55,
   },
   cardContent: {
     flex: 1,
@@ -188,9 +211,6 @@ const styles = StyleSheet.create({
     height: 70,
     borderBottomRightRadius: 16,
   },
-  cardImageGreyed: {
-    opacity: 0.3,
-  },
   arrowIcon: {
     position: 'absolute',
     bottom: 10,
@@ -204,25 +224,6 @@ const styles = StyleSheet.create({
     right: 8,
     width: 24,
     height: 24,
-  },
-  categoryIconGreyed: {
-    opacity: 0.3,
-  },
-  comingSoonBanner: {
-    position: 'absolute',
-    bottom: 10,
-    left: -20,
-    backgroundColor: '#9CA3AF',
-    paddingHorizontal: 24,
-    paddingVertical: 3,
-    transform: [{ rotate: '35deg' }],
-    zIndex: 10,
-  },
-  comingSoonText: {
-    color: '#FFFFFF',
-    fontSize: 7,
-    fontWeight: '800',
-    letterSpacing: 1,
   },
 });
 
