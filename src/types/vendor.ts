@@ -33,7 +33,8 @@ export interface Vendor {
   rating?: number; // Optional rating field
   shopAddress?: VendorAddress; // Optional address field
   coordinates?: VendorCoordinates; // Optional coordinates field
-  featured?: boolean; // Optional featured field
+  featured?: boolean;
+  testShop?: boolean;
 }
 
 export interface VendorFilters {

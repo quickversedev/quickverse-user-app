@@ -96,7 +96,7 @@ const useVendorStore = create<VendorStoreWithCache>()(
           const authHeader = getAuthHeader();
           const data = await apiCall(
             axiosInstance.get(VENDOR_API_URL, {
-              params: { ...params, isTest: true, useDisplayOrder: true },
+              params: { ...params, isTest: __DEV__, useDisplayOrder: true },
               headers: {
                 Authorization: authHeader,
               },
@@ -155,6 +155,10 @@ const useVendorStore = create<VendorStoreWithCache>()(
               },
             })
           );
+          if (!__DEV__ && data?.testShop) {
+            set({ selectedVendor: null, error: 'Vendor not found', loading: false });
+            return;
+          }
           set({ selectedVendor: data, loading: false });
         } catch (_err) {
           set({ error: 'Failed to fetch vendor details', loading: false });
