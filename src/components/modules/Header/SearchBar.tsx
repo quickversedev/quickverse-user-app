@@ -27,7 +27,7 @@ const SearchBarContent: React.FC<{ placeholder?: string }> = ({ placeholder }) =
         style={[
           styles.container,
           {
-            backgroundColor: '#F1F2F4', // Search Bar specific background
+            backgroundColor: 'rgba(241, 242, 244, 0.75)',
             borderColor: 'transparent', // Handled by gradient
             borderWidth: 0,
             shadowColor: 'transparent',

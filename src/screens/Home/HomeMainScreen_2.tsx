@@ -91,11 +91,10 @@ const HomeMainScreen_2 = React.memo(() => {
           <HomeGradientBand activeId={activeCategoryId}>
             <HomeHeader />
 
-            <View style={styles.searchContainer}>
-              <SearchBar onPress={handleSearchPress} />
-            </View>
-
-            <View style={styles.carouselContainer}>
+            <View style={styles.searchCarouselContainer}>
+              <View style={styles.searchOverlay}>
+                <SearchBar onPress={handleSearchPress} />
+              </View>
               <HomePromotionCarousel />
             </View>
 
@@ -125,13 +124,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  carouselContainer: {
-    marginTop: 0,
+  searchCarouselContainer: {
+    position: 'relative',
     marginBottom: 2,
   },
-  searchContainer: {
+  searchOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
     paddingHorizontal: 16,
-    marginBottom: 14,
   },
   cardsContainer: {
     marginTop: 2,

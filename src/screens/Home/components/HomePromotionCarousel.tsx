@@ -143,7 +143,8 @@ const HomePromotionCarousel = () => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 2,
+    paddingTop: 58,
+    paddingBottom: 2,
   },
   bannerScrollContainer: {
     paddingHorizontal: SIDE_PADDING,
