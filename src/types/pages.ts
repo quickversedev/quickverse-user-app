@@ -9,6 +9,7 @@ export interface Promotion {
   /** Sent by the server's PromotionResponseDTO; used as the carousel's React key. */
   promoId?: number;
   sequence?: number;
+  timeSlot?: 'MORNING' | 'AFTERNOON' | 'NIGHT' | null;
 }
 
 export interface Page {
