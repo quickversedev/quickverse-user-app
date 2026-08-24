@@ -35,6 +35,7 @@ export interface Vendor {
   coordinates?: VendorCoordinates; // Optional coordinates field
   featured?: boolean;
   testShop?: boolean;
+  displayOrderSecondary?: string | null;
 }
 
 export interface VendorFilters {

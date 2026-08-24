@@ -63,9 +63,12 @@ const CategoryScreen = () => {
   }, [isGrocery, categoryVendors]);
 
   const browseColumns = React.useMemo(() => {
-    const cols: [Vendor, Vendor | undefined][] = [];
-    for (let i = 0; i < categoryVendors.length; i += 2) {
-      cols.push([categoryVendors[i], categoryVendors[i + 1]]);
+    const row1 = categoryVendors.filter(v => !v.displayOrderSecondary);
+    const row2 = categoryVendors.filter(v => !!v.displayOrderSecondary);
+    const maxLen = Math.max(row1.length, row2.length);
+    const cols: [Vendor | undefined, Vendor | undefined][] = [];
+    for (let i = 0; i < maxLen; i++) {
+      cols.push([row1[i], row2[i]]);
     }
     return cols;
   }, [categoryVendors]);
@@ -228,7 +231,9 @@ const CategoryScreen = () => {
                 data={browseColumns}
                 renderItem={({ item: [top, bottom] }) => (
                   <View style={{ marginRight: 10, gap: 10 }}>
-                    <VendorCard2 vendor={top} size={(SCREEN_WIDTH - 32 - 20) / 3} onPress={handleVendorPress} />
+                    {top && (
+                      <VendorCard2 vendor={top} size={(SCREEN_WIDTH - 32 - 20) / 3} onPress={handleVendorPress} />
+                    )}
                     {bottom && (
                       <VendorCard2 vendor={bottom} size={(SCREEN_WIDTH - 32 - 20) / 3} onPress={handleVendorPress} />
                     )}
