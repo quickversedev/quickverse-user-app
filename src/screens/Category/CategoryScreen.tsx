@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
   FlatList,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -25,6 +26,8 @@ import {
 } from '../../data/collectionsData';
 import { RootStackParamList } from '../../routes/AppStack';
 import useVendorStore from '../../store/vendorStore';
+import usePagesStore from '../../store/pages/pagesStore';
+import useConfigStore from '../../store/configStore';
 import { Vendor } from '../../types/vendor';
 import PromotionCarousel from '../Home/components/PromotionCarousel';
 import CollectionsGrid from './components/CollectionsGrid';
@@ -48,6 +51,33 @@ const CategoryScreen = () => {
   const vendors = useVendorStore(state => state.vendors);
   const getVendorsByCategory = useVendorStore(state => state.getVendorsByCategory);
   const getVendorById = useVendorStore(state => state.getVendorById);
+
+  /**
+   * Pull-to-refresh. Both things this screen renders are server-driven and edited in
+   * the admin dashboard — the poster carousel (pages) and the two-row Browse stores
+   * grid (vendors) — and both sit behind caches (30 min / 10 min). Without a refresh
+   * gesture a change was invisible until the TTL expired or app data was cleared.
+   */
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const handleRefresh = React.useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const regionId = useConfigStore.getState().getRegionId();
+      if (regionId) {
+        usePagesStore.getState().invalidateCache();
+        await usePagesStore.getState().fetchPages(regionId);
+      }
+      // Reuse the location the current list was fetched with, so refreshing never
+      // silently changes which vendors are in range.
+      const lastLocation = useVendorStore.getState().userLocation;
+      useVendorStore.getState().invalidateCache();
+      await useVendorStore.getState().fetchVendors(lastLocation ?? undefined);
+    } catch (error) {
+      console.warn('Error refreshing category screen:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, []);
 
   const categoryVendors = React.useMemo(() => {
     return getVendorsByCategory(categoryName).filter(
@@ -242,10 +272,18 @@ const CategoryScreen = () => {
                 renderItem={({ item: [top, bottom] }) => (
                   <View style={{ marginRight: 10, gap: 10 }}>
                     {top && (
-                      <VendorCard2 vendor={top} size={(SCREEN_WIDTH - 32 - 20) / 3} onPress={handleVendorPress} />
+                      <VendorCard2
+                        vendor={top}
+                        size={(SCREEN_WIDTH - 32 - 20) / 3}
+                        onPress={handleVendorPress}
+                      />
                     )}
                     {bottom && (
-                      <VendorCard2 vendor={bottom} size={(SCREEN_WIDTH - 32 - 20) / 3} onPress={handleVendorPress} />
+                      <VendorCard2
+                        vendor={bottom}
+                        size={(SCREEN_WIDTH - 32 - 20) / 3}
+                        onPress={handleVendorPress}
+                      />
                     )}
                   </View>
                 )}
@@ -312,6 +350,7 @@ const CategoryScreen = () => {
         ListHeaderComponent={headerElement}
         ListEmptyComponent={hasNoVendors || showStoresList ? renderEmpty : null}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
         showsVerticalScrollIndicator={false}
         removeClippedSubviews={true}
         initialNumToRender={3}

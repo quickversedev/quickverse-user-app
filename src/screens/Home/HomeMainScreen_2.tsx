@@ -97,13 +97,19 @@ const HomeMainScreen_2 = React.memo(() => {
         usePagesStore.getState().invalidateCache();
         await usePagesStore.getState().fetchPages(regionId);
       }
+      useVendorStore.getState().invalidateCache();
       if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
-        useVendorStore.getState().invalidateCache();
         await getVendorsNearLocation({
           latitude: selectedAddress.coordinates.latitude,
           longitude: selectedAddress.coordinates.longitude,
           radius: 5,
         });
+      } else {
+        // No delivery address picked yet (e.g. a guest who skipped login). Fall back to
+        // whatever location the current list was fetched with, so pull-to-refresh still
+        // works rather than silently doing nothing.
+        const lastLocation = useVendorStore.getState().userLocation;
+        await useVendorStore.getState().fetchVendors(lastLocation ?? undefined);
       }
     } catch (error) {
       console.warn('Error refreshing home screen:', error);
