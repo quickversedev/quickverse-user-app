@@ -37,6 +37,25 @@ interface VendorStoreWithCache extends VendorStore {
   reset: () => void;
 }
 
+/**
+ * How far the user must move before the cached vendor list is considered wrong.
+ * Well above GPS jitter (metres) and well below the radius the query uses, so
+ * normal standing-still usage still hits the cache.
+ */
+const VENDOR_CACHE_MOVE_METERS = 1000;
+
+/** Haversine distance in metres. */
+function distanceMeters(a: LocationFilter, b: LocationFilter): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLon = toRad(b.longitude - a.longitude);
+  const lat1 = toRad(a.latitude);
+  const lat2 = toRad(b.latitude);
+  const h = Math.sin(dLat / 2) ** 2 + Math.sin(dLon / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
 const initialState = {
   vendors: [] as Vendor[],
   selectedVendor: null as Vendor | null,
@@ -55,7 +74,22 @@ const useVendorStore = create<VendorStoreWithCache>()(
       invalidateCache: () => set({ _lastFetchedAt: 0 }),
 
       fetchVendors: async (location?: LocationFilter) => {
-        if (isCacheFresh(get()._lastFetchedAt, CACHE_TTL.VENDORS) && get().vendors.length > 0) {
+        // Vendors come from a radius query around the user, so freshness alone is not
+        // enough: someone who moves (or whose GPS resolves to a different place) would
+        // keep the previous location's vendors for the whole TTL.
+        //
+        // Compared by distance rather than equality on purpose — GPS jitters by a few
+        // metres on every reading, so exact comparison would bypass the cache entirely
+        // and refetch on every call.
+        const cached = get().userLocation;
+        const movedAway =
+          !!location && !!cached && distanceMeters(cached, location) > VENDOR_CACHE_MOVE_METERS;
+
+        if (
+          !movedAway &&
+          isCacheFresh(get()._lastFetchedAt, CACHE_TTL.VENDORS) &&
+          get().vendors.length > 0
+        ) {
           return;
         }
 

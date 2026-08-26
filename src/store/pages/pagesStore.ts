@@ -9,6 +9,7 @@ const initialState = {
   loading: false,
   error: null as string | null,
   _lastFetchedAt: 0,
+  _cachedRegionId: null as string | null,
 };
 
 const usePagesStore = create<PagesStore>()(
@@ -21,7 +22,16 @@ const usePagesStore = create<PagesStore>()(
       clearError: () => set({ error: null }),
 
       fetchPages: async (regionId: string) => {
-        if (isCacheFresh(get()._lastFetchedAt, CACHE_TTL.PAGES) && get().pages.length > 0) {
+        // Freshness alone is not enough: pages are region-scoped, so a user who
+        // crosses a region boundary (or whose GPS resolves elsewhere) would keep
+        // being served the previous region's banners for the whole TTL. Only reuse
+        // the cache when it was built for this same region.
+        const cachedForSameRegion = get()._cachedRegionId === regionId;
+        if (
+          cachedForSameRegion &&
+          isCacheFresh(get()._lastFetchedAt, CACHE_TTL.PAGES) &&
+          get().pages.length > 0
+        ) {
           return;
         }
 
@@ -45,6 +55,7 @@ const usePagesStore = create<PagesStore>()(
             loading: false,
             error: null,
             _lastFetchedAt: Date.now(),
+            _cachedRegionId: regionId,
           });
         } catch (err) {
           console.error('Error fetching pages:', err);
@@ -65,6 +76,7 @@ const usePagesStore = create<PagesStore>()(
     createPersistedConfig<PagesStore>('pages-storage', state => ({
       pages: state.pages,
       _lastFetchedAt: state._lastFetchedAt,
+      _cachedRegionId: state._cachedRegionId,
     }))
   )
 );

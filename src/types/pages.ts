@@ -23,6 +23,8 @@ export interface PagesState {
   loading: boolean;
   error: string | null;
   _lastFetchedAt: number;
+  /** Region the cached pages belong to. Freshness alone is not enough — see fetchPages. */
+  _cachedRegionId: string | null;
 }
 
 export interface PagesActions {
