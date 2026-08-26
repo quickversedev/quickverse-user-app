@@ -61,6 +61,21 @@ const HomePromotionCarousel = () => {
 
   const bannerItems = useMemo(() => promotions.filter(item => item.bannerImage), [promotions]);
 
+  /**
+   * Snap back to the first banner whenever the set changes.
+   *
+   * The ScrollView keeps its horizontal offset across re-renders. If the list shrinks
+   * while auto-scroll has advanced — e.g. a pull-to-refresh picks up a poster that the
+   * admin moved to another time slot — the old offset points past the end and the
+   * carousel renders as blank space. The auto-scroll effect below cannot correct it,
+   * because it early-returns for a single banner.
+   */
+  useEffect(() => {
+    currentIndexRef.current = 0;
+    setCurrentIndex(0);
+    scrollViewRef.current?.scrollTo({ x: 0, animated: false });
+  }, [bannerItems.length]);
+
   useEffect(() => {
     if (bannerItems.length <= 1) return;
 
@@ -122,10 +137,7 @@ const HomePromotionCarousel = () => {
         {bannerItems.map((banner, index) => (
           <View
             key={banner.promoId ?? index}
-            style={[
-              styles.bannerShadow,
-              index === bannerItems.length - 1 && { marginRight: 0 },
-            ]}
+            style={[styles.bannerShadow, index === bannerItems.length - 1 && { marginRight: 0 }]}
           >
             <PromoBanner
               promo={{ ...banner, bannerImage: true }}
