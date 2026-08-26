@@ -29,6 +29,7 @@ export interface PagesState {
 
 export interface PagesActions {
   fetchPages: (regionId: string) => Promise<void>;
+  invalidateCache: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;

@@ -1,12 +1,14 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useMemo } from 'react';
-import { ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 
 import { SearchBar } from '../../components/modules/Header/SearchBar';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAppStateRefresh } from '../../hooks/useAppStateRefresh';
+import usePagesStore from '../../store/pages/pagesStore';
+import useConfigStore from '../../store/configStore';
 import useCartStore from '../../store/cart/cartStore';
 import useOrderStore from '../../store/cart/orderStore';
 import useVendorStore from '../../store/vendorStore';
@@ -39,8 +41,17 @@ const HomeMainScreen_2 = React.memo(() => {
             radius: 5,
           });
         }
+        // Banners are server-driven and edited in the admin dashboard, but the pages
+        // cache has a 30-minute TTL and there is no pull-to-refresh on this screen —
+        // so without this a poster change was invisible until the cache expired or the
+        // app's data was cleared. Returning to the app is the natural moment to refresh.
+        const regionId = useConfigStore.getState().getRegionId();
+        if (regionId) {
+          usePagesStore.getState().invalidateCache();
+          await usePagesStore.getState().fetchPages(regionId);
+        }
       } catch (error) {
-        console.warn('Error refreshing vendors on home screen:', error);
+        console.warn('Error refreshing home screen content:', error);
       }
     },
     refreshThreshold: 100000, // Refresh after 100 seconds in background
@@ -71,6 +82,36 @@ const HomeMainScreen_2 = React.memo(() => {
     navigation.navigate('MainApp', { screen: 'Explore' });
   }, [navigation]);
 
+  /**
+   * Pull-to-refresh. This screen had none, and the only other refresh path is
+   * useAppStateRefresh's 100-second background threshold — far too coarse for
+   * server-driven content edited in the admin dashboard, where a banner change
+   * was otherwise invisible until the 30-minute pages cache expired.
+   */
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const regionId = useConfigStore.getState().getRegionId();
+      if (regionId) {
+        usePagesStore.getState().invalidateCache();
+        await usePagesStore.getState().fetchPages(regionId);
+      }
+      if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
+        useVendorStore.getState().invalidateCache();
+        await getVendorsNearLocation({
+          latitude: selectedAddress.coordinates.latitude,
+          longitude: selectedAddress.coordinates.longitude,
+          radius: 5,
+        });
+      }
+    } catch (error) {
+      console.warn('Error refreshing home screen:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [selectedAddress, getVendorsNearLocation]);
+
   return (
     /**
      * edges={['bottom']} — the top inset is applied by HomeGradientBand instead, so the
@@ -87,6 +128,7 @@ const HomeMainScreen_2 = React.memo(() => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: hasFloatingCards ? 130 : 50 }}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
         >
           <HomeGradientBand activeId={activeCategoryId}>
             <HomeHeader />

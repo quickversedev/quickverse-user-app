@@ -17,6 +17,10 @@ const usePagesStore = create<PagesStore>()(
     (set, get) => ({
       ...initialState,
 
+      /** Force the next fetchPages to hit the network. Used by the foreground refresh
+       *  so a banner edited in the admin dashboard shows up without clearing app data. */
+      invalidateCache: () => set({ _lastFetchedAt: 0 }),
+
       setLoading: (loading: boolean) => set({ loading }),
       setError: (error: string | null) => set({ error }),
       clearError: () => set({ error: null }),
