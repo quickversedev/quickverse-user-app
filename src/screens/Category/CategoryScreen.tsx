@@ -271,12 +271,30 @@ const CategoryScreen = () => {
                 data={browseColumns}
                 renderItem={({ item: [top, bottom] }) => (
                   <View style={{ marginRight: 10, gap: 10 }}>
-                    {top && (
+                    {top ? (
                       <VendorCard2
                         vendor={top}
                         size={(SCREEN_WIDTH - 32 - 20) / 3}
                         onPress={handleVendorPress}
                       />
+                    ) : (
+                      // Row 2 can be longer than row 1. Without a spacer the lone bottom
+                      // card is the column's only child and rides up into the first row,
+                      // so a row-2 vendor reads as a row-1 one.
+                      //
+                      // An invisible copy of the same card is used rather than a fixed
+                      // height: VendorCard2 derives its height from the size prop plus
+                      // its own footer, so any hardcoded value would drift the moment
+                      // that card's layout changes.
+                      bottom && (
+                        <View style={{ opacity: 0 }} pointerEvents="none">
+                          <VendorCard2
+                            vendor={bottom}
+                            size={(SCREEN_WIDTH - 32 - 20) / 3}
+                            onPress={() => {}}
+                          />
+                        </View>
+                      )
                     )}
                     {bottom && (
                       <VendorCard2
