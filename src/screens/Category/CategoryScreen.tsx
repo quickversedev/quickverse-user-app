@@ -63,8 +63,18 @@ const CategoryScreen = () => {
   }, [isGrocery, categoryVendors]);
 
   const browseColumns = React.useMemo(() => {
+    // Row 1 arrives pre-sorted by displayOrder from /v3/shops. Row 2 does not:
+    // the query only orders by displayOrder, so its members would otherwise keep
+    // that order instead of their own sequence. Sort them here.
     const row1 = categoryVendors.filter(v => !v.displayOrderSecondary);
-    const row2 = categoryVendors.filter(v => !!v.displayOrderSecondary);
+    const row2 = categoryVendors
+      .filter(v => !!v.displayOrderSecondary)
+      .sort((a, b) => {
+        const av = Number(a.displayOrderSecondary);
+        const bv = Number(b.displayOrderSecondary);
+        if (Number.isNaN(av) || Number.isNaN(bv)) return 0;
+        return av - bv;
+      });
     const maxLen = Math.max(row1.length, row2.length);
     const cols: [Vendor | undefined, Vendor | undefined][] = [];
     for (let i = 0; i < maxLen; i++) {
