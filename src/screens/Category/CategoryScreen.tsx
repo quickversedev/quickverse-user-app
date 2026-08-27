@@ -33,6 +33,7 @@ import PromotionCarousel from '../Home/components/PromotionCarousel';
 import CollectionsGrid from './components/CollectionsGrid';
 import CollectionsGridSkeleton from './components/CollectionsGridSkeleton';
 import TagStrip from '../Home/components/TagStrip';
+import useProductTagsStore from '../../store/tags/productTagsStore';
 import QuickSearchStrip from './components/QuickSearchStrip';
 
 type CategoryScreenRouteProp = RouteProp<RootStackParamList, 'Category'>;
@@ -53,10 +54,11 @@ const CategoryScreen = () => {
   const getVendorById = useVendorStore(state => state.getVendorById);
 
   /**
-   * Pull-to-refresh. Both things this screen renders are server-driven and edited in
-   * the admin dashboard — the poster carousel (pages) and the two-row Browse stores
-   * grid (vendors) — and both sit behind caches (30 min / 10 min). Without a refresh
-   * gesture a change was invisible until the TTL expired or app data was cleared.
+   * Pull-to-refresh. Everything this screen renders is server-driven and edited in the
+   * admin dashboard — the poster carousel (pages), the two-row Browse stores grid
+   * (vendors) and the tag strip (tags) — and all of it sits behind a cache. Without a
+   * refresh gesture a change was invisible until the TTL expired or app data was
+   * cleared, so every one of those caches has to be dropped here, not just the first two.
    */
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const handleRefresh = React.useCallback(async () => {
@@ -72,12 +74,31 @@ const CategoryScreen = () => {
       const lastLocation = useVendorStore.getState().userLocation;
       useVendorStore.getState().invalidateCache();
       await useVendorStore.getState().fetchVendors(lastLocation ?? undefined);
+      // Dropped AND refetched here, in that order.
+      //
+      // Invalidating alone was not enough: it only zeroes the timestamps, and nothing
+      // then asks for the vocabulary again. The strip only refetched because TagStrip's
+      // effect happened to re-run when the vendor list came back as a new array — so a
+      // refresh that returned an identical vendor list left a deleted tag on screen for
+      // the rest of the TTL. Pulling the strip's fetch up to here makes the gesture do
+      // what it says regardless of what the vendor fetch returned.
+      //
+      // After the vendor fetch, not before, because the tag counts are scoped to the
+      // vendors in range.
+      useProductTagsStore.getState().invalidateCache();
+      const refreshedShopIds = useVendorStore
+        .getState()
+        .getVendorsByCategory(categoryName)
+        .map(vendor => vendor.shopId);
+      if (refreshedShopIds.length > 0) {
+        await useProductTagsStore.getState().fetchTags(categoryName, refreshedShopIds);
+      }
     } catch (error) {
       console.warn('Error refreshing category screen:', error);
     } finally {
       setIsRefreshing(false);
     }
-  }, []);
+  }, [categoryName]);
 
   const categoryVendors = React.useMemo(() => {
     return getVendorsByCategory(categoryName).filter(
@@ -220,7 +241,13 @@ const CategoryScreen = () => {
       </View>
 
       {/* Tag strip — Food only */}
-      {!isGrocery && <TagStrip shopCategory={categoryName} />}
+      {/*
+        Rendered for grocery as well as food. The strip is server-filtered to tags that
+        actually have products among the vendors in range, and returns null when that
+        comes back empty — so a category with nothing tagged shows nothing at all rather
+        than a row of dead chips. Put the `!isGrocery &&` guard back to restrict it.
+      */}
+      <TagStrip shopCategory={categoryName} />
 
       {/* Conditional Content if Vendors Exist */}
       {!hasNoVendors && (
