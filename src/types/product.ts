@@ -40,9 +40,24 @@ export interface Product {
   }>;
 }
 
+/**
+ * An entry in the server's tag vocabulary (GET /v3/product-tags). Backed by the
+ * product_tag table, so a new tag arrives here without an app release — which is why
+ * imageUrl is a URL rather than a bundled asset and why nothing keys off `id`.
+ */
 export interface ProductTagOption {
   id: string;
   label: string;
+  /** Absent until an admin uploads one; the chip falls back to an initial. */
+  imageUrl?: string;
+  /** False for the virtual price bands, which are derived from price. */
+  assignable?: boolean;
+  /** The band's ceiling for a price tag; absent on an ordinary one. */
+  maxPrice?: number;
+  displayOrder?: number;
+  active?: boolean;
+  /** Only present when the request asked for counts. */
+  productCount?: number;
 }
 
 export interface Category {

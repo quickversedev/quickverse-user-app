@@ -7,6 +7,10 @@ export const CACHE_TTL = {
   PRICING: 4 * 60 * 60 * 1000,
   PAGES: 30 * 60 * 1000,
   VENDORS: 10 * 60 * 1000,
+  // Deliberately not longer than VENDORS: the tag vocabulary is filtered and counted
+  // against the vendors in range, so a tag list that outlives the vendor list it was
+  // built from can describe a set of shops the app is no longer showing.
+  TAGS: 10 * 60 * 1000,
 } as const;
 
 export function isCacheFresh(lastFetchedAt: number, ttlMs: number): boolean {

@@ -1,9 +1,10 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import type { SvgProps } from 'react-native-svg';
 import { ThemeText } from '../../../components/common/theme/ThemeText';
-import productsService from '../../../services/productsService';
+import useProductTagsStore from '../../../store/tags/productTagsStore';
+import useVendorStore from '../../../store/vendorStore';
 import { AppNavigationProp } from '../../../types/navigation';
 import { ProductTagOption } from '../../../types/product';
 
@@ -21,7 +22,16 @@ import Under99Icon from '../../../assets/svg/tags/under-99.svg';
 import Under199Icon from '../../../assets/svg/tags/under-199.svg';
 import Under299Icon from '../../../assets/svg/tags/under-299.svg';
 
-const TAG_ICONS: Record<string, React.FC<SvgProps>> = {
+/**
+ * Chip artwork now comes from the server as `imageUrl`, uploaded per tag in the admin
+ * dashboard — that is what lets a tag be added or restyled without shipping an app.
+ *
+ * These bundled SVGs are the fallback for the thirteen tags that predate that field and
+ * have no image uploaded yet. A tag with no entry here and no imageUrl renders its
+ * initial, so a brand-new tag is never invisible. Once every seeded tag has an image in
+ * the dashboard this map and the files under assets/svg/tags can be deleted.
+ */
+const LEGACY_TAG_ICONS: Record<string, React.FC<SvgProps>> = {
   breakfast: BreakfastIcon,
   lunch: LunchIcon,
   dinner: DinnerIcon,
@@ -63,7 +73,27 @@ const TagChip = React.memo(
     onPress: (tag: ProductTagOption) => void;
   }) => {
     const color = CHIP_COLORS[colorIndex % CHIP_COLORS.length];
-    const Icon = TAG_ICONS[tag.id];
+    const LegacyIcon = LEGACY_TAG_ICONS[tag.id];
+
+    // A dead or slow S3 URL must not leave a blank circle, so a failed load drops
+    // through to the same fallback an image-less tag gets.
+    const [imageFailed, setImageFailed] = useState(false);
+    const showRemoteImage = Boolean(tag.imageUrl) && !imageFailed;
+
+    /**
+     * A price band carries its amount on the icon rather than in the caption below.
+     * At this chip width "Under \u20b9199" could not fit on one line, and the number is
+     * the part that matters — pushing it onto a second line or truncating it to
+     * "Under \u20b91\u2026" buried the only thing distinguishing the three bands.
+     *
+     * The caption then drops the amount so it is not shown twice. The strip trails off
+     * to the server's label if it is not in the "<something> \u20b9<amount>" shape, so an
+     * admin renaming the tag can never blank the caption.
+     */
+    const priceBadge = tag.maxPrice != null ? `\u20b9${tag.maxPrice}` : null;
+    const caption = priceBadge
+      ? tag.label.replace(/\s*\u20b9\s*[\d,]+\s*$/, '').trim() || tag.label
+      : tag.label;
 
     return (
       <TouchableOpacity
@@ -75,19 +105,31 @@ const TagChip = React.memo(
         accessibilityLabel={tag.label}
       >
         <View style={[styles.iconWrap, { backgroundColor: color.bg }]}>
-          {Icon ? (
-            <Icon width={ICON_SIZE} height={ICON_SIZE} />
-          ) : (
-            <View
-              style={[
-                styles.iconPlaceholder,
-                { backgroundColor: color.bg, borderColor: color.text },
-              ]}
+          {showRemoteImage ? (
+            <Image
+              source={{ uri: tag.imageUrl }}
+              style={styles.image}
+              resizeMode="contain"
+              onError={() => setImageFailed(true)}
             />
+          ) : LegacyIcon ? (
+            <LegacyIcon width={ICON_SIZE} height={ICON_SIZE} />
+          ) : (
+            <ThemeText style={[styles.initial, { color: color.text }]}>
+              {tag.label.charAt(0).toUpperCase()}
+            </ThemeText>
+          )}
+
+          {priceBadge && (
+            <View style={[styles.priceBadge, { backgroundColor: color.text }]}>
+              <ThemeText style={[styles.priceBadgeText, { color: color.bg }]}>
+                {priceBadge}
+              </ThemeText>
+            </View>
           )}
         </View>
-        <ThemeText numberOfLines={1} style={[styles.label, { color: color.text }]}>
-          {tag.label}
+        <ThemeText numberOfLines={2} style={[styles.label, { color: color.text }]}>
+          {caption}
         </ThemeText>
       </TouchableOpacity>
     );
@@ -96,28 +138,31 @@ const TagChip = React.memo(
 
 TagChip.displayName = 'TagChip';
 
-let cachedTags: ProductTagOption[] | null = null;
-
 const TagStrip: React.FC<{ shopCategory?: string }> = ({ shopCategory }) => {
   const navigation = useNavigation<AppNavigationProp>();
-  const [tags, setTags] = useState<ProductTagOption[]>(cachedTags || []);
+
+  const { vendors, getVendorsByCategory } = useVendorStore();
+  const scope = shopCategory ?? '_all';
+
+  /**
+   * The same shop list TagProductsScreen will query with. It is passed to the server so
+   * the non-empty filter is evaluated against these shops — otherwise a tag could be
+   * non-empty platform-wide, survive the filter, and still open an empty screen here.
+   */
+  const shopIds = useMemo(() => {
+    const list = shopCategory ? getVendorsByCategory(shopCategory) : vendors;
+    return list.map(v => v.shopId);
+  }, [vendors, shopCategory, getVendorsByCategory]);
+
+  const tags = useProductTagsStore(state => state.byScope[scope]?.tags) ?? [];
+  const fetchTags = useProductTagsStore(state => state.fetchTags);
 
   useEffect(() => {
-    if (cachedTags) return;
-    let cancelled = false;
-    productsService
-      .fetchProductTags()
-      .then(result => {
-        if (!cancelled) {
-          cachedTags = result;
-          setTags(result);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    // Wait for the vendor list; fetching with an empty scope would count nothing and
+    // cache an empty vocabulary for the whole TTL.
+    if (shopIds.length === 0) return;
+    fetchTags(scope, shopIds);
+  }, [fetchTags, scope, shopIds]);
 
   const handlePress = useCallback(
     (tag: ProductTagOption) => {
@@ -156,7 +201,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     alignItems: 'center',
-    width: 56,
+    width: 60,
   },
   iconWrap: {
     width: ICON_SIZE + 4,
@@ -165,18 +210,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
+    // Not hidden: the price badge deliberately sits over the circle's bottom edge, and
+    // clipping is what would cut it in half.
+    overflow: 'visible',
   },
-  iconPlaceholder: {
-    width: ICON_SIZE - 6,
-    height: ICON_SIZE - 6,
-    borderRadius: 10,
-    borderWidth: 1,
+  priceBadge: {
+    position: 'absolute',
+    bottom: -3,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 7,
+  },
+  priceBadgeText: {
+    fontSize: 9,
+    lineHeight: 12,
+    fontWeight: '800',
+  },
+  image: {
+    width: ICON_SIZE + 4,
+    height: ICON_SIZE + 4,
+    // The circle is drawn here rather than by clipping the parent: iconWrap has to stay
+    // overflow:visible for the price badge, so a square upload would otherwise render square.
+    borderRadius: (ICON_SIZE + 4) / 2,
+  },
+  initial: {
+    fontSize: 18,
+    fontWeight: '700',
   },
   label: {
     fontSize: 11,
     lineHeight: 14,
     textAlign: 'center',
     fontWeight: '600',
+    // Two lines, because "Under ₹199" does not fit on one at this width and was being
+    // truncated to "Under ₹1…" — losing the number, which is the whole point of the tag.
+    // The height is fixed at both lines so a one-word chip still aligns with a wrapped
+    // one instead of the row going ragged.
+    height: 28,
   },
 });
 
