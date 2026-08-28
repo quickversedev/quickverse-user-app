@@ -6,6 +6,13 @@ buildscript {
         targetSdkVersion = 36
         ndkVersion = "27.1.12297006"
         kotlinVersion = "2.1.20"
+        // react-native-otp-verify declares play-services-auth as '+', so a release build
+        // silently picked up whatever Google had published most recently. 22.0.0 dropped
+        // Auth.GOOGLE_SIGN_IN_API, which that module still calls, so assembleRelease
+        // started failing to compile on a tree that had not changed. Pinned to the last
+        // version that still has it — same treatment play-services base/maps/location
+        // already get in app/build.gradle. Only otp-verify reads this property.
+        googlePlayServicesVersion = "20.7.0"
     }
     repositories {
         google()
