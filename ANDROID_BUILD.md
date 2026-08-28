@@ -25,7 +25,9 @@ MYAPP_RELEASE_STORE_FILE=../../quickverseRelease.keystore
 
 ## Build Release APK
 
-APK builds are for internal testing — always keep `isTest: true` in `src/store/vendorStore.ts` (line 99) so test shops are visible.
+APK builds are for internal testing, and show test shops automatically — no source edit needed.
+`src/config/buildFlags.ts` decides at runtime from the install source: a sideloaded APK includes
+test shops, while a Play Store install (`com.android.vending`) hides them.
 
 ```bash
 cd android
@@ -36,7 +38,8 @@ cd android
 
 **Important:** Before each release build:
 1. Bump `versionCode` and `versionName` in `android/app/build.gradle` → `defaultConfig` block. The Play Store rejects uploads with a previously used version code.
-2. Set `isTest: false` in `src/store/vendorStore.ts` (line 99) so test shops are hidden from real customers.
+2. Nothing to do for test shops. Installs from the Play Store are detected at runtime and never receive
+   them, so no flag has to be flipped before uploading — see `src/config/buildFlags.ts`.
 
 ```bash
 cd android

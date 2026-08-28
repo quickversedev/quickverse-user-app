@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { mockVendors } from '../assets/mock/vendor';
 import axiosInstance, { apiCall, getAuthHeader } from '../config/api/axios.config';
+import { shouldIncludeTestShops } from '../config/buildFlags';
 import { LocationFilter, Vendor, VendorFilters, VendorStore } from '../types/vendor';
 import { isStoreOpen } from '../utils/storeUtils';
 import { CACHE_TTL, createPersistedConfig, isCacheFresh } from '../utils/cache';
@@ -130,7 +131,11 @@ const useVendorStore = create<VendorStoreWithCache>()(
           const authHeader = getAuthHeader();
           const data = await apiCall(
             axiosInstance.get(VENDOR_API_URL, {
-              params: { ...params, isTest: __DEV__, useDisplayOrder: true },
+              params: {
+                ...params,
+                isTest: shouldIncludeTestShops(),
+                useDisplayOrder: true,
+              },
               headers: {
                 Authorization: authHeader,
               },
