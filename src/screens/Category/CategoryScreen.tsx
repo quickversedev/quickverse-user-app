@@ -29,6 +29,7 @@ import useVendorStore from '../../store/vendorStore';
 import usePagesStore from '../../store/pages/pagesStore';
 import useConfigStore from '../../store/configStore';
 import { Vendor } from '../../types/vendor';
+import { isStoreOpen } from '../../utils/storeUtils';
 import PromotionCarousel from '../Home/components/PromotionCarousel';
 import CollectionsGrid from './components/CollectionsGrid';
 import CollectionsGridSkeleton from './components/CollectionsGridSkeleton';
@@ -114,18 +115,48 @@ const CategoryScreen = () => {
   }, [isGrocery, categoryVendors]);
 
   const browseColumns = React.useMemo(() => {
+    /**
+     * Open stores first, shut ones last, admin display order preserved inside each
+     * group. Applied per row and at render time, which matters for two reasons:
+     *
+     *  - vendorStore already partitions open/closed, but only once, in
+     *    sortVendorsByActiveStatus at fetch time. That ordering goes stale the moment
+     *    the clock crosses a store's closing time, and the persisted list rehydrates
+     *    with whatever order it was fetched in.
+     *  - row 2's displayOrderSecondary sort below re-orders its members from scratch,
+     *    discarding the fetch-time partition entirely.
+     *
+     * Inactive stores need no handling here: /v3/shops filters on `store_active = true`
+     * server-side (ShopRepository), so they never reach the client at all.
+     */
+    const openFirst = (list: Vendor[]) => {
+      const open: Vendor[] = [];
+      const shut: Vendor[] = [];
+      list.forEach(v => {
+        const { isOpen } = isStoreOpen({
+          openingTime: v.openingTime,
+          closingTime: v.closingTime,
+          storeActive: v.storeActive,
+        });
+        (isOpen ? open : shut).push(v);
+      });
+      return [...open, ...shut];
+    };
+
     // Row 1 arrives pre-sorted by displayOrder from /v3/shops. Row 2 does not:
     // the query only orders by displayOrder, so its members would otherwise keep
     // that order instead of their own sequence. Sort them here.
-    const row1 = categoryVendors.filter(v => !v.displayOrderSecondary);
-    const row2 = categoryVendors
-      .filter(v => !!v.displayOrderSecondary)
-      .sort((a, b) => {
-        const av = Number(a.displayOrderSecondary);
-        const bv = Number(b.displayOrderSecondary);
-        if (Number.isNaN(av) || Number.isNaN(bv)) return 0;
-        return av - bv;
-      });
+    const row1 = openFirst(categoryVendors.filter(v => !v.displayOrderSecondary));
+    const row2 = openFirst(
+      categoryVendors
+        .filter(v => !!v.displayOrderSecondary)
+        .sort((a, b) => {
+          const av = Number(a.displayOrderSecondary);
+          const bv = Number(b.displayOrderSecondary);
+          if (Number.isNaN(av) || Number.isNaN(bv)) return 0;
+          return av - bv;
+        })
+    );
     const maxLen = Math.max(row1.length, row2.length);
     const cols: [Vendor | undefined, Vendor | undefined][] = [];
     for (let i = 0; i < maxLen; i++) {
