@@ -74,15 +74,6 @@ const HomeMainScreen_2 = React.memo(() => {
   }, [navigation]);
 
   /**
-   * No combined-vendor screen exists, and this section deliberately mixes Food and
-   * Grocery, so there is no single category to pass. Explore is the closest existing
-   * destination — swap this if a dedicated listing screen gets built.
-   */
-  const handleViewAllVendors = useCallback(() => {
-    navigation.navigate('MainApp', { screen: 'Explore' });
-  }, [navigation]);
-
-  /**
    * Pull-to-refresh. This screen had none, and the only other refresh path is
    * useAppStateRefresh's 100-second background threshold — far too coarse for
    * server-driven content edited in the admin dashboard, where a banner change
@@ -146,7 +137,7 @@ const HomeMainScreen_2 = React.memo(() => {
               <HomePromotionCarousel />
             </View>
 
-            <TopStoresNearYou onViewAll={handleViewAllVendors} />
+            <TopStoresNearYou />
           </HomeGradientBand>
 
           <View style={styles.cardsContainer}>

@@ -27,9 +27,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    // The status-bar inset is already applied by HomeGradientBand; this is only
-    // the extra breathing room below it, so it stays small.
-    paddingTop: 4,
+    // The status-bar inset is already applied by HomeGradientBand, so the header
+    // needs no top padding of its own — anything here stacks on top of that inset.
+    paddingTop: 0,
     paddingBottom: 8,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 import CachedImage from '../../../components/common/CachedImage';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -11,9 +11,10 @@ import useFastPicks from '../../../hooks/useFastPicks';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 
 const COLUMNS = 4;
-const COLLAPSED_ROWS = 1;
+const ROWS = 1;
 const HORIZONTAL_PADDING = 16;
 const GAP = 10;
+const MAX_ITEMS = COLUMNS * ROWS;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const ITEM_WIDTH = (SCREEN_WIDTH - HORIZONTAL_PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS;
 
@@ -67,13 +68,15 @@ const PickItem = React.memo(
               <MaterialIcons name="shopping-bag" size={24} color="#D1D5DB" />
             </View>
           )}
+          <View style={styles.priceBadge}>
+            <ThemeText style={styles.priceBadgeText}>
+              {'₹'}
+              {pick.sellingPrice || pick.mrp}
+            </ThemeText>
+          </View>
         </View>
         <ThemeText style={styles.productName} numberOfLines={1}>
           {pick.name}
-        </ThemeText>
-        <ThemeText style={styles.productPrice}>
-          {'₹'}
-          {pick.sellingPrice || pick.mrp}
         </ThemeText>
         {quantity === 0 ? (
           <TouchableOpacity
@@ -118,14 +121,7 @@ const FastPicks = () => {
   const addToCart = useCartStore(s => s.addToCart);
   const increment = useCartStore(s => s.increment);
   const decrement = useCartStore(s => s.decrement);
-  const [expanded, setExpanded] = useState(false);
-
-  const visiblePicks = useMemo(() => {
-    if (expanded) return fastPicks;
-    return fastPicks.slice(0, COLUMNS * COLLAPSED_ROWS);
-  }, [fastPicks, expanded]);
-
-  const hasMore = fastPicks.length > COLUMNS * COLLAPSED_ROWS;
+  const visiblePicks = useMemo(() => fastPicks.slice(0, MAX_ITEMS), [fastPicks]);
 
   const getQuantity = useCallback(
     (pick: FastPick) => {
@@ -172,10 +168,6 @@ const FastPicks = () => {
     [decrement, authData]
   );
 
-  const handleToggle = useCallback(() => {
-    setExpanded(prev => !prev);
-  }, []);
-
   if (!loading && fastPicks.length === 0) return null;
 
   return (
@@ -184,17 +176,10 @@ const FastPicks = () => {
         <ThemeText style={[styles.sectionTitle, { color: theme.colors.text }]}>
           Fast Picks
         </ThemeText>
-        {hasMore && (
-          <TouchableOpacity onPress={handleToggle} activeOpacity={0.7}>
-            <ThemeText style={[styles.viewAll, { color: theme.colors.subText }]}>
-              {expanded ? 'Show less' : 'View all'}
-            </ThemeText>
-          </TouchableOpacity>
-        )}
       </View>
       {loading && fastPicks.length === 0 ? (
         <View style={styles.grid}>
-          {Array.from({ length: COLUMNS * COLLAPSED_ROWS }, (_, i) => (
+          {Array.from({ length: MAX_ITEMS }, (_, i) => (
             <SkeletonTile key={`skeleton-${i}`} />
           ))}
         </View>
@@ -230,10 +215,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-  },
-  viewAll: {
-    fontSize: 13,
-    fontWeight: '500',
   },
   grid: {
     flexDirection: 'row',
@@ -278,11 +259,19 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
-  productPrice: {
+  priceBadge: {
+    position: 'absolute',
+    left: 4,
+    bottom: 4,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  priceBadgeText: {
     fontSize: 10,
-    fontWeight: '500',
-    color: '#6B7280',
-    marginTop: 1,
+    fontWeight: '700',
+    color: '#111827',
   },
   addButton: {
     marginTop: 4,

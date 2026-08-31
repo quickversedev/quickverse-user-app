@@ -61,12 +61,7 @@ const StoreItem = React.memo(
 
 StoreItem.displayName = 'StoreItem';
 
-interface TopStoresNearYouProps {
-  /** Renders the "View all" affordance when provided. */
-  onViewAll?: () => void;
-}
-
-const TopStoresNearYou = ({ onViewAll }: TopStoresNearYouProps) => {
+const TopStoresNearYou = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const { theme } = useTheme();
   const { selectedAddress } = useAuth();
@@ -125,11 +120,6 @@ const TopStoresNearYou = ({ onViewAll }: TopStoresNearYouProps) => {
         <ThemeText style={[styles.sectionTitle, { color: theme.colors.text }]}>
           Featured Vendors
         </ThemeText>
-        {onViewAll ? (
-          <TouchableOpacity onPress={onViewAll} activeOpacity={0.7} accessibilityRole="button">
-            <ThemeText style={styles.viewAll}>View all</ThemeText>
-          </TouchableOpacity>
-        ) : null}
       </View>
       <View style={styles.listContent}>
         {topVendors.map(vendor => (
@@ -154,11 +144,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-  },
-  viewAll: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#111827',
   },
   listContent: {
     flexDirection: 'row',
