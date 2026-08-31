@@ -11,7 +11,7 @@ import useFastPicks from '../../../hooks/useFastPicks';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 
 const COLUMNS = 4;
-const COLLAPSED_ROWS = 2;
+const COLLAPSED_ROWS = 1;
 const HORIZONTAL_PADDING = 16;
 const GAP = 10;
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -218,7 +218,7 @@ const FastPicks = () => {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 14,
+    marginBottom: 24,
   },
   headerRow: {
     flexDirection: 'row',
