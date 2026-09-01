@@ -26,7 +26,7 @@ export const Route = () => {
   const isDarkBackground = isColorDark(backgroundColor);
 
   if (loading) {
-    return <Text>Loading</Text>;
+    return null;
   }
 
   return (
