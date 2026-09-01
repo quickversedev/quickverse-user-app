@@ -36,6 +36,8 @@ import CollectionsGridSkeleton from './components/CollectionsGridSkeleton';
 import TagStrip from '../Home/components/TagStrip';
 import useProductTagsStore from '../../store/tags/productTagsStore';
 import QuickSearchStrip from './components/QuickSearchStrip';
+import BestSellersSection from './components/BestSellersSection';
+import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
 
 type CategoryScreenRouteProp = RouteProp<RootStackParamList, 'Category'>;
 
@@ -94,6 +96,7 @@ const CategoryScreen = () => {
       if (refreshedShopIds.length > 0) {
         await useProductTagsStore.getState().fetchTags(categoryName, refreshedShopIds);
       }
+      useFeaturedProductsStore.getState().clearCache();
     } catch (error) {
       console.warn('Error refreshing category screen:', error);
     } finally {
@@ -164,6 +167,18 @@ const CategoryScreen = () => {
     }
     return cols;
   }, [categoryVendors]);
+
+  const bestSellerVendors = React.useMemo(() => {
+    if (isGrocery) return [];
+    return categoryVendors.filter(v => {
+      const { isOpen } = isStoreOpen({
+        openingTime: v.openingTime,
+        closingTime: v.closingTime,
+        storeActive: v.storeActive,
+      });
+      return isOpen;
+    });
+  }, [isGrocery, categoryVendors]);
 
   const collectionsShopId = API_STORE_ID;
   const cachedCols = isGrocery ? getCachedCollections(collectionsShopId) : null;
@@ -314,7 +329,7 @@ const CategoryScreen = () => {
             <>
               <SectionDivider
                 text="Browse stores"
-                style={{ marginVertical: 16, paddingHorizontal: 40 }}
+                style={{ marginTop: 6, marginBottom: 10, paddingHorizontal: 40 }}
                 textStyle={{
                   color: '#4B5563',
                   fontWeight: '600',
@@ -372,10 +387,17 @@ const CategoryScreen = () => {
                 removeClippedSubviews={true}
               />
 
+              {bestSellerVendors.length > 0 && (
+                <BestSellersSection
+                  vendors={bestSellerVendors}
+                  onVendorPress={handleVendorPress}
+                />
+              )}
+
               {/* Full store list with showcase */}
               <SectionDivider
                 text="Stores for you"
-                style={{ marginTop: 16, marginBottom: 4, paddingHorizontal: 40 }}
+                style={{ marginTop: 6, marginBottom: 4, paddingHorizontal: 40 }}
                 textStyle={{
                   color: '#4B5563',
                   fontWeight: '600',

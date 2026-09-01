@@ -130,6 +130,17 @@ class ProductsService {
         )
       );
 
+      // The API may return a plain array or a { products, total, … } object.
+      if (Array.isArray(response)) {
+        return {
+          products: response,
+          total: response.length,
+          count: response.length,
+          offset,
+          limit,
+        };
+      }
+
       // Ensure response has the expected structure
       if (!response || typeof response !== 'object') {
         throw new Error('Invalid response format from API');
@@ -178,7 +189,7 @@ class ProductsService {
           offset: currentOffset,
           limit,
         });
-        const batch: Product[] = response as unknown as Product[];
+        const batch = response.products || [];
         allProducts = [...allProducts, ...batch];
         total = response.total;
         currentOffset += batch.length;

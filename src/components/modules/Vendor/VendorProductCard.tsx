@@ -341,7 +341,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
           <View style={styles.vendorMeta}>
             <MaterialCommunityIcons name="flash" size={18} color={getColor('primary')} />
             <ThemeText variant="caption" style={styles.deliveryTime} color={getColor('subText')}>
-              30 mins
+              {vendor.preparationTime || '30 mins'}
             </ThemeText>
           </View>
         </View>

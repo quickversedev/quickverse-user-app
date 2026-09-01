@@ -193,7 +193,7 @@ const TagStrip: React.FC<{ shopCategory?: string }> = ({ shopCategory }) => {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 14,
+    marginBottom: 0,
   },
   content: {
     paddingHorizontal: 16,
