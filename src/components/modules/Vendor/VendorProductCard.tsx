@@ -144,7 +144,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
           authData?.jwt &&
           decrement(cartId, item.sku, authData.jwt, authData.phone)
         }
-        size="small"
+        size="xs"
         disabled={isStoreClosed || !item.inStock}
         showVariantsCount={false}
         onPress={() => onProductPress(item)}
