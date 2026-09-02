@@ -69,6 +69,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     closingTime: vendor.closingTime ?? '23:59',
   });
   const isStoreClosed = !storeStatus.isOpen;
+  const isOutOfStock = product.inStock === false;
+  const isUnavailable = isStoreClosed || isOutOfStock;
   const { getColor, getButtonColor, theme } = useTheme();
   const { authData } = useAuth();
   const insets = useSafeAreaInsets();
@@ -153,7 +155,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   // Cart handlers
   const handleAddToCart = () => {
-    if (isStoreClosed) return;
+    if (isUnavailable) return;
     addToCart(
       cartId,
       {
@@ -176,18 +178,18 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
    * The haptic used to fire inside AddButton, which this replaces.
    */
   const handleCtaPress = () => {
-    if (isStoreClosed) return;
+    if (isUnavailable) return;
     triggerAddToCartHaptic();
     handleAddToCart();
   };
 
   const handleIncrement = () => {
-    if (isStoreClosed) return;
+    if (isUnavailable) return;
     increment(cartId, displaySku, authData?.jwt || '', authData?.phone || '');
   };
 
   const handleDecrement = () => {
-    if (isStoreClosed) return;
+    if (isUnavailable) return;
     decrement(cartId, displaySku, authData?.jwt || '', authData?.phone || '');
   };
 
@@ -513,7 +515,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 onIncrement={handleIncrement}
                 onDecrement={handleDecrement}
                 size="regular"
-                disabled={isStoreClosed}
+                disabled={isUnavailable}
                 containerStyle={styles.stepperPill}
               />
             </View>
@@ -590,9 +592,14 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             {storeStatus.reason}
           </ThemeText>
         )}
+        {isOutOfStock && !isStoreClosed && (
+          <ThemeText variant="caption" color={getColor('error')} style={styles.storeClosedText}>
+            Out of stock
+          </ThemeText>
+        )}
         <TouchableOpacity
-          style={[styles.ctaButton, isStoreClosed && styles.ctaButtonDisabled]}
-          disabled={isStoreClosed}
+          style={[styles.ctaButton, isUnavailable && styles.ctaButtonDisabled]}
+          disabled={isUnavailable}
           activeOpacity={0.85}
           onPress={handleCtaPress}
           accessibilityRole="button"
@@ -600,14 +607,14 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           <MaterialCommunityIcons
             name="cart-outline"
             size={20}
-            color={isStoreClosed ? getButtonColor('disabled', 'text') : getColor('text')}
+            color={isUnavailable ? getButtonColor('disabled', 'text') : getColor('text')}
           />
           <ThemeText
             variant="body"
-            color={isStoreClosed ? getButtonColor('disabled', 'text') : getColor('text')}
+            color={isUnavailable ? getButtonColor('disabled', 'text') : getColor('text')}
             style={styles.ctaLabel}
           >
-            Add to cart
+            {isOutOfStock ? 'Out of stock' : 'Add to cart'}
           </ThemeText>
         </TouchableOpacity>
       </View>

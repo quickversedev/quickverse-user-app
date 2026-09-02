@@ -69,6 +69,7 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
   };
 
   const handleAddToCart = (variant: Product) => {
+    if (variant.inStock === false) return;
     addToCart(
       cartId,
       {
@@ -315,7 +316,11 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
                 size="regular"
               />
             ) : (
-              <AddButton onPress={() => handleAddToCart(variant)} size="regular" />
+              <AddButton
+                onPress={() => handleAddToCart(variant)}
+                size="regular"
+                disabled={variant.inStock === false}
+              />
             )}
           </View>
         </View>

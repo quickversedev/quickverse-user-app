@@ -696,6 +696,7 @@ const VendorProductComponent: React.FC = () => {
   const handleVariantSelect = useCallback(
     (variant: Product) => {
       if (!selectedProductForVariants) return;
+      if (variant.inStock === false) return;
 
       addToCart(
         cartId,
@@ -1176,7 +1177,7 @@ const VendorProductComponent: React.FC = () => {
                 onAdd={() => handleAddToCart(product)}
                 onIncrement={() => handleIncrement(product.sku)}
                 onDecrement={() => handleDecrement(product.sku)}
-                disabled={collection ? false : !isStoreActive || !product.inStock}
+                disabled={!isStoreActive || !product.inStock}
                 showVariantsCount={true}
                 onPress={() => handleProductPress(product)}
                 isHighlighted={product.sku === focusedProduct?.sku}
