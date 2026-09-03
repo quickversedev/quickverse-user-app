@@ -148,7 +148,7 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
         disabled={isStoreClosed || !item.inStock}
         showVariantsCount={false}
         onPress={() => onProductPress(item)}
-        backgroundColor={getColor('card')}
+        backgroundColor="#FFFCF5"
         rating={item.rating || 0}
       />
     );
