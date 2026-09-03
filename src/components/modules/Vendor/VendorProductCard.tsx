@@ -178,12 +178,18 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
 
   const styles = StyleSheet.create({
     container: {
-      backgroundColor: getColor('card'),
+      backgroundColor: '#FFFCF5',
       borderRadius: 16,
       marginHorizontal: 16,
-      marginVertical: 16,
+      marginVertical: 6,
       padding: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
       elevation: 3,
+      borderWidth: 1,
+      borderColor: '#F3F4F6',
     },
     header: {
       flexDirection: 'row',
