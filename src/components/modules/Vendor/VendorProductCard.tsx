@@ -1,10 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { Images } from '../../../assets';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import useFeaturedProducts from '../../../hooks/useFeaturedProducts';
 import useCartStore from '../../../store/cart/cartStore';
+import couponApi from '../../../services/api/couponSevice';
+import useConfigStore from '../../../store/configStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { Vendor } from '../../../types/vendor';
@@ -35,6 +37,34 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
   const [showVariantsModal, setShowVariantsModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [logoError, setLogoError] = useState(false);
+  const [bestOffer, setBestOffer] = useState<{ code: string; label: string } | null>(null);
+  const offerFetchedRef = useRef(false);
+  const getRegionId = useConfigStore(state => state.getRegionId);
+
+  useEffect(() => {
+    if (offerFetchedRef.current) return;
+    offerFetchedRef.current = true;
+    let cancelled = false;
+    const regionId = getRegionId() as string;
+    if (!regionId) return;
+    couponApi.getAvailableCoupons(regionId, vendor.shopId, vendor.category?.toUpperCase() || 'FOOD')
+      .then((coupons: any[]) => {
+        if (cancelled || !coupons || coupons.length === 0) return;
+        const c = coupons[0];
+        let label = '';
+        if (c.type === 'FREE_DELIVERY') {
+          label = c.mov > 0 ? `Free delivery above ₹${c.mov}` : 'Free Delivery';
+        } else if (c.type === 'FIXED' && c.discountValue != null) {
+          label = `₹${c.discountValue} OFF`;
+        } else if (c.type === 'PERCENTAGE' && c.discountValue != null) {
+          label = `${c.discountValue}% OFF`;
+        }
+        if (label) setBestOffer({ code: c.code, label });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vendor.shopId]);
 
   // Use the new hook for featured products
   const {
@@ -197,23 +227,34 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
       // marginBottom: 16,
     },
     vendorLogo: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       marginRight: 12,
     },
     vendorInfo: {
       flex: 1,
+    },
+    vendorNameRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
     },
-    vendorNameRow: {
+    vendorNameLeft: {
       flexDirection: 'row',
       alignItems: 'center',
     },
     vendorName: {
       // No additional styles needed
+    },
+    offerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 2,
+    },
+    offerText: {
+      marginLeft: 4,
+      fontWeight: '600',
     },
     vendorMeta: {
       flexDirection: 'row',
@@ -339,19 +380,29 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
         />
         <View style={styles.vendorInfo}>
           <View style={styles.vendorNameRow}>
-            <ThemeText variant="subtitle" style={styles.vendorName} color={getColor('text')}>
-              {vendor.name}
-            </ThemeText>
-            <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('subText')} />
+            <View style={styles.vendorNameLeft}>
+              <ThemeText variant="subtitle" style={styles.vendorName} color={getColor('text')}>
+                {vendor.name}
+              </ThemeText>
+              <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('subText')} />
+            </View>
+            <View style={styles.vendorMeta}>
+              <MaterialCommunityIcons name="flash" size={16} color={getColor('primary')} />
+              <ThemeText variant="caption" style={styles.deliveryTime} color={getColor('subText')}>
+                {vendor.preparationTime || '30 mins'}
+              </ThemeText>
+              <RatingBadge rating={vendor.rating || 0} size="small" />
+            </View>
           </View>
-          <View style={styles.vendorMeta}>
-            <MaterialCommunityIcons name="flash" size={18} color={getColor('primary')} />
-            <ThemeText variant="caption" style={styles.deliveryTime} color={getColor('subText')}>
-              {vendor.preparationTime || '30 mins'}
-            </ThemeText>
-          </View>
+          {bestOffer && (
+            <View style={styles.offerRow}>
+              <MaterialCommunityIcons name="tag-outline" size={14} color="#16A34A" />
+              <ThemeText variant="caption" color="#16A34A" style={styles.offerText}>
+                {bestOffer.label}
+              </ThemeText>
+            </View>
+          )}
         </View>
-        <RatingBadge rating={vendor.rating || 0} size="small" />
       </TouchableOpacity>
 
       {(() => {

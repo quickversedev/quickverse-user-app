@@ -185,8 +185,8 @@ const VendorCard2: React.FC<VendorCardProps> = ({
     },
     timeBadge: {
       position: 'absolute',
-      top: 6,
-      left: 6,
+      bottom: 6,
+      right: 6,
       zIndex: 20,
       flexDirection: 'row',
       alignItems: 'center',
@@ -234,7 +234,7 @@ const VendorCard2: React.FC<VendorCardProps> = ({
                 style={{ marginRight: 3 }}
               />
               <ThemeText style={styles.timeBadgeText}>
-                {vendor.preparationTime || '30 mins'}
+                {(vendor.preparationTime || '30 mins').replace(/\s*mins?\s*/i, '')}
               </ThemeText>
             </View>
           )}
