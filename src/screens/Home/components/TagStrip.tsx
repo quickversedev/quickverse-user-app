@@ -1,51 +1,12 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import type { SvgProps } from 'react-native-svg';
 import { ThemeText } from '../../../components/common/theme/ThemeText';
 import useProductTagsStore from '../../../store/tags/productTagsStore';
 import useVendorStore from '../../../store/vendorStore';
 import { AppNavigationProp } from '../../../types/navigation';
 import { ProductTagOption } from '../../../types/product';
 
-import BestSellerIcon from '../../../assets/svg/tags/best-seller.svg';
-import BeveragesIcon from '../../../assets/svg/tags/beverages.svg';
-import BreakfastIcon from '../../../assets/svg/tags/breakfast.svg';
-import ComboIcon from '../../../assets/svg/tags/combo.svg';
-import DessertsIcon from '../../../assets/svg/tags/desserts.svg';
-import DinnerIcon from '../../../assets/svg/tags/dinner.svg';
-import HealthyIcon from '../../../assets/svg/tags/healthy.svg';
-import LunchIcon from '../../../assets/svg/tags/lunch.svg';
-import SnacksIcon from '../../../assets/svg/tags/snacks.svg';
-import StreetFoodIcon from '../../../assets/svg/tags/street-food.svg';
-import Under99Icon from '../../../assets/svg/tags/under-99.svg';
-import Under199Icon from '../../../assets/svg/tags/under-199.svg';
-import Under299Icon from '../../../assets/svg/tags/under-299.svg';
-
-/**
- * Chip artwork now comes from the server as `imageUrl`, uploaded per tag in the admin
- * dashboard — that is what lets a tag be added or restyled without shipping an app.
- *
- * These bundled SVGs are the fallback for the thirteen tags that predate that field and
- * have no image uploaded yet. A tag with no entry here and no imageUrl renders its
- * initial, so a brand-new tag is never invisible. Once every seeded tag has an image in
- * the dashboard this map and the files under assets/svg/tags can be deleted.
- */
-const LEGACY_TAG_ICONS: Record<string, React.FC<SvgProps>> = {
-  breakfast: BreakfastIcon,
-  lunch: LunchIcon,
-  dinner: DinnerIcon,
-  'street-food': StreetFoodIcon,
-  beverages: BeveragesIcon,
-  desserts: DessertsIcon,
-  snacks: SnacksIcon,
-  healthy: HealthyIcon,
-  combo: ComboIcon,
-  'best-seller': BestSellerIcon,
-  'under-99': Under99Icon,
-  'under-199': Under199Icon,
-  'under-299': Under299Icon,
-};
 
 const ICON_SIZE = 40;
 
@@ -73,10 +34,7 @@ const TagChip = React.memo(
     onPress: (tag: ProductTagOption) => void;
   }) => {
     const color = CHIP_COLORS[colorIndex % CHIP_COLORS.length];
-    const LegacyIcon = LEGACY_TAG_ICONS[tag.id];
 
-    // A dead or slow S3 URL must not leave a blank circle, so a failed load drops
-    // through to the same fallback an image-less tag gets.
     const [imageFailed, setImageFailed] = useState(false);
     const showRemoteImage = Boolean(tag.imageUrl) && !imageFailed;
 
@@ -112,8 +70,6 @@ const TagChip = React.memo(
               resizeMode="contain"
               onError={() => setImageFailed(true)}
             />
-          ) : LegacyIcon ? (
-            <LegacyIcon width={ICON_SIZE} height={ICON_SIZE} />
           ) : (
             <ThemeText style={[styles.initial, { color: color.text }]}>
               {tag.label.charAt(0).toUpperCase()}
