@@ -131,10 +131,12 @@ export const useSearch = (options?: UseSearchOptions): UseSearchReturn => {
          * once that shop is active and its catalogue is in the product table.
          */
         const collectionShopIds = new Set<string>();
-        if (API_STORE_ID) collectionShopIds.add(API_STORE_ID);
-        storeVendors
-          .filter(v => v.category === 'Grocery' && v.shopId)
-          .forEach(v => collectionShopIds.add(v.shopId));
+        if (restrictCategory !== 'Food') {
+          if (API_STORE_ID) collectionShopIds.add(API_STORE_ID);
+          storeVendors
+            .filter(v => v.category === 'Grocery' && v.shopId)
+            .forEach(v => collectionShopIds.add(v.shopId));
+        }
 
         const collectionPromises = Array.from(collectionShopIds).map(shopId =>
           searchService.searchCollection(shopId, trimmed).catch(err => {
@@ -188,7 +190,7 @@ export const useSearch = (options?: UseSearchOptions): UseSearchReturn => {
          * representation at all.
          */
         const allowedShopIds = new Set(validShopIds);
-        if (API_STORE_ID) allowedShopIds.add(API_STORE_ID);
+        if (API_STORE_ID && restrictCategory !== 'Food') allowedShopIds.add(API_STORE_ID);
 
         /**
          * Shops that are currently shut. Computed here rather than server-side because
