@@ -227,13 +227,23 @@ export const useSearch = (options?: UseSearchOptions): UseSearchReturn => {
           list.push(p);
           productsByShop.set(p.shopId, list);
         }
-        const shopBuckets = Array.from(productsByShop.values());
+        const shopBuckets = Array.from(productsByShop.entries());
+        if (!restrictCategory) {
+          shopBuckets.sort(([aShopId], [bShopId]) => {
+            const aCat = getVendorById(aShopId)?.category ?? '';
+            const bCat = getVendorById(bShopId)?.category ?? '';
+            if (aCat === 'Food' && bCat !== 'Food') return -1;
+            if (aCat !== 'Food' && bCat === 'Food') return 1;
+            return 0;
+          });
+        }
+        const bucketValues = shopBuckets.map(([, products]) => products);
         const interleaved: Product[] = [];
         let row = 0;
         let added = true;
         while (added) {
           added = false;
-          shopBuckets.forEach(list => {
+          bucketValues.forEach(list => {
             if (row < list.length) {
               interleaved.push(list[row]);
               added = true;
@@ -289,6 +299,16 @@ export const useSearch = (options?: UseSearchOptions): UseSearchReturn => {
               vendorSeen.add(v.shopId);
               vendorResults.push({ vendor: v, startingPrice: null });
             });
+        }
+
+        if (!restrictCategory) {
+          vendorResults.sort((a, b) => {
+            const aCat = a.vendor.category ?? '';
+            const bCat = b.vendor.category ?? '';
+            if (aCat === 'Food' && bCat !== 'Food') return -1;
+            if (aCat !== 'Food' && bCat === 'Food') return 1;
+            return 0;
+          });
         }
 
         setSearchResults({
