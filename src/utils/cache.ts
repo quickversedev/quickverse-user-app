@@ -11,6 +11,10 @@ export const CACHE_TTL = {
   // against the vendors in range, so a tag list that outlives the vendor list it was
   // built from can describe a set of shops the app is no longer showing.
   TAGS: 10 * 60 * 1000,
+  // Curated grocery groups. Kept in step with VENDORS for the same reason as TAGS: a
+  // group's products name the shop they come from, so a group list that outlives the
+  // vendor list can offer items from a shop the app has stopped showing.
+  GROCERY_GROUPS: 10 * 60 * 1000,
 } as const;
 
 export function isCacheFresh(lastFetchedAt: number, ttlMs: number): boolean {

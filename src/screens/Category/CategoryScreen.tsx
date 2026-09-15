@@ -31,6 +31,7 @@ import useConfigStore from '../../store/configStore';
 import { Vendor } from '../../types/vendor';
 import { isStoreOpen } from '../../utils/storeUtils';
 import PromotionCarousel from '../Home/components/PromotionCarousel';
+import DailyEssentials from './components/DailyEssentials';
 import CollectionsGrid from './components/CollectionsGrid';
 import CollectionsGridSkeleton from './components/CollectionsGridSkeleton';
 import TagStrip from '../Home/components/TagStrip';
@@ -324,6 +325,11 @@ const CategoryScreen = () => {
       {/* Conditional Content if Vendors Exist */}
       {!hasNoVendors && (
         <>
+          {/* Curated grocery groups, from our own `qv.product_group` rather than the
+              proxied catalogue everything below it reads. Renders nothing when the
+              endpoint returns no groups. */}
+          {isGrocery && <DailyEssentials />}
+
           {/* Collection Showcase Widgets (Grocery vendors) — horizontal scroll */}
           {isGrocery && showcaseVendors.length > 0 && (
             <ScrollView
@@ -416,10 +422,7 @@ const CategoryScreen = () => {
               />
 
               {bestSellerVendors.length > 0 && (
-                <BestSellersSection
-                  vendors={bestSellerVendors}
-                  onVendorPress={handleVendorPress}
-                />
+                <BestSellersSection vendors={bestSellerVendors} onVendorPress={handleVendorPress} />
               )}
 
               {/* Full store list with showcase */}
