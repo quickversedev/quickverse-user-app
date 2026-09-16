@@ -5,6 +5,7 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { CATALOGUE_ACCENT, CATALOGUE_GUTTER } from '../../../constants/catalogue';
 import { RootStackParamList } from '../../../routes/AppStack';
 import { CartProduct } from '../../../store/cart/cartStore';
+import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Vendor } from '../../../types/vendor';
 import { ThemeText } from '../../common/theme/ThemeText';
@@ -29,10 +30,11 @@ interface CartItemListProps {
  * The single bordered panel that used to wrap all of this is gone — in the design each
  * row is its own surface sitting on the page, so the outer box was a box around boxes.
  *
- * The design's store header belongs to its multi-store sourcing banner, which does not
- * apply: a QuickVerse cart is keyed `vendor_<shopId>` and always holds exactly one
- * vendor. What survives is the part that is true for one store — who it is, how far,
- * and how long it takes.
+ * One store header per store. A QuickVerse cart is keyed `vendor_<shopId>` and holds
+ * exactly one vendor, so for a normal basket this is a single header and the output is
+ * unchanged. A Daily Essentials basket checks out several kiranas together under one
+ * payment, and the screen passes every one of their carts here — hence the grouping,
+ * which is the design's multi-store sourcing case finally applying to something real.
  */
 const CartItemList: React.FC<CartItemListProps> = ({
   items,
@@ -43,9 +45,27 @@ const CartItemList: React.FC<CartItemListProps> = ({
   navigation,
 }) => {
   const { getColor, theme } = useTheme();
+  const getVendorById = useVendorStore(state => state.getVendorById);
 
-  // The API sends this as free text, not minutes, so it is rendered as given.
-  const preparationTime = useMemo(() => vendor?.preparationTime || '30 mins', [vendor]);
+  /**
+   * Items grouped by the shop that sells them, in the order they first appear so the
+   * list does not reshuffle as quantities change.
+   */
+  const sections = useMemo(() => {
+    const order: string[] = [];
+    const byShop = new Map<string, CartProduct[]>();
+    for (const item of items) {
+      const shopId = item.shopId || vendor?.shopId || '';
+      if (!byShop.has(shopId)) {
+        byShop.set(shopId, []);
+        order.push(shopId);
+      }
+      byShop.get(shopId)!.push(item);
+    }
+    return order.map(shopId => ({ shopId, items: byShop.get(shopId)! }));
+  }, [items, vendor?.shopId]);
+
+  const isMultiStore = sections.length > 1;
 
   const styles = useMemo(
     () =>
@@ -118,6 +138,8 @@ const CartItemList: React.FC<CartItemListProps> = ({
           color: getColor('white'),
         },
         items: { gap: 10 },
+        /** Breathing room between stores, so each reads as its own block. */
+        storeSections: { gap: 18 },
         /**
          * A muted surface rather than the dashed amber outline it replaced. Nothing
          * else in the QV design is dashed, and a 1.5px amber rule spanning the full
@@ -155,12 +177,6 @@ const CartItemList: React.FC<CartItemListProps> = ({
     [getColor, theme]
   );
 
-  const handleAddMore = useCallback(() => {
-    if (vendor) {
-      navigation.navigate('VendorProduct', { vendor });
-    }
-  }, [vendor, navigation]);
-
   const renderCartItem = useCallback(
     (item: CartProduct) => (
       <CartItem
@@ -173,46 +189,72 @@ const CartItemList: React.FC<CartItemListProps> = ({
     [onInc, onDec]
   );
 
+  const renderSection = (section: { shopId: string; items: CartProduct[] }) => {
+    // With one store the vendor is already resolved by the screen, along with the
+    // distance it measured from the customer. Across stores only the shop id is known
+    // per row, so the rest is looked up here.
+    const sectionVendor = isMultiStore ? getVendorById(section.shopId) : vendor;
+    // Distance is measured against a single vendor by the screen, so it would be wrong
+    // on every other store's header. No distance beats the wrong distance.
+    const sectionDistance = isMultiStore ? null : distanceText;
+    // The API sends this as free text, not minutes, so it is rendered as given.
+    const preparationTime = sectionVendor?.preparationTime || '30 mins';
+
+    return (
+      <View key={section.shopId || 'unknown'}>
+        {sectionVendor ? (
+          <View style={styles.storeCard}>
+            <View style={styles.storeIcon}>
+              <MaterialCommunityIcons name="storefront" size={18} color={getColor('primary')} />
+            </View>
+            <View style={styles.storeText}>
+              <ThemeText style={styles.storeName} numberOfLines={1}>
+                {sectionVendor.name}
+              </ThemeText>
+              {sectionDistance ? (
+                <ThemeText style={styles.storeMeta} numberOfLines={1}>
+                  {sectionDistance}
+                </ThemeText>
+              ) : null}
+            </View>
+            <View style={styles.etaPill}>
+              <MaterialCommunityIcons name="flash" size={12} color={getColor('white')} />
+              <ThemeText style={styles.etaLabel}>{preparationTime}</ThemeText>
+            </View>
+          </View>
+        ) : null}
+
+        <View style={styles.items}>{section.items.map(renderCartItem)}</View>
+
+        {sectionVendor ? (
+          <TouchableOpacity
+            style={styles.addMoreButton}
+            onPress={() => navigation.navigate('VendorProduct', { vendor: sectionVendor })}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`Add more items from ${sectionVendor.name}`}
+          >
+            <View style={styles.addMoreIcon}>
+              <MaterialCommunityIcons name="plus" size={14} color={getColor('primary')} />
+            </View>
+            <ThemeText style={styles.addMoreText}>
+              {isMultiStore ? `Add more from ${sectionVendor.name}` : 'Add more items'}
+            </ThemeText>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.section}>
-      <ThemeText style={styles.sectionHeading}>Cart Items</ThemeText>
+      <ThemeText style={styles.sectionHeading}>
+        {isMultiStore ? `Cart Items · ${sections.length} stores` : 'Cart Items'}
+      </ThemeText>
 
-      {vendor ? (
-        <View style={styles.storeCard}>
-          <View style={styles.storeIcon}>
-            <MaterialCommunityIcons name="storefront" size={18} color={getColor('primary')} />
-          </View>
-          <View style={styles.storeText}>
-            <ThemeText style={styles.storeName} numberOfLines={1}>
-              {vendor.name}
-            </ThemeText>
-            {distanceText ? (
-              <ThemeText style={styles.storeMeta} numberOfLines={1}>
-                {distanceText}
-              </ThemeText>
-            ) : null}
-          </View>
-          <View style={styles.etaPill}>
-            <MaterialCommunityIcons name="flash" size={12} color={getColor('white')} />
-            <ThemeText style={styles.etaLabel}>{preparationTime}</ThemeText>
-          </View>
-        </View>
-      ) : null}
-
-      <View style={styles.items}>{items.map(renderCartItem)}</View>
-
-      <TouchableOpacity
-        style={styles.addMoreButton}
-        onPress={handleAddMore}
-        activeOpacity={0.8}
-        accessibilityRole="button"
-        accessibilityLabel={vendor ? `Add more items from ${vendor.name}` : 'Add more items'}
-      >
-        <View style={styles.addMoreIcon}>
-          <MaterialCommunityIcons name="plus" size={14} color={getColor('primary')} />
-        </View>
-        <ThemeText style={styles.addMoreText}>Add more items</ThemeText>
-      </TouchableOpacity>
+      <View style={isMultiStore ? styles.storeSections : undefined}>
+        {sections.map(renderSection)}
+      </View>
     </View>
   );
 };
