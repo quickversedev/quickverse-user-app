@@ -54,7 +54,19 @@ export type RootStackParamList = {
   Cart: { cartId: string } | undefined;
   Orders: undefined;
   OrderDetails: { orderId: string; order?: Order };
-  OrderSuccess: { orderId: string; amount: number; date: string; shopId?: string };
+  OrderSuccess: {
+    orderId: string;
+    amount: number;
+    date: string;
+    shopId?: string;
+    /**
+     * Set only for a grouped Daily Essentials order. `orderId` then carries the first
+     * placed sub-order so the existing single-order screen still works, and these say
+     * how many shops the one payment covered.
+     */
+    orderGroupMasterId?: string;
+    shopCount?: number;
+  };
   OrderFailure: { errorMessage?: string };
   Coupons: {
     coupons: any;

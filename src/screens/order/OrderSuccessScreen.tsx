@@ -1,4 +1,4 @@
-import { CommonActions, useNavigation } from '@react-navigation/native';
+import { CommonActions, RouteProp, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -42,21 +42,19 @@ import { useTheme } from '../../theme/ThemeContext';
 
 const HERO_RING = 64;
 
+/**
+ * Params come from RootStackParamList rather than being restated here. They were
+ * duplicated inline, which meant the navigator could grow a param this screen could not
+ * see — exactly what happened when grouped orders added `shopCount`.
+ */
 interface OrderSuccessScreenProps {
-  route: {
-    params: {
-      orderId: string;
-      amount: number;
-      date: string;
-      shopId?: string;
-    };
-  };
+  route: RouteProp<RootStackParamList, 'OrderSuccess'>;
 }
 
 const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
   const { getColor, theme } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'OrderSuccess'>>();
-  const { orderId, amount, shopId } = route.params;
+  const { orderId, amount, shopId, shopCount } = route.params;
   const { loadOrderById, selectedOrder } = useOrders();
   const vendors = useVendorStore(state => state.vendors);
 
@@ -143,11 +141,18 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
    * vendors already in the store by the shopId this screen was given.
    */
   const shopName = useMemo(() => {
+    // A grouped Daily Essentials order covers several kiranas under one payment, and
+    // naming only the first would misrepresent what was bought. The screen still loads
+    // that first sub-order for the tracking link — there is no combined tracking view
+    // yet — so the count is the honest thing to show here.
+    if (shopCount && shopCount > 1) {
+      return `${shopCount} stores`;
+    }
     const fromOrder = selectedOrder?.shopName || selectedOrder?.tracking?.shopName;
     if (fromOrder) return fromOrder;
     const id = shopId || selectedOrder?.shopId;
     return id ? vendors.find(v => v.shopId === id)?.name : undefined;
-  }, [selectedOrder, shopId, vendors]);
+  }, [selectedOrder, shopId, shopCount, vendors]);
 
   const handleTrackOrder = useCallback(() => {
     // Reset rather than push, so back from OrderDetails lands on the app and never

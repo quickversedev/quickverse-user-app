@@ -38,13 +38,16 @@ import {
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useOrders } from '../../hooks/useOrders';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
+import { ApiError } from '../../config/api/axios.types';
 import { RootStackParamList } from '../../routes/AppStack';
 import couponService from '../../services/api/couponSevice';
 import cartApiService from '../../services/cartApiService';
 import orderService, { CreateOrderRequest } from '../../services/createOrderService';
+import hyperlocalOrderService, { HyperlocalShopOrder } from '../../services/hyperlocalOrderService';
 import { getCODCharges } from '../../services/paymentService';
 import { smartBizAddressService } from '../../store/address/smartBizAddressStore';
-import useCartStore from '../../store/cart/cartStore';
+import useCartStore, { Cart } from '../../store/cart/cartStore';
+import { useEssentialsShopIds } from '../../store/grocery/groceryGroupsStore';
 import useConfigStore from '../../store/configStore';
 import usePricingStore from '../../store/pricingStore';
 import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
@@ -59,6 +62,12 @@ import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
+
+/**
+ * Carts are keyed `vendor_<shopId>`; this is the one place that knowledge is turned back
+ * into a shop id for the grouped flow.
+ */
+const shopIdOf = (c: Cart): string => c.cartId.replace('vendor_', '');
 
 const CartScreen: React.FC = () => {
   const navigation = useNavigation<CartScreenNavigationProp>();
@@ -190,6 +199,37 @@ const CartScreen: React.FC = () => {
   }, [cartId, activeCartId, carts]);
 
   /**
+   * Daily Essentials checkout: several kiranas, one payment.
+   *
+   * A cart is a daily-needs cart when its shop supplies the curated groups — see
+   * `useEssentialsShopIds`. That is answered by the shop rather than by which screen
+   * filled the cart, because carts are keyed `vendor_<shopId>` everywhere and shop 94728
+   * is reachable both through Daily Essentials and by browsing the store directly.
+   */
+  const essentialsShopIds = useEssentialsShopIds();
+
+  const openCarts = useMemo(() => Object.values(carts), [carts]);
+
+  const groupableCarts = useMemo(
+    () => openCarts.filter(c => essentialsShopIds.has(shopIdOf(c))),
+    [openCarts, essentialsShopIds]
+  );
+
+  /**
+   * Grouped only when *every* open cart is a daily-needs shop.
+   *
+   * A mixed basket — a restaurant order plus two kiranas — stays on the existing
+   * one-cart-at-a-time flow rather than quietly checking out a subset of what the
+   * customer can see. Food is not part of this feature, and combining a restaurant with
+   * a kirana is not a delivery we can make. Also false when the groups have not loaded,
+   * so a cold cache degrades to today's behaviour instead of failing.
+   */
+  const isGroupedCheckout = useMemo(
+    () => groupableCarts.length > 0 && groupableCarts.length === openCarts.length,
+    [groupableCarts.length, openCarts.length]
+  );
+
+  /**
    * Threshold the free-delivery bar counts toward.
    *
    * `freeDeliveryAboveAmount` comes back on the cart and is preferred, but it is a
@@ -214,8 +254,14 @@ const CartScreen: React.FC = () => {
   }, [selectedDeliveryCoupon, cart?.freeDeliveryAboveAmount, availableCoupons]);
 
   const cartItems = useMemo(() => {
+    // A grouped checkout pays for every daily-needs cart, so the list has to show every
+    // one of them. Showing only the cart in focus would charge for items the customer
+    // never saw on this screen.
+    if (isGroupedCheckout) {
+      return groupableCarts.flatMap(c => Object.values(c.products));
+    }
     return cart ? Object.values(cart.products) : [];
-  }, [cart]);
+  }, [cart, isGroupedCheckout, groupableCarts]);
 
   const cartItemsKey = useMemo(() => {
     return cartItems.map((item: any) => `${item.sku}:${item.quantity}`).join('|');
@@ -319,22 +365,34 @@ const CartScreen: React.FC = () => {
     }
   }, [cart, authData?.jwt, authData?.phone, clearCart, navigation]);
 
+  /**
+   * Which cart holds this sku. In a grouped basket the list spans several kiranas, so
+   * the displayed cart is not necessarily the one a given row belongs to — stepping a
+   * row from another shop would otherwise edit the wrong cart, or silently do nothing.
+   */
+  const cartIdForSku = useCallback(
+    (sku: string) => groupableCarts.find(c => c.products[sku])?.cartId ?? cart?.cartId,
+    [groupableCarts, cart?.cartId]
+  );
+
   const handleInc = useCallback(
     (sku: string) => {
-      if (cart) {
-        increment(cart.cartId, sku, authData?.jwt || '', authData?.phone || '');
+      const targetCartId = isGroupedCheckout ? cartIdForSku(sku) : cart?.cartId;
+      if (targetCartId) {
+        increment(targetCartId, sku, authData?.jwt || '', authData?.phone || '');
       }
     },
-    [cart, authData?.jwt, authData?.phone, increment]
+    [cart?.cartId, isGroupedCheckout, cartIdForSku, authData?.jwt, authData?.phone, increment]
   );
 
   const handleDec = useCallback(
     (sku: string) => {
-      if (cart) {
-        decrement(cart.cartId, sku, authData?.jwt || '', authData?.phone || '');
+      const targetCartId = isGroupedCheckout ? cartIdForSku(sku) : cart?.cartId;
+      if (targetCartId) {
+        decrement(targetCartId, sku, authData?.jwt || '', authData?.phone || '');
       }
     },
-    [cart, authData?.jwt, authData?.phone, decrement]
+    [cart?.cartId, isGroupedCheckout, cartIdForSku, authData?.jwt, authData?.phone, decrement]
   );
 
   const convertToProduct = useCallback(
@@ -601,8 +659,171 @@ const CartScreen: React.FC = () => {
    * landed in this closure yet. It also reaches the server on the request, which
    * recomputes the summary, so the charged amount never depends on the client copy.
    */
+  /**
+   * Daily Essentials checkout — every open kirana cart, one payment.
+   *
+   * Runs instead of `placeOrder` when `isGroupedCheckout`. The shape differs from the
+   * single-shop flow in three ways worth knowing: the server prices each shop itself and
+   * rejects a stale cart with PRICE_MISMATCH; a PREPAID order has no sub-order ids until
+   * the payment webhook has run, so we poll for them; and a group can come back partly
+   * placed, which is a success for some shops and a failure for others.
+   */
+  const placeGroupedOrder = useCallback(
+    async (paymentMethod: string) => {
+      if (!selectedAddress || !authData?.jwt || !authData?.phone || groupableCarts.length === 0) {
+        navigation.navigate('OrderFailure', {
+          errorMessage: 'Missing required information. Please try again.',
+        });
+        return;
+      }
+
+      setIsOrderLoading(true);
+      const method = paymentMethod.toUpperCase() === 'COD' ? 'COD' : 'PREPAID';
+
+      try {
+        const shopOrders: HyperlocalShopOrder[] = groupableCarts.map(c => {
+          const shopId = shopIdOf(c);
+          // Coupons are selected against the cart on screen, so they belong to that
+          // shop alone. The others go without rather than having someone else's offer
+          // applied to them.
+          const isDisplayedCart = cart?.cartId === c.cartId;
+          return {
+            shopId,
+            cartId: c.smartBizCartId,
+            shopOrderAmount: c.totalCartAmount ?? 0,
+            cartItems: Object.values(c.products).map(p => ({
+              sku: p.sku,
+              quantity: p.quantity,
+            })),
+            couponId: isDisplayedCart ? (selectedDiscountCoupon?.id ?? null) : null,
+            couponCode: isDisplayedCart ? (selectedDiscountCoupon?.code ?? null) : null,
+            deliveryCouponId: isDisplayedCart ? (selectedDeliveryCoupon?.id ?? null) : null,
+          };
+        });
+
+        const response = await hyperlocalOrderService.placeOrder(
+          {
+            customerAddressId: selectedSmartBizAddress?.addressID || '',
+            paymentMethod: method,
+            notificationMobileNumber: authData.phone || selectedAddress.phone,
+            notificationEmail: null,
+            customerName: selectedAddress.name || 'Customer',
+            orderSource: 'CONSTELLATION',
+            fulfillmentOption: 'DELIVERY',
+            customerCoordinates: {
+              latitude: selectedSmartBizAddress?.coordinates?.latitude ?? null,
+              longitude: selectedSmartBizAddress?.coordinates?.longitude ?? null,
+            },
+            shopOrders,
+          },
+          authData.jwt,
+          authData.phone
+        );
+
+        let group = response;
+        if (method === 'PREPAID') {
+          const razorpayOrderId = response.paymentGatewayResponse?.id;
+          if (!razorpayOrderId) throw new Error('No payment could be started for this order.');
+
+          const options = {
+            description: 'QuickVerse Daily Essentials',
+            currency: 'INR',
+            key: 'rzp_live_TAGtNIHlg9alA6',
+            amount: Math.round(response.grandTotal * 100),
+            name: 'QuickVerse',
+            order_id: razorpayOrderId,
+            method: {
+              upi: true,
+              card: false,
+              netbanking: false,
+              wallet: false,
+              emi: false,
+              paylater: false,
+            },
+            prefill: { email: '', contact: authData.phone, name: authData.username },
+          };
+          await RazorpayCheckout.open(options);
+
+          // Razorpay notifies the server, not us, so the sub-orders do not exist the
+          // moment the sheet closes. Poll until they do; a slow webhook is not a failed
+          // order, so a timeout still lands on the success screen with what we have.
+          const settled = await hyperlocalOrderService.waitForPlacement(
+            response.orderGroupMasterId,
+            authData.jwt
+          );
+          if (settled) {
+            group = {
+              ...response,
+              groupStatus: settled.groupStatus,
+              subOrders: settled.subOrders,
+            };
+          }
+        }
+
+        if (group.groupStatus === 'FAILED') {
+          navigation.navigate('OrderFailure', {
+            errorMessage:
+              method === 'COD'
+                ? 'We could not place your order with any of the stores. Please try again.'
+                : 'Your payment went through but the stores could not be reached. Our team will follow up.',
+          });
+          return;
+        }
+
+        // Only clear what actually reached a shop. A cart whose sub-order failed is left
+        // intact so the customer can retry it rather than losing the basket silently.
+        const placedShopIds = new Set(group.subOrders.filter(s => s.orderId).map(s => s.shopId));
+        await Promise.all(
+          groupableCarts
+            .filter(c => placedShopIds.has(shopIdOf(c)))
+            .map(c => clearCart(c.cartId, authData.jwt, authData.phone))
+        );
+
+        const firstPlaced = group.subOrders.find(s => s.orderId);
+        navigation.navigate('OrderSuccess', {
+          orderId: firstPlaced?.orderId || '',
+          amount: group.grandTotal,
+          date: new Date().toLocaleDateString(),
+          shopId: firstPlaced?.shopId,
+          orderGroupMasterId: group.orderGroupMasterId,
+          shopCount: group.subOrders.length,
+        });
+      } catch (error) {
+        // PRICE_MISMATCH means the server priced a shop differently from what we showed.
+        // Surfaced plainly rather than as a generic failure, because the fix is for the
+        // customer to look at the cart again.
+        const apiError = error as Partial<ApiError>;
+        const message =
+          apiError?.code === 'PRICE_MISMATCH'
+            ? 'Prices in your basket have changed. Please review your cart and try again.'
+            : apiError?.message || 'We could not place your order. Please try again.';
+        navigation.navigate('OrderFailure', { errorMessage: message });
+      } finally {
+        setIsOrderLoading(false);
+      }
+    },
+    [
+      groupableCarts,
+      cart?.cartId,
+      selectedAddress,
+      selectedSmartBizAddress,
+      authData,
+      selectedDiscountCoupon,
+      selectedDeliveryCoupon,
+      clearCart,
+      navigation,
+    ]
+  );
+
   const placeOrder = useCallback(
     async (paymentMethod: string) => {
+      // Daily Essentials baskets check out as one group. Everything else — food, and any
+      // basket that mixes a restaurant with a kirana — stays on the single-shop flow.
+      if (isGroupedCheckout) {
+        await placeGroupedOrder(paymentMethod);
+        return;
+      }
+
       // Kept here rather than in handleCheckout so the payload below is built on
       // narrowed, non-null values.
       if (!cart || !vendor || !selectedAddress || !authData?.jwt || !authData?.phone) {
@@ -716,6 +937,8 @@ const CartScreen: React.FC = () => {
       }
     },
     [
+      isGroupedCheckout,
+      placeGroupedOrder,
       selectedAddress,
       cart,
       vendor,

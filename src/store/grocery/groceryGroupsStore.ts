@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import groceryGroupsService, { GroceryGroup } from '../../services/groceryGroupsService';
@@ -61,5 +62,29 @@ const useGroceryGroupsStore = create<GroceryGroupsState>()(
     }))
   )
 );
+
+/**
+ * The shops Daily Essentials draws from, which is what makes a cart groupable.
+ *
+ * Carts are keyed `vendor_<shopId>` everywhere in the app and carry no notion of which
+ * screen filled them, so "is this a daily-needs cart" has to be answered by the shop
+ * rather than by the cart. The groups endpoint already tells us exactly which shops
+ * QuickVerse has curated for daily needs, so that set is the answer — no new field, no
+ * second cart namespace, and no risk of one kirana ending up with two carts.
+ *
+ * It matters that this is by shop and not by origin: shop 94728 supplies the
+ * "Atta, Dal & Rice" group *and* is the grocery vendor customers browse directly. Either
+ * route fills the same cart, and either way it groups.
+ *
+ * Empty when the groups have not loaded. Callers must treat that as "nothing is
+ * groupable" and fall back to single-shop checkout, which is the existing behaviour.
+ */
+export const useEssentialsShopIds = (): Set<string> => {
+  const groups = useGroceryGroupsStore(s => s.groups);
+  return useMemo(
+    () => new Set(groups.flatMap(g => g.products.map(p => p.shopId)).filter(Boolean)),
+    [groups]
+  );
+};
 
 export default useGroceryGroupsStore;
