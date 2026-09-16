@@ -69,6 +69,14 @@ type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
  */
 const shopIdOf = (c: Cart): string => c.cartId.replace('vendor_', '');
 
+/**
+ * One place to flip between live and test, because both the single-shop and the grouped
+ * checkout open Razorpay. Swap for 'rzp_test_T2Z6i6Go29OJwg' when testing — and switch
+ * `razorpay.key.id` on the server to match, or the order it creates will not be one this
+ * key can pay.
+ */
+const RAZORPAY_KEY_ID = 'rzp_live_TAGtNIHlg9alA6';
+
 const CartScreen: React.FC = () => {
   const navigation = useNavigation<CartScreenNavigationProp>();
   const route = useRoute<CartScreenRouteProp>();
@@ -535,9 +543,6 @@ const CartScreen: React.FC = () => {
     vendor: VendorRef
   ) => {
     try {
-      // const RAZORPAY_KEY_ID = 'rzp_test_T2Z6i6Go29OJwg';
-      const RAZORPAY_KEY_ID = 'rzp_live_TAGtNIHlg9alA6';
-
       const options = {
         description: 'QuickVerse Order Payment',
         currency: 'INR',
@@ -728,7 +733,7 @@ const CartScreen: React.FC = () => {
           const options = {
             description: 'QuickVerse Daily Essentials',
             currency: 'INR',
-            key: 'rzp_live_TAGtNIHlg9alA6',
+            key: RAZORPAY_KEY_ID,
             amount: Math.round(response.grandTotal * 100),
             name: 'QuickVerse',
             order_id: razorpayOrderId,
