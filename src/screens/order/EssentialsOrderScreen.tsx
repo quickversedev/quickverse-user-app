@@ -4,6 +4,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   RefreshControl,
   ScrollView,
@@ -48,6 +49,7 @@ const partLabel = (part: EssentialsOrderPart): { text: string; tone: 'ok' | 'wai
   if (part.placementStatus !== 'PLACED') return { text: 'Placing…', tone: 'wait' };
   if (part.vendorDecision === 'REJECTED') return { text: "Couldn't take it", tone: 'bad' };
   if (part.vendorDecision === 'TIMED_OUT') return { text: "Didn't respond", tone: 'bad' };
+  if (part.vendorDecision === 'CANCELLED') return { text: 'Cancelled', tone: 'bad' };
   switch ((part.orderState ?? '').toUpperCase()) {
     case 'CANCELLED':
     case 'REJECTED':
@@ -141,6 +143,39 @@ const EssentialsOrderScreen: React.FC = () => {
     await load(true);
     setRefreshing(false);
   }, [load]);
+
+  const [cancelling, setCancelling] = useState(false);
+  const cancelOrder = useCallback(() => {
+    if (!order || !authData?.jwt || !authData?.phone) return;
+    const jwt = authData.jwt;
+    const phone = authData.phone;
+    Alert.alert(
+      'Cancel this order?',
+      order.paymentStatus === 'PAID'
+        ? `Every store's part will be cancelled and ${rupees(order.payableAmount)} refunded to your payment method.`
+        : "Every store's part will be cancelled.",
+      [
+        { text: 'Keep order', style: 'cancel' },
+        {
+          text: 'Cancel order',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelling(true);
+            try {
+              setOrder(await essentialsOrderService.cancelOrder(order.orderId, jwt, phone));
+            } catch (e) {
+              Alert.alert(
+                'Could not cancel',
+                (e as { message?: string })?.message || 'Please try again.'
+              );
+            } finally {
+              setCancelling(false);
+            }
+          },
+        },
+      ]
+    );
+  }, [order, authData?.jwt, authData?.phone]);
 
   const done = useCallback(() => {
     if (params.justPlaced) {
@@ -245,6 +280,16 @@ const EssentialsOrderScreen: React.FC = () => {
           backgroundColor: getColor('primary'),
         },
         doneText: { fontSize: 15, fontWeight: '800', color: '#fff' },
+        cancelBtn: {
+          height: 44,
+          borderRadius: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 8,
+          borderWidth: 1,
+          borderColor: getColor('error'),
+        },
+        cancelText: { fontSize: 14, fontWeight: '700', color: getColor('error') },
         error: { fontSize: 13, textAlign: 'center', color: getColor('error'), marginTop: 24 },
       }),
     [getColor]
@@ -263,6 +308,22 @@ const EssentialsOrderScreen: React.FC = () => {
       };
     }
     const shown = displayStatusOf(order);
+    if (shown === 'AWAITING_PAYMENT') {
+      return {
+        icon: 'credit-card-clock-outline' as const,
+        color: getColor('primary'),
+        title: 'Waiting for payment',
+        sub: 'This order is sent to the stores once it is paid.',
+      };
+    }
+    if (shown === 'PAYMENT_EXPIRED') {
+      return {
+        icon: 'credit-card-off-outline' as const,
+        color: getColor('error'),
+        title: 'Payment not completed',
+        sub: 'This order was never paid, so nothing was sent to the stores.',
+      };
+    }
     if (shown === 'CANCELLED') {
       return {
         icon: 'cancel' as const,
@@ -270,8 +331,10 @@ const EssentialsOrderScreen: React.FC = () => {
         title: 'Order cancelled',
         sub:
           order.acceptanceStatus === 'REJECTED'
-            ? `The ${order.shops.length === 1 ? 'store' : 'stores'} couldn't take this order. You won't be charged for it.`
-            : "This order was cancelled. You won't be charged for it.",
+            ? `The ${order.shops.length === 1 ? 'store' : 'stores'} couldn't take this order. ${order.paymentStatus === 'PAID' ? "You'll get a full refund." : "You won't be charged for it."}`
+            : order.paymentStatus === 'PAID'
+              ? "You cancelled this order. You'll get a full refund."
+              : "You cancelled this order. You won't be charged for it.",
       };
     }
     if (shown === 'DELIVERED') {
@@ -391,17 +454,39 @@ const EssentialsOrderScreen: React.FC = () => {
               ) : null}
               <View style={styles.row}>
                 <ThemeText style={styles.total}>
-                  {displayStatusOf(order) === 'CANCELLED'
-                    ? 'Nothing to pay'
-                    : order.paymentMethod === 'COD'
-                      ? 'Pay on delivery'
-                      : 'Paid'}
+                  {order.paymentStatus === 'PAID'
+                    ? 'Paid online'
+                    : displayStatusOf(order) === 'CANCELLED'
+                      ? 'Nothing to pay'
+                      : order.paymentMethod === 'COD'
+                        ? 'Pay on delivery'
+                        : 'To pay online'}
                 </ThemeText>
                 <ThemeText style={styles.total}>
-                  {rupees(displayStatusOf(order) === 'CANCELLED' ? 0 : order.amountToPay)}
+                  {rupees(
+                    order.paymentStatus === 'PAID'
+                      ? order.payableAmount
+                      : displayStatusOf(order) === 'CANCELLED'
+                        ? 0
+                        : order.amountToPay
+                  )}
                 </ThemeText>
               </View>
-              {displayStatusOf(order) !== 'CANCELLED' && order.amountToPay < order.payableAmount ? (
+              {order.paymentStatus === 'PAID' && order.refundDue > 0 ? (
+                <View style={styles.row}>
+                  <ThemeText style={[styles.label, { color: CATALOGUE_ACCENT }]}>
+                    {order.refundedAmount >= order.refundDue
+                      ? 'Refunded to your payment method'
+                      : 'Refund on its way'}
+                  </ThemeText>
+                  <ThemeText style={[styles.value, { color: CATALOGUE_ACCENT }]}>
+                    −{rupees(order.refundDue)}
+                  </ThemeText>
+                </View>
+              ) : null}
+              {order.paymentStatus !== 'PAID' &&
+              displayStatusOf(order) !== 'CANCELLED' &&
+              order.amountToPay < order.payableAmount ? (
                 <ThemeText style={styles.label}>
                   Was {rupees(order.payableAmount)}; less the part a store couldn&apos;t take.
                 </ThemeText>
@@ -457,6 +542,20 @@ const EssentialsOrderScreen: React.FC = () => {
       </ScrollView>
 
       <View style={styles.footer}>
+        {order?.cancellable ? (
+          <TouchableOpacity
+            style={styles.cancelBtn}
+            onPress={cancelOrder}
+            disabled={cancelling}
+            accessibilityRole="button"
+          >
+            {cancelling ? (
+              <ActivityIndicator color={getColor('error')} />
+            ) : (
+              <ThemeText style={styles.cancelText}>Cancel order</ThemeText>
+            )}
+          </TouchableOpacity>
+        ) : null}
         <TouchableOpacity style={styles.doneBtn} onPress={done} accessibilityRole="button">
           <ThemeText style={styles.doneText}>{params.justPlaced ? 'Done' : 'Back'}</ThemeText>
         </TouchableOpacity>

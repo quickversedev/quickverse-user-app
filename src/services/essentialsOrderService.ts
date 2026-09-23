@@ -10,10 +10,21 @@ import { EssentialsCheckoutRequest, EssentialsCheckoutSummary } from './essentia
  * such and is not charged for — `amountToPay` only counts the parts that were placed.
  */
 
-export type EssentialsOrderStatus = 'PLACING' | 'CONFIRMED' | 'PARTIALLY_CONFIRMED' | 'FAILED';
+export type EssentialsOrderStatus =
+  | 'AWAITING_PAYMENT'
+  | 'PAYMENT_EXPIRED'
+  | 'PLACING'
+  | 'CONFIRMED'
+  | 'PARTIALLY_CONFIRMED'
+  | 'FAILED';
 export type EssentialsPlacementStatus = 'PENDING' | 'PLACING' | 'PLACED' | 'FAILED';
 /** A kirana's answer once its part is placed. */
-export type EssentialsVendorDecision = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'TIMED_OUT';
+export type EssentialsVendorDecision =
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'TIMED_OUT'
+  | 'CANCELLED';
 /** The kiranas' answers as a whole. */
 export type EssentialsAcceptanceStatus =
   | 'AWAITING_STORES'
@@ -51,8 +62,22 @@ export interface EssentialsOrderPart {
 export interface EssentialsOrder {
   orderId: string;
   status: EssentialsOrderStatus;
-  acceptanceStatus: EssentialsAcceptanceStatus | null;
+  acceptanceStatus: EssentialsAcceptanceStatus | 'CANCELLED' | null;
   paymentMethod: string;
+  /** COD_PENDING, PENDING_PAYMENT, PAID, EXPIRED or CANCELLED. */
+  paymentStatus: string | null;
+  /** Present while a prepaid order awaits payment: what Razorpay checkout is opened with. */
+  payment: {
+    razorpayOrderId: string;
+    amountPaise: number;
+    currency: string;
+    /** The key the server charges with — use this, not a key baked into the app. */
+    keyId: string;
+  } | null;
+  refundedAmount: number;
+  refundDue: number;
+  /** The customer may still cancel: nothing has been picked up yet. */
+  cancellable: boolean;
   /** Epoch millis, as a string. */
   createdAt: string;
   itemCount: number;
@@ -69,7 +94,8 @@ export interface EssentialsOrder {
 export const partStillIn = (part: EssentialsOrderPart) =>
   part.placementStatus === 'PLACED' &&
   part.vendorDecision !== 'REJECTED' &&
-  part.vendorDecision !== 'TIMED_OUT';
+  part.vendorDecision !== 'TIMED_OUT' &&
+  part.vendorDecision !== 'CANCELLED';
 
 /**
  * What the order is to the customer now, as one status:
@@ -78,7 +104,15 @@ export const partStillIn = (part: EssentialsOrderPart) =>
  * kirana still in the order has reached one.
  */
 export const displayStatusOf = (order: EssentialsOrder): string => {
-  if (order.status === 'PLACING' || order.status === 'FAILED') return order.status;
+  if (order.acceptanceStatus === 'CANCELLED') return 'CANCELLED';
+  if (
+    order.status === 'AWAITING_PAYMENT' ||
+    order.status === 'PAYMENT_EXPIRED' ||
+    order.status === 'PLACING' ||
+    order.status === 'FAILED'
+  ) {
+    return order.status;
+  }
   if (order.acceptanceStatus === 'REJECTED') return 'CANCELLED';
   const states = order.shops.filter(partStillIn).map(s => (s.orderState ?? '').toUpperCase());
   if (states.length > 0 && states.every(s => s === 'CANCELLED' || s === 'REJECTED')) {
@@ -152,6 +186,33 @@ class EssentialsOrderService {
         params: live ? { live: true } : undefined,
         ...sessionHeaders(jwtToken, phone),
       })
+    );
+  }
+
+  /** Hands the Razorpay checkout result to the server, which verifies it and places the order. */
+  async confirmPayment(
+    orderId: string,
+    payment: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string },
+    jwtToken: string,
+    phone: string
+  ): Promise<EssentialsOrder> {
+    return apiCall(
+      axiosInstance.post<EssentialsOrder>(
+        `${BASE}/${orderId}/payment`,
+        payment,
+        sessionHeaders(jwtToken, phone)
+      )
+    );
+  }
+
+  /** Cancels the whole order before anything is picked up; a prepaid order is refunded. */
+  async cancelOrder(orderId: string, jwtToken: string, phone: string): Promise<EssentialsOrder> {
+    return apiCall(
+      axiosInstance.post<EssentialsOrder>(
+        `${BASE}/${orderId}/cancel`,
+        { reason: 'Cancelled by customer' },
+        sessionHeaders(jwtToken, phone)
+      )
     );
   }
 

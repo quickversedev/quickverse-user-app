@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import RazorpayCheckout from 'react-native-razorpay';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { CouponSheet } from '../../components/modules/Cart';
@@ -160,9 +161,48 @@ const EssentialsCheckoutScreen: React.FC = () => {
     );
     setPlacing(false);
     if (result.ok) {
-      // The server emptied the Essentials cart when it took the order.
+      const { order } = result;
+      if (order.payment) {
+        // Prepaid: the order is taken but nothing is sent to the stores until it is paid.
+        try {
+          // No method restriction: the methods enabled on the Razorpay account decide. (The
+          // single-shop checkout restricts to UPI, which leaves nothing where UPI is unavailable.)
+          const options = {
+            description: 'QuickVerse Daily Essentials',
+            currency: order.payment.currency,
+            key: order.payment.keyId,
+            amount: order.payment.amountPaise,
+            name: 'QuickVerse',
+            order_id: order.payment.razorpayOrderId,
+            prefill: { email: '', contact: phone, name: authData?.username ?? '' },
+          };
+          const paid = await RazorpayCheckout.open(options);
+          setPlacing(true);
+          await essentialsOrderService.confirmPayment(
+            order.orderId,
+            {
+              razorpayOrderId: paid.razorpay_order_id,
+              razorpayPaymentId: paid.razorpay_payment_id,
+              razorpaySignature: paid.razorpay_signature,
+            },
+            jwt,
+            phone
+          );
+        } catch (e) {
+          setPlacing(false);
+          // Closed or failed: nothing was charged, the cart is untouched, and the unpaid order
+          // lapses on its own. The customer can simply try again.
+          showMessage(
+            (e as { description?: string; message?: string })?.description ||
+              'Payment was not completed. Your cart is still here.'
+          );
+          return;
+        }
+        setPlacing(false);
+      }
+      // The server has emptied the Essentials cart (for prepaid, once the payment was confirmed).
       fetchCart(jwt, phone);
-      navigation.replace('EssentialsOrder', { orderId: result.order.orderId, justPlaced: true });
+      navigation.replace('EssentialsOrder', { orderId: order.orderId, justPlaced: true });
       return;
     }
     if (result.summary) {
@@ -171,7 +211,18 @@ const EssentialsCheckoutScreen: React.FC = () => {
       setIssuesDismissed(false);
     }
     showMessage(result.message);
-  }, [summary, addressId, placing, paymentMethod, coupon?.id, jwt, phone, fetchCart, navigation]);
+  }, [
+    summary,
+    addressId,
+    placing,
+    paymentMethod,
+    coupon?.id,
+    jwt,
+    phone,
+    authData?.username,
+    fetchCart,
+    navigation,
+  ]);
 
   const goBack = useCallback(() => {
     if (navigation.canGoBack()) navigation.goBack();
@@ -235,7 +286,6 @@ const EssentialsCheckoutScreen: React.FC = () => {
           borderColor: getColor('primary'),
           backgroundColor: `${getColor('primary')}14`,
         },
-        payOptionDisabled: { opacity: 0.5 },
         payLabel: { flex: 1, fontSize: 13, fontWeight: '700', color: getColor('text') },
         billRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
         billLabel: { flex: 1, fontSize: 13, color: getColor('subText') },
@@ -317,12 +367,7 @@ const EssentialsCheckoutScreen: React.FC = () => {
   }
 
   const issues = summary?.issues ?? [];
-  const canPlace =
-    !!summary?.canPlaceOrder &&
-    !!summary.summaryHash &&
-    paymentMethod === 'COD' &&
-    !loading &&
-    !placing;
+  const canPlace = !!summary?.canPlaceOrder && !!summary.summaryHash && !loading && !placing;
   const showIssues = issues.length > 0 && !issuesDismissed && !loading;
   const selectedIsDelivery = coupon?.type === 'FREE_DELIVERY';
 
@@ -433,15 +478,15 @@ const EssentialsCheckoutScreen: React.FC = () => {
               <MaterialCommunityIcons name="cash" size={20} color={getColor('text')} />
               <ThemeText style={styles.payLabel}>Cash on delivery</ThemeText>
             </TouchableOpacity>
-            {/* Online payment for Essentials orders arrives with refunds (Phase 6). */}
-            <View style={[styles.payOption, styles.payOptionDisabled]}>
-              <MaterialCommunityIcons
-                name="credit-card-outline"
-                size={20}
-                color={getColor('text')}
-              />
-              <ThemeText style={styles.payLabel}>Pay online · soon</ThemeText>
-            </View>
+            <TouchableOpacity
+              style={[styles.payOption, paymentMethod === 'PREPAID' && styles.payOptionSelected]}
+              onPress={() => setPaymentMethod('PREPAID')}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: paymentMethod === 'PREPAID' }}
+            >
+              <MaterialCommunityIcons name="cellphone-check" size={20} color={getColor('text')} />
+              <ThemeText style={styles.payLabel}>Pay online</ThemeText>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -562,7 +607,9 @@ const EssentialsCheckoutScreen: React.FC = () => {
             ? 'Select a delivery address to see your bill.'
             : summary && !summary.canPlaceOrder
               ? 'Resolve the items flagged above to continue.'
-              : 'One order, delivered together. Pay in cash on delivery.'}
+              : paymentMethod === 'PREPAID'
+                ? "One order, delivered together. If a store can't supply its part, it's refunded."
+                : 'One order, delivered together. Pay in cash on delivery.'}
         </ThemeText>
       </View>
 
