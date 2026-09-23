@@ -60,6 +60,12 @@ interface EssentialsCartState {
     phone?: string
   ) => Promise<EssentialsSetResult>;
   clear: (jwtToken?: string, phone?: string) => Promise<EssentialsSetResult>;
+  /** Applies the checkout's "update cart & continue" for an address. */
+  resolveIssues: (
+    customerAddressId: string,
+    jwtToken: string,
+    phone: string
+  ) => Promise<EssentialsSetResult>;
   reset: () => void;
 }
 
@@ -170,6 +176,20 @@ const useEssentialsCartStore = create<EssentialsCartState>()(
           } catch (error) {
             const message = errorMessage(error, 'Could not clear your Daily Essentials cart');
             set({ ...previous, error: message });
+            return { ok: false, message };
+          }
+        },
+
+        resolveIssues: async (customerAddressId, jwtToken, phone) => {
+          try {
+            applyView(
+              await essentialsCartService.resolveIssues(customerAddressId, jwtToken, phone)
+            );
+            set({ pending: {}, error: null });
+            return { ok: true };
+          } catch (error) {
+            const message = errorMessage(error, 'Could not update your Daily Essentials cart');
+            set({ error: message });
             return { ok: false, message };
           }
         },

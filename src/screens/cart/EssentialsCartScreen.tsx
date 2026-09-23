@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import LoginPromptModal from '../../components/common/LoginPromptModal';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { CartHeader } from '../../components/modules/Cart';
 import QuantitySelector from '../../components/modules/Product/QuantitySelector';
@@ -122,6 +123,20 @@ const EssentialsCartScreen: React.FC = () => {
     const result = await clear(authData?.jwt, authData?.phone);
     if (!result.ok && result.message) showMessage(result.message);
   }, [clear, authData]);
+
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  /**
+   * Checkout is where the bill is built, so it is reachable even with unavailable lines:
+   * the checkout lists them and lets the customer remove them there.
+   */
+  const handleCheckout = useCallback(() => {
+    if (!authData?.jwt) {
+      setShowLoginPrompt(true);
+      return;
+    }
+    navigation.navigate('EssentialsCheckout');
+  }, [authData?.jwt, navigation]);
 
   const goBack = useCallback(() => {
     if (navigation.canGoBack()) navigation.goBack();
@@ -237,7 +252,6 @@ const EssentialsCartScreen: React.FC = () => {
           justifyContent: 'center',
           backgroundColor: getColor('primary'),
         },
-        checkoutDisabled: { backgroundColor: getColor('placeholder') },
         checkoutText: { fontSize: 15, fontWeight: '800', color: '#fff' },
         checkoutHint: {
           fontSize: 11,
@@ -397,16 +411,26 @@ const EssentialsCartScreen: React.FC = () => {
           </ThemeText>
           <ThemeText style={styles.totalValue}>{formatRupees(summary.itemTotal)}</ThemeText>
         </View>
-        {/* Checkout — one bill with fees charged once — is the next build phase. */}
-        <View style={[styles.checkoutBtn, styles.checkoutDisabled]}>
+        <TouchableOpacity
+          style={styles.checkoutBtn}
+          onPress={handleCheckout}
+          accessibilityRole="button"
+          accessibilityLabel="Checkout"
+        >
           <ThemeText style={styles.checkoutText}>Checkout</ThemeText>
-        </View>
+        </TouchableOpacity>
         <ThemeText style={styles.checkoutHint}>
           {summary.hasUnavailable
-            ? 'Remove unavailable items to continue.'
-            : 'Delivery and fees are added at checkout.'}
+            ? 'Unavailable items are left out; you can remove them at checkout.'
+            : 'Delivery and fees are added at checkout, once for the whole order.'}
         </ThemeText>
       </View>
+      <LoginPromptModal
+        visible={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        title="Login to check out"
+        message="Please log in to see your bill and place this order."
+      />
     </SafeAreaView>
   );
 };

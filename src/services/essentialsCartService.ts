@@ -58,6 +58,85 @@ export interface EssentialsCartView {
   shops: EssentialsCartShop[];
 }
 
+export type EssentialsIssueType =
+  | EssentialsUnavailableReason
+  | 'PRICE_CHANGED'
+  | 'QUANTITY_LIMIT'
+  | 'OUT_OF_RADIUS'
+  | 'STORE_LIMIT'
+  | 'EMPTY_CART';
+
+export interface EssentialsIssue {
+  type: EssentialsIssueType;
+  sku: string | null;
+  shopId: string | null;
+  message: string;
+}
+
+/** One kirana's allocated share of the one bill. Parts always sum to the order total. */
+export interface EssentialsShopPart {
+  shopId: string;
+  shopName: string | null;
+  pickupSequence: number;
+  distanceToCustomerKm: number | null;
+  itemCount: number;
+  itemTotal: number;
+  couponDiscount: number;
+  deliveryFee: number;
+  platformFee: number;
+  packagingCharges: number;
+  codCharges: number;
+  totalGst: number;
+  payableAmount: number;
+}
+
+export type EssentialsPaymentMethod = 'COD' | 'PREPAID';
+
+/**
+ * The server's bill for the Essentials cart. Everything past the items is charged once for
+ * the whole order: delivery on the full kirana → kirana → customer route, one platform fee,
+ * one coupon. The app renders these figures; it never computes a charge itself.
+ */
+export interface EssentialsCheckoutSummary {
+  cartId: string | null;
+  cartVersion: number;
+  customerAddressId: string;
+  paymentMethod: EssentialsPaymentMethod;
+  itemCount: number;
+  itemTotal: number;
+  mrpTotal: number;
+  itemLevelDiscount: number;
+  couponId: string | null;
+  couponCode: string | null;
+  couponApplied: boolean;
+  couponDiscount: number;
+  couponError: string | null;
+  couponErrorMessage: string | null;
+  freeDelivery: boolean;
+  freeDeliveryDiscount: number;
+  routeDistanceKm: number;
+  actualDeliveryFee: number;
+  deliveryFee: number;
+  platformFee: number;
+  packagingCharges: number;
+  codCharges: number;
+  gstRate: number;
+  totalGst: number;
+  payableAmount: number;
+  totalSavings: number;
+  shops: EssentialsShopPart[];
+  items: EssentialsCartLine[];
+  issues: EssentialsIssue[];
+  canPlaceOrder: boolean;
+  summaryHash: string | null;
+}
+
+export interface EssentialsCheckoutRequest {
+  customerAddressId: string;
+  paymentMethod: EssentialsPaymentMethod;
+  couponId?: string | null;
+}
+
 const BASE = '/v3/essentials/cart';
 
 const sessionHeaders = (jwtToken: string, phone: string) =>
@@ -89,6 +168,39 @@ class EssentialsCartService {
 
   async clear(jwtToken: string, phone: string): Promise<EssentialsCartView> {
     return apiCall(axiosInstance.delete<EssentialsCartView>(BASE, sessionHeaders(jwtToken, phone)));
+  }
+
+  /** The bill for delivering the cart to one saved address. */
+  async getSummary(
+    request: EssentialsCheckoutRequest,
+    jwtToken: string,
+    phone: string
+  ): Promise<EssentialsCheckoutSummary> {
+    return apiCall(
+      axiosInstance.post<EssentialsCheckoutSummary>(
+        `${BASE}/summary`,
+        request,
+        sessionHeaders(jwtToken, phone)
+      )
+    );
+  }
+
+  /**
+   * "Update cart & continue": drops unavailable items and stores that do not deliver to the
+   * address, lowers quantities over the limit, and accepts current prices.
+   */
+  async resolveIssues(
+    customerAddressId: string,
+    jwtToken: string,
+    phone: string
+  ): Promise<EssentialsCartView> {
+    return apiCall(
+      axiosInstance.post<EssentialsCartView>(
+        `${BASE}/resolve-issues`,
+        { customerAddressId },
+        sessionHeaders(jwtToken, phone)
+      )
+    );
   }
 }
 
