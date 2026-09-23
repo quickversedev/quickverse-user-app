@@ -1,12 +1,25 @@
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Image, ImageSourcePropType, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Image,
+  ImageSourcePropType,
+  Platform,
+  StyleSheet,
+  ToastAndroid,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import QuantitySelector from '../../../components/modules/Product/QuantitySelector';
 import { ThemeText } from '../../../components/common/theme/ThemeText';
 import { CATALOGUE_ACCENT, CATALOGUE_GUTTER } from '../../../constants/catalogue';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { GroceryGroupProduct } from '../../../services/groceryGroupsService';
 import useCartStore from '../../../store/cart/cartStore';
+import useEssentialsCartStore, {
+  EssentialsProductMeta,
+  EssentialsSetResult,
+} from '../../../store/cart/essentialsCartStore';
 import useGroceryGroupsStore from '../../../store/grocery/groceryGroupsStore';
 import { useTheme } from '../../../theme/ThemeContext';
 
@@ -38,6 +51,24 @@ const imageSourceFor = (image?: string): ImageSourcePropType => {
   return cleanUrl.startsWith('http') ? { uri: cleanUrl } : PLACEHOLDER;
 };
 
+const showMessage = (message: string) => {
+  if (Platform.OS === 'android') {
+    ToastAndroid.show(message, ToastAndroid.SHORT);
+  } else {
+    Alert.alert('Daily Essentials', message);
+  }
+};
+
+const metaFor = (product: GroceryGroupProduct): EssentialsProductMeta => ({
+  sku: product.sku,
+  shopId: product.shopId,
+  shopName: product.shopName,
+  name: product.name,
+  price: product.sellingPrice || product.mrp,
+  mrp: product.mrp,
+  imageUrl: product.imageUrl,
+});
+
 const DailyEssentials: React.FC = () => {
   const { getColor, theme } = useTheme();
   const { authData } = useAuth();
@@ -50,29 +81,62 @@ const DailyEssentials: React.FC = () => {
   const increment = useCartStore(s => s.increment);
   const decrement = useCartStore(s => s.decrement);
 
+  /**
+   * Where this section's items go. With the server's Essentials cart on, every product here
+   * lands in one QuickVerse cart whatever its kirana, and checks out as one order. With it
+   * off — or before the server has said — it falls back to the per-shop SmartBiz carts,
+   * which is how this section worked before the Essentials cart existed.
+   */
+  const essentialsEnabled = useEssentialsCartStore(s => s.enabled === true);
+  const essentialsView = useEssentialsCartStore(s => s.view);
+  const essentialsPending = useEssentialsCartStore(s => s.pending);
+  const fetchEssentialsCart = useEssentialsCartStore(s => s.fetchCart);
+  const setEssentialsQuantity = useEssentialsCartStore(s => s.setQuantity);
+
   useEffect(() => {
     fetchGroups();
   }, [fetchGroups]);
 
+  useEffect(() => {
+    fetchEssentialsCart(authData?.jwt, authData?.phone);
+  }, [fetchEssentialsCart, authData?.jwt, authData?.phone]);
+
   /**
-   * The cart is chosen by the *product's* shop, not by any screen-level vendor — that
-   * is what lets one group mix kiranas, and it matches FastPicks and TagProductsScreen.
-   *
-   * It also means adding from two shops in one group opens two carts, with no prompt.
-   * That is how the app already works; the mitigation chosen here is naming the shop on
-   * every card so the split is visible rather than silent. QV-22 covers making the Cart
-   * screen able to show them together.
+   * Legacy path only: the cart is chosen by the *product's* shop, so adding from two shops
+   * in one group opens two carts. The Essentials cart replaces this when enabled.
    */
   const cartIdFor = (product: GroceryGroupProduct) => `vendor_${product.shopId}`;
 
   const quantityFor = useCallback(
-    (product: GroceryGroupProduct) =>
-      carts[cartIdFor(product)]?.products[product.sku]?.quantity || 0,
-    [carts]
+    (product: GroceryGroupProduct) => {
+      if (essentialsEnabled) {
+        if (essentialsPending[product.sku] !== undefined) return essentialsPending[product.sku];
+        return essentialsView?.items.find(l => l.sku === product.sku)?.quantity ?? 0;
+      }
+      return carts[cartIdFor(product)]?.products[product.sku]?.quantity || 0;
+    },
+    [carts, essentialsEnabled, essentialsPending, essentialsView]
+  );
+
+  const setEssentials = useCallback(
+    async (product: GroceryGroupProduct, quantity: number) => {
+      const result: EssentialsSetResult = await setEssentialsQuantity(
+        metaFor(product),
+        quantity,
+        authData?.jwt,
+        authData?.phone
+      );
+      if (!result.ok && result.message) showMessage(result.message);
+    },
+    [setEssentialsQuantity, authData]
   );
 
   const handleAdd = useCallback(
     (product: GroceryGroupProduct) => {
+      if (essentialsEnabled) {
+        setEssentials(product, quantityFor(product) + 1);
+        return;
+      }
       addToCart(
         cartIdFor(product),
         {
@@ -90,19 +154,29 @@ const DailyEssentials: React.FC = () => {
         authData?.phone || ''
       );
     },
-    [addToCart, authData]
+    [addToCart, authData, essentialsEnabled, setEssentials, quantityFor]
   );
 
   const handleIncrement = useCallback(
-    (product: GroceryGroupProduct) =>
-      increment(cartIdFor(product), product.sku, authData?.jwt || '', authData?.phone || ''),
-    [increment, authData]
+    (product: GroceryGroupProduct) => {
+      if (essentialsEnabled) {
+        setEssentials(product, quantityFor(product) + 1);
+        return;
+      }
+      increment(cartIdFor(product), product.sku, authData?.jwt || '', authData?.phone || '');
+    },
+    [increment, authData, essentialsEnabled, setEssentials, quantityFor]
   );
 
   const handleDecrement = useCallback(
-    (product: GroceryGroupProduct) =>
-      decrement(cartIdFor(product), product.sku, authData?.jwt || '', authData?.phone || ''),
-    [decrement, authData]
+    (product: GroceryGroupProduct) => {
+      if (essentialsEnabled) {
+        setEssentials(product, quantityFor(product) - 1);
+        return;
+      }
+      decrement(cartIdFor(product), product.sku, authData?.jwt || '', authData?.phone || '');
+    },
+    [decrement, authData, essentialsEnabled, setEssentials, quantityFor]
   );
 
   const styles = useMemo(

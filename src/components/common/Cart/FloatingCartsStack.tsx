@@ -12,10 +12,14 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { TabBarVisibilityContext } from '../../../navigation/TabNavigation';
 import useCartStore from '../../../store/cart/cartStore';
+import useEssentialsCartStore, {
+  useEssentialsSummary,
+} from '../../../store/cart/essentialsCartStore';
 import useOrderStore from '../../../store/cart/orderStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import OrderProgressBar from '../order/OrderProgressBar';
 import CartBar from './CartBar';
+import EssentialsCartBar from './EssentialsCartBar';
 
 const { width } = Dimensions.get('window');
 const ANIMATION_DURATION = 300;
@@ -31,6 +35,10 @@ const FloatingCartsStack: React.FC = () => {
   const hasInProgressOrder = useOrderStore(state =>
     state.orders.some(o => o.status !== 'delivered' && o.status !== 'cancelled')
   );
+
+  const essentialsEnabled = useEssentialsCartStore(state => state.enabled === true);
+  const essentialsItemCount = useEssentialsSummary().itemCount;
+  const hasEssentialsCart = essentialsEnabled && essentialsItemCount > 0;
 
   // Filter to only carts with items
   const nonEmptyCarts = allCarts.filter(
@@ -158,7 +166,7 @@ const FloatingCartsStack: React.FC = () => {
   );
 
   // Only hide if there are no non-empty carts AND no in-progress order to show
-  if (nonEmptyCarts.length === 0 && !hasInProgressOrder) return null;
+  if (nonEmptyCarts.length === 0 && !hasEssentialsCart && !hasInProgressOrder) return null;
 
   // Show a hint of the next cart behind the first when collapsed
   const showSecondCartBehind = !expanded && sortedCarts.length > 1;
@@ -209,6 +217,8 @@ const FloatingCartsStack: React.FC = () => {
             </Animated.View>
           </TouchableOpacity>
         )}
+        {/* The Daily Essentials cart is one cart across kiranas, so it gets one bar of its own. */}
+        <EssentialsCartBar />
         <View style={styles.stack}>
           {/* Show second cart behind the first as a visual cue when collapsed */}
           {showSecondCartBehind && (

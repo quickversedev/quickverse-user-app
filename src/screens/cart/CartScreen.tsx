@@ -24,6 +24,7 @@ import {
   CouponSheet,
   DeliveryInstructions,
   DeliveryInstructionId,
+  EssentialsCartCard,
   FreeDeliveryProgress,
   PaymentSheet,
   PaymentSummary,
@@ -47,6 +48,7 @@ import hyperlocalOrderService, { HyperlocalShopOrder } from '../../services/hype
 import { getCODCharges } from '../../services/paymentService';
 import { smartBizAddressService } from '../../store/address/smartBizAddressStore';
 import useCartStore, { Cart } from '../../store/cart/cartStore';
+import useEssentialsCartStore, { useEssentialsSummary } from '../../store/cart/essentialsCartStore';
 import { useEssentialsShopIds } from '../../store/grocery/groceryGroupsStore';
 import useConfigStore from '../../store/configStore';
 import usePricingStore from '../../store/pricingStore';
@@ -216,6 +218,15 @@ const CartScreen: React.FC = () => {
    */
   const essentialsShopIds = useEssentialsShopIds();
 
+  /**
+   * With the server's Essentials cart on, Daily Essentials items no longer land in these
+   * per-shop carts at all — they have their own cart and checkout. A kirana cart here then
+   * holds only what was added from that store's own page, and must check out on its own,
+   * so the shop-based grouping below is switched off.
+   */
+  const essentialsCartEnabled = useEssentialsCartStore(s => s.enabled === true);
+  const essentialsSummary = useEssentialsSummary();
+
   const openCarts = useMemo(() => Object.values(carts), [carts]);
 
   const groupableCarts = useMemo(
@@ -233,8 +244,11 @@ const CartScreen: React.FC = () => {
    * so a cold cache degrades to today's behaviour instead of failing.
    */
   const isGroupedCheckout = useMemo(
-    () => groupableCarts.length > 0 && groupableCarts.length === openCarts.length,
-    [groupableCarts.length, openCarts.length]
+    () =>
+      !essentialsCartEnabled &&
+      groupableCarts.length > 0 &&
+      groupableCarts.length === openCarts.length,
+    [essentialsCartEnabled, groupableCarts.length, openCarts.length]
   );
 
   /**
@@ -1092,6 +1106,15 @@ const CartScreen: React.FC = () => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background') }}>
         <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, paddingBottom: 100 }}>
+          {essentialsCartEnabled ? (
+            <EssentialsCartCard
+              itemCount={essentialsSummary.itemCount}
+              itemTotal={essentialsSummary.itemTotal}
+              shopCount={essentialsSummary.shopCount}
+              onPress={() => navigation.navigate('EssentialsCart')}
+              style={{ marginHorizontal: 0, marginTop: 0 }}
+            />
+          ) : null}
           <View style={styles.emptyCartSection}>
             <MaterialCommunityIcons name="cart-off" size={80} color={getColor('subText')} />
             <Text
@@ -1199,6 +1222,14 @@ const CartScreen: React.FC = () => {
       />
 
       <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: footerHeight + 24 }}>
+        {essentialsCartEnabled ? (
+          <EssentialsCartCard
+            itemCount={essentialsSummary.itemCount}
+            itemTotal={essentialsSummary.itemTotal}
+            shopCount={essentialsSummary.shopCount}
+            onPress={() => navigation.navigate('EssentialsCart')}
+          />
+        ) : null}
         <AnimatedCard delay={0}>
           <FreeDeliveryProgress
             cartAmount={checkoutSummary?.itemTotalAmount ?? 0}

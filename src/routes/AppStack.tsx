@@ -11,6 +11,7 @@ import { Collection } from '../data/collectionsData';
 import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
 import CouponsScreen from '../screens/cart/CouponsScreen';
+import EssentialsCartScreen from '../screens/cart/EssentialsCartScreen';
 import CollectionDetailScreen from '../screens/collections/CollectionDetailScreen';
 import TagProductsScreen from '../screens/TagProducts/TagProductsScreen';
 import OrderFailureScreen from '../screens/order/OrderFailureScreen';
@@ -52,6 +53,8 @@ export type RootStackParamList = {
   TagProducts: { tagCode: string; tagLabel: string; shopCategory?: string };
   ProductDetailDemo: undefined;
   Cart: { cartId: string } | undefined;
+  /** The Daily Essentials cart: one QuickVerse cart across kiranas. */
+  EssentialsCart: undefined;
   Orders: undefined;
   OrderDetails: { orderId: string; order?: Order };
   OrderSuccess: {
@@ -223,6 +226,11 @@ export const AppStack = () => {
         }}
       />
       <Stack.Screen name="Coupons" component={CouponsScreen} options={slideFromBottomOptions} />
+      <Stack.Screen
+        name="EssentialsCart"
+        component={EssentialsCartScreen}
+        options={slideFromBottomOptions}
+      />
 
       <Stack.Screen name="Search" component={SearchScreen} options={slideFromRightOptions} />
       <Stack.Screen name="Address" component={AddressScreen} options={slideFromRightOptions} />
