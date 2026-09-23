@@ -13,6 +13,7 @@ import TabNavigation from '../navigation/TabNavigation';
 import CouponsScreen from '../screens/cart/CouponsScreen';
 import EssentialsCartScreen from '../screens/cart/EssentialsCartScreen';
 import EssentialsCheckoutScreen from '../screens/cart/EssentialsCheckoutScreen';
+import EssentialsOrderScreen from '../screens/order/EssentialsOrderScreen';
 import CollectionDetailScreen from '../screens/collections/CollectionDetailScreen';
 import TagProductsScreen from '../screens/TagProducts/TagProductsScreen';
 import OrderFailureScreen from '../screens/order/OrderFailureScreen';
@@ -58,6 +59,8 @@ export type RootStackParamList = {
   EssentialsCart: undefined;
   /** One bill for the Essentials cart: route delivery fee, fees and one coupon, charged once. */
   EssentialsCheckout: undefined;
+  /** One Daily Essentials order: success screen when `justPlaced`, details from history otherwise. */
+  EssentialsOrder: { orderId: string; justPlaced?: boolean };
   Orders: undefined;
   OrderDetails: { orderId: string; order?: Order };
   OrderSuccess: {
@@ -237,6 +240,11 @@ export const AppStack = () => {
       <Stack.Screen
         name="EssentialsCheckout"
         component={EssentialsCheckoutScreen}
+        options={slideFromRightOptions}
+      />
+      <Stack.Screen
+        name="EssentialsOrder"
+        component={EssentialsOrderScreen}
         options={slideFromRightOptions}
       />
 

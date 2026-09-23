@@ -12,6 +12,8 @@ import {
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { Images } from '../../../assets';
 import { useAppStateRefresh } from '../../../hooks/useAppStateRefresh';
+import { foldOrders, HistoryEntry, useEssentialsOrders } from '../../../hooks/useEssentialsOrders';
+import EssentialsOrderCard from './EssentialsOrderCard';
 import { useOrders } from '../../../hooks/useOrders';
 import usePricingStore from '../../../store/pricingStore';
 import useVendorStore from '../../../store/vendorStore';
@@ -33,6 +35,13 @@ const OrderList: React.FC<OrderListProps> = ({
   // Theme and data hooks
   const { getColor } = useTheme();
   const { orders, loading, error, loadMoreOrders, refreshOrders, hasMoreOrders } = useOrders();
+  // A Daily Essentials order is one order to the customer but one SmartBiz order per kirana;
+  // fold those kirana orders back into the one entry.
+  const {
+    essentialsOrders,
+    kiranaOrderIds,
+    refresh: refreshEssentialsOrders,
+  } = useEssentialsOrders();
   const getVendorById = useVendorStore(state => state.getVendorById);
   // Subscribe to pricing configs so totals re-render when configs load
   const pricingConfigs = usePricingStore(state => state.configs);
@@ -82,7 +91,11 @@ const OrderList: React.FC<OrderListProps> = ({
     if (loading && orders.length === 0) return [];
     return orders;
   }, [orders, loading]);
-  const keyExtractor = useMemo(() => (item: Order) => item.orderId, []);
+  const historyEntries = useMemo(
+    () => foldOrders(filteredOrders, essentialsOrders, kiranaOrderIds, hasMoreOrders),
+    [filteredOrders, essentialsOrders, kiranaOrderIds, hasMoreOrders]
+  );
+  const keyExtractor = useMemo(() => (entry: HistoryEntry) => `${entry.kind}-${entry.key}`, []);
   const getStatusColor = useMemo(
     () => (status: Order['status']) => {
       switch (status) {
@@ -112,6 +125,7 @@ const OrderList: React.FC<OrderListProps> = ({
     if (!refreshing && !loading) {
       setRefreshing(true);
       try {
+        refreshEssentialsOrders();
         await refreshOrders(10); // Pass pageSize to ensure we get fresh data
         // Clear any existing filters after refresh
       } catch (error) {
@@ -334,6 +348,19 @@ const OrderList: React.FC<OrderListProps> = ({
     );
   }, [error, getColor, refreshOrders]);
 
+  const renderHistoryEntry = useCallback(
+    ({ item }: { item: HistoryEntry }) =>
+      item.kind === 'order' ? (
+        renderOrderItem({ item: item.order })
+      ) : (
+        <EssentialsOrderCard
+          order={item.order}
+          onPress={() => navigation?.navigate('EssentialsOrder', { orderId: item.order.orderId })}
+        />
+      ),
+    [renderOrderItem, navigation]
+  );
+
   // If there's an error, render the error component
   if (error) {
     return errorComponent;
@@ -342,8 +369,8 @@ const OrderList: React.FC<OrderListProps> = ({
   return (
     <View style={[styles.container, { backgroundColor: getColor('background') }]}>
       <FlatList
-        data={filteredOrders}
-        renderItem={renderOrderItem}
+        data={historyEntries}
+        renderItem={renderHistoryEntry}
         keyExtractor={keyExtractor}
         contentContainerStyle={styles.listContainer}
         refreshControl={
@@ -362,7 +389,7 @@ const OrderList: React.FC<OrderListProps> = ({
         windowSize={10}
         initialNumToRender={5}
         ListFooterComponent={
-          filteredOrders.length > 0 && hasMoreOrders ? (
+          historyEntries.length > 0 && hasMoreOrders ? (
             loading && !isLoadMoreClicking ? (
               <ActivityIndicator size="small" color={getColor('primary')} style={styles.loader} />
             ) : isLoadMoreClicking ? (

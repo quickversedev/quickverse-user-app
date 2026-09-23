@@ -16,6 +16,7 @@ import RazorpayCheckout from 'react-native-razorpay';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AnimatedCard from '../../components/common/AnimatedCard';
 import LoginPromptModal from '../../components/common/LoginPromptModal';
+import EssentialsOrderCard from '../../components/common/order/EssentialsOrderCard';
 import {
   CartFooter,
   CartHeader,
@@ -37,6 +38,7 @@ import {
   SmartBizAddressSelectionModal,
 } from '../../components/modules/Header';
 import { useAuth } from '../../contexts/login/AuthProvider';
+import { foldOrders, useEssentialsOrders } from '../../hooks/useEssentialsOrders';
 import { useOrders } from '../../hooks/useOrders';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { ApiError } from '../../config/api/axios.types';
@@ -225,6 +227,11 @@ const CartScreen: React.FC = () => {
    * so the shop-based grouping below is switched off.
    */
   const essentialsCartEnabled = useEssentialsCartStore(s => s.enabled === true);
+  const { essentialsOrders, kiranaOrderIds } = useEssentialsOrders();
+  const previousOrders = useMemo(
+    () => foldOrders(orders, essentialsOrders, kiranaOrderIds, hasMoreOrders),
+    [orders, essentialsOrders, kiranaOrderIds, hasMoreOrders]
+  );
   const essentialsSummary = useEssentialsSummary();
 
   const openCarts = useMemo(() => Object.values(carts), [carts]);
@@ -1140,24 +1147,37 @@ const CartScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {ordersLoading && orders.length === 0 ? (
+          {ordersLoading && previousOrders.length === 0 ? (
             <ActivityIndicator size="small" color={getColor('primary')} style={{ marginTop: 32 }} />
-          ) : orders.length > 0 ? (
+          ) : previousOrders.length > 0 ? (
             <View style={[styles.prevOrdersSection, { backgroundColor: '#FFF8F0' }]}>
               <Text style={[styles.prevOrdersTitle, { color: getColor('text') }]}>
                 Previous Orders
               </Text>
-              {orders.map(order => (
-                <PreviousOrderCard
-                  key={order.orderId}
-                  order={order}
-                  getColor={getColor}
-                  total={computePreviousOrderTotal(order)}
-                  onPress={() =>
-                    navigation.navigate('OrderDetails', { orderId: order.orderId, order })
-                  }
-                />
-              ))}
+              {previousOrders.map(entry =>
+                entry.kind === 'order' ? (
+                  <PreviousOrderCard
+                    key={entry.key}
+                    order={entry.order}
+                    getColor={getColor}
+                    total={computePreviousOrderTotal(entry.order)}
+                    onPress={() =>
+                      navigation.navigate('OrderDetails', {
+                        orderId: entry.order.orderId,
+                        order: entry.order,
+                      })
+                    }
+                  />
+                ) : (
+                  <EssentialsOrderCard
+                    key={entry.key}
+                    order={entry.order}
+                    onPress={() =>
+                      navigation.navigate('EssentialsOrder', { orderId: entry.order.orderId })
+                    }
+                  />
+                )
+              )}
               {hasMoreOrders && (
                 <TouchableOpacity
                   style={[styles.loadMoreBtn, { borderColor: getColor('primary') }]}

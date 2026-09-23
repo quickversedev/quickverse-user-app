@@ -2,7 +2,16 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  ToastAndroid,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { CouponSheet } from '../../components/modules/Cart';
@@ -17,6 +26,7 @@ import essentialsCartService, {
   EssentialsCheckoutSummary,
   EssentialsPaymentMethod,
 } from '../../services/essentialsCartService';
+import essentialsOrderService from '../../services/essentialsOrderService';
 import useEssentialsCartStore from '../../store/cart/essentialsCartStore';
 import useConfigStore from '../../store/configStore';
 import { useTheme } from '../../theme/ThemeContext';
@@ -37,6 +47,11 @@ import { Address } from '../../types/address';
 type Nav = StackNavigationProp<RootStackParamList, 'EssentialsCheckout'>;
 
 const rupees = (amount: number) => `₹${Number.isInteger(amount) ? amount : amount.toFixed(2)}`;
+
+const showMessage = (message: string) => {
+  if (Platform.OS === 'android') ToastAndroid.show(message, ToastAndroid.LONG);
+  else Alert.alert('Daily Essentials', message);
+};
 
 const addressLine = (address: Address) =>
   [address.addressLine1, address.addressLine2, address.city].filter(Boolean).join(', ');
@@ -61,6 +76,7 @@ const EssentialsCheckoutScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [issuesDismissed, setIssuesDismissed] = useState(false);
   const [resolving, setResolving] = useState(false);
+  const [placing, setPlacing] = useState(false);
   const requestSeq = useRef(0);
 
   const addressId = selectedAddress?.addressID ?? null;
@@ -123,6 +139,39 @@ const EssentialsCheckoutScreen: React.FC = () => {
     }
     // The cart version bump re-prices the order through the effect above.
   }, [addressId, jwt, phone, resolveIssues]);
+
+  /**
+   * Places the order on the terms of the bill on screen. If the bill has changed since (a price,
+   * stock, the route), the server refuses with the new one, which replaces it here for the
+   * customer to review — nothing is charged that they did not see.
+   */
+  const handlePlaceOrder = useCallback(async () => {
+    if (!summary?.summaryHash || !addressId || placing) return;
+    setPlacing(true);
+    const result = await essentialsOrderService.placeOrder(
+      {
+        customerAddressId: addressId,
+        paymentMethod,
+        couponId: coupon?.id ?? null,
+        summaryHash: summary.summaryHash,
+      },
+      jwt,
+      phone
+    );
+    setPlacing(false);
+    if (result.ok) {
+      // The server emptied the Essentials cart when it took the order.
+      fetchCart(jwt, phone);
+      navigation.replace('EssentialsOrder', { orderId: result.order.orderId, justPlaced: true });
+      return;
+    }
+    if (result.summary) {
+      requestSeq.current += 1;
+      setSummary(result.summary);
+      setIssuesDismissed(false);
+    }
+    showMessage(result.message);
+  }, [summary, addressId, placing, paymentMethod, coupon?.id, jwt, phone, fetchCart, navigation]);
 
   const goBack = useCallback(() => {
     if (navigation.canGoBack()) navigation.goBack();
@@ -268,6 +317,12 @@ const EssentialsCheckoutScreen: React.FC = () => {
   }
 
   const issues = summary?.issues ?? [];
+  const canPlace =
+    !!summary?.canPlaceOrder &&
+    !!summary.summaryHash &&
+    paymentMethod === 'COD' &&
+    !loading &&
+    !placing;
   const showIssues = issues.length > 0 && !issuesDismissed && !loading;
   const selectedIsDelivery = coupon?.type === 'FREE_DELIVERY';
 
@@ -488,17 +543,26 @@ const EssentialsCheckoutScreen: React.FC = () => {
               {summary ? rupees(summary.payableAmount) : '—'}
             </ThemeText>
           </View>
-          {/* Placement arrives in the next build phase; the bill above is final either way. */}
-          <View style={[styles.placeBtn, styles.placeDisabled]}>
-            <ThemeText style={styles.placeText}>Place order</ThemeText>
-          </View>
+          <TouchableOpacity
+            style={[styles.placeBtn, !canPlace && styles.placeDisabled]}
+            onPress={handlePlaceOrder}
+            disabled={!canPlace}
+            accessibilityRole="button"
+            accessibilityLabel="Place order"
+          >
+            {placing ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <ThemeText style={styles.placeText}>Place order</ThemeText>
+            )}
+          </TouchableOpacity>
         </View>
         <ThemeText style={styles.hint}>
           {!addressId
             ? 'Select a delivery address to see your bill.'
             : summary && !summary.canPlaceOrder
               ? 'Resolve the items flagged above to continue.'
-              : 'Ordering from Daily Essentials opens in the next update.'}
+              : 'One order, delivered together. Pay in cash on delivery.'}
         </ThemeText>
       </View>
 
