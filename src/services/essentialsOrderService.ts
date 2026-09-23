@@ -12,6 +12,14 @@ import { EssentialsCheckoutRequest, EssentialsCheckoutSummary } from './essentia
 
 export type EssentialsOrderStatus = 'PLACING' | 'CONFIRMED' | 'PARTIALLY_CONFIRMED' | 'FAILED';
 export type EssentialsPlacementStatus = 'PENDING' | 'PLACING' | 'PLACED' | 'FAILED';
+/** A kirana's answer once its part is placed. */
+export type EssentialsVendorDecision = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'TIMED_OUT';
+/** The kiranas' answers as a whole. */
+export type EssentialsAcceptanceStatus =
+  | 'AWAITING_STORES'
+  | 'ACCEPTED'
+  | 'PARTIALLY_ACCEPTED'
+  | 'REJECTED';
 
 export interface EssentialsOrderItem {
   sku: string;
@@ -31,6 +39,9 @@ export interface EssentialsOrderPart {
   smartbizOrderId: string | null;
   /** The kirana order's own state once known, e.g. PENDING, ACCEPTED, DELIVERED, CANCELLED. */
   orderState: string | null;
+  vendorDecision: EssentialsVendorDecision | null;
+  /** Epoch millis by which the kirana must accept, while it has not. */
+  acceptDeadlineAt: number | null;
   itemCount: number;
   itemTotal: number;
   payableAmount: number;
@@ -40,6 +51,7 @@ export interface EssentialsOrderPart {
 export interface EssentialsOrder {
   orderId: string;
   status: EssentialsOrderStatus;
+  acceptanceStatus: EssentialsAcceptanceStatus | null;
   paymentMethod: string;
   /** Epoch millis, as a string. */
   createdAt: string;
@@ -53,22 +65,29 @@ export interface EssentialsOrder {
   shops: EssentialsOrderPart[];
 }
 
+/** Whether a kirana's part is still in the order (placed, and not rejected or timed out). */
+export const partStillIn = (part: EssentialsOrderPart) =>
+  part.placementStatus === 'PLACED' &&
+  part.vendorDecision !== 'REJECTED' &&
+  part.vendorDecision !== 'TIMED_OUT';
+
 /**
- * What the order is to the customer now: placement outcome first, then — once every placed
- * kirana order has moved on — cancelled or delivered as a whole.
+ * What the order is to the customer now, as one status:
+ * PLACING → AWAITING_STORES → ACCEPTED / PARTIALLY_ACCEPTED → DELIVERED, or CANCELLED /
+ * FAILED when nothing is coming. Kirana order states (delivered, cancelled) win once every
+ * kirana still in the order has reached one.
  */
 export const displayStatusOf = (order: EssentialsOrder): string => {
-  if (order.status !== 'CONFIRMED' && order.status !== 'PARTIALLY_CONFIRMED') return order.status;
-  const states = order.shops
-    .filter(s => s.placementStatus === 'PLACED')
-    .map(s => (s.orderState ?? '').toUpperCase());
+  if (order.status === 'PLACING' || order.status === 'FAILED') return order.status;
+  if (order.acceptanceStatus === 'REJECTED') return 'CANCELLED';
+  const states = order.shops.filter(partStillIn).map(s => (s.orderState ?? '').toUpperCase());
   if (states.length > 0 && states.every(s => s === 'CANCELLED' || s === 'REJECTED')) {
     return 'CANCELLED';
   }
   if (states.length > 0 && states.every(s => s === 'DELIVERED' || s === 'COMPLETED')) {
     return 'DELIVERED';
   }
-  return order.status;
+  return order.acceptanceStatus ?? order.status;
 };
 
 export type PlaceOrderResult =

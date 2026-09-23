@@ -36,14 +36,18 @@ type Route = RouteProp<RootStackParamList, 'EssentialsOrder'>;
 type Nav = StackNavigationProp<RootStackParamList, 'EssentialsOrder'>;
 
 const POLL_MS = 2000;
-const POLL_LIMIT = 45;
+const AWAIT_POLL_MS = 5000;
+/** Placement takes seconds and the accept SLA is 5 minutes; stop polling well after both. */
+const POLL_FOR_MS = 8 * 60 * 1000;
 
 const rupees = (amount: number) => `₹${Number.isInteger(amount) ? amount : amount.toFixed(2)}`;
 
-/** What the customer should read for a kirana order's state. */
+/** What the customer should read for a kirana's part. */
 const partLabel = (part: EssentialsOrderPart): { text: string; tone: 'ok' | 'wait' | 'bad' } => {
   if (part.placementStatus === 'FAILED') return { text: 'Could not be placed', tone: 'bad' };
   if (part.placementStatus !== 'PLACED') return { text: 'Placing…', tone: 'wait' };
+  if (part.vendorDecision === 'REJECTED') return { text: "Couldn't take it", tone: 'bad' };
+  if (part.vendorDecision === 'TIMED_OUT') return { text: "Didn't respond", tone: 'bad' };
   switch ((part.orderState ?? '').toUpperCase()) {
     case 'CANCELLED':
     case 'REJECTED':
@@ -51,13 +55,26 @@ const partLabel = (part: EssentialsOrderPart): { text: string; tone: 'ok' | 'wai
     case 'DELIVERED':
     case 'COMPLETED':
       return { text: 'Delivered', tone: 'ok' };
-    case 'ACCEPTED':
-    case 'CONFIRMED':
-      return { text: 'Accepted by store', tone: 'ok' };
-    default:
-      return { text: 'Sent to store', tone: 'ok' };
   }
+  if (part.vendorDecision === 'ACCEPTED') return { text: 'Accepted', tone: 'ok' };
+  return { text: 'Waiting to accept', tone: 'wait' };
 };
+
+/** mm:ss until the earliest deadline among kiranas still deciding; null if none. */
+const timeLeft = (order: EssentialsOrder, now: number) => {
+  const deadlines = order.shops
+    .filter(s => s.vendorDecision === 'PENDING' && s.acceptDeadlineAt)
+    .map(s => s.acceptDeadlineAt as number);
+  if (deadlines.length === 0) return null;
+  const ms = Math.max(0, Math.min(...deadlines) - now);
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
+/** Still worth polling: parts being placed, or kiranas still deciding. */
+const isSettling = (order: EssentialsOrder | null) =>
+  !order || order.status === 'PLACING' || order.acceptanceStatus === 'AWAITING_STORES';
 
 const EssentialsOrderScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
@@ -67,7 +84,8 @@ const EssentialsOrderScreen: React.FC = () => {
   const [order, setOrder] = useState<EssentialsOrder | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const polls = useRef(0);
+  const pollStarted = useRef(Date.now());
+  const [now, setNow] = useState(Date.now());
 
   const load = useCallback(
     async (live: boolean) => {
@@ -90,16 +108,15 @@ const EssentialsOrderScreen: React.FC = () => {
     [params.orderId, authData?.jwt, authData?.phone]
   );
 
-  // Poll while the kiranas' parts are being placed; then one live read for their states.
+  // Poll while the kiranas' parts are being placed and while they decide; then one live read.
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const tick = async () => {
       const current = await load(false);
       if (cancelled) return;
-      if (current?.status === 'PLACING' && polls.current < POLL_LIMIT) {
-        polls.current += 1;
-        timer = setTimeout(tick, POLL_MS);
+      if (isSettling(current) && Date.now() - pollStarted.current < POLL_FOR_MS) {
+        timer = setTimeout(tick, current?.status === 'PLACING' ? POLL_MS : AWAIT_POLL_MS);
       } else if (current) {
         load(true);
       }
@@ -110,6 +127,14 @@ const EssentialsOrderScreen: React.FC = () => {
       if (timer) clearTimeout(timer);
     };
   }, [load]);
+
+  // A clock for the accept countdown, only while kiranas are deciding.
+  const awaiting = order?.acceptanceStatus === 'AWAITING_STORES';
+  useEffect(() => {
+    if (!awaiting) return;
+    const clock = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(clock);
+  }, [awaiting]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -243,7 +268,10 @@ const EssentialsOrderScreen: React.FC = () => {
         icon: 'cancel' as const,
         color: getColor('error'),
         title: 'Order cancelled',
-        sub: "This order was cancelled. You won't be charged for it.",
+        sub:
+          order.acceptanceStatus === 'REJECTED'
+            ? `The ${order.shops.length === 1 ? 'store' : 'stores'} couldn't take this order. You won't be charged for it.`
+            : "This order was cancelled. You won't be charged for it.",
       };
     }
     if (shown === 'DELIVERED') {
@@ -252,6 +280,34 @@ const EssentialsOrderScreen: React.FC = () => {
         color: CATALOGUE_ACCENT,
         title: 'Delivered',
         sub: 'Everything from every store has been delivered.',
+      };
+    }
+    if (shown === 'AWAITING_STORES') {
+      const left = timeLeft(order, now);
+      return {
+        icon: 'store-clock-outline' as const,
+        color: getColor('primary'),
+        title: params.justPlaced ? 'Order placed!' : 'Waiting for the stores',
+        sub: `Waiting for ${order.shops.filter(s => s.vendorDecision === 'PENDING').length === 1 ? 'the store' : 'the stores'} to accept${left ? ` · ${left}` : ''}. If a store doesn't, you won't pay for its part.`,
+      };
+    }
+    if (shown === 'ACCEPTED') {
+      return {
+        icon: 'check-circle' as const,
+        color: CATALOGUE_ACCENT,
+        title: 'Order confirmed',
+        sub:
+          order.shops.length > 1
+            ? 'Every store has accepted. Your order is being prepared.'
+            : 'The store has accepted. Your order is being prepared.',
+      };
+    }
+    if (shown === 'PARTIALLY_ACCEPTED') {
+      return {
+        icon: 'alert-circle' as const,
+        color: '#FFA726',
+        title: 'Order confirmed, with a change',
+        sub: "A store couldn't take its part, so those items were removed and your total updated.",
       };
     }
     if (order.status === 'CONFIRMED') {
