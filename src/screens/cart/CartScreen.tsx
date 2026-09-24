@@ -928,6 +928,7 @@ const StoreCartScreen: React.FC = () => {
     ]
   );
 
+  const submittingRef = React.useRef(false);
   const handleCheckout = useCallback(async () => {
     if (!authData?.jwt) {
       setShowLoginPromptModal(true);
@@ -973,7 +974,15 @@ const StoreCartScreen: React.FC = () => {
 
     // Everything above is a precondition for ordering at all. The method was chosen on the
     // cart, and the bill on screen was priced for it.
-    placeOrder(selectedPaymentOption?.toUpperCase() === 'COD' ? 'COD' : 'PREPAID');
+    // One order at a time: a second tap lands before the loading state has re-rendered, and each
+    // tap would otherwise place its own SmartBiz order.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    try {
+      await placeOrder(selectedPaymentOption?.toUpperCase() === 'COD' ? 'COD' : 'PREPAID');
+    } finally {
+      submittingRef.current = false;
+    }
   }, [
     placeOrder,
     selectedPaymentOption,

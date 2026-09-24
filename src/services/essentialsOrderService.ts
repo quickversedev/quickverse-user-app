@@ -113,6 +113,13 @@ export interface EssentialsOrderBill {
   total: number;
 }
 
+/**
+ * A prepaid order that was never paid: the customer closed or failed the payment. It was never
+ * sent to any store, so it is not an order to them and is left out of history.
+ */
+export const neverPaid = (order: EssentialsOrder) =>
+  order.paymentMethod === 'PREPAID' && order.paymentStatus !== 'PAID';
+
 /** Whether a kirana's part is still in the order (placed, and not rejected or timed out). */
 export const partStillIn = (part: EssentialsOrderPart) =>
   part.placementStatus === 'PLACED' &&

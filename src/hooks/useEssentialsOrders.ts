@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/login/AuthProvider';
 import essentialsOrderService, {
   displayStatusOf,
   EssentialsOrder,
+  neverPaid,
 } from '../services/essentialsOrderService';
 import { Order } from '../types/order';
 
@@ -21,7 +22,8 @@ export const useEssentialsOrders = () => {
   const refresh = useCallback(async () => {
     if (!authData?.jwt || !authData?.phone) return;
     try {
-      setOrders(await essentialsOrderService.listOrders(authData.jwt, authData.phone));
+      const list = await essentialsOrderService.listOrders(authData.jwt, authData.phone);
+      setOrders(list.filter(o => !neverPaid(o)));
     } catch (error) {
       // History still works without the fold; it just shows the kiranas' orders separately.
       console.warn('[EssentialsOrders] could not load:', error);

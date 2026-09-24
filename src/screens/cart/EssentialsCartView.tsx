@@ -361,19 +361,37 @@ const EssentialsCartView: React.FC = () => {
       if (order.payment) {
         // Prepaid: nothing goes to the stores until the payment is confirmed.
         setPlacing(false);
+        const options = {
+          description: 'QuickVerse Order Payment',
+          currency: order.payment.currency,
+          // The key the server charges with, not one baked into the app.
+          key: order.payment.keyId,
+          amount: order.payment.amountPaise,
+          name: 'QuickVerse',
+          order_id: order.payment.razorpayOrderId,
+          prefill: { email: '', contact: phone, name: authData?.username ?? '' },
+        };
+        let paid: {
+          razorpay_order_id: string;
+          razorpay_payment_id: string;
+          razorpay_signature: string;
+        };
         try {
-          const options = {
-            description: 'QuickVerse Order Payment',
-            currency: order.payment.currency,
-            // The key the server charges with, not one baked into the app.
-            key: order.payment.keyId,
-            amount: order.payment.amountPaise,
-            name: 'QuickVerse',
-            order_id: order.payment.razorpayOrderId,
-            prefill: { email: '', contact: phone, name: authData?.username ?? '' },
-          };
-          const paid = await RazorpayCheckout.open(options);
-          setPlacing(true);
+          paid = await RazorpayCheckout.open(options);
+        } catch (e) {
+          setPlacing(false);
+          // Closed or failed: nothing was charged and the cart is untouched. The unpaid order is
+          // withdrawn now rather than left to lapse, so it does not linger beside the one the
+          // customer places next. A payment that still lands on it is refunded by the server.
+          essentialsOrderService.cancelOrder(order.orderId, jwt, phone).catch(() => {});
+          showMessage(
+            (e as { description?: string; message?: string })?.description ||
+              'Payment was not completed. Your cart is still here.'
+          );
+          return;
+        }
+        setPlacing(true);
+        try {
           await essentialsOrderService.confirmPayment(
             order.orderId,
             {
@@ -384,15 +402,10 @@ const EssentialsCartView: React.FC = () => {
             jwt,
             phone
           );
-        } catch (e) {
-          setPlacing(false);
-          // Closed or failed: nothing was charged and the cart is untouched; the unpaid order
-          // lapses on its own.
-          showMessage(
-            (e as { description?: string; message?: string })?.description ||
-              'Payment was not completed. Your cart is still here.'
-          );
-          return;
+        } catch {
+          // The payment went through; only telling the server failed. Razorpay's webhook
+          // confirms it too, so the order is shown rather than the payment reported as failed.
+          showMessage('Payment received. Confirming your order…');
         }
       }
       setPlacing(false);
@@ -403,6 +416,7 @@ const EssentialsCartView: React.FC = () => {
     [addressId, coupon?.id, jwt, phone, authData?.username, fetchCart, navigation]
   );
 
+  const submittingRef = useRef(false);
   const handleCheckout = useCallback(() => {
     if (!jwt) {
       setShowLoginPrompt(true);
@@ -422,7 +436,12 @@ const EssentialsCartView: React.FC = () => {
     }
     // The bill must be the one priced for the method on screen; a switch is still re-pricing.
     if (summaryLoading || summary.paymentMethod !== paymentMethod) return;
-    placeOrder(summary, paymentMethod);
+    // One order at a time: a second tap lands before `placing` has re-rendered the screen.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    placeOrder(summary, paymentMethod).finally(() => {
+      submittingRef.current = false;
+    });
   }, [jwt, addressId, summary, summaryLoading, loadSummary, paymentMethod, placeOrder]);
 
   const handleResolve = useCallback(async () => {
