@@ -1,7 +1,10 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/login/AuthProvider';
-import essentialsOrderService, { EssentialsOrder } from '../services/essentialsOrderService';
+import essentialsOrderService, {
+  displayStatusOf,
+  EssentialsOrder,
+} from '../services/essentialsOrderService';
 import { Order } from '../types/order';
 
 /**
@@ -78,4 +81,60 @@ export const foldOrders = (
     .filter(o => !hasMore || timeOf(o.createdAt) >= oldestLoaded)
     .map(o => ({ kind: 'essentials', key: o.orderId, time: timeOf(o.createdAt), order: o }));
   return [...plain, ...grouped].sort((a, b) => b.time - a.time);
+};
+
+/** The short reference the order screen shows ("Order DA999FA9"). */
+export const essentialsOrderRef = (order: EssentialsOrder) =>
+  order.orderId.replace(/^OGM/, '').slice(0, 8).toUpperCase();
+
+/** What the order comes to now: the bill as it stands (the bill as placed once cancelled). */
+export const essentialsOrderTotal = (order: EssentialsOrder) =>
+  order.bill?.total ?? order.amountToPay ?? order.payableAmount;
+
+const STATUS: Record<string, Order['status']> = {
+  AWAITING_PAYMENT: 'payment_pending',
+  PAYMENT_EXPIRED: 'cancelled',
+  PLACING: 'processing',
+  AWAITING_STORES: 'processing',
+  CONFIRMED: 'confirmed',
+  ACCEPTED: 'confirmed',
+  PARTIALLY_ACCEPTED: 'confirmed',
+  DELIVERED: 'delivered',
+  CANCELLED: 'cancelled',
+  FAILED: 'cancelled',
+};
+
+/**
+ * A Daily Essentials order in the shape order history draws, so it is drawn by the same card as
+ * every other order — only what a tap opens differs. Fields history does not read are left empty.
+ */
+export const essentialsAsOrder = (order: EssentialsOrder): Order => {
+  const items = order.shops.flatMap(part =>
+    part.items.map(item => ({
+      id: item.sku,
+      name: item.name ?? '',
+      quantity: item.quantity,
+      price: item.unitPrice,
+      totalPrice: item.lineTotal,
+      image: item.imageUrl ?? undefined,
+    }))
+  );
+  return {
+    orderId: essentialsOrderRef(order),
+    customerId: '',
+    shopId: '',
+    shopName: 'Daily Essentials',
+    items,
+    totalAmount: essentialsOrderTotal(order),
+    status: STATUS[displayStatusOf(order)] ?? 'processing',
+    orderDate: new Date(Number(order.createdAt)).toISOString(),
+    deliveryAddress: { address: '', city: '', state: '', postalCode: '' },
+    paymentMethod: order.paymentMethod === 'COD' ? 'cash' : 'upi',
+    paymentStatus: order.paymentStatus === 'PAID' ? 'paid' : 'pending',
+    customerName: '',
+    customerPhone: '',
+    finance: null,
+    complaint: null,
+    review: null,
+  };
 };

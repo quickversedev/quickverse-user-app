@@ -88,6 +88,29 @@ export interface EssentialsOrder {
   couponCode: string | null;
   routeDistanceKm: number;
   shops: EssentialsOrderPart[];
+  /**
+   * The bill as it stands: the parts still in the order, fees re-priced onto them after a kirana
+   * dropped out; the bill as placed once nothing is left. Its lines always add up to `total`.
+   */
+  bill: EssentialsOrderBill | null;
+}
+
+export interface EssentialsOrderBill {
+  itemCount: number;
+  itemTotal: number;
+  couponDiscount: number;
+  deliveryFee: number;
+  platformFee: number;
+  packagingCharges: number;
+  codCharges: number;
+  deliveryGst: number;
+  platformGst: number;
+  packagingGst: number;
+  codGst: number;
+  totalGst: number;
+  taxableAmount: number;
+  gstRate: number | null;
+  total: number;
 }
 
 /** Whether a kirana's part is still in the order (placed, and not rejected or timed out). */

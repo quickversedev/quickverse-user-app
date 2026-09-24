@@ -105,6 +105,20 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
     [items]
   );
   const firstItem = items[0];
+  /**
+   * What the listed items cost. The strip names the items, so it prices the items; the header
+   * above already states the order total (fees included). Showing the total here made a ₹1 item
+   * read as ₹32.
+   */
+  const itemsSubtotal = useMemo(
+    () =>
+      items.reduce(
+        (sum, item) =>
+          sum + Number(item.totalPrice ?? Number(item.price ?? 0) * (item.quantity || 1)),
+        0
+      ),
+    [items]
+  );
   const restNames = items
     .slice(1)
     .map(item => item.name)
@@ -443,7 +457,9 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
                   </ThemeText>
                 ) : null}
               </View>
-              <ThemeText style={styles.itemTotal}>₹{Number(total).toFixed(2)}</ThemeText>
+              <ThemeText style={styles.itemTotal}>
+                ₹{Number(items.length > 0 ? itemsSubtotal : total).toFixed(2)}
+              </ThemeText>
             </View>
 
             <TouchableOpacity

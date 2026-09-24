@@ -14,6 +14,8 @@ import {
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import useOrderStore from '../../../store/cart/orderStore';
+import { essentialsAsOrder, useEssentialsOrders } from '../../../hooks/useEssentialsOrders';
+import { displayStatusOf } from '../../../services/essentialsOrderService';
 import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
 // import type { Order } from '../../../types/order';
@@ -103,6 +105,11 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
   const { width: screenWidth } = useWindowDimensions();
   const setSelectedOrder = useOrderStore(state => state.setSelectedOrder);
   const getVendorById = useVendorStore(state => state.getVendorById);
+  const {
+    essentialsOrders,
+    kiranaOrderIds,
+    refresh: refreshEssentialsOrders,
+  } = useEssentialsOrders();
 
   // Match CartBar width
   const containerWidth = screenWidth - 32; // Match CartBar width exactly
@@ -121,8 +128,10 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
 
       setStatusesVerified(false);
 
+      // Daily Essentials orders load alongside: until they have, a kirana's own order could show
+      // here as if it were the customer's order, shop and all.
       const refresh = () =>
-        refreshInProgressStatuses(jwt, phone)
+        Promise.all([refreshInProgressStatuses(jwt, phone), refreshEssentialsOrders()])
           .then(() => setStatusesVerified(true))
           .catch(() => setStatusesVerified(true));
 
@@ -145,9 +154,27 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
     }, [authData?.jwt, authData?.phone])
   );
 
+  /**
+   * Orders still under way. A Daily Essentials order is one entry, opening its own screen; the
+   * kiranas' orders behind it are left out — opening one would show the kirana and let a single
+   * part be cancelled outside the order.
+   */
   const inProgressOrders = useMemo(() => {
-    return orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
-  }, [orders]);
+    const plain = orders
+      .filter(o => o.status !== 'delivered' && o.status !== 'cancelled')
+      .filter(o => !kiranaOrderIds.has(o.orderId))
+      .map(o => ({ ...o, essentialsOrderId: undefined as string | undefined }));
+    // A day is well past any delivery; an order older than that is not "on its way" whatever its
+    // last recorded state, and must not sit in this bar for good.
+    const since = Date.now() - 24 * 60 * 60 * 1000;
+    const essentials = essentialsOrders
+      .filter(o => Number(o.createdAt) >= since)
+      .filter(
+        o => !['DELIVERED', 'CANCELLED', 'FAILED', 'PAYMENT_EXPIRED'].includes(displayStatusOf(o))
+      )
+      .map(o => ({ ...essentialsAsOrder(o), essentialsOrderId: o.orderId as string | undefined }));
+    return [...essentials, ...plain];
+  }, [orders, essentialsOrders, kiranaOrderIds]);
 
   const scrollRef = useRef<ScrollView | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -171,12 +198,18 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
     const itemsCount = items.reduce((acc: number, it: any) => acc + (it.quantity || 0), 0) || 0;
     // Look up vendor name from vendorStore (same as CartBar)
     const vendor = getVendorById(order.shopId);
-    const vendorName = vendor?.name || order.shopName || 'Order';
+    const vendorName = order.essentialsOrderId
+      ? 'Daily Essentials'
+      : vendor?.name || order.shopName || 'Order';
     // Show vendor name for multiple items, item name for single item
     const displayName = itemsCount > 1 ? vendorName : items[0]?.name || 'Order';
     const label = statusLabel[order.status] || 'Track';
 
     const handlePress = () => {
+      if (order?.essentialsOrderId) {
+        navigation.navigate('EssentialsOrder', { orderId: order.essentialsOrderId });
+        return;
+      }
       if (order?.orderId) {
         setSelectedOrder(order);
         navigation.navigate('OrderDetails', { orderId: order.orderId, order });

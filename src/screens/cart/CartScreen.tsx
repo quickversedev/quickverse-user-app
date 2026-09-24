@@ -16,7 +16,6 @@ import RazorpayCheckout from 'react-native-razorpay';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AnimatedCard from '../../components/common/AnimatedCard';
 import LoginPromptModal from '../../components/common/LoginPromptModal';
-import EssentialsOrderCard from '../../components/common/order/EssentialsOrderCard';
 import {
   CartFooter,
   CartHeader,
@@ -38,7 +37,12 @@ import {
   SmartBizAddressSelectionModal,
 } from '../../components/modules/Header';
 import { useAuth } from '../../contexts/login/AuthProvider';
-import { foldOrders, useEssentialsOrders } from '../../hooks/useEssentialsOrders';
+import {
+  essentialsAsOrder,
+  essentialsOrderTotal,
+  foldOrders,
+  useEssentialsOrders,
+} from '../../hooks/useEssentialsOrders';
 import { useOrders } from '../../hooks/useOrders';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { ApiError } from '../../config/api/axios.types';
@@ -1170,9 +1174,11 @@ const StoreCartScreen: React.FC = () => {
                     }
                   />
                 ) : (
-                  <EssentialsOrderCard
+                  <PreviousOrderCard
                     key={entry.key}
-                    order={entry.order}
+                    order={essentialsAsOrder(entry.order)}
+                    getColor={getColor}
+                    total={essentialsOrderTotal(entry.order)}
                     onPress={() =>
                       navigation.navigate('EssentialsOrder', { orderId: entry.order.orderId })
                     }
@@ -1296,7 +1302,13 @@ const StoreCartScreen: React.FC = () => {
             selectedOption={selectedPaymentOption as 'COD' | 'PREPAID'}
             onSelect={setSelectedPaymentOption}
             codAvailable={codAvailable}
-            codCharges={codCharges}
+            // The bill's figure once COD is chosen: the store's eligible-methods setting can say
+            // ₹0 while the bill adds the pricing config's COD charge.
+            codCharges={
+              selectedPaymentOption === 'COD' && checkoutSummary?.codCharges != null
+                ? Number(checkoutSummary.codCharges)
+                : codCharges
+            }
           />
         </AnimatedCard>
 

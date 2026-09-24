@@ -137,7 +137,17 @@ const EssentialsOrderScreen: React.FC = () => {
           onPress: async () => {
             setCancelling(true);
             try {
-              setOrder(await essentialsOrderService.cancelOrder(order.orderId, jwt, phone));
+              const cancelled = await essentialsOrderService.cancelOrder(order.orderId, jwt, phone);
+              setOrder(cancelled);
+              // A paid order's refund is made moments after the cancel; follow it for a short
+              // while so the screen says "Refunded" instead of stopping at "on its way".
+              if (cancelled.paymentStatus === 'PAID' && cancelled.refundDue > 0) {
+                for (let i = 0; i < 10; i += 1) {
+                  await new Promise<void>(resolve => setTimeout(resolve, 3000));
+                  const next = await load(false);
+                  if (!next || next.refundedAmount >= next.refundDue) break;
+                }
+              }
             } catch (e) {
               Alert.alert(
                 'Could not cancel',
@@ -150,7 +160,7 @@ const EssentialsOrderScreen: React.FC = () => {
         },
       ]
     );
-  }, [order, authData?.jwt, authData?.phone]);
+  }, [order, authData?.jwt, authData?.phone, load]);
 
   const done = useCallback(() => {
     if (params.justPlaced) {
@@ -191,6 +201,14 @@ const EssentialsOrderScreen: React.FC = () => {
           borderColor: getColor('border'),
         },
         row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
+        billTitle: { fontSize: 14, fontWeight: '800', color: getColor('text'), marginBottom: 6 },
+        billTotalRow: {
+          marginTop: 6,
+          paddingTop: 8,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: getColor('border'),
+        },
+        billTotalLabel: { fontSize: 14, fontWeight: '700', color: getColor('text') },
         label: { fontSize: 13, color: getColor('subText') },
         value: { fontSize: 13, color: getColor('text') },
         total: { fontSize: 16, fontWeight: '800', color: getColor('text') },
@@ -398,20 +416,58 @@ const EssentialsOrderScreen: React.FC = () => {
         {order ? (
           <>
             <View style={styles.amountCard}>
-              <View style={styles.row}>
-                <ThemeText style={styles.label}>Items · {order.itemCount}</ThemeText>
-                <ThemeText style={styles.value}>{rupees(order.itemTotal)}</ThemeText>
-              </View>
-              <View style={styles.row}>
-                <ThemeText style={styles.label}>Delivery fee</ThemeText>
-                <ThemeText style={styles.value}>{rupees(order.deliveryFee)}</ThemeText>
-              </View>
-              {order.couponCode ? (
-                <View style={styles.row}>
-                  <ThemeText style={styles.label}>Coupon</ThemeText>
-                  <ThemeText style={styles.value}>{order.couponCode}</ThemeText>
-                </View>
-              ) : null}
+              <ThemeText style={styles.billTitle}>Bill details</ThemeText>
+              {(() => {
+                // The bill as it stands; an older server without it falls back to the headline figures.
+                const bill = order.bill;
+                const rows: { label: string; value: number; discount?: boolean }[] = bill
+                  ? [
+                      { label: `Items · ${bill.itemCount}`, value: bill.itemTotal },
+                      ...(bill.couponDiscount > 0
+                        ? [
+                            {
+                              label: order.couponCode ? `Coupon (${order.couponCode})` : 'Coupon',
+                              value: bill.couponDiscount,
+                              discount: true,
+                            },
+                          ]
+                        : []),
+                      { label: 'Delivery fee', value: bill.deliveryFee },
+                      { label: 'Platform fee', value: bill.platformFee },
+                      ...(bill.packagingCharges > 0
+                        ? [{ label: 'Packaging charges', value: bill.packagingCharges }]
+                        : []),
+                      ...(bill.codCharges > 0
+                        ? [{ label: 'Cash on delivery charges', value: bill.codCharges }]
+                        : []),
+                      { label: 'Taxes (GST)', value: bill.totalGst },
+                    ]
+                  : [
+                      { label: `Items · ${order.itemCount}`, value: order.itemTotal },
+                      { label: 'Delivery fee', value: order.deliveryFee },
+                    ];
+                return (
+                  <>
+                    {rows.map(row => (
+                      <View key={row.label} style={styles.row}>
+                        <ThemeText style={styles.label}>{row.label}</ThemeText>
+                        <ThemeText
+                          style={[styles.value, row.discount && { color: CATALOGUE_ACCENT }]}
+                        >
+                          {row.discount ? '−' : ''}
+                          {rupees(row.value)}
+                        </ThemeText>
+                      </View>
+                    ))}
+                    {bill ? (
+                      <View style={[styles.row, styles.billTotalRow]}>
+                        <ThemeText style={styles.billTotalLabel}>Order total</ThemeText>
+                        <ThemeText style={styles.billTotalLabel}>{rupees(bill.total)}</ThemeText>
+                      </View>
+                    ) : null}
+                  </>
+                );
+              })()}
               <View style={styles.row}>
                 <ThemeText style={styles.total}>
                   {order.paymentStatus === 'PAID'

@@ -12,8 +12,13 @@ import {
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { Images } from '../../../assets';
 import { useAppStateRefresh } from '../../../hooks/useAppStateRefresh';
-import { foldOrders, HistoryEntry, useEssentialsOrders } from '../../../hooks/useEssentialsOrders';
-import EssentialsOrderCard from './EssentialsOrderCard';
+import {
+  essentialsAsOrder,
+  essentialsOrderTotal,
+  foldOrders,
+  HistoryEntry,
+  useEssentialsOrders,
+} from '../../../hooks/useEssentialsOrders';
 import { useOrders } from '../../../hooks/useOrders';
 import usePricingStore from '../../../store/pricingStore';
 import useVendorStore from '../../../store/vendorStore';
@@ -165,15 +170,19 @@ const OrderList: React.FC<OrderListProps> = ({
     [onOrderPress, navigation]
   );
 
-  const renderOrderItem = useCallback(
-    ({ item }: { item: Order }) => {
+  /**
+   * One order card. `total` and `onPress` are given for a Daily Essentials order, which is drawn
+   * by this same card but has its own bill and its own screen.
+   */
+  const renderOrderCard = useCallback(
+    (item: Order, total: number, onPress: () => void) => {
       const statusColors = getStatusColor(item.status);
       const statusText = item.status === 'delivered' ? 'SUCCESSFUL' : item.status.toUpperCase();
 
       return (
         <TouchableOpacity
           style={[styles.orderItem, { backgroundColor: getColor('card') }]}
-          onPress={() => handleOrderPress(item)}
+          onPress={onPress}
           activeOpacity={0.7}
         >
           {/* Left Side - Items Grid */}
@@ -322,14 +331,20 @@ const OrderList: React.FC<OrderListProps> = ({
           {/* Right Side */}
           <View style={styles.orderAmount}>
             <Text style={[styles.amountText, { color: getColor('text') }]}>
-              ₹ {computeOrderTotal(item).toFixed(0)}
+              ₹ {total.toFixed(0)}
             </Text>
             <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('primary')} />
           </View>
         </TouchableOpacity>
       );
     },
-    [getColor, getStatusColor, handleOrderPress, computeOrderTotal]
+    [getColor, getStatusColor]
+  );
+
+  const renderOrderItem = useCallback(
+    ({ item }: { item: Order }) =>
+      renderOrderCard(item, computeOrderTotal(item), () => handleOrderPress(item)),
+    [renderOrderCard, computeOrderTotal, handleOrderPress]
   );
 
   // Memoize the error component
@@ -350,15 +365,12 @@ const OrderList: React.FC<OrderListProps> = ({
 
   const renderHistoryEntry = useCallback(
     ({ item }: { item: HistoryEntry }) =>
-      item.kind === 'order' ? (
-        renderOrderItem({ item: item.order })
-      ) : (
-        <EssentialsOrderCard
-          order={item.order}
-          onPress={() => navigation?.navigate('EssentialsOrder', { orderId: item.order.orderId })}
-        />
-      ),
-    [renderOrderItem, navigation]
+      item.kind === 'order'
+        ? renderOrderItem({ item: item.order })
+        : renderOrderCard(essentialsAsOrder(item.order), essentialsOrderTotal(item.order), () =>
+            navigation?.navigate('EssentialsOrder', { orderId: item.order.orderId })
+          ),
+    [renderOrderItem, renderOrderCard, navigation]
   );
 
   // If there's an error, render the error component

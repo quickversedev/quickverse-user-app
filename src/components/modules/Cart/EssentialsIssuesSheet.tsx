@@ -51,9 +51,9 @@ const consequence = (issues: EssentialsIssue[]): string => {
  * item that cannot be delivered to the chosen address, a price that has moved. The messages come
  * from the server and speak of items, never of the stores behind them.
  *
- * The customer decides — nothing is dropped or re-priced behind their back. "Update cart &
- * continue" asks the server to remove what cannot be ordered and accept current prices, then
- * the bill is recomputed; "Back to cart" leaves everything as it is.
+ * The customer decides — nothing is dropped or re-priced behind their back. "Update cart" asks
+ * the server to remove what cannot be ordered and accept current prices, then the bill is
+ * recomputed for the customer to see before placing; "Back to cart" leaves everything as it is.
  */
 const EssentialsIssuesSheet: React.FC<EssentialsIssuesSheetProps> = ({
   visible,
@@ -160,7 +160,7 @@ const EssentialsIssuesSheet: React.FC<EssentialsIssuesSheetProps> = ({
                 {resolving ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <ThemeText style={styles.primaryText}>Update cart &amp; continue</ThemeText>
+                  <ThemeText style={styles.primaryText}>Update cart</ThemeText>
                 )}
               </TouchableOpacity>
             ) : null}
