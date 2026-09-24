@@ -24,6 +24,12 @@ import { createPersistedConfig } from '../../utils/cache';
  * `meta`, and the first signed-in fetch pushes them to the server.
  */
 
+/**
+ * The Cart screen's id for the Daily Essentials cart (`navigate('Cart', { cartId })`). Store carts
+ * are `vendor_<shopId>`, so this can never collide with one.
+ */
+export const ESSENTIALS_CART_ID = 'essentials';
+
 /** What the Daily Essentials section knows about a product, used to render it before the server does. */
 export interface EssentialsProductMeta {
   sku: string;
@@ -271,7 +277,6 @@ export const useEssentialsSummary = () => {
     return {
       itemCount: orderable.reduce((sum, l) => sum + l.quantity, 0),
       itemTotal: Math.round(orderable.reduce((sum, l) => sum + l.lineTotal, 0) * 100) / 100,
-      shopCount: new Set(lines.map(l => l.shopId)).size,
       hasUnavailable: lines.some(l => !l.available),
     };
   }, [lines]);

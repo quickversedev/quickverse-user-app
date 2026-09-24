@@ -11,8 +11,6 @@ import { Collection } from '../data/collectionsData';
 import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
 import CouponsScreen from '../screens/cart/CouponsScreen';
-import EssentialsCartScreen from '../screens/cart/EssentialsCartScreen';
-import EssentialsCheckoutScreen from '../screens/cart/EssentialsCheckoutScreen';
 import EssentialsOrderScreen from '../screens/order/EssentialsOrderScreen';
 import CollectionDetailScreen from '../screens/collections/CollectionDetailScreen';
 import TagProductsScreen from '../screens/TagProducts/TagProductsScreen';
@@ -55,10 +53,6 @@ export type RootStackParamList = {
   TagProducts: { tagCode: string; tagLabel: string; shopCategory?: string };
   ProductDetailDemo: undefined;
   Cart: { cartId: string } | undefined;
-  /** The Daily Essentials cart: one QuickVerse cart across kiranas. */
-  EssentialsCart: undefined;
-  /** One bill for the Essentials cart: route delivery fee, fees and one coupon, charged once. */
-  EssentialsCheckout: undefined;
   /** One Daily Essentials order: success screen when `justPlaced`, details from history otherwise. */
   EssentialsOrder: { orderId: string; justPlaced?: boolean };
   Orders: undefined;
@@ -232,16 +226,6 @@ export const AppStack = () => {
         }}
       />
       <Stack.Screen name="Coupons" component={CouponsScreen} options={slideFromBottomOptions} />
-      <Stack.Screen
-        name="EssentialsCart"
-        component={EssentialsCartScreen}
-        options={slideFromBottomOptions}
-      />
-      <Stack.Screen
-        name="EssentialsCheckout"
-        component={EssentialsCheckoutScreen}
-        options={slideFromRightOptions}
-      />
       <Stack.Screen
         name="EssentialsOrder"
         component={EssentialsOrderScreen}

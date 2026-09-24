@@ -14,13 +14,21 @@ import CartItem from './CartItem';
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
 
 interface CartItemListProps {
-  items: CartProduct[];
+  /** `tag` is shown under a line's stepper, e.g. to mark it unavailable. */
+  items: Array<CartProduct & { tag?: string }>;
   onInc: (sku: string) => void;
   onDec: (sku: string) => void;
   vendor?: Vendor;
   /** "1.2 km away", computed by the screen from vendor and customer coordinates. */
   distanceText?: string | null;
   navigation: CartScreenNavigationProp;
+  /**
+   * One list with no store headers, whatever shops the lines come from. The Daily Essentials
+   * cart is one order to the customer — which kiranas supply it is ours to know, not theirs.
+   */
+  storeless?: boolean;
+  /** With `storeless`, where "Add more items" goes; there is no one store to send them to. */
+  onAddMore?: () => void;
 }
 
 /**
@@ -43,6 +51,8 @@ const CartItemList: React.FC<CartItemListProps> = ({
   vendor,
   distanceText,
   navigation,
+  storeless = false,
+  onAddMore,
 }) => {
   const { getColor, theme } = useTheme();
   const getVendorById = useVendorStore(state => state.getVendorById);
@@ -52,6 +62,7 @@ const CartItemList: React.FC<CartItemListProps> = ({
    * list does not reshuffle as quantities change.
    */
   const sections = useMemo(() => {
+    if (storeless) return [{ shopId: '', items }];
     const order: string[] = [];
     const byShop = new Map<string, CartProduct[]>();
     for (const item of items) {
@@ -63,7 +74,7 @@ const CartItemList: React.FC<CartItemListProps> = ({
       byShop.get(shopId)!.push(item);
     }
     return order.map(shopId => ({ shopId, items: byShop.get(shopId)! }));
-  }, [items, vendor?.shopId]);
+  }, [items, vendor?.shopId, storeless]);
 
   const isMultiStore = sections.length > 1;
 
@@ -178,7 +189,7 @@ const CartItemList: React.FC<CartItemListProps> = ({
   );
 
   const renderCartItem = useCallback(
-    (item: CartProduct) => (
+    (item: CartProduct & { tag?: string }) => (
       <CartItem
         key={item.sku}
         {...item}
@@ -189,7 +200,30 @@ const CartItemList: React.FC<CartItemListProps> = ({
     [onInc, onDec]
   );
 
-  const renderSection = (section: { shopId: string; items: CartProduct[] }) => {
+  const renderStoreless = () => (
+    <View>
+      <View style={styles.items}>{items.map(renderCartItem)}</View>
+      {onAddMore ? (
+        <TouchableOpacity
+          style={styles.addMoreButton}
+          onPress={onAddMore}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Add more items"
+        >
+          <View style={styles.addMoreIcon}>
+            <MaterialCommunityIcons name="plus" size={14} color={getColor('primary')} />
+          </View>
+          <ThemeText style={styles.addMoreText}>Add more items</ThemeText>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+
+  const renderSection = (section: {
+    shopId: string;
+    items: Array<CartProduct & { tag?: string }>;
+  }) => {
     // With one store the vendor is already resolved by the screen, along with the
     // distance it measured from the customer. Across stores only the shop id is known
     // per row, so the rest is looked up here.
@@ -252,9 +286,13 @@ const CartItemList: React.FC<CartItemListProps> = ({
         {isMultiStore ? `Cart Items · ${sections.length} stores` : 'Cart Items'}
       </ThemeText>
 
-      <View style={isMultiStore ? styles.storeSections : undefined}>
-        {sections.map(renderSection)}
-      </View>
+      {storeless ? (
+        renderStoreless()
+      ) : (
+        <View style={isMultiStore ? styles.storeSections : undefined}>
+          {sections.map(renderSection)}
+        </View>
+      )}
     </View>
   );
 };

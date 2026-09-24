@@ -50,7 +50,11 @@ import hyperlocalOrderService, { HyperlocalShopOrder } from '../../services/hype
 import { getCODCharges } from '../../services/paymentService';
 import { smartBizAddressService } from '../../store/address/smartBizAddressStore';
 import useCartStore, { Cart } from '../../store/cart/cartStore';
-import useEssentialsCartStore, { useEssentialsSummary } from '../../store/cart/essentialsCartStore';
+import useEssentialsCartStore, {
+  ESSENTIALS_CART_ID,
+  useEssentialsLines,
+  useEssentialsSummary,
+} from '../../store/cart/essentialsCartStore';
 import { useEssentialsShopIds } from '../../store/grocery/groceryGroupsStore';
 import useConfigStore from '../../store/configStore';
 import usePricingStore from '../../store/pricingStore';
@@ -63,6 +67,7 @@ import { Product } from '../../types/product';
 import { Vendor } from '../../types/vendor';
 import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
 import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
+import EssentialsCartView from './EssentialsCartView';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
@@ -81,7 +86,8 @@ const shopIdOf = (c: Cart): string => c.cartId.replace('vendor_', '');
  */
 const RAZORPAY_KEY_ID = 'rzp_live_TAGtNIHlg9alA6';
 
-const CartScreen: React.FC = () => {
+/** A store's own cart: one SmartBiz cart, one shop. */
+const StoreCartScreen: React.FC = () => {
   const navigation = useNavigation<CartScreenNavigationProp>();
   const route = useRoute<CartScreenRouteProp>();
   const { cartId } = route.params || {};
@@ -1119,8 +1125,7 @@ const CartScreen: React.FC = () => {
             <EssentialsCartCard
               itemCount={essentialsSummary.itemCount}
               itemTotal={essentialsSummary.itemTotal}
-              shopCount={essentialsSummary.shopCount}
-              onPress={() => navigation.navigate('EssentialsCart')}
+              onPress={() => navigation.navigate('Cart', { cartId: ESSENTIALS_CART_ID })}
               style={{ marginHorizontal: 0, marginTop: 0 }}
             />
           ) : null}
@@ -1248,8 +1253,7 @@ const CartScreen: React.FC = () => {
           <EssentialsCartCard
             itemCount={essentialsSummary.itemCount}
             itemTotal={essentialsSummary.itemTotal}
-            shopCount={essentialsSummary.shopCount}
-            onPress={() => navigation.navigate('EssentialsCart')}
+            onPress={() => navigation.navigate('Cart', { cartId: ESSENTIALS_CART_ID })}
           />
         ) : null}
         <AnimatedCard delay={0}>
@@ -1721,6 +1725,27 @@ const PreviousOrderCardBase: React.FC<PreviousOrderCardProps> = ({
 };
 
 const PreviousOrderCard = React.memo(PreviousOrderCardBase);
+
+/**
+ * The Cart screen, for a store cart or the Daily Essentials cart — the same screen either way.
+ *
+ * The Essentials cart is shown when asked for by id, or when it is the only cart there is (the
+ * Cart tab opened with nothing in any store cart). Otherwise the store cart is shown, with a card
+ * leading to the Essentials cart when that has items too.
+ */
+const CartScreen: React.FC = () => {
+  const route = useRoute<CartScreenRouteProp>();
+  const requested = route.params?.cartId;
+  const essentialsEnabled = useEssentialsCartStore(s => s.enabled === true);
+  const hasEssentials = useEssentialsLines().length > 0;
+  const hasStoreCarts = useCartStore(s => Object.keys(s.carts).length > 0);
+
+  const showEssentials =
+    essentialsEnabled &&
+    (requested === ESSENTIALS_CART_ID || (!requested && !hasStoreCarts && hasEssentials));
+
+  return showEssentials ? <EssentialsCartView /> : <StoreCartScreen />;
+};
 
 export default React.memo(CartScreen);
 

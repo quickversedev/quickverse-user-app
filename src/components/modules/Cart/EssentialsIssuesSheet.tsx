@@ -29,9 +29,9 @@ interface EssentialsIssuesSheetProps {
 const ICON: Record<string, React.ComponentProps<typeof MaterialCommunityIcons>['name']> = {
   PRICE_CHANGED: 'tag-arrow-up-outline',
   OUT_OF_RADIUS: 'map-marker-distance',
-  SHOP_CLOSED: 'store-clock-outline',
+  SHOP_CLOSED: 'clock-outline',
   QUANTITY_LIMIT: 'numeric-9-plus-box-outline',
-  STORE_LIMIT: 'storefront-outline',
+  STORE_LIMIT: 'cart-remove',
 };
 
 /** What "update cart & continue" will do, so the customer knows before they tap. */
@@ -47,8 +47,9 @@ const consequence = (issues: EssentialsIssue[]): string => {
 };
 
 /**
- * Shown when the Essentials bill finds something that stops the order: an item out of stock, a
- * store that does not deliver to the chosen address, a price that has moved.
+ * Shown when the Essentials bill finds something that stops the order: an item out of stock, an
+ * item that cannot be delivered to the chosen address, a price that has moved. The messages come
+ * from the server and speak of items, never of the stores behind them.
  *
  * The customer decides — nothing is dropped or re-priced behind their back. "Update cart &
  * continue" asks the server to remove what cannot be ordered and accept current prices, then

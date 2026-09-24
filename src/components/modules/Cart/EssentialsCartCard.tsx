@@ -8,20 +8,17 @@ import { ThemeText } from '../../common/theme/ThemeText';
 interface EssentialsCartCardProps {
   itemCount: number;
   itemTotal: number;
-  shopCount: number;
   onPress: () => void;
   style?: ViewStyle;
 }
 
 /**
- * Points from the Cart tab to the Daily Essentials cart, which is a separate cart with its
- * own checkout. Without it, a customer whose only items came from Daily Essentials would
- * open the Cart tab to "Your cart is empty".
+ * Points from a store cart to the Daily Essentials cart, which checks out on its own. Says
+ * nothing of the stores behind it: to the customer it is one cart.
  */
 const EssentialsCartCard: React.FC<EssentialsCartCardProps> = ({
   itemCount,
   itemTotal,
-  shopCount,
   onPress,
   style,
 }) => {
@@ -67,7 +64,6 @@ const EssentialsCartCard: React.FC<EssentialsCartCardProps> = ({
         <ThemeText style={styles.title}>Daily Essentials cart</ThemeText>
         <ThemeText style={styles.sub} numberOfLines={1}>
           {itemCount} item{itemCount > 1 ? 's' : ''} · ₹{total}
-          {shopCount > 1 ? ` · ${shopCount} stores, one order` : ''}
         </ThemeText>
       </View>
       <ThemeText style={styles.cta}>View</ThemeText>

@@ -29,7 +29,8 @@ import { useTheme } from '../../../theme/ThemeContext';
  * Everything else on this screen is proxied: the collections grid comes from a single
  * hardcoded shop, and grocery product grids are pulled by the device from SmartPOS.
  * These groups come from `qv.product_group`, which is why they can span shops — one
- * group legitimately mixes products from several kiranas, and each card says which.
+ * group legitimately mixes products from several kiranas. Cards never say which: to the
+ * customer, Daily Essentials is one shop and one order.
  *
  * Built on its own card rather than ProductCard. ProductCard's `Product` requires
  * `discount`, `numberOfVariants` and `primarySKU`, none of which this endpoint returns,
@@ -251,9 +252,6 @@ const DailyEssentials: React.FC = () => {
         thumb: { width: '100%', height: '100%' },
         cardText: { flex: 1, minWidth: 0 },
         name: { fontSize: 12, lineHeight: 16, fontWeight: '700', color: getColor('text') },
-        // A group mixes shops, so the row that says which one is not decoration.
-        shopRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
-        shopName: { fontSize: 10, lineHeight: 13, color: getColor('subText'), flex: 1 },
         priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 3 },
         price: { fontSize: 15, lineHeight: 18, fontWeight: '800', color: getColor('text') },
         mrp: {
@@ -321,18 +319,6 @@ const DailyEssentials: React.FC = () => {
             <ThemeText style={styles.name} numberOfLines={2}>
               {product.name}
             </ThemeText>
-            {product.shopName ? (
-              <View style={styles.shopRow}>
-                <MaterialCommunityIcons
-                  name="storefront-outline"
-                  size={11}
-                  color={getColor('subText')}
-                />
-                <ThemeText style={styles.shopName} numberOfLines={1}>
-                  {product.shopName}
-                </ThemeText>
-              </View>
-            ) : null}
             <View style={styles.priceRow}>
               <ThemeText style={styles.price}>₹{product.sellingPrice}</ThemeText>
               {discounted ? <ThemeText style={styles.mrp}>₹{product.mrp}</ThemeText> : null}
@@ -357,11 +343,7 @@ const DailyEssentials: React.FC = () => {
             disabled={soldOut}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel={
-              soldOut
-                ? `${product.name} is sold out`
-                : `Add ${product.name} from ${product.shopName}`
-            }
+            accessibilityLabel={soldOut ? `${product.name} is sold out` : `Add ${product.name}`}
           >
             {soldOut ? null : (
               <MaterialCommunityIcons name="plus" size={14} color={CATALOGUE_ACCENT} />

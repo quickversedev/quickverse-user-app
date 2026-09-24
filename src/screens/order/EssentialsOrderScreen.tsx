@@ -20,6 +20,7 @@ import { RootStackParamList } from '../../routes/AppStack';
 import essentialsOrderService, {
   displayStatusOf,
   EssentialsOrder,
+  EssentialsOrderItem,
   EssentialsOrderPart,
 } from '../../services/essentialsOrderService';
 import { useTheme } from '../../theme/ThemeContext';
@@ -28,9 +29,11 @@ import { useTheme } from '../../theme/ThemeContext';
  * One Daily Essentials order: the success screen right after placing it, and its details from
  * order history.
  *
- * It is one order to the customer, so there is one header, one amount and one status; each
- * kirana's part is listed below with its own outcome. Straight after placing, the server is
- * still sending the kiranas their parts, so the screen polls until every part has an outcome.
+ * It is one order to the customer: one status, one amount, one list of items. The kiranas
+ * behind it are never named or counted. When a kirana cannot supply its part, its items show as
+ * unavailable in the list and the total drops — that is all the customer needs to know.
+ * Straight after placing, the server is still sending the kiranas their parts, so the screen
+ * polls until every part has an outcome.
  */
 
 type Route = RouteProp<RootStackParamList, 'EssentialsOrder'>;
@@ -43,36 +46,17 @@ const POLL_FOR_MS = 8 * 60 * 1000;
 
 const rupees = (amount: number) => `₹${Number.isInteger(amount) ? amount : amount.toFixed(2)}`;
 
-/** What the customer should read for a kirana's part. */
-const partLabel = (part: EssentialsOrderPart): { text: string; tone: 'ok' | 'wait' | 'bad' } => {
-  if (part.placementStatus === 'FAILED') return { text: 'Could not be placed', tone: 'bad' };
-  if (part.placementStatus !== 'PLACED') return { text: 'Placing…', tone: 'wait' };
-  if (part.vendorDecision === 'REJECTED') return { text: "Couldn't take it", tone: 'bad' };
-  if (part.vendorDecision === 'TIMED_OUT') return { text: "Didn't respond", tone: 'bad' };
-  if (part.vendorDecision === 'CANCELLED') return { text: 'Cancelled', tone: 'bad' };
-  switch ((part.orderState ?? '').toUpperCase()) {
-    case 'CANCELLED':
-    case 'REJECTED':
-      return { text: 'Cancelled', tone: 'bad' };
-    case 'DELIVERED':
-    case 'COMPLETED':
-      return { text: 'Delivered', tone: 'ok' };
-  }
-  if (part.vendorDecision === 'ACCEPTED') return { text: 'Accepted', tone: 'ok' };
-  return { text: 'Waiting to accept', tone: 'wait' };
-};
+/**
+ * A part's items are out of the order: never placed, refused, timed out or cancelled on its own
+ * while the rest of the order carries on. Shown per item, never per store.
+ */
+const partDropped = (part: EssentialsOrderPart) =>
+  part.placementStatus === 'FAILED' ||
+  part.vendorDecision === 'REJECTED' ||
+  part.vendorDecision === 'TIMED_OUT' ||
+  (part.vendorDecision === 'CANCELLED' && part.placementStatus === 'PLACED');
 
-/** mm:ss until the earliest deadline among kiranas still deciding; null if none. */
-const timeLeft = (order: EssentialsOrder, now: number) => {
-  const deadlines = order.shops
-    .filter(s => s.vendorDecision === 'PENDING' && s.acceptDeadlineAt)
-    .map(s => s.acceptDeadlineAt as number);
-  if (deadlines.length === 0) return null;
-  const ms = Math.max(0, Math.min(...deadlines) - now);
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-};
+type ShownItem = EssentialsOrderItem & { unavailable: boolean };
 
 /** Still worth polling: parts being placed, or kiranas still deciding. */
 const isSettling = (order: EssentialsOrder | null) =>
@@ -87,7 +71,6 @@ const EssentialsOrderScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const pollStarted = useRef(Date.now());
-  const [now, setNow] = useState(Date.now());
 
   const load = useCallback(
     async (live: boolean) => {
@@ -130,14 +113,6 @@ const EssentialsOrderScreen: React.FC = () => {
     };
   }, [load]);
 
-  // A clock for the accept countdown, only while kiranas are deciding.
-  const awaiting = order?.acceptanceStatus === 'AWAITING_STORES';
-  useEffect(() => {
-    if (!awaiting) return;
-    const clock = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(clock);
-  }, [awaiting]);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await load(true);
@@ -152,8 +127,8 @@ const EssentialsOrderScreen: React.FC = () => {
     Alert.alert(
       'Cancel this order?',
       order.paymentStatus === 'PAID'
-        ? `Every store's part will be cancelled and ${rupees(order.payableAmount)} refunded to your payment method.`
-        : "Every store's part will be cancelled.",
+        ? `Your order will be cancelled and ${rupees(order.payableAmount)} refunded to your payment method.`
+        : 'Your order will be cancelled.',
       [
         { text: 'Keep order', style: 'cancel' },
         {
@@ -234,17 +209,7 @@ const EssentialsOrderScreen: React.FC = () => {
           borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: getColor('border'),
         },
-        seq: {
-          width: 22,
-          height: 22,
-          borderRadius: 11,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: `${getColor('primary')}1F`,
-        },
-        seqText: { fontSize: 11, fontWeight: '800', color: getColor('primary') },
         partName: { flex: 1, fontSize: 14, fontWeight: '700', color: getColor('text') },
-        partState: { fontSize: 12, fontWeight: '700' },
         item: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -253,14 +218,12 @@ const EssentialsOrderScreen: React.FC = () => {
           paddingVertical: 8,
         },
         thumb: { width: 36, height: 36, borderRadius: 6, backgroundColor: getColor('overlay') },
-        itemName: { flex: 1, fontSize: 13, color: getColor('text') },
+        itemText: { flex: 1, minWidth: 0 },
+        itemName: { fontSize: 13, color: getColor('text') },
         itemQty: { fontSize: 13, color: getColor('subText') },
-        failNote: {
-          fontSize: 12,
-          paddingHorizontal: 12,
-          paddingBottom: 10,
-          color: getColor('error'),
-        },
+        unavailable: { fontSize: 11, marginTop: 2, color: getColor('error') },
+        dimmed: { opacity: 0.5 },
+        struck: { textDecorationLine: 'line-through' },
         orderRef: { fontSize: 11, textAlign: 'center', color: getColor('subText') },
         footer: {
           position: 'absolute',
@@ -295,8 +258,17 @@ const EssentialsOrderScreen: React.FC = () => {
     [getColor]
   );
 
-  const tone = (t: 'ok' | 'wait' | 'bad') =>
-    t === 'bad' ? getColor('error') : t === 'wait' ? getColor('subText') : CATALOGUE_ACCENT;
+  /**
+   * Every item in one list. Items of a part that dropped out show as unavailable — unless the
+   * whole order is off, when the status above already says so and marking each item adds nothing.
+   */
+  const items = useMemo<ShownItem[]>(() => {
+    if (!order) return [];
+    const wholeOrderOff = displayStatusOf(order) === 'CANCELLED' || order.status === 'FAILED';
+    return order.shops.flatMap(part =>
+      part.items.map(item => ({ ...item, unavailable: !wholeOrderOff && partDropped(part) }))
+    );
+  }, [order]);
 
   const hero = () => {
     if (!order || order.status === 'PLACING') {
@@ -304,7 +276,7 @@ const EssentialsOrderScreen: React.FC = () => {
         icon: 'progress-clock' as const,
         color: getColor('primary'),
         title: 'Placing your order…',
-        sub: 'Sending it to each store. This takes a few seconds.',
+        sub: 'This takes a few seconds.',
       };
     }
     const shown = displayStatusOf(order);
@@ -313,7 +285,7 @@ const EssentialsOrderScreen: React.FC = () => {
         icon: 'credit-card-clock-outline' as const,
         color: getColor('primary'),
         title: 'Waiting for payment',
-        sub: 'This order is sent to the stores once it is paid.',
+        sub: 'Your order is placed as soon as it is paid.',
       };
     }
     if (shown === 'PAYMENT_EXPIRED') {
@@ -321,7 +293,7 @@ const EssentialsOrderScreen: React.FC = () => {
         icon: 'credit-card-off-outline' as const,
         color: getColor('error'),
         title: 'Payment not completed',
-        sub: 'This order was never paid, so nothing was sent to the stores.',
+        sub: 'This order was never paid, so it was not placed.',
       };
     }
     if (shown === 'CANCELLED') {
@@ -331,7 +303,7 @@ const EssentialsOrderScreen: React.FC = () => {
         title: 'Order cancelled',
         sub:
           order.acceptanceStatus === 'REJECTED'
-            ? `The ${order.shops.length === 1 ? 'store' : 'stores'} couldn't take this order. ${order.paymentStatus === 'PAID' ? "You'll get a full refund." : "You won't be charged for it."}`
+            ? `We couldn't fulfil this order. ${order.paymentStatus === 'PAID' ? "You'll get a full refund." : "You won't be charged for it."}`
             : order.paymentStatus === 'PAID'
               ? "You cancelled this order. You'll get a full refund."
               : "You cancelled this order. You won't be charged for it.",
@@ -342,16 +314,15 @@ const EssentialsOrderScreen: React.FC = () => {
         icon: 'check-circle' as const,
         color: CATALOGUE_ACCENT,
         title: 'Delivered',
-        sub: 'Everything from every store has been delivered.',
+        sub: 'Your order has been delivered.',
       };
     }
     if (shown === 'AWAITING_STORES') {
-      const left = timeLeft(order, now);
       return {
-        icon: 'store-clock-outline' as const,
+        icon: 'progress-clock' as const,
         color: getColor('primary'),
-        title: params.justPlaced ? 'Order placed!' : 'Waiting for the stores',
-        sub: `Waiting for ${order.shops.filter(s => s.vendorDecision === 'PENDING').length === 1 ? 'the store' : 'the stores'} to accept${left ? ` · ${left}` : ''}. If a store doesn't, you won't pay for its part.`,
+        title: params.justPlaced ? 'Order placed!' : 'Confirming your order',
+        sub: "We're confirming your items. You'll only pay for what we can deliver.",
       };
     }
     if (shown === 'ACCEPTED') {
@@ -359,10 +330,7 @@ const EssentialsOrderScreen: React.FC = () => {
         icon: 'check-circle' as const,
         color: CATALOGUE_ACCENT,
         title: 'Order confirmed',
-        sub:
-          order.shops.length > 1
-            ? 'Every store has accepted. Your order is being prepared.'
-            : 'The store has accepted. Your order is being prepared.',
+        sub: 'Your order is being prepared.',
       };
     }
     if (shown === 'PARTIALLY_ACCEPTED') {
@@ -370,7 +338,7 @@ const EssentialsOrderScreen: React.FC = () => {
         icon: 'alert-circle' as const,
         color: '#FFA726',
         title: 'Order confirmed, with a change',
-        sub: "A store couldn't take its part, so those items were removed and your total updated.",
+        sub: "Some items aren't available, so they were removed and your total updated.",
       };
     }
     if (order.status === 'CONFIRMED') {
@@ -378,10 +346,7 @@ const EssentialsOrderScreen: React.FC = () => {
         icon: 'check-circle' as const,
         color: CATALOGUE_ACCENT,
         title: params.justPlaced ? 'Order placed!' : 'Daily Essentials order',
-        sub:
-          order.shops.length > 1
-            ? `One order from ${order.shops.length} stores, delivered together.`
-            : 'Your order has been sent to the store.',
+        sub: 'Your order has been placed.',
       };
     }
     if (order.status === 'PARTIALLY_CONFIRMED') {
@@ -389,14 +354,14 @@ const EssentialsOrderScreen: React.FC = () => {
         icon: 'alert-circle' as const,
         color: '#FFA726',
         title: 'Order placed, with a change',
-        sub: "One store couldn't take its part. You won't be charged for it.",
+        sub: "Some items couldn't be added to your order. You won't be charged for them.",
       };
     }
     return {
       icon: 'close-circle' as const,
       color: getColor('error'),
       title: "We couldn't place this order",
-      sub: "No store could take it, so you won't be charged. Please try again.",
+      sub: "You won't be charged. Please try again.",
     };
   };
   const h = hero();
@@ -434,16 +399,11 @@ const EssentialsOrderScreen: React.FC = () => {
           <>
             <View style={styles.amountCard}>
               <View style={styles.row}>
-                <ThemeText style={styles.label}>
-                  Items · {order.itemCount} from {order.shops.length}{' '}
-                  {order.shops.length === 1 ? 'store' : 'stores'}
-                </ThemeText>
+                <ThemeText style={styles.label}>Items · {order.itemCount}</ThemeText>
                 <ThemeText style={styles.value}>{rupees(order.itemTotal)}</ThemeText>
               </View>
               <View style={styles.row}>
-                <ThemeText style={styles.label}>
-                  Delivery · {order.routeDistanceKm} km route
-                </ThemeText>
+                <ThemeText style={styles.label}>Delivery fee</ThemeText>
                 <ThemeText style={styles.value}>{rupees(order.deliveryFee)}</ThemeText>
               </View>
               {order.couponCode ? (
@@ -488,51 +448,43 @@ const EssentialsOrderScreen: React.FC = () => {
               displayStatusOf(order) !== 'CANCELLED' &&
               order.amountToPay < order.payableAmount ? (
                 <ThemeText style={styles.label}>
-                  Was {rupees(order.payableAmount)}; less the part a store couldn&apos;t take.
+                  Was {rupees(order.payableAmount)}; less the items that weren&apos;t available.
                 </ThemeText>
               ) : null}
             </View>
 
-            {order.shops.map(part => {
-              const label = partLabel(part);
-              return (
-                <View key={part.shopId} style={styles.part}>
-                  <View style={styles.partHead}>
-                    <View style={styles.seq}>
-                      <ThemeText style={styles.seqText}>{part.pickupSequence}</ThemeText>
-                    </View>
-                    <ThemeText style={styles.partName} numberOfLines={1}>
-                      {part.shopName ?? 'Store'}
+            <View style={styles.part}>
+              <View style={styles.partHead}>
+                <ThemeText style={styles.partName}>Items</ThemeText>
+              </View>
+              {items.map(item => (
+                <View key={item.sku} style={styles.item}>
+                  {item.imageUrl ? (
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={[styles.thumb, item.unavailable && styles.dimmed]}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <View style={styles.thumb} />
+                  )}
+                  <View style={styles.itemText}>
+                    <ThemeText
+                      style={[styles.itemName, item.unavailable && styles.dimmed]}
+                      numberOfLines={2}
+                    >
+                      {item.name}
                     </ThemeText>
-                    <ThemeText style={[styles.partState, { color: tone(label.tone) }]}>
-                      {label.text}
-                    </ThemeText>
+                    {item.unavailable ? (
+                      <ThemeText style={styles.unavailable}>Unavailable · not charged</ThemeText>
+                    ) : null}
                   </View>
-                  {part.items.map(item => (
-                    <View key={item.sku} style={styles.item}>
-                      {item.imageUrl ? (
-                        <Image
-                          source={{ uri: item.imageUrl }}
-                          style={styles.thumb}
-                          resizeMode="contain"
-                        />
-                      ) : (
-                        <View style={styles.thumb} />
-                      )}
-                      <ThemeText style={styles.itemName} numberOfLines={2}>
-                        {item.name}
-                      </ThemeText>
-                      <ThemeText style={styles.itemQty}>
-                        {item.quantity} × {rupees(item.unitPrice)}
-                      </ThemeText>
-                    </View>
-                  ))}
-                  {part.failureReason ? (
-                    <ThemeText style={styles.failNote}>{part.failureReason}</ThemeText>
-                  ) : null}
+                  <ThemeText style={[styles.itemQty, item.unavailable && styles.struck]}>
+                    {item.quantity} × {rupees(item.unitPrice)}
+                  </ThemeText>
                 </View>
-              );
-            })}
+              ))}
+            </View>
 
             <ThemeText style={styles.orderRef}>
               Order {order.orderId.replace(/^OGM/, '').slice(0, 8).toUpperCase()}

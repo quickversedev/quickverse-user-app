@@ -30,7 +30,7 @@ const formatDate = (millis: string) => {
       });
 };
 
-/** One Daily Essentials order in order history — one card however many kiranas it spans. */
+/** One Daily Essentials order in order history: one card, and no word of the kiranas behind it. */
 const EssentialsOrderCard: React.FC<{ order: EssentialsOrder; onPress: () => void }> = ({
   order,
   onPress,
@@ -42,7 +42,6 @@ const EssentialsOrderCard: React.FC<{ order: EssentialsOrder; onPress: () => voi
     .map(i => i.imageUrl)
     .filter((url): url is string => !!url && url.startsWith('http'))
     .slice(0, 2);
-  const stores = order.shops.map(s => s.shopName).filter(Boolean);
   const amount = Number.isInteger(order.amountToPay)
     ? order.amountToPay
     : order.amountToPay.toFixed(2);
@@ -107,7 +106,7 @@ const EssentialsOrderCard: React.FC<{ order: EssentialsOrder; onPress: () => voi
           <ThemeText style={styles.amount}>₹{amount}</ThemeText>
         </View>
         <ThemeText style={styles.sub} numberOfLines={1}>
-          {order.itemCount} {order.itemCount === 1 ? 'item' : 'items'} · {stores.join(', ')}
+          {order.itemCount} {order.itemCount === 1 ? 'item' : 'items'}
         </ThemeText>
         <ThemeText style={styles.sub}>{formatDate(order.createdAt)}</ThemeText>
         <View style={styles.badge}>

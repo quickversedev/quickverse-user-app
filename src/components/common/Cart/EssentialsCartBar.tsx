@@ -5,6 +5,7 @@ import React, { useMemo } from 'react';
 import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { RootStackParamList } from '../../../routes/AppStack';
 import useEssentialsCartStore, {
+  ESSENTIALS_CART_ID,
   useEssentialsSummary,
 } from '../../../store/cart/essentialsCartStore';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -15,15 +16,14 @@ const { width } = Dimensions.get('window');
 /**
  * The floating bar for the Daily Essentials cart.
  *
- * One bar however many kiranas the cart spans, because it is one cart and one order — the
- * per-shop bars in FloatingCartsStack are SmartBiz carts. Styled to match CartBar, without
- * its swipe-to-delete: clearing a cross-store cart by accident costs more than one shop's.
+ * One bar however many kiranas supply the cart, and it never says how many: to the customer it
+ * is one cart and one order. Styled to match CartBar, without its swipe-to-delete.
  */
 const EssentialsCartBar: React.FC = () => {
   const { getColor, isDarkMode } = useTheme();
   const { navigate } = useNavigation<StackNavigationProp<RootStackParamList>>();
   const enabled = useEssentialsCartStore(s => s.enabled === true);
-  const { itemCount, itemTotal, shopCount } = useEssentialsSummary();
+  const { itemCount, itemTotal } = useEssentialsSummary();
 
   const styles = useMemo(
     () =>
@@ -78,7 +78,7 @@ const EssentialsCartBar: React.FC = () => {
     <TouchableOpacity
       style={styles.bar}
       activeOpacity={0.95}
-      onPress={() => navigate('EssentialsCart')}
+      onPress={() => navigate('Cart', { cartId: ESSENTIALS_CART_ID })}
       accessibilityRole="button"
       accessibilityLabel={`Daily Essentials cart, ${itemCount} items. View cart`}
     >
@@ -104,7 +104,6 @@ const EssentialsCartBar: React.FC = () => {
           numberOfLines={1}
         >
           {itemCount} Item{itemCount > 1 ? 's' : ''} · ₹{total}
-          {shopCount > 1 ? ` · ${shopCount} stores` : ''}
         </ThemeText>
       </View>
       <View style={styles.view}>

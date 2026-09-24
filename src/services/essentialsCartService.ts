@@ -121,6 +121,12 @@ export interface EssentialsCheckoutSummary {
   packagingCharges: number;
   codCharges: number;
   gstRate: number;
+  deliveryGst: number;
+  platformGst: number;
+  packagingGst: number;
+  codGst: number;
+  /** The fees GST is charged on: delivery, platform, packaging and COD. */
+  taxableAmount: number;
   totalGst: number;
   payableAmount: number;
   totalSavings: number;
