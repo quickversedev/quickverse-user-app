@@ -904,7 +904,9 @@ const CartScreen: React.FC = () => {
           authData.phone
         );
 
-        if (selectedPaymentOption === 'PREPAID') {
+        // The method passed in, not selectedPaymentOption: that state still holds the previous
+        // choice here, which once opened Razorpay for an order just placed as COD.
+        if (paymentMethod.toUpperCase() === 'PREPAID') {
           await handleRazorpayPayment(orderResponse, calculatedTotal, vendor);
         } else {
           if (cart && authData?.jwt && authData?.phone) {
