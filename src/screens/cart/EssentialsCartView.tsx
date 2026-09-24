@@ -26,7 +26,7 @@ import {
   DeliveryInstructions,
   DeliveryInstructionId,
   FreeDeliveryProgress,
-  PaymentSheet,
+  PaymentOptions,
   PaymentSummary,
   TipSelector,
   tipContribution,
@@ -43,7 +43,6 @@ import essentialsCartService, {
   EssentialsPaymentMethod,
 } from '../../services/essentialsCartService';
 import essentialsOrderService from '../../services/essentialsOrderService';
-import { PaymentMethod } from '../../services/paymentService';
 import useEssentialsCartStore, {
   EssentialsDisplayLine,
   useEssentialsLines,
@@ -58,7 +57,8 @@ import { Address } from '../../types/address';
  *
  * Built from the same pieces as a store cart, in the same order — items, coupons, savings,
  * instructions, tip, bill, and the footer that opens the payment sheet — so to the customer it
- * is simply their cart. What differs is underneath: the cart lives on our server rather than at
+ * is simply their cart. The payment method is picked on the cart too, so the bill already carries
+ * its COD charge. What differs is underneath: the cart lives on our server rather than at
  * SmartBiz, the bill is the server's Essentials summary, and one order is placed however many
  * kiranas supply it. Which kiranas those are is never shown: no store headers, no store counts.
  *
@@ -73,18 +73,9 @@ const showMessage = (message: string) => {
   else Alert.alert('Your cart', message);
 };
 
-/** COD is always offered for Essentials; the sheet reads availability in this shape. */
-const paymentMethodsWithCod = (codCharges: number): PaymentMethod[] => [
-  {
-    paymentMethodType: 'POSTPAID',
-    paymentConfiguration: {
-      paymentMethodStatus: 'ON_BOARDED',
-      codCharges,
-      minimumAllowedCartAmount: 0,
-      maximumAllowedCartAmount: 0,
-    },
-  },
-];
+const isSavedAddressId = (value?: string | null) =>
+  !!value &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
 const metaOf = (line: EssentialsDisplayLine) => ({
   sku: line.sku,
@@ -112,7 +103,12 @@ const EssentialsCartView: React.FC = () => {
 
   const jwt = authData?.jwt ?? '';
   const phone = authData?.phone ?? '';
-  const addressId = selectedAddress?.addressID ?? null;
+  // Only a saved address can be delivered to. The current-location entry (QV_Current_Location)
+  // carries no UUID, and the server rejects it; with it selected, the bill waits and the footer
+  // asks for an address, as on a store cart.
+  const addressId = isSavedAddressId(selectedAddress?.addressID)
+    ? (selectedAddress?.addressID ?? null)
+    : null;
 
   const [paymentMethod, setPaymentMethod] = useState<EssentialsPaymentMethod>('PREPAID');
   const [coupon, setCoupon] = useState<SheetCoupon | null>(null);
@@ -125,7 +121,6 @@ const EssentialsCartView: React.FC = () => {
 
   const [showCouponSheet, setShowCouponSheet] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [showPaymentSheet, setShowPaymentSheet] = useState(false);
   const [showIssues, setShowIssues] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
@@ -410,38 +405,10 @@ const EssentialsCartView: React.FC = () => {
       setShowIssues(true);
       return;
     }
-    setShowPaymentSheet(true);
-  }, [jwt, addressId, summary, loadSummary, paymentMethod]);
-
-  /**
-   * The method is chosen in the sheet and the order placed from there, as on the store cart.
-   * The bill on screen was priced for one method; switching method re-prices it, and if the
-   * total changes (a COD charge) the customer is shown the new total before anything is placed.
-   */
-  const handlePaymentConfirm = useCallback(
-    async (method: EssentialsPaymentMethod) => {
-      setShowPaymentSheet(false);
-      setPaymentMethod(method);
-      let current = summary;
-      if (!current || current.paymentMethod !== method) {
-        const shown = current;
-        current = await loadSummary(method);
-        if (!current) return;
-        if (current.issues.length > 0 || !current.canPlaceOrder) {
-          setShowIssues(true);
-          return;
-        }
-        if (shown && current.payableAmount !== shown.payableAmount) {
-          showMessage(
-            `Your total is now ₹${current.payableAmount.toFixed(2)}. Tap Proceed to Pay to place the order.`
-          );
-          return;
-        }
-      }
-      await placeOrder(current, method);
-    },
-    [summary, loadSummary, placeOrder]
-  );
+    // The bill must be the one priced for the method on screen; a switch is still re-pricing.
+    if (summaryLoading || summary.paymentMethod !== paymentMethod) return;
+    placeOrder(summary, paymentMethod);
+  }, [jwt, addressId, summary, summaryLoading, loadSummary, paymentMethod, placeOrder]);
 
   const handleResolve = useCallback(async () => {
     if (!addressId) return;
@@ -568,6 +535,14 @@ const EssentialsCartView: React.FC = () => {
           </AnimatedCard>
         )}
 
+        <AnimatedCard delay={175}>
+          <PaymentOptions
+            selectedOption={paymentMethod}
+            onSelect={setPaymentMethod}
+            codCharges={summary?.paymentMethod === 'COD' ? summary.codCharges : undefined}
+          />
+        </AnimatedCard>
+
         <AnimatedCard delay={200}>
           <DeliveryInstructions
             selected={deliveryInstructions}
@@ -608,9 +583,10 @@ const EssentialsCartView: React.FC = () => {
         addressTag={selectedAddress?.tag || selectedAddress?.name || ''}
         onSelectAddress={() => setShowAddressModal(true)}
         onCheckout={handleCheckout}
-        disabled={placing || resolving}
+        disabled={placing || resolving || summaryLoading}
         loading={placing}
         isGuest={!jwt}
+        paymentMethod={paymentMethod}
       />
 
       <AddressSelectionModal
@@ -633,17 +609,6 @@ const EssentialsCartView: React.FC = () => {
         selectedDeliveryCoupon={coupon && selectedIsDelivery ? coupon : null}
         onApplyDiscount={setCoupon}
         onApplyDelivery={setCoupon}
-      />
-
-      <PaymentSheet
-        visible={showPaymentSheet}
-        onClose={() => setShowPaymentSheet(false)}
-        onConfirm={handlePaymentConfirm}
-        paymentMethods={paymentMethodsWithCod(
-          summary?.paymentMethod === 'COD' ? summary.codCharges : 0
-        )}
-        selectedOption={summary?.paymentMethod ?? paymentMethod}
-        total={total}
       />
 
       <EssentialsIssuesSheet

@@ -1,118 +1,55 @@
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useMemo } from 'react';
-import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useCallback } from 'react';
+import { useAuth } from '../../../contexts/login/AuthProvider';
 import { RootStackParamList } from '../../../routes/AppStack';
 import useEssentialsCartStore, {
   ESSENTIALS_CART_ID,
+  useEssentialsLines,
   useEssentialsSummary,
 } from '../../../store/cart/essentialsCartStore';
-import { useTheme } from '../../../theme/ThemeContext';
-import { ThemeText } from '../theme/ThemeText';
+import CartBar from './CartBar';
 
-const { width } = Dimensions.get('window');
+interface EssentialsCartBarProps {
+  isExpanded?: boolean;
+  onExpand?: () => void;
+}
 
 /**
- * The floating bar for the Daily Essentials cart.
- *
- * One bar however many kiranas supply the cart, and it never says how many: to the customer it
- * is one cart and one order. Styled to match CartBar, without its swipe-to-delete.
+ * The floating bar for the Daily Essentials cart: the same CartBar every store cart uses, with a
+ * basket instead of a cart as its icon. Like a store cart's bar it names the item when there is
+ * one and the cart otherwise, and never the stores behind it.
  */
-const EssentialsCartBar: React.FC = () => {
-  const { getColor, isDarkMode } = useTheme();
+const EssentialsCartBar: React.FC<EssentialsCartBarProps> = ({ isExpanded, onExpand }) => {
   const { navigate } = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const enabled = useEssentialsCartStore(s => s.enabled === true);
-  const { itemCount, itemTotal } = useEssentialsSummary();
+  const { authData } = useAuth();
+  const lines = useEssentialsLines();
+  const { itemCount } = useEssentialsSummary();
+  const clear = useEssentialsCartStore(s => s.clear);
 
-  const styles = useMemo(
-    () =>
-      StyleSheet.create({
-        bar: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingVertical: 10,
-          paddingLeft: 12,
-          paddingRight: 6,
-          width: width - 32,
-          minHeight: 56,
-          alignSelf: 'center',
-          marginBottom: 6,
-          backgroundColor: getColor('primary'),
-          borderRadius: 16,
-          elevation: 4,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.15,
-          shadowRadius: 4,
-        },
-        divider: {
-          width: 1,
-          height: 28,
-          marginHorizontal: 10,
-          borderRadius: 1,
-          backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)',
-        },
-        text: { flex: 1, minWidth: 0 },
-        title: { fontWeight: '600' },
-        sub: { opacity: 0.85 },
-        view: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: getColor('background'),
-          paddingHorizontal: 14,
-          paddingVertical: 8,
-          borderRadius: 20,
-          marginLeft: 10,
-        },
-        viewText: { fontWeight: '600', fontSize: 13 },
-      }),
-    [getColor, isDarkMode]
-  );
+  const firstItemName = lines.find(l => l.available)?.name;
+  const title = itemCount === 1 && firstItemName ? firstItemName : 'Daily Essentials';
 
-  if (!enabled || itemCount === 0) return null;
+  const handleClear = useCallback(() => {
+    clear(authData?.jwt || undefined, authData?.phone || undefined);
+  }, [clear, authData?.jwt, authData?.phone]);
 
-  const total = Number.isInteger(itemTotal) ? itemTotal : itemTotal.toFixed(2);
+  const handleViewCart = useCallback(() => {
+    navigate('MainApp', { screen: 'Cart', params: { cartId: ESSENTIALS_CART_ID } });
+  }, [navigate]);
 
   return (
-    <TouchableOpacity
-      style={styles.bar}
-      activeOpacity={0.95}
-      onPress={() => navigate('Cart', { cartId: ESSENTIALS_CART_ID })}
-      accessibilityRole="button"
-      accessibilityLabel={`Daily Essentials cart, ${itemCount} items. View cart`}
-    >
-      <MaterialCommunityIcons
-        name="basket-outline"
-        size={24}
-        color={isDarkMode ? '#22C55E' : '#16A34A'}
-      />
-      <View style={styles.divider} />
-      <View style={styles.text}>
-        <ThemeText
-          variant="body"
-          style={styles.title}
-          color={getColor('background')}
-          numberOfLines={1}
-        >
-          Daily Essentials
-        </ThemeText>
-        <ThemeText
-          variant="caption"
-          style={styles.sub}
-          color={getColor('background')}
-          numberOfLines={1}
-        >
-          {itemCount} Item{itemCount > 1 ? 's' : ''} · ₹{total}
-        </ThemeText>
-      </View>
-      <View style={styles.view}>
-        <ThemeText variant="caption" style={styles.viewText} color={getColor('text')}>
-          View Cart
-        </ThemeText>
-        <MaterialCommunityIcons name="chevron-right" size={18} color={getColor('text')} />
-      </View>
-    </TouchableOpacity>
+    <CartBar
+      itemCount={itemCount}
+      shopId=""
+      cartId={ESSENTIALS_CART_ID}
+      title={title}
+      iconName="basket-outline"
+      onClear={handleClear}
+      onViewCart={handleViewCart}
+      isExpanded={isExpanded}
+      onExpand={onExpand}
+    />
   );
 };
 

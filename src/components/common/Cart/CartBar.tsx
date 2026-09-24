@@ -27,6 +27,14 @@ interface CartBarProps {
   cartId: string;
   onExpand?: () => void;
   isExpanded?: boolean;
+  /**
+   * For a cart that is not a store's SmartBiz cart — the Daily Essentials cart — the bar is the
+   * same; only what it names, its icon and what its two actions do come from the caller.
+   */
+  title?: string;
+  iconName?: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  onClear?: () => void;
+  onViewCart?: () => void;
 }
 
 const CartBar: React.FC<CartBarProps> = ({
@@ -36,6 +44,10 @@ const CartBar: React.FC<CartBarProps> = ({
   cartId,
   onExpand,
   isExpanded = true,
+  title,
+  iconName = 'cart-outline',
+  onClear,
+  onViewCart,
 }) => {
   const { getColor, isDarkMode } = useTheme();
   const translateX = useRef(new Animated.Value(0)).current;
@@ -66,7 +78,7 @@ const CartBar: React.FC<CartBarProps> = ({
   const cartProducts = Object.values(cart?.products || {});
   const firstItemName = cartProducts[0]?.name;
   // Show item name for single item, vendor name for multiple items
-  const displayName = itemCount === 1 && firstItemName ? firstItemName : vendorName;
+  const displayName = title ?? (itemCount === 1 && firstItemName ? firstItemName : vendorName);
   const { navigate } = useNavigation<StackNavigationProp<RootStackParamList>>();
   const clearCart = useCartStore(state => state.clearCart);
   const { authData } = useAuth();
@@ -188,9 +200,11 @@ const CartBar: React.FC<CartBarProps> = ({
   ).current;
 
   const handleRemovePress = () => {
-    const phone = authData?.phone || '';
-    const jwt = authData?.jwt || '';
-    clearCart(cartId, jwt, phone);
+    if (onClear) {
+      onClear();
+    } else {
+      clearCart(cartId, authData?.jwt || '', authData?.phone || '');
+    }
     Animated.spring(translateX, {
       toValue: 0,
       useNativeDriver: true,
@@ -217,6 +231,8 @@ const CartBar: React.FC<CartBarProps> = ({
         useNativeDriver: true,
       }).start();
       setIsRevealed(false);
+    } else if (onViewCart) {
+      onViewCart();
     } else {
       navigate('MainApp', { screen: 'Cart', params: { cartId } });
     }
@@ -301,7 +317,7 @@ const CartBar: React.FC<CartBarProps> = ({
 
             {/* Cart icon */}
             <MaterialCommunityIcons
-              name="cart-outline"
+              name={iconName}
               size={24}
               color={isDarkMode ? '#22C55E' : '#16A34A'}
             />

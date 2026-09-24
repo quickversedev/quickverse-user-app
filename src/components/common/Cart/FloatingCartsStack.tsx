@@ -13,6 +13,7 @@ import { useAuth } from '../../../contexts/login/AuthProvider';
 import { TabBarVisibilityContext } from '../../../navigation/TabNavigation';
 import useCartStore from '../../../store/cart/cartStore';
 import useEssentialsCartStore, {
+  ESSENTIALS_CART_ID,
   useEssentialsSummary,
 } from '../../../store/cart/essentialsCartStore';
 import useOrderStore from '../../../store/cart/orderStore';
@@ -40,15 +41,53 @@ const FloatingCartsStack: React.FC = () => {
   const essentialsItemCount = useEssentialsSummary().itemCount;
   const hasEssentialsCart = essentialsEnabled && essentialsItemCount > 0;
 
-  // Filter to only carts with items
-  const nonEmptyCarts = allCarts.filter(
-    cart => Object.values(cart.products || {}).reduce((sum, p) => sum + (p?.quantity || 0), 0) > 0
-  );
+  const unitsIn = (cart: (typeof allCarts)[number]) =>
+    Object.values(cart.products || {}).reduce((sum, p) => sum + (p?.quantity || 0), 0);
 
-  // Sort carts: most recently active at the top
+  /**
+   * Every cart with items, as one list. The Daily Essentials cart is one more entry — the same
+   * bar, stacked and collapsed with the rest — not a bar of its own above them.
+   */
+  const nonEmptyCarts: { key: string; itemCount: number }[] = [
+    ...allCarts
+      .filter(cart => cart.cartId && unitsIn(cart) > 0)
+      .map(cart => ({ key: cart.cartId, itemCount: unitsIn(cart) })),
+    ...(hasEssentialsCart ? [{ key: ESSENTIALS_CART_ID, itemCount: essentialsItemCount }] : []),
+  ];
+
+  /**
+   * The cart the customer last changed goes on top. Store carts report it through
+   * `activeCartId`, which the Essentials cart must not borrow (the cart store would try to
+   * fetch it from SmartBiz), so both are watched here instead.
+   */
+  const [lastChanged, setLastChanged] = useState<string | null>(null);
+  const essentialsSeen = useRef<number | null>(null);
+  useEffect(() => {
+    if (essentialsSeen.current !== null && essentialsSeen.current !== essentialsItemCount) {
+      setLastChanged(ESSENTIALS_CART_ID);
+    }
+    essentialsSeen.current = essentialsItemCount;
+  }, [essentialsItemCount]);
+  const storeCountsSeen = useRef<Record<string, number> | null>(null);
+  const storeCounts = allCarts.map(c => `${c.cartId}:${unitsIn(c)}`).join('|');
+  useEffect(() => {
+    const now: Record<string, number> = {};
+    Object.values(carts).forEach(c => {
+      now[c.cartId] = unitsIn(c);
+    });
+    const before = storeCountsSeen.current;
+    if (before) {
+      const changed = Object.keys(now).find(id => now[id] !== before[id]);
+      if (changed) setLastChanged(changed);
+    }
+    storeCountsSeen.current = now;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeCounts]);
+
+  const topKey = lastChanged ?? activeCartId;
   const sortedCarts = [...nonEmptyCarts].sort((a, b) => {
-    if (a.cartId === activeCartId) return -1;
-    if (b.cartId === activeCartId) return 1;
+    if (a.key === topKey) return -1;
+    if (b.key === topKey) return 1;
     return 0;
   });
 
@@ -166,7 +205,7 @@ const FloatingCartsStack: React.FC = () => {
   );
 
   // Only hide if there are no non-empty carts AND no in-progress order to show
-  if (nonEmptyCarts.length === 0 && !hasEssentialsCart && !hasInProgressOrder) return null;
+  if (nonEmptyCarts.length === 0 && !hasInProgressOrder) return null;
 
   // Show a hint of the next cart behind the first when collapsed
   const showSecondCartBehind = !expanded && sortedCarts.length > 1;
@@ -217,8 +256,6 @@ const FloatingCartsStack: React.FC = () => {
             </Animated.View>
           </TouchableOpacity>
         )}
-        {/* The Daily Essentials cart is one cart across kiranas, so it gets one bar of its own. */}
-        <EssentialsCartBar />
         <View style={styles.stack}>
           {/* Show second cart behind the first as a visual cue when collapsed */}
           {showSecondCartBehind && (
@@ -238,15 +275,13 @@ const FloatingCartsStack: React.FC = () => {
             if (!expanded && originalIdx > 0) return null;
             // Guard: skip if animatedValues[originalIdx] is undefined
             if (!animatedValues[originalIdx]) return null;
-            // Guard: skip if cart.cartId is undefined
-            if (!cart.cartId) return null;
 
             const animValue = animatedValues[originalIdx];
 
             // When collapsed, wrap the cart in TouchableOpacity to expand on press
             const CartContent = (
               <Animated.View
-                key={cart.cartId}
+                key={cart.key}
                 style={[
                   styles.cartBarWrapper,
                   dynamicStyles.cartBarWrapperMain,
@@ -272,16 +307,20 @@ const FloatingCartsStack: React.FC = () => {
                   },
                 ]}
               >
-                <CartBar
-                  itemCount={Object.values(cart.products || {}).reduce(
-                    (sum, p) => sum + (p?.quantity || 0),
-                    0
-                  )}
-                  shopId={cart.cartId ? cart.cartId.replace('vendor_', '') : ''}
-                  cartId={cart.cartId || ''}
-                  isExpanded={expanded || nonEmptyCarts.length === 1}
-                  onExpand={toggleExpanded}
-                />
+                {cart.key === ESSENTIALS_CART_ID ? (
+                  <EssentialsCartBar
+                    isExpanded={expanded || nonEmptyCarts.length === 1}
+                    onExpand={toggleExpanded}
+                  />
+                ) : (
+                  <CartBar
+                    itemCount={cart.itemCount}
+                    shopId={cart.key.replace('vendor_', '')}
+                    cartId={cart.key}
+                    isExpanded={expanded || nonEmptyCarts.length === 1}
+                    onExpand={toggleExpanded}
+                  />
+                )}
               </Animated.View>
             );
             // When expanded, clicking the cart navigates to CartScreen

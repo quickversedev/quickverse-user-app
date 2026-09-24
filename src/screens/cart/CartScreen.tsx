@@ -27,7 +27,7 @@ import {
   DeliveryInstructionId,
   EssentialsCartCard,
   FreeDeliveryProgress,
-  PaymentSheet,
+  PaymentOptions,
   PaymentSummary,
   TipSelector,
   tipContribution,
@@ -149,7 +149,6 @@ const StoreCartScreen: React.FC = () => {
       current.includes(id) ? current.filter(x => x !== id) : [...current, id]
     );
   }, []);
-  const [showPaymentModal, setShowPaymentModal] = React.useState(false);
   const [selectedPaymentOption, setSelectedPaymentOption] = React.useState<string | undefined>(
     'PREPAID'
   );
@@ -337,7 +336,6 @@ const StoreCartScreen: React.FC = () => {
     availableOptions,
     loading: paymentMethodsLoading,
     error: paymentMethodsError,
-    refetch: refetchPaymentMethods,
   } = usePaymentMethods({
     cartId: cart?.smartBizCartId,
     shopId: vendor?.shopId,
@@ -623,65 +621,6 @@ const StoreCartScreen: React.FC = () => {
       console.log('Razorpay Payment Failed : ', error);
     }
   };
-
-  const handleCheckout = useCallback(async () => {
-    if (!authData?.jwt) {
-      setShowLoginPromptModal(true);
-      return;
-    }
-
-    const isValidUUID = (value?: string | null) =>
-      !!value &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-
-    const isAddressSelected = isValidUUID(selectedSmartBizAddress?.addressID);
-
-    if (!isAddressSelected) {
-      setShowSmartBizAddressModal(true);
-      return;
-    }
-
-    const maxKm = deliveryRadiusKm ?? 5;
-    if (distanceKm != null && distanceKm > maxKm) {
-      setShowDistanceModal(true);
-      return;
-    }
-
-    if (vendor) {
-      const storeStatus = isStoreOpen({
-        openingTime: vendor.openingTime,
-        closingTime: vendor.closingTime,
-        storeActive: vendor.storeActive,
-      });
-
-      if (!storeStatus.isOpen) {
-        const isTimeBased = vendor.storeActive !== false && storeStatus.nextOpeningTime;
-        const opensAtText = isTimeBased
-          ? ` Opens at ${formatTimeToAMPM(storeStatus.nextOpeningTime!)}.`
-          : '';
-        setStoreClosedModal({
-          visible: true,
-          message: `The store is closed at the moment.${opensAtText} Please try again later.`,
-        });
-        return;
-      }
-    }
-
-    // Everything above is a precondition for ordering at all. The method itself is
-    // chosen in the step this opens, and the order is placed from there.
-    setShowPaymentModal(true);
-  }, [
-    permissionDataInAuth?.permission,
-    selectedAddress,
-    cart,
-    vendor,
-    authData?.jwt,
-    authData?.phone,
-    selectedSmartBizAddress,
-    navigation,
-    distanceKm,
-    deliveryRadiusKm,
-  ]);
 
   /**
    * Places the order for an explicitly chosen payment method.
@@ -985,6 +924,67 @@ const StoreCartScreen: React.FC = () => {
     ]
   );
 
+  const handleCheckout = useCallback(async () => {
+    if (!authData?.jwt) {
+      setShowLoginPromptModal(true);
+      return;
+    }
+
+    const isValidUUID = (value?: string | null) =>
+      !!value &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+    const isAddressSelected = isValidUUID(selectedSmartBizAddress?.addressID);
+
+    if (!isAddressSelected) {
+      setShowSmartBizAddressModal(true);
+      return;
+    }
+
+    const maxKm = deliveryRadiusKm ?? 5;
+    if (distanceKm != null && distanceKm > maxKm) {
+      setShowDistanceModal(true);
+      return;
+    }
+
+    if (vendor) {
+      const storeStatus = isStoreOpen({
+        openingTime: vendor.openingTime,
+        closingTime: vendor.closingTime,
+        storeActive: vendor.storeActive,
+      });
+
+      if (!storeStatus.isOpen) {
+        const isTimeBased = vendor.storeActive !== false && storeStatus.nextOpeningTime;
+        const opensAtText = isTimeBased
+          ? ` Opens at ${formatTimeToAMPM(storeStatus.nextOpeningTime!)}.`
+          : '';
+        setStoreClosedModal({
+          visible: true,
+          message: `The store is closed at the moment.${opensAtText} Please try again later.`,
+        });
+        return;
+      }
+    }
+
+    // Everything above is a precondition for ordering at all. The method was chosen on the
+    // cart, and the bill on screen was priced for it.
+    placeOrder(selectedPaymentOption?.toUpperCase() === 'COD' ? 'COD' : 'PREPAID');
+  }, [
+    placeOrder,
+    selectedPaymentOption,
+    permissionDataInAuth?.permission,
+    selectedAddress,
+    cart,
+    vendor,
+    authData?.jwt,
+    authData?.phone,
+    selectedSmartBizAddress,
+    navigation,
+    distanceKm,
+    deliveryRadiusKm,
+  ]);
+
   const handleAddressSelect = useCallback(
     (address: Address) => {
       setSelectedAddress(address);
@@ -998,25 +998,6 @@ const StoreCartScreen: React.FC = () => {
     setShowSmartBizAddressModal(false);
   }, []);
 
-  const handlePaymentOptionsPress = useCallback(() => {
-    setShowPaymentModal(true);
-  }, []);
-
-  const handlePaymentModalClose = useCallback(() => {
-    setShowPaymentModal(false);
-  }, []);
-
-  const handlePaymentConfirm = useCallback(
-    (selectedOption: string, _upiId?: string) => {
-      setSelectedPaymentOption(selectedOption);
-      setShowPaymentModal(false);
-      // Chosen method goes straight through, rather than being read back from state
-      // that has not re-rendered yet.
-      placeOrder(selectedOption);
-    },
-    [placeOrder]
-  );
-
   const getFormattedAddress = useCallback(() => {
     if (!selectedSmartBizAddress) return 'Select delivery address';
     const { name, addressLine1, city, state } = selectedSmartBizAddress;
@@ -1025,10 +1006,23 @@ const StoreCartScreen: React.FC = () => {
   }, [selectedSmartBizAddress, distanceText]);
 
   const isCheckoutDisabled = useMemo(() => {
-    // No longer gated on a payment method: it is chosen in the step this button
-    // opens, so requiring one first would disable the button permanently.
-    return Boolean(paymentMethodsError) || isOrderLoading;
-  }, [paymentMethodsError, isOrderLoading]);
+    // Not while the bill is being re-priced (say, for a change of payment method): the
+    // order must go out on the bill the customer is looking at.
+    return Boolean(paymentMethodsError) || isOrderLoading || checkoutSummaryLoading;
+  }, [paymentMethodsError, isOrderLoading, checkoutSummaryLoading]);
+
+  /** Whether this store takes cash on delivery, from its eligible payment methods. */
+  const codAvailable = useMemo(
+    () => availableOptions.some(option => option.key === 'COD' && option.available),
+    [availableOptions]
+  );
+
+  // A COD choice made for another store does not carry over to one without COD.
+  React.useEffect(() => {
+    if (!paymentMethodsLoading && selectedPaymentOption === 'COD' && !codAvailable) {
+      setSelectedPaymentOption('PREPAID');
+    }
+  }, [paymentMethodsLoading, selectedPaymentOption, codAvailable]);
 
   React.useEffect(() => {
     const initializeCart = async () => {
@@ -1296,8 +1290,16 @@ const StoreCartScreen: React.FC = () => {
           </AnimatedCard>
         )}
 
-        {/* Payment method moved off the cart: the design's bar goes straight to
-            "Proceed to Pay", and the choice is made in the step that follows. */}
+        {/* Chosen on the cart so the bill below is priced for it, COD charge included. */}
+        <AnimatedCard delay={175}>
+          <PaymentOptions
+            selectedOption={selectedPaymentOption as 'COD' | 'PREPAID'}
+            onSelect={setSelectedPaymentOption}
+            codAvailable={codAvailable}
+            codCharges={codCharges}
+          />
+        </AnimatedCard>
+
         <AnimatedCard delay={200}>
           <DeliveryInstructions
             selected={deliveryInstructions}
@@ -1344,6 +1346,7 @@ const StoreCartScreen: React.FC = () => {
         disabled={isCheckoutDisabled}
         loading={isOrderLoading}
         isGuest={!authData?.jwt}
+        paymentMethod={selectedPaymentOption}
       />
 
       <AddressSelectionModal
@@ -1371,18 +1374,6 @@ const StoreCartScreen: React.FC = () => {
         selectedDeliveryCoupon={selectedDeliveryCoupon}
         onApplyDiscount={setSelectedDiscountCoupon}
         onApplyDelivery={setSelectedDeliveryCoupon}
-      />
-
-      <PaymentSheet
-        visible={showPaymentModal}
-        onClose={handlePaymentModalClose}
-        onConfirm={handlePaymentConfirm}
-        paymentMethods={paymentMethods}
-        selectedOption={selectedPaymentOption as 'COD' | 'PREPAID'}
-        error={paymentMethodsError}
-        loading={paymentMethodsLoading}
-        onRetry={refetchPaymentMethods}
-        total={(checkoutSummary?.payableAmount ?? 0) + tipContribution(tipAmount)}
       />
 
       <Modal
@@ -1740,9 +1731,13 @@ const CartScreen: React.FC = () => {
   const hasEssentials = useEssentialsLines().length > 0;
   const hasStoreCarts = useCartStore(s => Object.keys(s.carts).length > 0);
 
+  // Asked for by id, it still gives way to a store cart once it is empty (say, after its order
+  // was placed) — just as a store cart id that no longer exists falls back to another cart.
   const showEssentials =
     essentialsEnabled &&
-    (requested === ESSENTIALS_CART_ID || (!requested && !hasStoreCarts && hasEssentials));
+    (requested === ESSENTIALS_CART_ID
+      ? hasEssentials || !hasStoreCarts
+      : !requested && !hasStoreCarts && hasEssentials);
 
   return showEssentials ? <EssentialsCartView /> : <StoreCartScreen />;
 };

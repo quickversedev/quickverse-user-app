@@ -9,7 +9,6 @@ export { default as DeliveryInstructions } from './DeliveryInstructions';
 export type { DeliveryInstructionId } from './DeliveryInstructions';
 export { default as FreeDeliveryProgress } from './FreeDeliveryProgress';
 export { default as PaymentOptions } from './PaymentOptions';
-export { default as PaymentSheet } from './PaymentSheet';
 export { default as PaymentSummary } from './PaymentSummary';
 export { default as SuggestedItems } from './SuggestedItems';
 export { default as TipSelector, tipContribution, TIP_IS_CHARGEABLE } from './TipSelector';

@@ -1,7 +1,6 @@
-// components/common/PaymentOptions.tsx
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import React from 'react';
-import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { CATALOGUE_ACCENT, CATALOGUE_GUTTER } from '../../../constants/catalogue';
 import { useTheme } from '../../../theme/ThemeContext';
 import { ThemeText } from '../../common/theme/ThemeText';
 
@@ -9,139 +8,125 @@ export type PaymentOptionKey = 'COD' | 'PREPAID';
 
 interface PaymentOptionsProps {
   selectedOption?: PaymentOptionKey;
-  /** Called immediately when the user taps an option */
+  /** Called as soon as an option is tapped; the screen re-prices the bill for it. */
   onSelect: (selectedOption: PaymentOptionKey) => void;
+  /** False when this cart cannot be paid on delivery; only Prepaid is then offered. */
+  codAvailable?: boolean;
+  /** COD's extra charge, when known, shown beside the choice as well as in the bill. */
+  codCharges?: number;
 }
 
-const PaymentOptions: React.FC<PaymentOptionsProps> = ({ selectedOption, onSelect }) => {
-  const { getColor, getTypography, theme } = useTheme();
+/**
+ * Payment method, chosen on the cart itself so the bill below already includes what the method
+ * costs — a COD charge shows in the bill before the order is placed, not after.
+ *
+ * Styled as the rest of the QV Cart design: an uppercase section heading, then one raised card
+ * per option with a green radio.
+ */
+const PaymentOptions: React.FC<PaymentOptionsProps> = ({
+  selectedOption,
+  onSelect,
+  codAvailable = true,
+  codCharges,
+}) => {
+  const { getColor, theme } = useTheme();
 
-  const styles = StyleSheet.create({
-    paymentOptionsBox: {
-      backgroundColor: getColor('card'),
-      borderRadius: theme.borderRadius.md,
-      marginHorizontal: 16,
-      marginTop: 20,
-      marginBottom: 0,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderWidth: 1,
-      borderColor: getColor('border'),
-      ...Platform.select({
-        ios: {
-          shadowColor: theme.colors.shadow.color,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.12,
-          shadowRadius: 8,
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        section: { marginTop: 14, marginHorizontal: CATALOGUE_GUTTER },
+        heading: {
+          fontSize: 12,
+          lineHeight: 16,
+          fontWeight: '700',
+          letterSpacing: 0.8,
+          textTransform: 'uppercase',
+          color: getColor('subText'),
+          marginBottom: 8,
         },
-        android: { elevation: 4 },
+        list: { gap: 8 },
+        option: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          backgroundColor: getColor('white'),
+          borderRadius: 16,
+          padding: 14,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: getColor('border'),
+          shadowColor: theme.colors.shadow.color,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: theme.colors.shadow.opacity,
+          shadowRadius: 3,
+          elevation: 2,
+        },
+        optionSelected: { borderWidth: 1.5, borderColor: CATALOGUE_ACCENT },
+        radioOuter: {
+          width: 20,
+          height: 20,
+          borderRadius: 999,
+          borderWidth: 2,
+          borderColor: getColor('border'),
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        radioOuterSelected: { borderColor: CATALOGUE_ACCENT },
+        radioInner: { width: 10, height: 10, borderRadius: 999, backgroundColor: CATALOGUE_ACCENT },
+        optionText: { flex: 1, minWidth: 0 },
+        optionTitle: { fontSize: 14, lineHeight: 18, fontWeight: '700', color: getColor('text') },
+        optionSubtitle: {
+          fontSize: 11,
+          lineHeight: 15,
+          color: getColor('subText'),
+          marginTop: 1,
+        },
       }),
-    },
-    sectionHeaderRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 12,
-    },
-    iconBadge: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 10,
-    },
-    sectionHeader: {
-      color: getColor('text'),
-      fontWeight: 'bold',
-      fontSize: getTypography('body'),
-      fontFamily: theme.typography.fontFamily,
-    },
-    option: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      borderWidth: 1,
-      borderRadius: theme.borderRadius.sm,
-      paddingHorizontal: 12,
-      paddingVertical: 12,
-    },
-    optionSpacing: {
-      marginBottom: 10,
-    },
-    radioOuter: {
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      borderWidth: 2,
-      marginRight: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    radioInner: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-    },
-    texts: { flex: 1 },
-    optionTitle: {
-      color: getColor('text'),
-      fontWeight: 'bold',
-      fontSize: getTypography('body'),
-      fontFamily: theme.typography.fontFamily,
-    },
-    optionSubtitle: {
-      color: getColor('text'),
-      fontWeight: 'bold',
-      fontSize: getTypography('small'),
-      fontFamily: theme.typography.fontFamily,
-    },
-  });
+    [getColor, theme]
+  );
 
-  const renderOption = (
-    key: PaymentOptionKey,
-    title: string,
-    subtitle: string,
-    isLast: boolean
-  ) => {
-    const isSelected = selectedOption === key;
-    return (
-      <TouchableOpacity
-        onPress={() => onSelect(key)}
-        activeOpacity={0.7}
-        style={[
-          styles.option,
-          !isLast && styles.optionSpacing,
-          { borderColor: getColor(isSelected ? 'primary' : 'border') },
-        ]}
-      >
-        <View
-          style={[styles.radioOuter, { borderColor: getColor(isSelected ? 'primary' : 'border') }]}
-        >
-          <View
-            style={[
-              styles.radioInner,
-              { backgroundColor: getColor(isSelected ? 'primary' : 'background') },
-            ]}
-          />
-        </View>
-        <View style={styles.texts}>
-          <ThemeText style={styles.optionTitle}>{title}</ThemeText>
-          <ThemeText style={styles.optionSubtitle}>{subtitle}</ThemeText>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  const options: { key: PaymentOptionKey; title: string; subtitle: string }[] = [
+    { key: 'PREPAID', title: 'Prepaid', subtitle: 'Pay securely online' },
+    ...(codAvailable
+      ? [
+          {
+            key: 'COD' as PaymentOptionKey,
+            title: 'Cash on Delivery',
+            subtitle:
+              codCharges && codCharges > 0
+                ? `Pay when your order arrives · ₹${codCharges} extra`
+                : 'Pay when your order arrives',
+          },
+        ]
+      : []),
+  ];
 
   return (
-    <View style={styles.paymentOptionsBox}>
-      <View style={styles.sectionHeaderRow}>
-        <View style={[styles.iconBadge, { backgroundColor: `${getColor('primary')}15` }]}>
-          <MaterialCommunityIcons name="wallet-outline" size={18} color={getColor('primary')} />
-        </View>
-        <ThemeText style={styles.sectionHeader}>Payment Options</ThemeText>
+    <View style={styles.section}>
+      <ThemeText style={styles.heading}>Payment Method</ThemeText>
+      <View style={styles.list}>
+        {options.map(option => {
+          const isSelected = selectedOption === option.key;
+          return (
+            <TouchableOpacity
+              key={option.key}
+              style={[styles.option, isSelected && styles.optionSelected]}
+              onPress={() => onSelect(option.key)}
+              activeOpacity={0.85}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={option.title}
+            >
+              <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
+                {isSelected ? <View style={styles.radioInner} /> : null}
+              </View>
+              <View style={styles.optionText}>
+                <ThemeText style={styles.optionTitle}>{option.title}</ThemeText>
+                <ThemeText style={styles.optionSubtitle}>{option.subtitle}</ThemeText>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </View>
-
-      {renderOption('PREPAID', 'Prepaid', 'Pay securely using UPI', false)}
-      {renderOption('COD', 'Cash on Delivery', 'Pay using UPI only, on Delivery', true)}
     </View>
   );
 };
