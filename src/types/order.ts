@@ -62,6 +62,8 @@ export interface Order {
   additionalPaymentCharges?: number;
   deliveryFees?: number;
   totalInvoiceAmount?: number;
+  /** What the order was charged (our finance record), when the server has it. */
+  chargedAmount?: number;
   status:
     | 'payment_pending'
     | 'processing'

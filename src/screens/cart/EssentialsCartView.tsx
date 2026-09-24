@@ -568,6 +568,9 @@ const EssentialsCartView: React.FC = () => {
             selectedDeliveryCoupon={coupon && selectedIsDelivery ? coupon : null}
             onRemoveDiscountCoupon={() => setCoupon(null)}
             onRemoveDeliveryCoupon={() => setCoupon(null)}
+            // One coupon per order: applying another replaces it.
+            onApplyCoupon={setCoupon}
+            cartTotal={summary?.itemTotal ?? localItemTotal}
           />
         </AnimatedCard>
 
@@ -639,6 +642,7 @@ const EssentialsCartView: React.FC = () => {
           setShowAddressModal(false);
         }}
         selectedAddress={selectedAddress}
+        savedOnly
       />
 
       <CouponSheet

@@ -42,6 +42,13 @@ interface CouponSectionProps {
   onCouponNavigation: () => void;
   onRemoveDiscountCoupon: () => void;
   onRemoveDeliveryCoupon: () => void;
+  /**
+   * Applies an offer straight from its row. Without it the row opens the coupon sheet, as
+   * before; with it, "Apply" does what it says.
+   */
+  onApplyCoupon?: (coupon: AvailableCoupon) => void;
+  /** Item total a coupon's minimum order is tested against, as the coupon sheet does. */
+  cartTotal?: number;
 }
 
 const getBenefitLabel = (coupon: AvailableCoupon): string => {
@@ -67,6 +74,8 @@ const CouponSection: React.FC<CouponSectionProps> = ({
   onCouponNavigation,
   onRemoveDiscountCoupon,
   onRemoveDeliveryCoupon,
+  onApplyCoupon,
+  cartTotal,
 }) => {
   const { getColor, theme } = useTheme();
 
@@ -179,6 +188,8 @@ const CouponSection: React.FC<CouponSectionProps> = ({
           color: getColor('text'),
         },
         offerTerms: { fontSize: 11, lineHeight: 15, color: getColor('subText'), marginTop: 1 },
+        offerLocked: { fontSize: 11, lineHeight: 15, color: getColor('error'), marginTop: 1 },
+        actionDisabled: { color: getColor('subText') },
       }),
     [getColor, theme]
   );
@@ -251,27 +262,41 @@ const CouponSection: React.FC<CouponSectionProps> = ({
         </View>
       ) : null}
 
-      {unapplied.map(coupon => (
-        <TouchableOpacity
-          key={coupon.id}
-          style={styles.offerRow}
-          onPress={onCouponNavigation}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-          accessibilityLabel={`Apply coupon ${coupon.code}`}
-        >
-          <MaterialCommunityIcons name="tag-outline" size={18} color={getColor('primary')} />
-          <View style={styles.offerRowText}>
-            <ThemeText style={styles.offerCode} numberOfLines={1}>
-              {coupon.code}
-            </ThemeText>
-            <ThemeText style={styles.offerTerms} numberOfLines={1}>
-              {couponTerms(coupon)}
-            </ThemeText>
-          </View>
-          <ThemeText style={styles.action}>Apply</ThemeText>
-        </TouchableOpacity>
-      ))}
+      {unapplied.map(coupon => {
+        // Below its minimum order the offer cannot be applied yet: say how far off it is, as the
+        // coupon sheet does, instead of an Apply that does nothing.
+        const shortfall =
+          onApplyCoupon && cartTotal != null && coupon.mov > 0 ? coupon.mov - cartTotal : 0;
+        const locked = shortfall > 0;
+        return (
+          <TouchableOpacity
+            key={coupon.id}
+            style={styles.offerRow}
+            onPress={() => (onApplyCoupon ? onApplyCoupon(coupon) : onCouponNavigation())}
+            disabled={locked}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: locked }}
+            accessibilityLabel={`Apply coupon ${coupon.code}`}
+          >
+            <MaterialCommunityIcons name="tag-outline" size={18} color={getColor('primary')} />
+            <View style={styles.offerRowText}>
+              <ThemeText style={styles.offerCode} numberOfLines={1}>
+                {coupon.code}
+              </ThemeText>
+              <ThemeText style={styles.offerTerms} numberOfLines={1}>
+                {couponTerms(coupon)}
+              </ThemeText>
+              {locked ? (
+                <ThemeText style={styles.offerLocked} numberOfLines={1}>
+                  Add ₹{Math.ceil(shortfall)} more to unlock
+                </ThemeText>
+              ) : null}
+            </View>
+            <ThemeText style={[styles.action, locked && styles.actionDisabled]}>Apply</ThemeText>
+          </TouchableOpacity>
+        );
+      })}
 
       {!couponLoading && offerCount === 0 && applied.length === 0 ? (
         <View style={styles.offerRow}>

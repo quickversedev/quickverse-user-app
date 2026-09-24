@@ -54,6 +54,9 @@ const OrderList: React.FC<OrderListProps> = ({
   // Compute the final billed total for an order (matches OrderDetailsScreen formula)
   const computeOrderTotal = useCallback(
     (order: Order): number => {
+      // What was charged, when known; the estimate below is only for orders we hold no record of.
+      const charged = order.chargedAmount ?? order.finance?.payableAmount;
+      if (charged != null) return Number(charged);
       const subTotal = (order.items || []).reduce(
         (sum, it) => sum + Number(it.totalPrice ?? it.price ?? 0),
         0

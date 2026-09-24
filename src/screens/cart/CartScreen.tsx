@@ -182,6 +182,9 @@ const StoreCartScreen: React.FC = () => {
 
   const computePreviousOrderTotal = useCallback(
     (order: Order): number => {
+      // What was charged, when known; the estimate below is only for orders we hold no record of.
+      const charged = order.chargedAmount ?? order.finance?.payableAmount;
+      if (charged != null) return Number(charged);
       const subTotal = (order.items || []).reduce(
         (sum, it) => sum + Number(it.totalPrice ?? it.price ?? 0),
         0
@@ -1296,6 +1299,12 @@ const StoreCartScreen: React.FC = () => {
             selectedDeliveryCoupon={selectedDeliveryCoupon}
             onRemoveDiscountCoupon={() => setSelectedDiscountCoupon(null)}
             onRemoveDeliveryCoupon={() => setSelectedDeliveryCoupon(null)}
+            onApplyCoupon={coupon =>
+              coupon.type === 'FREE_DELIVERY'
+                ? setSelectedDeliveryCoupon(coupon)
+                : setSelectedDiscountCoupon(coupon)
+            }
+            cartTotal={couponCartTotal}
           />
         </AnimatedCard>
 
