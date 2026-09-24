@@ -1,10 +1,11 @@
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  BackHandler,
   Platform,
   ScrollView,
   StyleSheet,
@@ -239,12 +240,31 @@ const EssentialsCartView: React.FC = () => {
   const handleInc = useCallback((sku: string) => change(sku, 1), [change]);
   const handleDec = useCallback((sku: string) => change(sku, -1), [change]);
 
+  // Opened from a store cart's "Daily Essentials cart" card, Back returns to that store cart: both
+  // are the one Cart tab, so otherwise Back would leave the tab altogether.
+  const returnTo = useRoute<RouteProp<RootStackParamList, 'Cart'>>().params?.returnTo;
   const goBack = useCallback(() => {
+    if (returnTo) {
+      navigation.navigate('Cart', { cartId: returnTo });
+      return;
+    }
     const parent = navigation.getParent();
     if (parent?.canGoBack()) parent.goBack();
     else if (navigation.canGoBack()) navigation.goBack();
     else navigation.navigate('MainApp');
-  }, [navigation]);
+  }, [navigation, returnTo]);
+
+  // The hardware back button does the same.
+  useFocusEffect(
+    useCallback(() => {
+      if (!returnTo) return undefined;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        goBack();
+        return true;
+      });
+      return () => sub.remove();
+    }, [returnTo, goBack])
+  );
 
   const handleClearCart = useCallback(async () => {
     const result = await clear(jwt || undefined, phone || undefined);

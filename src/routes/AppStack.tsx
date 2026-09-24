@@ -33,7 +33,8 @@ import { Vendor } from '../types/vendor';
 
 export type TabParamList = {
   Home: undefined;
-  Cart: { cartId: string } | undefined;
+  /** `returnTo`: the store cart the Essentials cart was opened from, which Back returns to. */
+  Cart: { cartId: string; returnTo?: string } | undefined;
   Explore: undefined;
 };
 
@@ -52,7 +53,8 @@ export type RootStackParamList = {
   CollectionDetail: { collection: Collection };
   TagProducts: { tagCode: string; tagLabel: string; shopCategory?: string };
   ProductDetailDemo: undefined;
-  Cart: { cartId: string } | undefined;
+  /** `returnTo`: the store cart the Essentials cart was opened from, which Back returns to. */
+  Cart: { cartId: string; returnTo?: string } | undefined;
   /** One Daily Essentials order: success screen when `justPlaced`, details from history otherwise. */
   EssentialsOrder: { orderId: string; justPlaced?: boolean };
   Orders: undefined;

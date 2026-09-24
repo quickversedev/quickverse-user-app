@@ -1135,7 +1135,9 @@ const StoreCartScreen: React.FC = () => {
             <EssentialsCartCard
               itemCount={essentialsSummary.itemCount}
               itemTotal={essentialsSummary.itemTotal}
-              onPress={() => navigation.navigate('Cart', { cartId: ESSENTIALS_CART_ID })}
+              onPress={() =>
+                navigation.navigate('Cart', { cartId: ESSENTIALS_CART_ID, returnTo: cart?.cartId })
+              }
               style={{ marginHorizontal: 0, marginTop: 0 }}
             />
           ) : null}
@@ -1265,7 +1267,9 @@ const StoreCartScreen: React.FC = () => {
           <EssentialsCartCard
             itemCount={essentialsSummary.itemCount}
             itemTotal={essentialsSummary.itemTotal}
-            onPress={() => navigation.navigate('Cart', { cartId: ESSENTIALS_CART_ID })}
+            onPress={() =>
+              navigation.navigate('Cart', { cartId: ESSENTIALS_CART_ID, returnTo: cart?.cartId })
+            }
           />
         ) : null}
         <AnimatedCard delay={0}>
