@@ -15,7 +15,7 @@ type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
 
 interface CartItemListProps {
   /** `tag` is shown under a line's stepper, e.g. to mark it unavailable. */
-  items: Array<CartProduct & { tag?: string }>;
+  items: Array<CartProduct & { tag?: string; tagTone?: 'accent' | 'error' }>;
   onInc: (sku: string) => void;
   onDec: (sku: string) => void;
   vendor?: Vendor;
@@ -189,7 +189,7 @@ const CartItemList: React.FC<CartItemListProps> = ({
   );
 
   const renderCartItem = useCallback(
-    (item: CartProduct & { tag?: string }) => (
+    (item: CartProduct & { tag?: string; tagTone?: 'accent' | 'error' }) => (
       <CartItem
         key={item.sku}
         {...item}
@@ -222,7 +222,7 @@ const CartItemList: React.FC<CartItemListProps> = ({
 
   const renderSection = (section: {
     shopId: string;
-    items: Array<CartProduct & { tag?: string }>;
+    items: Array<CartProduct & { tag?: string; tagTone?: 'accent' | 'error' }>;
   }) => {
     // With one store the vendor is already resolved by the screen, along with the
     // distance it measured from the customer. Across stores only the shop id is known

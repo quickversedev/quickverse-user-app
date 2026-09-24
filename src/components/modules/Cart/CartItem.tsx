@@ -30,12 +30,14 @@ const CONTROL_W = 96;
 
 interface CartItemProps extends CartProduct {
   tag?: string;
+  /** `error` marks a line that cannot be ordered: red tag, dimmed row. */
+  tagTone?: 'accent' | 'error';
   onInc: () => void;
   onDec: () => void;
 }
 
 const CartItem: React.FC<CartItemProps> = React.memo(
-  ({ name, price, mrp, quantity, packSize, tag, onInc, onDec, image }) => {
+  ({ name, price, mrp, quantity, packSize, tag, tagTone = 'accent', onInc, onDec, image }) => {
     const { getColor, theme } = useTheme();
 
     const styles = useMemo(
@@ -131,6 +133,9 @@ const CartItem: React.FC<CartItemProps> = React.memo(
             borderRadius: 6,
             backgroundColor: `${CATALOGUE_ACCENT}14`,
           },
+          tagError: { backgroundColor: `${getColor('error')}14` },
+          tagTextError: { color: getColor('error') },
+          dimmed: { opacity: 0.45 },
           tagText: {
             fontSize: 10,
             lineHeight: 12,
@@ -158,7 +163,7 @@ const CartItem: React.FC<CartItemProps> = React.memo(
 
     return (
       <View style={styles.card}>
-        <View style={styles.thumbWrap}>
+        <View style={[styles.thumbWrap, tagTone === 'error' && styles.dimmed]}>
           <Image source={imageSource} style={styles.thumb} resizeMode="contain" />
         </View>
 
@@ -200,8 +205,10 @@ const CartItem: React.FC<CartItemProps> = React.memo(
             />
           )}
           {tag ? (
-            <View style={styles.tag}>
-              <ThemeText style={styles.tagText}>{tag}</ThemeText>
+            <View style={[styles.tag, tagTone === 'error' && styles.tagError]}>
+              <ThemeText style={[styles.tagText, tagTone === 'error' && styles.tagTextError]}>
+                {tag}
+              </ThemeText>
             </View>
           ) : null}
         </View>

@@ -90,7 +90,17 @@ const metaOf = (line: EssentialsDisplayLine) => ({
 const EssentialsCartView: React.FC = () => {
   const navigation = useNavigation<Nav>();
   const { getColor } = useTheme();
-  const { authData, selectedAddress, setSelectedAddress } = useAuth();
+  const { authData, selectedAddress: appAddress } = useAuth();
+  /**
+   * The address this order goes to, held by the cart as the store cart holds its own. Setting the
+   * app's selected address instead re-initialises the app for the new location, which unmounts the
+   * navigator and drops the customer back on Home mid-checkout.
+   */
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(appAddress ?? null);
+  // The app's address can arrive after this screen mounts (restored from storage); adopt it then.
+  useEffect(() => {
+    if (appAddress) setSelectedAddress(current => current ?? appAddress);
+  }, [appAddress]);
   const regionId = useConfigStore(s => s.getRegionId());
   const pricingConfigs = usePricingStore(s => s.configs);
 
@@ -207,6 +217,7 @@ const EssentialsCartView: React.FC = () => {
         quantity: line.quantity,
         veg: true,
         tag: !line.available ? 'Unavailable' : line.priceChanged ? 'New price' : undefined,
+        tagTone: (!line.available ? 'error' : 'accent') as 'accent' | 'error',
       })),
     [lines]
   );
@@ -497,7 +508,8 @@ const EssentialsCartView: React.FC = () => {
       <CartHeader
         onBack={goBack}
         onClearCart={handleClearCart}
-        itemCount={lines.reduce((sum, l) => sum + l.quantity, 0)}
+        // Units that can be ordered, as the bill and the tab badge count them.
+        itemCount={lines.filter(l => l.available).reduce((sum, l) => sum + l.quantity, 0)}
       />
 
       <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: footerHeight + 24 }}>
