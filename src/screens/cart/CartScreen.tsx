@@ -1730,6 +1730,16 @@ const CartScreen: React.FC = () => {
   const essentialsEnabled = useEssentialsCartStore(s => s.enabled === true);
   const hasEssentials = useEssentialsLines().length > 0;
   const hasStoreCarts = useCartStore(s => Object.keys(s.carts).length > 0);
+  const { authData } = useAuth();
+  const fetchEssentialsCart = useEssentialsCartStore(s => s.fetchCart);
+
+  // The Essentials cart lives on the server; without this the tab shows only what this device
+  // last saw, and a cart filled elsewhere (or restored at login) stays invisible here.
+  useFocusEffect(
+    useCallback(() => {
+      fetchEssentialsCart(authData?.jwt || undefined, authData?.phone || undefined);
+    }, [fetchEssentialsCart, authData?.jwt, authData?.phone])
+  );
 
   // Asked for by id, it still gives way to a store cart once it is empty (say, after its order
   // was placed) — just as a store cart id that no longer exists falls back to another cart.

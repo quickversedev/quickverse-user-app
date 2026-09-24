@@ -115,6 +115,8 @@ const EssentialsCartView: React.FC = () => {
   const [coupons, setCoupons] = useState<SheetCoupon[]>([]);
   const [couponsLoading, setCouponsLoading] = useState(false);
   const [summary, setSummary] = useState<EssentialsCheckoutSummary | null>(null);
+  /** The coupon the bill on screen was priced with; a refused coupon comes back with no id. */
+  const [pricedCouponId, setPricedCouponId] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [resolving, setResolving] = useState(false);
@@ -154,6 +156,7 @@ const EssentialsCartView: React.FC = () => {
         );
         if (seq !== requestSeq.current) return next;
         setSummary(next);
+        setPricedCouponId(coupon?.id ?? null);
         return next;
       } catch (e) {
         if (seq === requestSeq.current) {
@@ -175,11 +178,11 @@ const EssentialsCartView: React.FC = () => {
   // A coupon the server will not take is dropped, with its reason, as the store cart does.
   useEffect(() => {
     // Only for the coupon this bill was priced with; a newer pick is still being priced.
-    if (summary?.couponError && coupon && summary.couponId === coupon.id) {
+    if (summary?.couponError && coupon && pricedCouponId === coupon.id) {
       showMessage(summary.couponErrorMessage || 'This coupon cannot be applied');
       setCoupon(null);
     }
-  }, [summary, coupon]);
+  }, [summary, coupon, pricedCouponId]);
 
   useEffect(() => {
     if (!regionId) return;
@@ -337,6 +340,7 @@ const EssentialsCartView: React.FC = () => {
         if (result.summary) {
           requestSeq.current += 1;
           setSummary(result.summary);
+          setPricedCouponId(coupon?.id ?? null);
           if (result.summary.issues.length > 0) setShowIssues(true);
         }
         showMessage(result.message);
@@ -511,7 +515,14 @@ const EssentialsCartView: React.FC = () => {
             onDec={handleDec}
             navigation={navigation}
             storeless
-            onAddMore={() => navigation.navigate('Category', { categoryName: 'Grocery' })}
+            onAddMore={() =>
+              // Category lives in the Home tab's stack; from the Cart tab it is only reachable
+              // through that tab, and navigating to it by name alone is not handled.
+              navigation.navigate('MainApp', {
+                screen: 'Home',
+                params: { screen: 'Category', params: { categoryName: 'Grocery' } },
+              } as never)
+            }
           />
         </AnimatedCard>
 

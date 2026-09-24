@@ -38,6 +38,12 @@ const FloatingCartsStack: React.FC = () => {
   );
 
   const essentialsEnabled = useEssentialsCartStore(state => state.enabled === true);
+  const fetchEssentialsCart = useEssentialsCartStore(state => state.fetchCart);
+  // Load the server's Essentials cart when the stack first shows and whenever the login changes,
+  // so its bar appears without first visiting Daily Essentials.
+  useEffect(() => {
+    fetchEssentialsCart(authData?.jwt || undefined, authData?.phone || undefined);
+  }, [fetchEssentialsCart, authData?.jwt, authData?.phone]);
   const essentialsItemCount = useEssentialsSummary().itemCount;
   const hasEssentialsCart = essentialsEnabled && essentialsItemCount > 0;
 

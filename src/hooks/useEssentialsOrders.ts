@@ -69,7 +69,11 @@ export const foldOrders = (
   const plain: HistoryEntry[] = orders
     .filter(o => !kiranaOrderIds.has(o.orderId))
     .map(o => ({ kind: 'order', key: o.orderId, time: timeOf(o.orderDate), order: o }));
-  const oldestLoaded = plain.length > 0 ? Math.min(...plain.map(e => e.time)) : 0;
+  // The window the loaded page covers, kiranas' own orders included: they are hidden, but they
+  // are still loaded history. Measuring over `plain` alone held back every Essentials order older
+  // than the newest ordinary order — with one store order on the first page, all of them.
+  const loadedTimes = orders.map(o => timeOf(o.orderDate)).filter(t => t > 0);
+  const oldestLoaded = loadedTimes.length > 0 ? Math.min(...loadedTimes) : 0;
   const grouped: HistoryEntry[] = essentialsOrders
     .filter(o => !hasMore || timeOf(o.createdAt) >= oldestLoaded)
     .map(o => ({ kind: 'essentials', key: o.orderId, time: timeOf(o.createdAt), order: o }));
