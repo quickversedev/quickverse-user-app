@@ -43,6 +43,11 @@ const FloatingCartsStack: React.FC = () => {
   // so its bar appears without first visiting Daily Essentials.
   useEffect(() => {
     fetchEssentialsCart(authData?.jwt || undefined, authData?.phone || undefined);
+    // Store carts too: one emptied elsewhere (ordered on another device, cleared at the shop) is
+    // otherwise shown from this device's saved copy until its cart screen is opened.
+    if (authData?.jwt && authData?.phone) {
+      useCartStore.getState().refreshAllCarts(authData.jwt, authData.phone);
+    }
   }, [fetchEssentialsCart, authData?.jwt, authData?.phone]);
   const essentialsItemCount = useEssentialsSummary().itemCount;
   const hasEssentialsCart = essentialsEnabled && essentialsItemCount > 0;

@@ -683,6 +683,11 @@ const EssentialsCartView: React.FC = () => {
         resolving={resolving}
         onResolve={handleResolve}
         onBack={() => setShowIssues(false)}
+        onChangeAddress={() => {
+          setShowIssues(false);
+          setShowAddressModal(true);
+        }}
+        wouldEmptyCart={(summary?.itemCount ?? 0) === 0}
       />
 
       <LoginPromptModal

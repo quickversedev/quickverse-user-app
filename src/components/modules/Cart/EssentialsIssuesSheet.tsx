@@ -24,6 +24,13 @@ interface EssentialsIssuesSheetProps {
   onResolve: () => void;
   /** Leave the order as it is and go back to the cart. */
   onBack: () => void;
+  /**
+   * Choose another delivery address. Offered when items cannot be delivered to the chosen one —
+   * the fix there is usually the address, not removing the items.
+   */
+  onChangeAddress?: () => void;
+  /** Removing what is flagged would leave nothing to order: "Update cart" is then not offered. */
+  wouldEmptyCart?: boolean;
 }
 
 const ICON: Record<string, React.ComponentProps<typeof MaterialCommunityIcons>['name']> = {
@@ -61,11 +68,15 @@ const EssentialsIssuesSheet: React.FC<EssentialsIssuesSheetProps> = ({
   resolving,
   onResolve,
   onBack,
+  onChangeAddress,
+  wouldEmptyCart = false,
 }) => {
   const { getColor } = useTheme();
   const insets = useSafeAreaInsets();
   const onlyStoreLimit = issues.length > 0 && issues.every(i => i.type === 'STORE_LIMIT');
   const emptyCart = issues.some(i => i.type === 'EMPTY_CART');
+  const outOfRadius = issues.some(i => i.type === 'OUT_OF_RADIUS');
+  const canUpdate = !emptyCart && !onlyStoreLimit && !wouldEmptyCart;
 
   const styles = useMemo(
     () =>
@@ -133,8 +144,12 @@ const EssentialsIssuesSheet: React.FC<EssentialsIssuesSheetProps> = ({
             <ThemeText style={styles.title}>
               {emptyCart ? 'Nothing to order yet' : 'Some items need your attention'}
             </ThemeText>
-            {!emptyCart && !onlyStoreLimit ? (
+            {canUpdate ? (
               <ThemeText style={styles.subtitle}>{consequence(issues)}</ThemeText>
+            ) : outOfRadius && onChangeAddress ? (
+              <ThemeText style={styles.subtitle}>
+                Choose an address these items can be delivered to.
+              </ThemeText>
             ) : null}
           </View>
           <ScrollView contentContainerStyle={styles.list}>
@@ -150,7 +165,18 @@ const EssentialsIssuesSheet: React.FC<EssentialsIssuesSheetProps> = ({
             ))}
           </ScrollView>
           <View style={styles.actions}>
-            {!emptyCart && !onlyStoreLimit ? (
+            {outOfRadius && onChangeAddress ? (
+              <TouchableOpacity
+                style={canUpdate ? styles.secondary : styles.primary}
+                onPress={onChangeAddress}
+                accessibilityRole="button"
+              >
+                <ThemeText style={canUpdate ? styles.secondaryText : styles.primaryText}>
+                  Change address
+                </ThemeText>
+              </TouchableOpacity>
+            ) : null}
+            {canUpdate ? (
               <TouchableOpacity
                 style={styles.primary}
                 onPress={onResolve}
