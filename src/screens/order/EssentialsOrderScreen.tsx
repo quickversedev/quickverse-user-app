@@ -127,7 +127,10 @@ const EssentialsOrderScreen: React.FC = () => {
     Alert.alert(
       'Cancel this order?',
       order.paymentStatus === 'PAID'
-        ? `Your order will be cancelled and ${rupees(order.payableAmount)} refunded to your payment method.`
+        ? // What is still held: part may already have gone back (an item a store couldn't supply).
+          `Your order will be cancelled and ${rupees(
+            Math.max(0, order.payableAmount - order.refundedAmount)
+          )} refunded to your payment method.`
         : 'Your order will be cancelled.',
       [
         { text: 'Keep order', style: 'cancel' },
