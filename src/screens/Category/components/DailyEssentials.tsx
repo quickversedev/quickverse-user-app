@@ -72,7 +72,9 @@ const metaFor = (product: GroceryGroupProduct): EssentialsProductMeta => ({
 
 const DailyEssentials: React.FC = () => {
   const { getColor, theme } = useTheme();
-  const { authData } = useAuth();
+  const { authData, selectedAddress } = useAuth();
+  const nearLat = selectedAddress?.coordinates?.latitude;
+  const nearLng = selectedAddress?.coordinates?.longitude;
   const groups = useGroceryGroupsStore(s => s.groups);
   const loading = useGroceryGroupsStore(s => s.loading);
   const fetchGroups = useGroceryGroupsStore(s => s.fetchGroups);
@@ -94,9 +96,14 @@ const DailyEssentials: React.FC = () => {
   const fetchEssentialsCart = useEssentialsCartStore(s => s.fetchCart);
   const setEssentialsQuantity = useEssentialsCartStore(s => s.setQuantity);
 
+  // Groups near the address being delivered to; a new town refetches.
   useEffect(() => {
-    fetchGroups();
-  }, [fetchGroups]);
+    fetchGroups(
+      Number.isFinite(nearLat) && Number.isFinite(nearLng)
+        ? { latitude: nearLat as number, longitude: nearLng as number }
+        : undefined
+    );
+  }, [fetchGroups, nearLat, nearLng]);
 
   useEffect(() => {
     fetchEssentialsCart(authData?.jwt, authData?.phone);

@@ -10,23 +10,30 @@ import { CACHE_TTL, createPersistedConfig, isCacheFresh } from '../../utils/cach
  * Persisted so the section renders from MMKV on launch instead of flashing a skeleton,
  * and expired on a TTL so a group edited in the dashboard appears without a force-quit.
  *
- * Unlike the tag store this needs no scope key: the endpoint takes no parameters and
- * returns the same groups for everyone, so one slot answers for every caller.
+ * Scoped to where the customer is: the server returns only products from kiranas within
+ * delivery range of that point, so a move to another town refetches instead of using the cache.
  */
 
 interface GroceryGroupsState {
   groups: GroceryGroup[];
   fetchedAt: number;
+  /** The point the cached groups were fetched for, rounded ("lat,lng"); '' when none. */
+  fetchedFor: string;
   loading: boolean;
-  fetchGroups: () => Promise<void>;
+  fetchGroups: (near?: { latitude: number; longitude: number }) => Promise<void>;
   invalidateCache: () => void;
 }
 
 const initialState = {
   groups: [] as GroceryGroup[],
   fetchedAt: 0,
+  fetchedFor: '',
   loading: false,
 };
+
+/** ~1 km of precision: close enough that a short move does not refetch, a new town does. */
+const placeKey = (near?: { latitude: number; longitude: number }) =>
+  near ? `${near.latitude.toFixed(2)},${near.longitude.toFixed(2)}` : '';
 
 const useGroceryGroupsStore = create<GroceryGroupsState>()(
   persist(
@@ -36,17 +43,22 @@ const useGroceryGroupsStore = create<GroceryGroupsState>()(
       /** Force the next fetch to hit the network — for pull-to-refresh. */
       invalidateCache: () => set({ fetchedAt: 0 }),
 
-      fetchGroups: async () => {
-        const { groups, fetchedAt } = get();
+      fetchGroups: async near => {
+        const { groups, fetchedAt, fetchedFor } = get();
+        const key = placeKey(near);
 
-        if (isCacheFresh(fetchedAt, CACHE_TTL.GROCERY_GROUPS) && groups.length > 0) {
+        if (
+          key === fetchedFor &&
+          isCacheFresh(fetchedAt, CACHE_TTL.GROCERY_GROUPS) &&
+          groups.length > 0
+        ) {
           return;
         }
 
         try {
           set({ loading: true });
-          const fetched = await groceryGroupsService.fetchProductGroups();
-          set({ groups: fetched, fetchedAt: Date.now(), loading: false });
+          const fetched = await groceryGroupsService.fetchProductGroups(near);
+          set({ groups: fetched, fetchedAt: Date.now(), fetchedFor: key, loading: false });
         } catch (error) {
           // A failed refresh must not empty a section already on screen, so the
           // previous groups stay and the timestamp is not advanced — the next attempt
@@ -59,6 +71,7 @@ const useGroceryGroupsStore = create<GroceryGroupsState>()(
     createPersistedConfig<GroceryGroupsState>('grocery-groups-store', state => ({
       groups: state.groups,
       fetchedAt: state.fetchedAt,
+      fetchedFor: state.fetchedFor,
     }))
   )
 );
