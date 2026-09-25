@@ -436,9 +436,28 @@ const EssentialsCartView: React.FC = () => {
           showMessage('Payment received. Confirming your order…');
         }
       }
+      // The kiranas' parts are placed in the background, in seconds. Wait for that before saying
+      // the order is placed: if no kirana could take it, the customer must hear so, not "success".
+      setPlacing(true);
+      let settled = order;
+      for (let i = 0; i < 15 && settled.status === 'PLACING'; i += 1) {
+        await new Promise<void>(resolve => setTimeout(resolve, 2000));
+        settled = await essentialsOrderService
+          .getOrder(order.orderId, jwt, phone)
+          .catch(() => settled);
+      }
       setPlacing(false);
       // The server has emptied the cart (for prepaid, once the payment was confirmed).
       fetchCart(jwt, phone);
+      if (settled.status === 'FAILED') {
+        navigation.navigate('OrderFailure', {
+          errorMessage:
+            settled.paymentStatus === 'PAID'
+              ? "We couldn't place your order. Your payment will be refunded in full."
+              : "We couldn't place your order. You haven't been charged.",
+        });
+        return;
+      }
       // The same success screen as any order; its "Track" opens the same order details.
       navigation.navigate('OrderSuccess', {
         orderId: essentialsOrderRef(order),
