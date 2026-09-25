@@ -42,6 +42,8 @@ import { useTheme } from '../../theme/ThemeContext';
  */
 
 const HERO_RING = 64;
+/** Rows listed on the success card before the rest are counted as "+ N more items". */
+const MAX_LISTED_ITEMS = 4;
 
 /**
  * Params come from RootStackParamList rather than being restated here. They were
@@ -108,26 +110,9 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
     () => items.reduce((sum, item) => sum + (item.quantity || 1), 0),
     [items]
   );
-  const firstItem = items[0];
-  /**
-   * What the listed items cost. The strip names the items, so it prices the items; the header
-   * above already states the order total (fees included). Showing the total here made a ₹1 item
-   * read as ₹32.
-   */
-  const itemsSubtotal = useMemo(
-    () =>
-      items.reduce(
-        (sum, item) =>
-          sum + Number(item.totalPrice ?? Number(item.price ?? 0) * (item.quantity || 1)),
-        0
-      ),
-    [items]
-  );
-  const restNames = items
-    .slice(1)
-    .map(item => item.name)
-    .filter(Boolean)
-    .join(', ');
+  /** Each item gets its own row; a long order shows the first few and counts the rest. */
+  const shownItems = items.slice(0, MAX_LISTED_ITEMS);
+  const hiddenCount = items.length - shownItems.length;
   /**
    * `finance.payableAmount` is what the customer is actually charged. The order's
    * own `totalInvoiceAmount` sounds like the bill but the store fills it from
@@ -322,13 +307,19 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
           letterSpacing: 0.4,
           color: getColor('subText'),
         },
-        itemStrip: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
+        itemList: {
+          gap: 8,
           padding: 8,
           borderRadius: 12,
           backgroundColor: getColor('overlay'),
+        },
+        itemRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+        moreItems: {
+          fontSize: 12,
+          lineHeight: 16,
+          fontWeight: '600',
+          color: getColor('subText'),
+          paddingLeft: 50,
         },
         thumb: {
           width: 40,
@@ -344,7 +335,7 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
           color: getColor('text'),
         },
         itemRest: { fontSize: 11, lineHeight: 15, color: getColor('subText') },
-        itemTotal: { fontSize: 15, lineHeight: 18, fontWeight: '800', color: getColor('text') },
+        itemTotal: { fontSize: 14, lineHeight: 18, fontWeight: '800', color: getColor('text') },
         trackBtn: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -447,28 +438,36 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
               </View>
             </View>
 
-            <View style={styles.itemStrip}>
-              {firstItem?.image ? (
-                <Image
-                  source={{ uri: firstItem.image }}
-                  style={styles.thumb}
-                  resizeMode="contain"
-                />
-              ) : null}
-              <View style={styles.itemText}>
-                <ThemeText style={styles.itemTitle} numberOfLines={1}>
-                  {firstItem?.name}
-                  {items.length > 1 ? ` + ${items.length - 1} more` : ''}
+            <View style={styles.itemList}>
+              {shownItems.map((item, index) => {
+                const quantity = item.quantity || 1;
+                const lineTotal = Number(item.totalPrice ?? Number(item.price ?? 0) * quantity);
+                return (
+                  <View key={`${item.id ?? item.name}-${index}`} style={styles.itemRow}>
+                    {item.image ? (
+                      <Image
+                        source={{ uri: item.image }}
+                        style={styles.thumb}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <View style={styles.thumb} />
+                    )}
+                    <View style={styles.itemText}>
+                      <ThemeText style={styles.itemTitle} numberOfLines={2}>
+                        {item.name}
+                      </ThemeText>
+                      <ThemeText style={styles.itemRest}>Qty {quantity}</ThemeText>
+                    </View>
+                    <ThemeText style={styles.itemTotal}>₹{lineTotal.toFixed(2)}</ThemeText>
+                  </View>
+                );
+              })}
+              {hiddenCount > 0 ? (
+                <ThemeText style={styles.moreItems}>
+                  + {hiddenCount} more {hiddenCount === 1 ? 'item' : 'items'}
                 </ThemeText>
-                {restNames ? (
-                  <ThemeText style={styles.itemRest} numberOfLines={1}>
-                    {restNames}
-                  </ThemeText>
-                ) : null}
-              </View>
-              <ThemeText style={styles.itemTotal}>
-                ₹{Number(items.length > 0 ? itemsSubtotal : total).toFixed(2)}
-              </ThemeText>
+              ) : null}
             </View>
 
             <TouchableOpacity
