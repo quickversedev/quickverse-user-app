@@ -105,7 +105,11 @@ const TopStoresNearYou = () => {
       .filter(v => v.category === 'Grocery')
       .sort(byDistance)
       .slice(0, 2);
-    return [...food, ...grocery];
+    // Two of each where a place has both; otherwise the nearest others fill the row, so a town
+    // with only restaurants (or only kiranas) shows four cards, not two at the edges.
+    const picked = [...food, ...grocery];
+    const rest = active.filter(v => !picked.includes(v)).sort(byDistance);
+    return [...picked, ...rest].slice(0, 4);
   }, [vendors, selectedAddress?.coordinates?.latitude, selectedAddress?.coordinates?.longitude]);
 
   const handlePress = (vendor: Vendor) => {
@@ -121,7 +125,7 @@ const TopStoresNearYou = () => {
           Featured Vendors
         </ThemeText>
       </View>
-      <View style={styles.listContent}>
+      <View style={[styles.listContent, topVendors.length < 4 && styles.listContentFew]}>
         {topVendors.map(vendor => (
           <StoreItem key={vendor.shopId} vendor={vendor} onPress={handlePress} />
         ))}
@@ -149,6 +153,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
+  },
+  // Fewer than four: packed from the left with the same spacing, not spread to the edges.
+  listContentFew: {
+    justifyContent: 'flex-start',
+    gap: 16 / 3,
   },
   card: {
     width: CARD_WIDTH,
