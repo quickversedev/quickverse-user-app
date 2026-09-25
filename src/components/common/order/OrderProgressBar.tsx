@@ -207,7 +207,10 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
 
     const handlePress = () => {
       if (order?.essentialsOrderId) {
-        navigation.navigate('EssentialsOrder', { orderId: order.essentialsOrderId });
+        navigation.navigate('OrderDetails', {
+          orderId: order.orderId,
+          essentialsOrderId: order.essentialsOrderId,
+        });
         return;
       }
       if (order?.orderId) {

@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { CATALOGUE_ACCENT, CATALOGUE_GUTTER } from '../../constants/catalogue';
+import { useEssentialsOrderDetails } from '../../hooks/useEssentialsOrderDetails';
 import { useOrders } from '../../hooks/useOrders';
 import useVendorStore from '../../store/vendorStore';
 import { RootStackParamList } from '../../routes/AppStack';
@@ -54,16 +55,19 @@ interface OrderSuccessScreenProps {
 const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
   const { getColor, theme } = useTheme();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'OrderSuccess'>>();
-  const { orderId, amount, shopId, shopCount } = route.params;
-  const { loadOrderById, selectedOrder } = useOrders();
+  const { orderId, amount, shopId, shopCount, essentialsOrderId } = route.params;
+  const { loadOrderById, selectedOrder: storeOrder } = useOrders();
+  // A Daily Essentials order is shown here like any order, loaded as itself.
+  const { order: essentialsOrder } = useEssentialsOrderDetails(essentialsOrderId);
+  const selectedOrder = essentialsOrderId ? essentialsOrder : storeOrder;
   const vendors = useVendorStore(state => state.vendors);
 
   useEffect(() => {
-    if (!orderId) return;
+    if (!orderId || essentialsOrderId) return;
     loadOrderById(orderId, shopId).catch(err =>
       console.error('Failed to fetch order details:', err)
     );
-  }, [orderId, shopId, loadOrderById]);
+  }, [orderId, shopId, loadOrderById, essentialsOrderId]);
 
   /* ---- entrance animation ------------------------------------------------ */
 
@@ -159,6 +163,8 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
     // naming only the first would misrepresent what was bought. The screen still loads
     // that first sub-order for the tracking link — there is no combined tracking view
     // yet — so the count is the honest thing to show here.
+    // Never a kiranas' name for a Daily Essentials order: to the customer it is one order.
+    if (essentialsOrderId) return 'Daily Essentials';
     if (shopCount && shopCount > 1) {
       return `${shopCount} stores`;
     }
@@ -166,7 +172,7 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
     if (fromOrder) return fromOrder;
     const id = shopId || selectedOrder?.shopId;
     return id ? vendors.find(v => v.shopId === id)?.name : undefined;
-  }, [selectedOrder, shopId, shopCount, vendors]);
+  }, [selectedOrder, shopId, shopCount, vendors, essentialsOrderId]);
 
   const handleTrackOrder = useCallback(() => {
     // Reset rather than push, so back from OrderDetails lands on the app and never
@@ -174,10 +180,13 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
     navigation.dispatch(
       CommonActions.reset({
         index: 1,
-        routes: [{ name: 'MainApp' }, { name: 'OrderDetails', params: { orderId, shopId } }],
+        routes: [
+          { name: 'MainApp' },
+          { name: 'OrderDetails', params: { orderId, shopId, essentialsOrderId } },
+        ],
       })
     );
-  }, [navigation, orderId, shopId]);
+  }, [navigation, orderId, shopId, essentialsOrderId]);
 
   const handleBackToHome = useCallback(() => navigation.navigate('MainApp'), [navigation]);
   const handleSupport = useCallback(() => navigation.navigate('HelpDesk'), [navigation]);

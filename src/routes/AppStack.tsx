@@ -11,7 +11,6 @@ import { Collection } from '../data/collectionsData';
 import ProfileStack from '../navigation/profileNavigation';
 import TabNavigation from '../navigation/TabNavigation';
 import CouponsScreen from '../screens/cart/CouponsScreen';
-import EssentialsOrderScreen from '../screens/order/EssentialsOrderScreen';
 import CollectionDetailScreen from '../screens/collections/CollectionDetailScreen';
 import TagProductsScreen from '../screens/TagProducts/TagProductsScreen';
 import OrderFailureScreen from '../screens/order/OrderFailureScreen';
@@ -55,10 +54,12 @@ export type RootStackParamList = {
   ProductDetailDemo: undefined;
   /** `returnTo`: the store cart the Essentials cart was opened from, which Back returns to. */
   Cart: { cartId: string; returnTo?: string } | undefined;
-  /** One Daily Essentials order: success screen when `justPlaced`, details from history otherwise. */
-  EssentialsOrder: { orderId: string; justPlaced?: boolean };
   Orders: undefined;
-  OrderDetails: { orderId: string; order?: Order };
+  /**
+   * `essentialsOrderId` shows a Daily Essentials order on the same screen as every other order;
+   * `orderId` is then its short reference.
+   */
+  OrderDetails: { orderId: string; order?: Order; essentialsOrderId?: string };
   OrderSuccess: {
     orderId: string;
     amount: number;
@@ -71,6 +72,8 @@ export type RootStackParamList = {
      */
     orderGroupMasterId?: string;
     shopCount?: number;
+    /** A Daily Essentials order, shown on the same success screen as every other order. */
+    essentialsOrderId?: string;
   };
   OrderFailure: { errorMessage?: string };
   Coupons: {
@@ -228,11 +231,6 @@ export const AppStack = () => {
         }}
       />
       <Stack.Screen name="Coupons" component={CouponsScreen} options={slideFromBottomOptions} />
-      <Stack.Screen
-        name="EssentialsOrder"
-        component={EssentialsOrderScreen}
-        options={slideFromRightOptions}
-      />
 
       <Stack.Screen name="Search" component={SearchScreen} options={slideFromRightOptions} />
       <Stack.Screen name="Address" component={AddressScreen} options={slideFromRightOptions} />

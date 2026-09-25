@@ -6,7 +6,7 @@ import essentialsOrderService, {
   EssentialsOrder,
   neverPaid,
 } from '../services/essentialsOrderService';
-import { Order } from '../types/order';
+import { Order, OrderFinance } from '../types/order';
 
 /**
  * The customer's Daily Essentials orders, for folding into order history.
@@ -162,6 +162,7 @@ export const essentialsAsOrder = (order: EssentialsOrder): Order => {
       image: item.imageUrl ?? undefined,
     }))
   );
+  const address = order.deliveryAddress;
   return {
     orderId: essentialsOrderRef(order),
     customerId: '',
@@ -171,13 +172,56 @@ export const essentialsAsOrder = (order: EssentialsOrder): Order => {
     totalAmount: essentialsOrderTotal(order),
     status: STATUS[displayStatusOf(order)] ?? 'processing',
     orderDate: new Date(Number(order.createdAt)).toISOString(),
-    deliveryAddress: { address: '', city: '', state: '', postalCode: '' },
+    deliveryAddress: {
+      address: [address?.name, address?.addressLine1].filter(Boolean).join(', '),
+      addressLine2: address?.addressLine2 ?? undefined,
+      addressLine3: address?.addressLine3 ?? undefined,
+      city: address?.city ?? '',
+      state: address?.state ?? '',
+      postalCode: address?.postalCode ?? '',
+    },
     paymentMethod: order.paymentMethod === 'COD' ? 'cash' : 'upi',
     paymentStatus: order.paymentStatus === 'PAID' ? 'paid' : 'pending',
-    customerName: '',
-    customerPhone: '',
-    finance: null,
+    customerName: address?.name ?? '',
+    customerPhone: address?.phone ?? '',
+    finance: financeOf(order),
     complaint: null,
     review: null,
+  };
+};
+
+/** The order's bill in the shape the order-details bill card reads. */
+const financeOf = (order: EssentialsOrder): OrderFinance | null => {
+  const bill = order.bill;
+  if (!bill) return null;
+  return {
+    id: order.orderId,
+    itemTotalAmount: bill.itemTotal,
+    couponId: null,
+    couponCode: order.couponCode,
+    couponDiscount: bill.couponDiscount,
+    deliveryCouponId: null,
+    deliveryCouponCode: null,
+    isFreeDelivery: false,
+    amountAfterCoupon: Math.max(0, bill.itemTotal - bill.couponDiscount),
+    packagingCharges: bill.packagingCharges,
+    actualDeliveryFee: bill.deliveryFee,
+    deliveryFee: bill.deliveryFee,
+    platformFee: bill.platformFee,
+    razorpayCharges: 0,
+    serviceGstRate: bill.gstRate ?? 18,
+    commissionGst: 0,
+    deliveryGst: bill.deliveryGst,
+    packagingGst: bill.packagingGst,
+    platformGst: bill.platformGst,
+    codGst: bill.codGst,
+    totalGst: bill.totalGst,
+    taxableAmount: bill.taxableAmount,
+    payableAmount: bill.total,
+    commissionRate: 0,
+    commission: 0,
+    codCharges: bill.codCharges,
+    createdAt: order.createdAt,
+    updatedAt: null,
   };
 };

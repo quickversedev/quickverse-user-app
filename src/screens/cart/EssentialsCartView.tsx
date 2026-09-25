@@ -48,6 +48,7 @@ import useEssentialsCartStore, {
   EssentialsDisplayLine,
   useEssentialsLines,
 } from '../../store/cart/essentialsCartStore';
+import { essentialsOrderRef } from '../../hooks/useEssentialsOrders';
 import useConfigStore from '../../store/configStore';
 import usePricingStore from '../../store/pricingStore';
 import { useTheme } from '../../theme/ThemeContext';
@@ -438,7 +439,13 @@ const EssentialsCartView: React.FC = () => {
       setPlacing(false);
       // The server has emptied the cart (for prepaid, once the payment was confirmed).
       fetchCart(jwt, phone);
-      navigation.navigate('EssentialsOrder', { orderId: order.orderId, justPlaced: true });
+      // The same success screen as any order; its "Track" opens the same order details.
+      navigation.navigate('OrderSuccess', {
+        orderId: essentialsOrderRef(order),
+        amount: order.payableAmount,
+        date: new Date().toLocaleDateString(),
+        essentialsOrderId: order.orderId,
+      });
     },
     [addressId, coupon?.id, jwt, phone, authData?.username, fetchCart, navigation]
   );

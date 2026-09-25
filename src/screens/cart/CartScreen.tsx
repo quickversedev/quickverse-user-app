@@ -39,6 +39,7 @@ import {
 import { useAuth } from '../../contexts/login/AuthProvider';
 import {
   essentialsAsOrder,
+  essentialsOrderRef,
   essentialsOrderTotal,
   foldOrders,
   useEssentialsOrders,
@@ -1194,7 +1195,10 @@ const StoreCartScreen: React.FC = () => {
                     getColor={getColor}
                     total={essentialsOrderTotal(entry.order)}
                     onPress={() =>
-                      navigation.navigate('EssentialsOrder', { orderId: entry.order.orderId })
+                      navigation.navigate('OrderDetails', {
+                        orderId: essentialsOrderRef(entry.order),
+                        essentialsOrderId: entry.order.orderId,
+                      })
                     }
                   />
                 )

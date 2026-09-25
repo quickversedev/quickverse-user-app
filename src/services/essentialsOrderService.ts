@@ -93,6 +93,18 @@ export interface EssentialsOrder {
    * dropped out; the bill as placed once nothing is left. Its lines always add up to `total`.
    */
   bill: EssentialsOrderBill | null;
+  /** Where the order goes; present on a single-order read, not in the history list. */
+  deliveryAddress?: {
+    name: string | null;
+    phone: string | null;
+    tag: string | null;
+    addressLine1: string | null;
+    addressLine2: string | null;
+    addressLine3: string | null;
+    city: string | null;
+    state: string | null;
+    postalCode: string | null;
+  } | null;
 }
 
 export interface EssentialsOrderBill {

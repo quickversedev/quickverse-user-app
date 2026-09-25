@@ -14,6 +14,7 @@ import { Images } from '../../../assets';
 import { useAppStateRefresh } from '../../../hooks/useAppStateRefresh';
 import {
   essentialsAsOrder,
+  essentialsOrderRef,
   essentialsOrderTotal,
   foldOrders,
   HistoryEntry,
@@ -371,7 +372,10 @@ const OrderList: React.FC<OrderListProps> = ({
       item.kind === 'order'
         ? renderOrderItem({ item: item.order })
         : renderOrderCard(essentialsAsOrder(item.order), essentialsOrderTotal(item.order), () =>
-            navigation?.navigate('EssentialsOrder', { orderId: item.order.orderId })
+            navigation?.navigate('OrderDetails', {
+              orderId: essentialsOrderRef(item.order),
+              essentialsOrderId: item.order.orderId,
+            })
           ),
     [renderOrderItem, renderOrderCard, navigation]
   );
