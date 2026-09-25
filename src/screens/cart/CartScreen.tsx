@@ -239,7 +239,7 @@ const StoreCartScreen: React.FC = () => {
    * so the shop-based grouping below is switched off.
    */
   const essentialsCartEnabled = useEssentialsCartStore(s => s.enabled === true);
-  const { essentialsOrders, kiranaOrderIds } = useEssentialsOrders();
+  const { essentialsOrders, kiranaOrderIds } = useEssentialsOrders(orders);
   const previousOrders = useMemo(
     () => foldOrders(orders, essentialsOrders, kiranaOrderIds, hasMoreOrders),
     [orders, essentialsOrders, kiranaOrderIds, hasMoreOrders]

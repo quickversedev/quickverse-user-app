@@ -46,7 +46,7 @@ const OrderList: React.FC<OrderListProps> = ({
     essentialsOrders,
     kiranaOrderIds,
     refresh: refreshEssentialsOrders,
-  } = useEssentialsOrders();
+  } = useEssentialsOrders(orders);
   const getVendorById = useVendorStore(state => state.getVendorById);
   // Subscribe to pricing configs so totals re-render when configs load
   const pricingConfigs = usePricingStore(state => state.configs);

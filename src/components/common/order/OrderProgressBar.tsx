@@ -109,7 +109,7 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
     essentialsOrders,
     kiranaOrderIds,
     refresh: refreshEssentialsOrders,
-  } = useEssentialsOrders();
+  } = useEssentialsOrders(orders);
 
   // Match CartBar width
   const containerWidth = screenWidth - 32; // Match CartBar width exactly

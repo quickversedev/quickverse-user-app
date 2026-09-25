@@ -144,6 +144,8 @@ const useOrderStore = create<OrderStore>((set, get) => ({
         orderMasterStatus?: string;
         /** Added by our server: the order's charged total, from its finance record. */
         qvPayableAmount?: number;
+        /** Added by our server: the Daily Essentials order this kirana order is part of. */
+        qvEssentialsOrderId?: string;
       };
 
       const mappedOrders: Order[] = (ordersMetadata || []).map((m: OrderMeta) => {
@@ -170,6 +172,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
           deliveryFees: Number(m.deliveryDetails?.deliveryFees ?? 0),
           totalInvoiceAmount: Number(m.totalInvoiceAmount ?? 0),
           chargedAmount: m.qvPayableAmount != null ? Number(m.qvPayableAmount) : undefined,
+          essentialsOrderId: m.qvEssentialsOrderId || undefined,
           status: (() => {
             const s = String(m.state || '').toLowerCase();
             if (s === 'cancelled' || s === 'rejected') return normalizeStatus(m.state);

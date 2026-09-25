@@ -64,6 +64,8 @@ export interface Order {
   totalInvoiceAmount?: number;
   /** What the order was charged (our finance record), when the server has it. */
   chargedAmount?: number;
+  /** Set when this is one kirana's part of a Daily Essentials order: that order's id. */
+  essentialsOrderId?: string;
   status:
     | 'payment_pending'
     | 'processing'

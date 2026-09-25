@@ -1,5 +1,5 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../contexts/login/AuthProvider';
 import essentialsOrderService, {
   displayStatusOf,
@@ -14,10 +14,15 @@ import { Order } from '../types/order';
  * Order history comes from SmartBiz, which knows one order per kirana — so a Daily Essentials
  * order would otherwise show up as two or three unrelated orders. `fold` replaces those with the
  * one order the customer placed.
+ *
+ * `history` is the ordinary order history on screen. The list call returns only the most recent
+ * Essentials orders; a kirana order further back is tagged by the server with its Essentials
+ * order (`essentialsOrderId`), which is then fetched here so it too is folded.
  */
-export const useEssentialsOrders = () => {
+export const useEssentialsOrders = (history: Order[] = []) => {
   const { authData } = useAuth();
   const [orders, setOrders] = useState<EssentialsOrder[]>([]);
+  const requested = useRef(new Set<string>());
 
   const refresh = useCallback(async () => {
     if (!authData?.jwt || !authData?.phone) return;
@@ -36,13 +41,49 @@ export const useEssentialsOrders = () => {
     }, [refresh])
   );
 
-  /** SmartBiz order ids that belong to a Daily Essentials order. */
+  // Essentials orders older than the list call reaches, named by kirana orders in `history`.
+  const missingKey = useMemo(() => {
+    const loaded = new Set(orders.map(o => o.orderId));
+    return Array.from(
+      new Set(
+        history
+          .map(o => o.essentialsOrderId)
+          .filter((id): id is string => !!id && !loaded.has(id) && !requested.current.has(id))
+      )
+    )
+      .sort()
+      .join(',');
+  }, [history, orders]);
+
+  useEffect(() => {
+    if (!missingKey || !authData?.jwt || !authData?.phone) return;
+    const jwt = authData.jwt;
+    const phone = authData.phone;
+    const ids = missingKey.split(',');
+    ids.forEach(id => requested.current.add(id));
+    Promise.all(
+      ids.map(id => essentialsOrderService.getOrder(id, jwt, phone).catch(() => null))
+    ).then(found => {
+      const extra = found.filter((o): o is EssentialsOrder => !!o && !neverPaid(o));
+      if (extra.length === 0) return;
+      setOrders(current => {
+        const have = new Set(current.map(o => o.orderId));
+        return [...current, ...extra.filter(o => !have.has(o.orderId))];
+      });
+    });
+  }, [missingKey, authData?.jwt, authData?.phone]);
+
+  /** SmartBiz order ids that belong to a Daily Essentials order — hidden from history as such. */
   const kiranaOrderIds = useMemo(
     () =>
-      new Set(
-        orders.flatMap(o => o.shops.map(s => s.smartbizOrderId)).filter((id): id is string => !!id)
-      ),
-    [orders]
+      new Set([
+        ...orders
+          .flatMap(o => o.shops.map(s => s.smartbizOrderId))
+          .filter((id): id is string => !!id),
+        // Tagged by the server even before their Essentials order has loaded.
+        ...history.filter(o => o.essentialsOrderId).map(o => o.orderId),
+      ]),
+    [orders, history]
   );
 
   return { essentialsOrders: orders, kiranaOrderIds, refresh };
