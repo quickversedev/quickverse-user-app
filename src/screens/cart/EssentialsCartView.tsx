@@ -187,15 +187,7 @@ const EssentialsCartView: React.FC = () => {
   }, [loadSummary, paymentMethod, cartVersion]);
 
   // A coupon the server will not take is dropped, with its reason, as the store cart does.
-  useEffect(() => {
-    // Only for the coupon this bill was priced with; a newer pick is still being priced.
-    if (summary?.couponError && coupon && pricedCouponId === coupon.id) {
-      showMessage(summary.couponErrorMessage || 'This coupon cannot be applied');
-      setCoupon(null);
-    }
-  }, [summary, coupon, pricedCouponId]);
-
-  useEffect(() => {
+  const loadCoupons = useCallback(() => {
     if (!regionId) return;
     setCouponsLoading(true);
     // No shopId: platform coupons only — one coupon covers the whole order.
@@ -205,6 +197,21 @@ const EssentialsCartView: React.FC = () => {
       .catch(() => setCoupons([]))
       .finally(() => setCouponsLoading(false));
   }, [regionId]);
+
+  useEffect(() => {
+    loadCoupons();
+  }, [loadCoupons]);
+
+  useEffect(() => {
+    // Only for the coupon this bill was priced with; a newer pick is still being priced.
+    if (summary?.couponError && coupon && pricedCouponId === coupon.id) {
+      showMessage(summary.couponErrorMessage || 'This coupon cannot be applied');
+      setCoupon(null);
+      // The offer list may be what is out of date (a coupon since withdrawn): refresh it, so the
+      // refused coupon is not offered again.
+      loadCoupons();
+    }
+  }, [summary, coupon, pricedCouponId, loadCoupons]);
 
   const items = useMemo(
     () =>

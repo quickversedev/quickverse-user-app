@@ -25,6 +25,9 @@ import EssentialsCartBar from './EssentialsCartBar';
 const { width } = Dimensions.get('window');
 const ANIMATION_DURATION = 300;
 
+/** The login whose carts were last refreshed from the server, shared by every mounted stack. */
+let cartsRefreshedFor: string | null = null;
+
 const FloatingCartsStack: React.FC = () => {
   const { authData } = useAuth();
   const carts = useCartStore(state => state.carts);
@@ -42,6 +45,11 @@ const FloatingCartsStack: React.FC = () => {
   // Load the server's Essentials cart when the stack first shows and whenever the login changes,
   // so its bar appears without first visiting Daily Essentials.
   useEffect(() => {
+    // Once per login, not once per screen: this stack is mounted by every browsing screen, and
+    // each mount would otherwise re-read every cart from the server (and SmartBiz).
+    const session = authData?.jwt || 'guest';
+    if (cartsRefreshedFor === session) return;
+    cartsRefreshedFor = session;
     fetchEssentialsCart(authData?.jwt || undefined, authData?.phone || undefined);
     // Store carts too: one emptied elsewhere (ordered on another device, cleared at the shop) is
     // otherwise shown from this device's saved copy until its cart screen is opened.
