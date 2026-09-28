@@ -75,7 +75,10 @@ const TopStoresNearYou = () => {
   }, [vendors.length, selectedAddress?.coordinates, fetchVendors]);
 
   const topVendors = useMemo(() => {
+    // Ops choose the featured vendors in the admin panel; a customer sees those within range of
+    // the delivery address (the vendor list is already a radius query), nearest first.
     const active = vendors.filter(v => {
+      if (!v.featured) return false;
       if (v.storeEnabled === false || v.storeActive === false) return false;
       return isStoreOpen({
         openingTime: v.openingTime,
@@ -105,8 +108,8 @@ const TopStoresNearYou = () => {
       .filter(v => v.category === 'Grocery')
       .sort(byDistance)
       .slice(0, 2);
-    // Two of each where a place has both; otherwise the nearest others fill the row, so a town
-    // with only restaurants (or only kiranas) shows four cards, not two at the edges.
+    // Two of each where a place has both; otherwise the nearest other featured vendors fill the
+    // row, so a town with only featured restaurants (or kiranas) still shows four cards.
     const picked = [...food, ...grocery];
     const rest = active.filter(v => !picked.includes(v)).sort(byDistance);
     return [...picked, ...rest].slice(0, 4);
