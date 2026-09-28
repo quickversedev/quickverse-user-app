@@ -416,9 +416,18 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   const activeProducts = products || fetchedProducts;
   const allCategories = categories || fetchedCategories;
 
-  // Only show categories that have at least one product
+  // Only show categories that have at least one product. Many shops give their categories no
+  // image, so — as the store screen does — a category without one shows its first product's.
   const activeCategories = React.useMemo(
-    () => allCategories.filter(cat => activeProducts.some(p => p.division === cat.id)),
+    () =>
+      allCategories
+        .filter(cat => activeProducts.some(p => p.division === cat.id))
+        .map(cat => {
+          const own = typeof cat.image === 'string' ? cat.image : cat.image?.uri;
+          if (own) return cat;
+          const sample = activeProducts.find(p => p.division === cat.id && p.imageUrl);
+          return sample ? { ...cat, image: { uri: sample.imageUrl } } : cat;
+        }),
     [allCategories, activeProducts]
   );
 
@@ -473,10 +482,8 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
         const mappedCategories = cats.map(c => ({
           id: c.id,
           name: c.name,
-          image:
-            c.imageURLs && c.imageURLs.length > 0
-              ? { uri: c.imageURLs[0] }
-              : { uri: 'https://loremflickr.com/320/240/food' },
+          // No placeholder: a category without an image shows its first product's instead.
+          image: c.imageURLs && c.imageURLs.length > 0 ? { uri: c.imageURLs[0] } : null,
         }));
 
         const prods = Array.isArray(prodsResponse) ? prodsResponse : prodsResponse.products || [];
