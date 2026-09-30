@@ -103,6 +103,15 @@ const formatTimeDifference = (minutes: number): string => {
  * @param config - Store time configuration
  * @returns StoreStatus object with open status and details
  */
+/**
+ * A shop a customer can order from right now, open hours aside: not switched off for ordering
+ * (storeEnabled) and not deactivated (storeActive). `!== false` on purpose: a missing flag means
+ * the shop was never switched off. Every list that leads to a shop's products uses this, so a
+ * disabled shop never surfaces through a tag, a strip or a grid.
+ */
+export const isOrderableShop = (shop: { storeEnabled?: boolean; storeActive?: boolean }): boolean =>
+  shop.storeEnabled !== false && shop.storeActive !== false;
+
 export const isStoreOpen = (config: StoreTimeConfig): StoreStatus => {
   const { openingTime, closingTime, storeActive } = config;
 

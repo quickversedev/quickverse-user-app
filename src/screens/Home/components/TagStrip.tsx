@@ -3,10 +3,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemeText } from '../../../components/common/theme/ThemeText';
 import useProductTagsStore from '../../../store/tags/productTagsStore';
+import useConfigStore from '../../../store/configStore';
 import useVendorStore from '../../../store/vendorStore';
 import { AppNavigationProp } from '../../../types/navigation';
 import { ProductTagOption } from '../../../types/product';
-
+import { isOrderableShop } from '../../../utils/storeUtils';
 
 const ICON_SIZE = 40;
 
@@ -107,8 +108,11 @@ const TagStrip: React.FC<{ shopCategory?: string }> = ({ shopCategory }) => {
    */
   const shopIds = useMemo(() => {
     const list = shopCategory ? getVendorsByCategory(shopCategory) : vendors;
-    return list.map(v => v.shopId);
+    return list.filter(isOrderableShop).map(v => v.shopId);
   }, [vendors, shopCategory, getVendorsByCategory]);
+
+  // Tags can belong to a region; the server returns this region's plus the global ones.
+  const regionId = useConfigStore(state => state.config?.regionId ?? null);
 
   const tags = useProductTagsStore(state => state.byScope[scope]?.tags) ?? [];
   const fetchTags = useProductTagsStore(state => state.fetchTags);
@@ -117,8 +121,8 @@ const TagStrip: React.FC<{ shopCategory?: string }> = ({ shopCategory }) => {
     // Wait for the vendor list; fetching with an empty scope would count nothing and
     // cache an empty vocabulary for the whole TTL.
     if (shopIds.length === 0) return;
-    fetchTags(scope, shopIds);
-  }, [fetchTags, scope, shopIds]);
+    fetchTags(scope, shopIds, regionId);
+  }, [fetchTags, scope, shopIds, regionId]);
 
   const handlePress = useCallback(
     (tag: ProductTagOption) => {

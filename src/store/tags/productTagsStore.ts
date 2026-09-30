@@ -29,7 +29,7 @@ interface TagsState {
   byScope: Record<string, ScopedTags>;
   loading: boolean;
 
-  fetchTags: (scope: string, shopIds: string[]) => Promise<void>;
+  fetchTags: (scope: string, shopIds: string[], regionId?: string | null) => Promise<void>;
   getTags: (scope: string) => ProductTagOption[];
   invalidateCache: () => void;
 }
@@ -70,8 +70,9 @@ const useProductTagsStore = create<TagsState>()(
           ),
         })),
 
-      fetchTags: async (scope: string, shopIds: string[]) => {
-        const shopKey = shopFingerprint(shopIds);
+      fetchTags: async (scope: string, shopIds: string[], regionId?: string | null) => {
+        // The region is part of the key: the same shops can sit in a region whose own tags differ.
+        const shopKey = `${regionId ?? ''}|${shopFingerprint(shopIds)}`;
         const cached = get().byScope[scope];
 
         if (
@@ -85,7 +86,11 @@ const useProductTagsStore = create<TagsState>()(
 
         try {
           set({ loading: true });
-          const tags = await productsService.fetchProductTags({ shopIds, nonEmpty: true });
+          const tags = await productsService.fetchProductTags({
+            shopIds,
+            nonEmpty: true,
+            regionId,
+          });
 
           set(state => ({
             byScope: { ...state.byScope, [scope]: { tags, fetchedAt: Date.now(), shopKey } },

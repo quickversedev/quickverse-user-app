@@ -29,7 +29,7 @@ import useVendorStore from '../../store/vendorStore';
 import usePagesStore from '../../store/pages/pagesStore';
 import useConfigStore from '../../store/configStore';
 import { Vendor } from '../../types/vendor';
-import { isStoreOpen } from '../../utils/storeUtils';
+import { isOrderableShop, isStoreOpen } from '../../utils/storeUtils';
 import PromotionCarousel from '../Home/components/PromotionCarousel';
 import DailyEssentials from './components/DailyEssentials';
 import CollectionsGrid from './components/CollectionsGrid';
@@ -94,9 +94,12 @@ const CategoryScreen = () => {
       const refreshedShopIds = useVendorStore
         .getState()
         .getVendorsByCategory(categoryName)
+        .filter(isOrderableShop)
         .map(vendor => vendor.shopId);
       if (refreshedShopIds.length > 0) {
-        await useProductTagsStore.getState().fetchTags(categoryName, refreshedShopIds);
+        await useProductTagsStore
+          .getState()
+          .fetchTags(categoryName, refreshedShopIds, useConfigStore.getState().getRegionId());
       }
       useFeaturedProductsStore.getState().clearCache();
       useVendorCouponsStore.getState().invalidateCache();
@@ -111,9 +114,7 @@ const CategoryScreen = () => {
   }, [categoryName, isGrocery]);
 
   const categoryVendors = React.useMemo(() => {
-    return getVendorsByCategory(categoryName).filter(
-      vendor => vendor.storeEnabled !== false && vendor.storeActive !== false
-    );
+    return getVendorsByCategory(categoryName).filter(isOrderableShop);
   }, [categoryName, getVendorsByCategory, vendors]);
 
   // Show the showcase widget for Shree Samarth Foods (94728). Falls back to
@@ -233,7 +234,7 @@ const CategoryScreen = () => {
       if (!labels || labels.length === 0) return null;
       return labels[couponTick % labels.length];
     },
-    [couponsByVendor, couponTick],
+    [couponsByVendor, couponTick]
   );
 
   // Cart Logic
