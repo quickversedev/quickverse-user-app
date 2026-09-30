@@ -8,6 +8,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { ThemeText } from '../../common/theme/ThemeText';
 import QuantitySelector from './QuantitySelector';
+import { wholeRupees } from '../../../utils/price';
 
 /**
  * "Pairs well with" suggestions, laid out as the QV PDP design has them: a two-up
@@ -320,9 +321,9 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
                   {item.name}
                 </ThemeText>
                 <View style={styles.priceRow}>
-                  <ThemeText style={styles.price}>₹{item.price}</ThemeText>
-                  {item.mrp > item.price ? (
-                    <ThemeText style={styles.mrp}>₹{item.mrp}</ThemeText>
+                  <ThemeText style={styles.price}>₹{wholeRupees(item.price)}</ThemeText>
+                  {wholeRupees(item.mrp) > wholeRupees(item.price) ? (
+                    <ThemeText style={styles.mrp}>₹{wholeRupees(item.mrp)}</ThemeText>
                   ) : null}
                 </View>
               </View>

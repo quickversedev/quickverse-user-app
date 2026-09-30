@@ -7,6 +7,7 @@ import { Product } from '../../../types/product';
 import { triggerAddToCartHaptic } from '../../../utils/haptics';
 import { ThemeText } from '../../common/theme/ThemeText';
 import _VegIcon from '../../common/VegIcon';
+import { wholeRupees } from '../../../utils/price';
 
 const IMAGE_SIZE = 70;
 
@@ -48,7 +49,10 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
       inStock = true,
     } = product;
 
-    const hasDiscount = mrp > sellingPrice;
+    // Whole rupees, as the bill charges them (see utils/price).
+    const shownPrice = wholeRupees(sellingPrice);
+    const shownMrp = wholeRupees(mrp);
+    const hasDiscount = shownMrp > shownPrice;
     const hasMultipleVariants = numberOfVariants > 1;
     const isDisabled = disabled || !inStock;
 
@@ -289,8 +293,8 @@ const HorizontalProductCard: React.FC<HorizontalProductCardProps> = memo(
               </ThemeText>
             </View>
             <View style={styles.priceRow}>
-              {hasDiscount && <Text style={styles.mrpText}>₹{mrp}</Text>}
-              <Text style={styles.sellingPrice}>₹{sellingPrice}</Text>
+              {hasDiscount && <Text style={styles.mrpText}>₹{shownMrp}</Text>}
+              <Text style={styles.sellingPrice}>₹{shownPrice}</Text>
             </View>
           </View>
 

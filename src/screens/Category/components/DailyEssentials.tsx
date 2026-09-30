@@ -22,6 +22,7 @@ import useEssentialsCartStore, {
 } from '../../../store/cart/essentialsCartStore';
 import useGroceryGroupsStore from '../../../store/grocery/groceryGroupsStore';
 import { useTheme } from '../../../theme/ThemeContext';
+import { wholeRupees } from '../../../utils/price';
 
 /**
  * Daily Essentials — curated grocery groups, rendered from QuickVerse's own data.
@@ -309,7 +310,10 @@ const DailyEssentials: React.FC = () => {
   const renderProduct = (product: GroceryGroupProduct) => {
     const quantity = quantityFor(product);
     const soldOut = !product.inStock;
-    const discounted = product.mrp > product.sellingPrice;
+    // Whole rupees, as the Essentials cart prices them.
+    const shownPrice = wholeRupees(product.sellingPrice);
+    const shownMrp = wholeRupees(product.mrp);
+    const discounted = shownMrp > shownPrice;
 
     return (
       <View key={`${product.shopId}-${product.sku}`} style={styles.card}>
@@ -327,8 +331,8 @@ const DailyEssentials: React.FC = () => {
               {product.name}
             </ThemeText>
             <View style={styles.priceRow}>
-              <ThemeText style={styles.price}>₹{product.sellingPrice}</ThemeText>
-              {discounted ? <ThemeText style={styles.mrp}>₹{product.mrp}</ThemeText> : null}
+              <ThemeText style={styles.price}>₹{shownPrice}</ThemeText>
+              {discounted ? <ThemeText style={styles.mrp}>₹{shownMrp}</ThemeText> : null}
             </View>
           </View>
         </View>

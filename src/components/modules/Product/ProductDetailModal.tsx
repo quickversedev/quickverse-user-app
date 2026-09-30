@@ -28,6 +28,7 @@ import ProductImageCarousel from './ProductImageCarousel';
 import ProductInfo from './ProductInfo';
 import QuantitySelector from './QuantitySelector';
 import SuggestedItems from './SuggestedItems';
+import { wholeRupees } from '../../../utils/price';
 
 const { height, width } = Dimensions.get('window');
 
@@ -170,7 +171,10 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   }, [categories, product.division]);
 
   const displayDiscount = selectedVariant?.discount ?? product.discount ?? 0;
-  const savings = Math.max(0, Math.round((displayMrp ?? 0) - (displayPrice ?? 0)));
+  // Shown in whole rupees, as the bill charges them; the raw values still seed the cart line.
+  const shownPrice = wholeRupees(displayPrice);
+  const shownMrp = wholeRupees(displayMrp);
+  const savings = Math.max(0, shownMrp - shownPrice);
   const tagLabel = product.tags?.[0]?.label?.trim() || product.tags?.[0]?.tagName?.trim() || null;
   // From the `variants` state, not the derived productVariants list further down —
   // that is declared after this point and reading it here is a use-before-declaration.
@@ -802,10 +806,10 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
             <View style={styles.priceLine}>
               <View style={styles.priceRow}>
-                <ThemeText style={styles.priceText}>₹{displayPrice}</ThemeText>
-                {displayMrp !== displayPrice && (
+                <ThemeText style={styles.priceText}>₹{shownPrice}</ThemeText>
+                {shownMrp !== shownPrice && (
                   <ThemeText variant="caption" color={getColor('subText')} style={styles.mrpText}>
-                    MRP ₹{displayMrp}
+                    MRP ₹{shownMrp}
                   </ThemeText>
                 )}
                 {savings > 0 ? (
@@ -926,10 +930,10 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           {!isUnavailable ? (
             <View style={styles.ctaPriceBlock}>
               <View style={styles.ctaPriceRow}>
-                <ThemeText style={styles.ctaPrice}>₹{displayPrice}</ThemeText>
-                {displayMrp !== displayPrice ? (
+                <ThemeText style={styles.ctaPrice}>₹{shownPrice}</ThemeText>
+                {shownMrp !== shownPrice ? (
                   <ThemeText variant="small" style={styles.ctaMrp}>
-                    MRP ₹{displayMrp}
+                    MRP ₹{shownMrp}
                   </ThemeText>
                 ) : null}
               </View>

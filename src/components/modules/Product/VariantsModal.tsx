@@ -23,6 +23,7 @@ import VegIcon from '../../common/VegIcon';
 import VariantsModalSkeleton from '../Vendor/VariantsModalSkeleton';
 import AddButton from './AddButton';
 import QuantitySelector from './QuantitySelector';
+import { wholeRupees } from '../../../utils/price';
 
 const { height } = Dimensions.get('window');
 
@@ -294,15 +295,15 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
             </ThemeText>
             <View style={styles.variantPriceContainer}>
               <ThemeText variant="body" color={getColor('text')} style={styles.currentPrice}>
-                ₹{variant.sellingPrice}
+                ₹{wholeRupees(variant.sellingPrice)}
               </ThemeText>
-              {variant.sellingPrice !== variant.mrp && (
+              {wholeRupees(variant.sellingPrice) !== wholeRupees(variant.mrp) && (
                 <ThemeText
                   variant="caption"
                   color={getColor('subText')}
                   style={styles.originalPrice}
                 >
-                  ₹{variant.mrp}
+                  ₹{wholeRupees(variant.mrp)}
                 </ThemeText>
               )}
             </View>

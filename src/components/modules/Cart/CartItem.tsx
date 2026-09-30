@@ -6,6 +6,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { ThemeText } from '../../common/theme/ThemeText';
 import AddButton from '../Product/AddButton';
 import QuantitySelector from '../Product/QuantitySelector';
+import { wholeRupees } from '../../../utils/price';
 
 /**
  * One cart line, in the QV Cart design: a raised white card holding a contained
@@ -156,9 +157,12 @@ const CartItem: React.FC<CartItemProps> = React.memo(
       [image]
     );
 
-    const lineTotal = price * quantity;
-    const lineMrp = mrp * quantity;
-    const showMrp = mrp > price;
+    // Each unit rounded to whole rupees before multiplying, exactly as the bill charges it.
+    const unitPrice = wholeRupees(price);
+    const unitMrp = wholeRupees(mrp);
+    const lineTotal = unitPrice * quantity;
+    const lineMrp = unitMrp * quantity;
+    const showMrp = unitMrp > unitPrice;
     const showUnitPrice = quantity > 1;
 
     return (
@@ -177,10 +181,10 @@ const CartItem: React.FC<CartItemProps> = React.memo(
             {name}
           </ThemeText>
           <View style={styles.priceRow}>
-            <ThemeText style={styles.price}>₹{lineTotal.toFixed(2)}</ThemeText>
-            {showMrp ? <ThemeText style={styles.mrp}>₹{lineMrp.toFixed(2)}</ThemeText> : null}
+            <ThemeText style={styles.price}>₹{lineTotal}</ThemeText>
+            {showMrp ? <ThemeText style={styles.mrp}>₹{lineMrp}</ThemeText> : null}
             {showUnitPrice ? (
-              <ThemeText style={styles.unitPrice}>₹{price.toFixed(2)} each</ThemeText>
+              <ThemeText style={styles.unitPrice}>₹{unitPrice} each</ThemeText>
             ) : null}
           </View>
         </View>

@@ -72,6 +72,7 @@ import { Product } from '../../types/product';
 import { Vendor } from '../../types/vendor';
 import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
 import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
+import { wholeRupees } from '../../utils/price';
 import EssentialsCartView from './EssentialsCartView';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
@@ -474,13 +475,16 @@ const StoreCartScreen: React.FC = () => {
 
   /** Cart subtotal a coupon's minimum order is tested against. */
   const couponCartTotal = useMemo(() => {
-    const apiSubtotal = cart?.totalCartAmount ?? 0;
-    if (apiSubtotal > 0) return apiSubtotal;
+    // The bill's item total, which the server's minimum-order check also uses: whole-rupee unit
+    // prices times quantity. SmartBiz's own cart total keeps paise (₹395.01 for 2 × ₹197.505),
+    // which made "Add ₹604 more" disagree with the free-delivery bar's "Add ₹603 more".
+    const billed = Number(checkoutSummary?.itemTotalAmount ?? 0);
+    if (billed > 0) return billed;
     return cartItems.reduce(
-      (sum: number, product: any) => sum + product.price * product.quantity,
+      (sum: number, product: any) => sum + wholeRupees(product.price) * product.quantity,
       0
     );
-  }, [cart?.totalCartAmount, cartItems]);
+  }, [checkoutSummary?.itemTotalAmount, cartItems]);
 
   const handleCalculateCheckoutSummary = useCallback(async () => {
     if (!cartItems || cartItems.length === 0) {

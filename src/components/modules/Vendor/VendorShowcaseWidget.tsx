@@ -2,14 +2,7 @@ import AntDesign from '@react-native-vector-icons/ant-design';
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import React, { useCallback, useEffect, useRef } from 'react';
-import {
-  Animated,
-  Dimensions,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, Dimensions, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import CachedImage from '../../common/CachedImage';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../../contexts/login/AuthProvider';
@@ -22,6 +15,7 @@ import { Vendor } from '../../../types/vendor';
 import { triggerAddToCartHaptic } from '../../../utils/haptics';
 import { formatTimeToAMPM, getStoreStatus } from '../../../utils/storeUtils';
 import { ThemeText } from '../../common/theme/ThemeText';
+import { wholeRupees } from '../../../utils/price';
 
 interface CategoryItem {
   id: string;
@@ -120,7 +114,13 @@ const CategoryRenderItem = React.memo(({ item, isSelected, onPress }: CategoryRe
       ]}
     >
       <CachedImage
-        uri={typeof item.image === 'object' && item.image?.uri ? item.image.uri : typeof item.image === 'string' ? item.image : undefined}
+        uri={
+          typeof item.image === 'object' && item.image?.uri
+            ? item.image.uri
+            : typeof item.image === 'string'
+              ? item.image
+              : undefined
+        }
         style={styles.categoryImage}
       />
     </View>
@@ -163,10 +163,10 @@ const ProductRenderItem = React.memo(
 
         <View style={styles.priceRow}>
           <View style={styles.prices}>
-            {item.mrp > item.sellingPrice && (
-              <ThemeText style={styles.mrpText}>₹{item.mrp}</ThemeText>
+            {wholeRupees(item.mrp) > wholeRupees(item.sellingPrice) && (
+              <ThemeText style={styles.mrpText}>₹{wholeRupees(item.mrp)}</ThemeText>
             )}
-            <ThemeText style={styles.sellingPriceText}>₹{item.sellingPrice}</ThemeText>
+            <ThemeText style={styles.sellingPriceText}>₹{wholeRupees(item.sellingPrice)}</ThemeText>
           </View>
 
           {quantity > 0 ? (
@@ -377,9 +377,7 @@ const VendorShowcaseWidget: React.FC<VendorShowcaseWidgetProps> = ({
   const cached = !products && !categories ? getWidgetCache(vendor.shopId) : null;
 
   const [isLoading, setIsLoading] = React.useState(!cached);
-  const [fetchedProducts, setFetchedProducts] = React.useState<Product[]>(
-    cached?.products ?? []
-  );
+  const [fetchedProducts, setFetchedProducts] = React.useState<Product[]>(cached?.products ?? []);
   const [fetchedCategories, setFetchedCategories] = React.useState<CategoryItem[]>(
     cached?.categories ?? []
   );

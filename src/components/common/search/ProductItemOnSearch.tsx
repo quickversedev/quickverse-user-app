@@ -4,6 +4,7 @@ import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Product } from '../../../types/product';
 import { ThemeText } from '../../common/theme/ThemeText';
+import { wholeRupees } from '../../../utils/price';
 
 /**
  * Thumbnail size. Each search result sits in a ~48%-wide column, so this leaves
@@ -29,7 +30,9 @@ const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPr
    * this keeps working unchanged once the backend query selects the columns.
    */
   const hasPrice = (product.sellingPrice ?? 0) > 0;
-  const hasDiscount = hasPrice && (product.mrp ?? 0) > product.sellingPrice;
+  const shownPrice = wholeRupees(product.sellingPrice);
+  const shownMrp = wholeRupees(product.mrp);
+  const hasDiscount = hasPrice && shownMrp > shownPrice;
 
   const styles = StyleSheet.create({
     container: {
@@ -111,8 +114,8 @@ const ProductItemOnSearch: React.FC<ProductItemOnSearchProps> = ({ product, onPr
         </ThemeText>
         {hasPrice && (
           <View style={styles.priceRow}>
-            {hasDiscount && <Text style={styles.mrpText}>₹{product.mrp}</Text>}
-            <Text style={styles.sellingPrice}>₹{product.sellingPrice}</Text>
+            {hasDiscount && <Text style={styles.mrpText}>₹{shownMrp}</Text>}
+            <Text style={styles.sellingPrice}>₹{shownPrice}</Text>
           </View>
         )}
       </View>
