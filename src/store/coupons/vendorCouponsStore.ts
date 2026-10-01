@@ -64,8 +64,8 @@ const useVendorCouponsStore = create<VendorCouponsState>((set, get) => ({
   },
 
   fetchForVendors: async (shopIds: string[], serviceType = 'FOOD') => {
+    // May be null if the cached config has no region; the coupon service resolves it.
     const regionId = useConfigStore.getState().getRegionId();
-    if (!regionId) return;
 
     const alreadyFetched = get().fetchedVendors;
     const toFetch = shopIds.filter(id => !alreadyFetched.has(id));

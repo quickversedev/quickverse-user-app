@@ -1096,7 +1096,7 @@ const StoreCartScreen: React.FC = () => {
     setCouponLoading(true);
     try {
       const data = await couponService.getAvailableCoupons(
-        getRegionId() as string,
+        getRegionId(),
         vendor.shopId,
         vendor?.category?.toUpperCase()
       );

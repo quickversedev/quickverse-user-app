@@ -189,7 +189,7 @@ const EssentialsCartView: React.FC = () => {
 
   // A coupon the server will not take is dropped, with its reason, as the store cart does.
   const loadCoupons = useCallback(() => {
-    if (!regionId) return;
+    // regionId may be null if the cached config has none; the coupon service resolves it.
     setCouponsLoading(true);
     // No shopId: platform coupons only — one coupon covers the whole order.
     couponService
