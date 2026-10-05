@@ -1,16 +1,17 @@
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 
 import { SearchBar } from '../../components/modules/Header/SearchBar';
 import { useAuth } from '../../contexts/login/AuthProvider';
 import { useAppStateRefresh } from '../../hooks/useAppStateRefresh';
-import usePagesStore from '../../store/pages/pagesStore';
-import useConfigStore from '../../store/configStore';
 import useCartStore from '../../store/cart/cartStore';
 import useOrderStore from '../../store/cart/orderStore';
+import useConfigStore from '../../store/configStore';
+import usePagesStore from '../../store/pages/pagesStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
@@ -25,7 +26,10 @@ import type { HomeCategoryId } from './homeCategories';
 const HomeMainScreen_2 = React.memo(() => {
   const { theme } = useTheme();
   const { getVendorsNearLocation } = useVendorStore();
+  const {config} = useConfigStore();
   const { selectedAddress } = useAuth();
+
+  console.log("CONFiG", config?.regionId);
 
   const activeCategoryId: HomeCategoryId = 'grocery';
 
@@ -130,21 +134,41 @@ const HomeMainScreen_2 = React.memo(() => {
           <HomeGradientBand activeId={activeCategoryId}>
             <HomeHeader />
 
-            <View style={styles.searchCarouselContainer}>
-              <View style={styles.searchOverlay}>
-                <SearchBar onPress={handleSearchPress} />
+            {!config?.regionId ? (
+              <View style={styles.notServiceableContainer}>
+                <View style={styles.iconContainer}>
+                  <MaterialCommunityIcons name="map-marker-off" size={64} color={theme.colors.text} style={{ opacity: 0.8 }} />
+                </View>
+                <Text style={[styles.notServiceableTitle, { color: theme.colors.text }]}>
+                  Oops! Not Serviceable
+                </Text>
+                <Text style={[styles.notServiceableSub, { color: theme.colors.text }]}>
+                  We don't deliver in this area yet. Please select a different location.
+                </Text>
               </View>
-              <HomePromotionCarousel />
-            </View>
+            ) : (
+              <>
+                <View style={styles.searchCarouselContainer}>
+                  <View style={styles.searchOverlay}>
+                    <SearchBar onPress={handleSearchPress} />
+                  </View>
+                  <HomePromotionCarousel />
+                </View>
 
-            <TopStoresNearYou />
-          </HomeGradientBand>
+                <TopStoresNearYou />
+              </>
+            )}
+            </HomeGradientBand>
 
-          <View style={styles.cardsContainer}>
-            <CategoryCards />
-          </View>
+          {config?.regionId ? (
+            <>
+              <View style={styles.cardsContainer}>
+                <CategoryCards />
+              </View>
 
-          <FastPicks />
+              <FastPicks />
+            </>
+          ) : null}
         </ScrollView>
       </View>
 
@@ -177,6 +201,29 @@ const styles = StyleSheet.create({
   },
   cardsContainer: {
     marginTop: 2,
+  },
+  notServiceableContainer: {
+    minHeight: 400,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingBottom: 60,
+  },
+  iconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  notServiceableTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  notServiceableSub: {
+    fontSize: 15,
+    textAlign: 'center',
+    opacity: 0.7,
+    lineHeight: 22,
   },
 });
 

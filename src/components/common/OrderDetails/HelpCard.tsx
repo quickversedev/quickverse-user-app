@@ -88,14 +88,14 @@ const HelpCard: React.FC<HelpCardProps> = ({ onPress, order, onRefresh }) => {
     },
     helpLabel: {
       fontFamily: Fonts.medium,
-      fontSize: getTypography('caption') ?? 12,
-      color: getColor('subText'),
+      fontSize: 15,
+      color: getColor('text'),
       marginBottom: 3,
     },
     helpMessage: {
       fontFamily: Fonts.bold,
-      fontSize: getTypography('body'),
-      color: getColor('text'),
+      fontSize: 12,
+      color: getColor('subText'),
     },
     helpActionPill: {
       flexDirection: 'row',

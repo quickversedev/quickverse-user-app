@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { CommonActions, RouteProp, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -13,12 +14,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { ThemeText } from '../../components/common/theme/ThemeText';
 import { CATALOGUE_ACCENT, CATALOGUE_GUTTER } from '../../constants/catalogue';
 import { useOrders } from '../../hooks/useOrders';
-import useVendorStore from '../../store/vendorStore';
 import { RootStackParamList } from '../../routes/AppStack';
+import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 
 /**
@@ -57,6 +57,8 @@ const OrderSuccessScreen: React.FC<OrderSuccessScreenProps> = ({ route }) => {
   const { orderId, amount, shopId, shopCount } = route.params;
   const { loadOrderById, selectedOrder } = useOrders();
   const vendors = useVendorStore(state => state.vendors);
+
+  console.log(selectedOrder, 'Order Placed');
 
   useEffect(() => {
     if (!orderId) return;

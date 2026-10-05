@@ -1,7 +1,14 @@
 import { create } from 'zustand';
 import { mockOrders } from '../../assets/mock/orders';
 import axiosInstance, { apiCall, getAuthHeader } from '../../config/api/axios.config';
-import { Order, OrderCursor, OrderFilters, OrderResponse, OrderStore } from '../../types/order';
+import {
+  DeliveryPartnerDetails,
+  Order,
+  OrderCursor,
+  OrderFilters,
+  OrderResponse,
+  OrderStore,
+} from '../../types/order';
 
 const ORDER_API_URL = '/v2/order/getSMZBIZOrders';
 
@@ -207,7 +214,11 @@ const useOrderStore = create<OrderStore>((set, get) => ({
           finalOrders = mappedOrders.map(o => {
             const existing = existingMap.get(o.orderId);
             if (existing?.orderMasterStatus && !o.orderMasterStatus) {
-              return { ...o, status: existing.status, orderMasterStatus: existing.orderMasterStatus };
+              return {
+                ...o,
+                status: existing.status,
+                orderMasterStatus: existing.orderMasterStatus,
+              };
             }
             return o;
           });
@@ -234,22 +245,26 @@ const useOrderStore = create<OrderStore>((set, get) => ({
     set({ loading: true, error: null });
 
     try {
-      // Always fetch latest details from API to ensure UI reflects the latest state
-
       if (USE_ORDER_MOCKS) {
-        // Find order in mock data
         setTimeout(() => {
           const mockOrder = mockOrders.find(order => order.orderId === orderId);
+
           if (mockOrder) {
-            set({ selectedOrder: mockOrder, loading: false });
+            set({
+              selectedOrder: mockOrder,
+              loading: false,
+            });
           } else {
-            set({ error: 'Order not found', loading: false });
+            set({
+              error: 'Order not found',
+              loading: false,
+            });
           }
         }, 500);
+
         return;
       }
 
-      // Fetch single order from API
       const apiOrder = await apiCall(
         axiosInstance.get(
           `/v2/order/fetchOrder?groupify=true&viewMode=CONSTELLATION_VIEW&shopId=${
@@ -259,90 +274,303 @@ const useOrderStore = create<OrderStore>((set, get) => ({
             headers: {
               SessionKey: jwt,
               Authorization: getAuthHeader(),
-
-              phone: phone,
+              phone,
             },
           }
         )
       );
 
-      // Map the API response to our Order type
+      const toDate = (value: any): string | null => {
+        if (value === null || value === undefined || value === '') {
+          return null;
+        }
+
+        try {
+          if (typeof value === 'string' && /\D/.test(value)) {
+            return new Date(value).toISOString();
+          }
+
+          return new Date(Number(value)).toISOString();
+        } catch {
+          return null;
+        }
+      };
+
+      const rider =
+        apiOrder.deliveryPartnerDetails ||
+        apiOrder.deliveryPartner ||
+        apiOrder.riderDetail ||
+        apiOrder.rider ||
+        null;
+
+      const riderDetails: DeliveryPartnerDetails | null =
+        rider || apiOrder.deliveryPartnerName
+          ? {
+              id: rider?.id || null,
+              name:
+                rider?.name || apiOrder.deliveryPartnerName || apiOrder.deliveryAgentName || null,
+              mobileNumber: String(rider?.mobileNumber || apiOrder.deliveryAgentMobileNumber || ''),
+              phone: rider?.phone || null,
+              email: rider?.email || null,
+              gender: rider?.gender || null,
+              address: rider?.address || null,
+              profilePicture: rider?.profilePicture || null,
+              drivingLicence: rider?.drivingLicence || null,
+              rcDocument: rider?.rcDocument || null,
+              aadharCard: rider?.aadharCard || null,
+              createdAt: toDate(rider?.createdAt),
+              createdBy: rider?.createdBy || null,
+              updatedAt: toDate(rider?.updatedAt),
+              updatedBy: rider?.updatedBy || null,
+              isActive: rider?.isActive ?? null,
+              isOnline: rider?.isOnline ?? null,
+              isTest: rider?.isTest ?? null,
+              totalOrders: rider?.totalOrders ?? null,
+              orderSuccess: rider?.orderSuccess ?? null,
+              orderFailed: rider?.orderFailed ?? null,
+              todayOrders: rider?.todayOrders ?? null,
+              weeklyOrders: rider?.weeklyOrders ?? null,
+              monthlyOrders: rider?.monthlyOrders ?? null,
+              cashAmount: rider?.cashAmount ?? null,
+              latitude:
+                rider?.latitude !== null && rider?.latitude !== undefined
+                  ? Number(rider.latitude)
+                  : null,
+              longitude:
+                rider?.longitude !== null && rider?.longitude !== undefined
+                  ? Number(rider.longitude)
+                  : null,
+              lastLocationUpdatedAt: toDate(rider?.lastLocationUpdatedAt),
+              vehicleType: rider?.vehicleType || null,
+              regionId: rider?.regionId || null,
+            }
+          : null;
+
       const mappedOrder: Order = {
         orderId: String(apiOrder.orderId || orderId),
         customerId: String(apiOrder.customerId || ''),
         shopId: String(apiOrder.shopId || ''),
-        shopName: String(apiOrder.shopName || ''),
-        items: (apiOrder.skuDetailsGrouped || []).map((item: any) => ({
-          id: String(item.id || item.sku || ''),
-          name: String(item.productDetails?.productName || 'Item'),
-          quantity: Number(item.itemCount || 1),
-          price: Number(item.finalPrice || item.shopPrice || 0),
-          totalPrice: Number((item.finalPrice || item.shopPrice || 0) * (item.itemCount || 1)),
-          description: item.productDetails?.productDescription,
-          image: item.productDetails?.productImageUrl,
-        })),
-        totalAmount: Number(apiOrder.totalOrderAmount || 0),
-        totalInvoiceAmount: Number(apiOrder.totalOrderAmount || 0),
-        deliveryFees: Number(apiOrder.deliveryFees || 0),
-        additionalPaymentCharges: Number(apiOrder.additionalPaymentCharges || 0),
+        shopName: String(apiOrder.shopName || apiOrder.shopDetails?.shopName || ''),
+        platform: apiOrder.platform || null,
+        orderProcessingPlatform: apiOrder.orderProcessingPlatform || null,
+        items: (apiOrder.skuDetailsGrouped || []).map((item: any) => {
+          const finalPrice = Number(item.finalPrice ?? item.shopPrice ?? 0);
+          const quantity = Number(item.itemCount ?? item.weightOrQuantity ?? 1);
+          const productPriceDetails = item.productPriceDetailList || [];
+          const latestPrice =
+            productPriceDetails.find((price: any) => price.isLatestPrice === 'Y') || null;
+
+          return {
+            id: String(item.id || item.uuid || item.sku || item.barcodeId || ''),
+            name: String(item.productDetails?.productName || 'Item'),
+            quantity,
+            price: finalPrice,
+            totalPrice: finalPrice * quantity,
+            description: item.productDetails?.productDescription,
+            image: item.productDetails?.productImageUrl,
+            uuid: item.uuid || null,
+            sku: item.sku || null,
+            barcodeId: item.barcodeId || null,
+            scannedBarcodeId: item.scannedBarcodeId || null,
+            stringBarcodeId: item.stringBarcodeId || null,
+            weightOrQuantity: Number(item.weightOrQuantity ?? quantity),
+            uom: item.productDetails?.uom || null,
+            weightFlag: item.productDetails?.weightFlag || null,
+            unitFlag: item.productDetails?.unitFlag || null,
+            shopPrice: Number(item.shopPrice ?? 0),
+            mrp: Number(item.productMRP ?? 0),
+            finalPrice,
+            discount: Number(item.discount ?? 0),
+            offer: item.offer || null,
+            appliedOffer: item.appliedOffer || null,
+            offerRuleId: item.offerRuleId || null,
+            appliedOffers: item.appliedOffers || [],
+            applicableOffers: item.applicableOffers || null,
+            nonApplicableOffers: item.nonApplicableOffers || null,
+            mrpStrikeOutFlag: item.mrpStrikeOutFlag ?? false,
+            isScanned: item.isScanned ?? false,
+            parkingTicket: item.parkingTicket ?? false,
+            forceOverride: item.forceOverride ?? false,
+            showQuantityUpdate: item.showQuantityUpdate ?? false,
+            showMultiplePricePopup: item.showMultiplePricePopup ?? false,
+            showEditWeightPopup: item.showEditWeightPopup ?? false,
+            editPriceType: item.editPriceType || null,
+            isOOS: item.productDetails?.additionalAttributes?.isOOS ?? false,
+            isBestSeller: item.productDetails?.additionalAttributes?.isBestSeller ?? false,
+            returnEligibility: item.returnEligibilityDocument || null,
+            productPriceDetails,
+            latestProductPrice: latestPrice
+              ? {
+                  sku: latestPrice.sku,
+                  shopId: latestPrice.shopId,
+                  shopPrice: Number(latestPrice.shopPrice ?? 0),
+                  productMRP: Number(latestPrice.productMRP ?? 0),
+                  isLatestPrice: latestPrice.isLatestPrice,
+                }
+              : null,
+          };
+        }),
+        totalItemCount: Number(apiOrder.totalItemCount ?? 0),
+        totalAmount: Number(apiOrder.totalOrderAmount ?? 0),
+        totalOrderAmount: Number(apiOrder.totalOrderAmount ?? 0),
+        totalDiscount: Number(apiOrder.totalDiscount ?? 0),
+        totalInvoiceAmount: Number(apiOrder.totalInvoiceAmount ?? apiOrder.totalOrderAmount ?? 0),
+        totalInvoiceAmountIncludingPaymentCharges: Number(
+          apiOrder.totalInvoiceAmountIncludingPaymentCharges ?? 0
+        ),
+        totalOrderAmountIncludingPaymentCharges: Number(
+          apiOrder.totalOrderAmountIncludingPaymentCharges ?? 0
+        ),
+        amountExcludingDeliveryFee: Number(apiOrder.amountExcludingDeliveryFee ?? 0),
+        additionalPaymentCharges: Number(apiOrder.additionalPaymentCharges ?? 0),
+        deliveryFees: Number(apiOrder.deliveryFees ?? 0),
+        shippingFees: apiOrder.shippingFees != null ? Number(apiOrder.shippingFees) : null,
+        smartBizTotalDiscountValue: Number(apiOrder.smartBizTotalDiscountValue ?? 0),
         status: (() => {
-          const s = String(apiOrder.state || '').toLowerCase();
-          if (s === 'cancelled' || s === 'rejected') return normalizeStatus(apiOrder.state);
+          const state = String(apiOrder.state || '').toLowerCase();
+          if (state === 'cancelled' || state === 'rejected') {
+            return normalizeStatus(apiOrder.state);
+          }
           return normalizeStatus(apiOrder.orderMasterStatus || apiOrder.state);
         })(),
+        state: apiOrder.state || null,
         orderMasterStatus: apiOrder.orderMasterStatus || undefined,
-        orderDate:
-          typeof apiOrder.creationTime === 'string' && /\D/.test(apiOrder.creationTime)
-            ? new Date(apiOrder.creationTime).toISOString()
-            : new Date(Number(apiOrder.creationTime || Date.now())).toISOString(),
+        refundStatus: apiOrder.refundStatus || null,
+        cancelReason: apiOrder.cancelReason || null,
+        customerAction: apiOrder.customerAction || null,
+        orderDate: toDate(apiOrder.creationTime) || new Date().toISOString(),
+        creationTime: toDate(apiOrder.creationTime),
+        deliveryTime: toDate(apiOrder.deliveryTime),
+        actualDeliveryTime: toDate(apiOrder.deliveryTime) || undefined,
+        timestamps: {
+          createdAt: toDate(apiOrder.creationTime),
+          assignedAt: toDate(apiOrder.assignedAt),
+          arrivedAtStoreAt: toDate(apiOrder.arrivedAtStoreAt),
+          pickedUpAt: toDate(apiOrder.pickedUpAt),
+          reachedLocationAt: toDate(apiOrder.reachedLocationAt),
+          deliveredAt: toDate(apiOrder.deliveredAt),
+          deliveryTime: toDate(apiOrder.deliveryTime),
+          cancelledAt: toDate(apiOrder.cancelledAt),
+          rejectedAt: toDate(apiOrder.rejectedAt),
+          updatedAt: toDate(apiOrder.updatedAt),
+        },
         deliveryAddress: {
+          name: apiOrder.customerDeliveryAddress?.name || '',
           address: apiOrder.customerDeliveryAddress?.addressLine1 || '',
+          addressLine1: apiOrder.customerDeliveryAddress?.addressLine1 || '',
+          addressLine2: apiOrder.customerDeliveryAddress?.addressLine2 || '',
+          addressLine3: apiOrder.customerDeliveryAddress?.addressLine3 || '',
           city: apiOrder.customerDeliveryAddress?.city || '',
           state: apiOrder.customerDeliveryAddress?.state || '',
           postalCode: apiOrder.customerDeliveryAddress?.pincode || '',
+          coordinates:
+            apiOrder.customerDeliveryAddress?.latitude != null &&
+            apiOrder.customerDeliveryAddress?.longitude != null
+              ? {
+                  latitude: Number(apiOrder.customerDeliveryAddress.latitude),
+                  longitude: Number(apiOrder.customerDeliveryAddress.longitude),
+                }
+              : undefined,
+          latitude:
+            apiOrder.customerDeliveryAddress?.latitude != null
+              ? Number(apiOrder.customerDeliveryAddress.latitude)
+              : null,
+          longitude:
+            apiOrder.customerDeliveryAddress?.longitude != null
+              ? Number(apiOrder.customerDeliveryAddress.longitude)
+              : null,
+          addressQualityScore: Number(apiOrder.customerDeliveryAddress?.addressQualityScore ?? 0),
+          gstNumber: apiOrder.customerDeliveryAddress?.gstNumber || null,
         },
-        paymentMethod: (apiOrder.paymentMethod?.toLowerCase() as Order['paymentMethod']) || 'cash',
-        paymentStatus: 'paid',
+        paymentMethod: (apiOrder.paymentMethod?.toLowerCase() || 'cash') as Order['paymentMethod'],
+        paymentStatus: apiOrder.paymentReceivalStatus || 'pending',
+        paymentReceivalStatus: apiOrder.paymentReceivalStatus || null,
+        paymentGatewayUniqueTransactionId: apiOrder.paymentGatewayUniqueTransactionId || null,
+        paymentGatewayConfirmationId: apiOrder.paymentGatewayConfirmationId || null,
         customerName:
-          apiOrder.customerDeliveryAddress?.name || apiOrder.notificationDetail?.customerName || '',
+          apiOrder.customerDeliveryAddress?.name ||
+          apiOrder.customerName ||
+          apiOrder.customerNotificationDetails?.customerName ||
+          '',
         customerPhone: String(
-          apiOrder.customerMobileNumber || apiOrder.notificationDetail?.mobileNumber || ''
+          apiOrder.customerMobileNumber || apiOrder.customerNotificationDetails?.mobileNumber || ''
         ),
-        finance: apiOrder.finance || undefined,
+        customerNotificationDetails: apiOrder.customerNotificationDetails || null,
+        fulfillmentOption: apiOrder.fulfillmentOption || null,
+        selfDeliveryMode: apiOrder.selfDeliveryMode || null,
+        deliveryStrategy: apiOrder.deliveryStrategy || null,
+        deliveryAgentName: apiOrder.deliveryAgentName || null,
+        deliveryAgentMobileNumber:
+          apiOrder.deliveryAgentMobileNumber != null
+            ? String(apiOrder.deliveryAgentMobileNumber)
+            : null,
+        deliveryPartnerName: apiOrder.deliveryPartnerName || null,
+        deliveryPartnerDetails: riderDetails,
+        trackingId: apiOrder.trackingId || null,
+        trackingUrl: apiOrder.trackingUrl || null,
+        shippingDetails: apiOrder.shippingDetails || null,
+        tracking:
+          apiOrder.tracking ||
+          (riderDetails
+            ? {
+                orderMasterStatus: apiOrder.orderMasterStatus || null,
+                riderId: riderDetails.id || null,
+                riderName: riderDetails.name || null,
+                riderPhone: riderDetails.mobileNumber || riderDetails.phone || null,
+                riderProfilePicture: riderDetails.profilePicture || null,
+                riderLatitude: riderDetails.latitude ?? null,
+                riderLongitude: riderDetails.longitude ?? null,
+                riderOnline: riderDetails.isOnline ?? null,
+                shopName: apiOrder.shopName || null,
+                shopLatitude: apiOrder.shopLatitude ?? null,
+                shopLongitude: apiOrder.shopLongitude ?? null,
+                preparationTime: apiOrder.preparationTime
+                  ? `${apiOrder.preparationTime} mins`
+                  : null,
+                assignedAt: toDate(apiOrder.assignedAt),
+                arrivedAtStoreAt: toDate(apiOrder.arrivedAtStoreAt),
+                pickedUpAt: toDate(apiOrder.pickedUpAt),
+                reachedLocationAt: toDate(apiOrder.reachedLocationAt),
+                deliveredAt: toDate(apiOrder.deliveredAt),
+              }
+            : null),
+        finance: apiOrder.finance || null,
         review: apiOrder.review || null,
         complaint: apiOrder.complaint || null,
-        tracking: apiOrder.tracking || (apiOrder.deliveryPartnerDetails || apiOrder.deliveryPartner || apiOrder.riderDetail || apiOrder.rider || apiOrder.deliveryPartnerName ? {
-          orderMasterStatus: apiOrder.orderMasterStatus || null,
-          riderName: apiOrder.deliveryPartnerDetails?.name || apiOrder.deliveryPartner?.name || apiOrder.riderDetail?.name || apiOrder.rider?.name || apiOrder.deliveryPartnerName || null,
-          riderPhone: String(apiOrder.deliveryPartnerDetails?.mobileNumber || apiOrder.deliveryPartnerDetails?.phone || apiOrder.deliveryPartner?.mobileNumber || apiOrder.deliveryPartner?.phone || apiOrder.riderDetail?.mobileNumber || apiOrder.rider?.phone || apiOrder.deliveryPartnerPhone || ''),
-          riderProfilePicture: apiOrder.deliveryPartnerDetails?.profilePicture || apiOrder.deliveryPartner?.profilePicture || apiOrder.riderDetail?.profilePicture || apiOrder.rider?.profilePicture || null,
-          riderLatitude: apiOrder.deliveryPartnerDetails?.latitude || apiOrder.deliveryPartner?.latitude || apiOrder.riderDetail?.latitude || apiOrder.rider?.latitude || null,
-          riderLongitude: apiOrder.deliveryPartnerDetails?.longitude || apiOrder.deliveryPartner?.longitude || apiOrder.riderDetail?.longitude || apiOrder.rider?.longitude || null,
-          shopName: apiOrder.shopName || null,
-          shopLatitude: null,
-          shopLongitude: null,
-          preparationTime: apiOrder.preparationTime ? `${apiOrder.preparationTime} mins` : null,
-          assignedAt: apiOrder.assignedAt || null,
-          arrivedAtStoreAt: apiOrder.arrivedAtStoreAt || null,
-          pickedUpAt: apiOrder.pickedUpAt || null,
-          reachedLocationAt: apiOrder.reachedLocationAt || null,
-          deliveredAt: apiOrder.deliveredAt || null,
-        } : null),
+        smartBizOffers: apiOrder.smartBizOffers || [],
+        platformOrderDetails: apiOrder.platformOrderDetails || null,
       };
 
       set(state => ({
         selectedOrder: mappedOrder,
         loading: false,
-        orders: state.orders.map(o =>
-          o.orderId === mappedOrder.orderId ? { ...o, status: mappedOrder.status, orderMasterStatus: mappedOrder.orderMasterStatus } : o
+        orders: state.orders.map(order =>
+          order.orderId === mappedOrder.orderId
+            ? {
+                ...order,
+                ...mappedOrder,
+              }
+            : order
         ),
       }));
     } catch (err: unknown) {
       const errorMessage =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        (
+          err as {
+            response?: {
+              data?: {
+                message?: string;
+              };
+            };
+          }
+        )?.response?.data?.message ||
         (err as Error)?.message ||
         'Failed to fetch order details';
-      set({ error: errorMessage, loading: false });
+
+      set({
+        error: errorMessage,
+        loading: false,
+      });
     }
   },
 
@@ -370,9 +598,10 @@ const useOrderStore = create<OrderStore>((set, get) => ({
             )
           );
           const s = String(apiOrder.state || '').toLowerCase();
-          const status = (s === 'cancelled' || s === 'rejected')
-            ? normalizeStatus(apiOrder.state)
-            : normalizeStatus(apiOrder.orderMasterStatus || apiOrder.state);
+          const status =
+            s === 'cancelled' || s === 'rejected'
+              ? normalizeStatus(apiOrder.state)
+              : normalizeStatus(apiOrder.orderMasterStatus || apiOrder.state);
           return { orderId: order.orderId, status, orderMasterStatus: apiOrder.orderMasterStatus };
         } catch {
           return null;
