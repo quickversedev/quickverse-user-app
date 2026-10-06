@@ -76,7 +76,7 @@ const RED = '#F44336';
 const RED_BG = '#FEE2E2';
 const BLUE = '#2196F3';
 
-const MAP_HEIGHT = 220;
+const MAP_HEIGHT = 280;
 const AVG_SPEED_KMPH = 25; // used only when the API doesn't send an ETA
 
 /* -------------------------------------------------------------------------- */
@@ -572,15 +572,15 @@ const LiveOrderMap = ({
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         initialRegion={{ ...initial, latitudeDelta: 0.02, longitudeDelta: 0.02 }}
         onMapReady={fit}
-        // Static map so it never fights the parent ScrollView for touches
-        scrollEnabled={false}
-        zoomEnabled={false}
-        rotateEnabled={false}
-        pitchEnabled={false}
-        toolbarEnabled={false}
-        showsCompass={false}
-        showsMyLocationButton={false}
-        moveOnMarkerPress={false}
+        // Enabled map interactions
+        scrollEnabled={true}
+        zoomEnabled={true}
+        rotateEnabled={true}
+        pitchEnabled={true}
+        toolbarEnabled={true}
+        showsCompass={true}
+        showsMyLocationButton={true}
+        moveOnMarkerPress={true}
       >
         {route.length >= 2 && (
           <Polyline
@@ -1640,8 +1640,8 @@ const OrderDetailsScreen = () => {
       )
     : null;
   const vendorCoord = toCoord(
-    track('shopLatitude') ?? vendorAny?.shopAddress?.latitude ?? vendorAny?.latitude,
-    track('shopLongitude') ?? vendorAny?.shopAddress?.longitude ?? vendorAny?.longitude
+    track('shopLatitude') ?? vendorAny?.coordinates?.latitude ?? vendorAny?.location?.coordinates?.[1],
+    track('shopLongitude') ?? vendorAny?.coordinates?.longitude ?? vendorAny?.location?.coordinates?.[0]
   );
 
   const showMap = isLive && !!(vendorCoord || riderCoord || customerCoord);
@@ -2380,35 +2380,6 @@ const OrderDetailsScreen = () => {
               order={orderWithFeedback as any}
               onRefresh={onRefresh}
             />
-
-            {/* Safety guide (live orders only) */}
-            {isLive && (
-              <TouchableOpacity
-                style={[
-                  styles.card,
-                  styles.supportCard,
-                  { backgroundColor: getColor('card'), borderColor: getColor('border') },
-                ]}
-                onPress={handleSafetyGuide}
-                activeOpacity={0.85}
-              >
-                <View style={styles.supportInfoRow}>
-                  <View style={[styles.supportIconWrap, { backgroundColor: GREEN_BG }]}>
-                    <Icon name={'shield-check-outline' as any} size={22} color={GREEN} />
-                  </View>
-                  <View style={{ marginLeft: 12 }}>
-                    <ThemeText style={[styles.supportTitle, { color: getColor('text') }]}>
-                      Safety Guide
-                    </ThemeText>
-                    <ThemeText style={[styles.supportSubtitle, { color: getColor('subText') }]}>
-                      Contactless delivery
-                    </ThemeText>
-                  </View>
-                </View>
-                <Icon name="chevron-right" size={22} color={getColor('subText')} />
-              </TouchableOpacity>
-            )}
-
             {/* Support */}
             <View
               style={[
@@ -3173,7 +3144,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginHorizontal: 16,
-    marginTop: 8,
+    marginVertical: 8,
     borderRadius: 12,
     elevation: 2,
     shadowColor: '#000',
