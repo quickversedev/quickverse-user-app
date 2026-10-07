@@ -46,7 +46,12 @@ const offerLine = (subgroup: CatalogSubgroup) =>
   subgroup.offerText ||
   (subgroup.lowestSellingPrice ? `From ₹${wholeRupees(subgroup.lowestSellingPrice)}` : '');
 
-const DailyEssentials: React.FC = () => {
+interface DailyEssentialsProps {
+  /** Side margin, to line up with the screen it sits on (the Home screen uses 16). */
+  gutter?: number;
+}
+
+const DailyEssentials: React.FC<DailyEssentialsProps> = ({ gutter = CATALOGUE_GUTTER }) => {
   const { getColor } = useTheme();
   const { width } = useWindowDimensions();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -85,12 +90,12 @@ const DailyEssentials: React.FC = () => {
     );
   }, [essentialsCartOff, fetchLegacyGroups, nearLat, nearLng]);
 
-  const tileWidth = Math.floor((width - CATALOGUE_GUTTER * 2 - GAP * (COLUMNS - 1)) / COLUMNS);
+  const tileWidth = Math.floor((width - gutter * 2 - GAP * (COLUMNS - 1)) / COLUMNS);
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        section: { marginHorizontal: CATALOGUE_GUTTER, marginTop: 14 },
+        section: { marginHorizontal: gutter, marginTop: 14 },
         sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
         sectionTitle: {
           fontSize: 14,
@@ -154,7 +159,7 @@ const DailyEssentials: React.FC = () => {
           color: CATALOGUE_ACCENT,
         },
       }),
-    [getColor, tileWidth]
+    [getColor, tileWidth, gutter]
   );
 
   // Nothing to show and nothing on the way — take up no space at all.

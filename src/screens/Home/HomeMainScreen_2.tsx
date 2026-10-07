@@ -17,6 +17,8 @@ import { useTheme } from '../../theme/ThemeContext';
 import { AppNavigationProp } from '../../types/navigation';
 import CategoryCards from './components/CategoryCards';
 import FastPicks from './components/FastPicks';
+import DailyEssentials from '../Category/components/DailyEssentials';
+import useCatalogGroupsStore from '../../store/grocery/catalogGroupsStore';
 import HomeGradientBand from './components/HomeGradientBand';
 import HomeHeader from './components/HomeHeader';
 import HomePromotionCarousel from './components/HomePromotionCarousel';
@@ -93,6 +95,8 @@ const HomeMainScreen_2 = React.memo(() => {
         await usePagesStore.getState().fetchPages(regionId);
       }
       useVendorStore.getState().invalidateCache();
+      // Daily Essentials: admin's latest groups and tiles, for the same place and region.
+      useCatalogGroupsStore.getState().refresh();
       if (selectedAddress?.coordinates?.latitude && selectedAddress?.coordinates?.longitude) {
         await getVendorsNearLocation({
           latitude: selectedAddress.coordinates.latitude,
@@ -167,6 +171,10 @@ const HomeMainScreen_2 = React.memo(() => {
               </View>
 
               <FastPicks />
+
+              {/* The same Daily Essentials catalogue as the Daily Needs screen; a tile opens
+                  that group as a store. Hidden when the area has none. */}
+              <DailyEssentials gutter={16} />
             </>
           ) : null}
         </ScrollView>
