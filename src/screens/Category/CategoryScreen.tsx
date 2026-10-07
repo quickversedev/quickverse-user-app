@@ -5,7 +5,6 @@ import {
   Dimensions,
   FlatList,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -14,10 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import SectionDivider from '../../components/common/SectionDivider';
-import CollectionShowcaseWidget from '../../components/modules/Collection/CollectionShowcaseWidget';
 import { SearchBar } from '../../components/modules/Header/SearchBar';
 import VendorCard2 from '../../components/modules/Vendor/VendorCard2'; // Updated to V2
-import VendorShowcaseWidget from '../../components/modules/Vendor/VendorShowcaseWidget';
 import {
   API_STORE_ID,
   Collection,
@@ -44,7 +41,6 @@ import useVendorCouponsStore from '../../store/coupons/vendorCouponsStore';
 type CategoryScreenRouteProp = RouteProp<RootStackParamList, 'Category'>;
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const SHOWCASE_CARD_WIDTH = SCREEN_WIDTH * 0.85;
 
 const CategoryScreen = () => {
   const navigation = useNavigation<any>();
@@ -115,13 +111,6 @@ const CategoryScreen = () => {
       vendor => vendor.storeEnabled !== false && vendor.storeActive !== false
     );
   }, [categoryName, getVendorsByCategory, vendors]);
-
-  // Show the showcase widget for Shree Samarth Foods (94728). Falls back to
-  // the first grocery vendor if 94728 isn't in the list.
-  const showcaseVendors = React.useMemo(() => {
-    if (!isGrocery) return categoryVendors;
-    return categoryVendors.filter(v => v.shopId !== '68246').reverse();
-  }, [isGrocery, categoryVendors]);
 
   const browseColumns = React.useMemo(() => {
     /**
@@ -233,7 +222,7 @@ const CategoryScreen = () => {
       if (!labels || labels.length === 0) return null;
       return labels[couponTick % labels.length];
     },
-    [couponsByVendor, couponTick],
+    [couponsByVendor, couponTick]
   );
 
   // Cart Logic
@@ -330,26 +319,6 @@ const CategoryScreen = () => {
               endpoint returns no groups. */}
           {isGrocery && <DailyEssentials />}
 
-          {/* Collection Showcase Widgets (Grocery vendors) — horizontal scroll */}
-          {isGrocery && showcaseVendors.length > 0 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={SHOWCASE_CARD_WIDTH + 12}
-              decelerationRate="fast"
-              contentContainerStyle={styles.showcaseList}
-            >
-              {showcaseVendors.map(v => (
-                <View key={v.shopId} style={styles.showcaseCard}>
-                  <CollectionShowcaseWidget
-                    vendor={v}
-                    onPressExplore={() => handleVendorPress(v)}
-                  />
-                </View>
-              ))}
-            </ScrollView>
-          )}
-
           {/* Collections Grid (Grocery Only) */}
           {isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
           {isGrocery && !collectionsLoading && collections.length > 0 && (
@@ -424,19 +393,6 @@ const CategoryScreen = () => {
               {bestSellerVendors.length > 0 && (
                 <BestSellersSection vendors={bestSellerVendors} onVendorPress={handleVendorPress} />
               )}
-
-              {/* Full store list with showcase */}
-              <SectionDivider
-                text="Stores for you"
-                style={{ marginTop: 6, marginBottom: 4, paddingHorizontal: 40 }}
-                textStyle={{
-                  color: '#4B5563',
-                  fontWeight: '600',
-                  fontFamily: 'serif',
-                  fontStyle: 'italic',
-                  fontSize: 16,
-                }}
-              />
             </>
           )}
         </>
@@ -460,24 +416,16 @@ const CategoryScreen = () => {
     </View>
   );
 
-  const renderItem = ({ item }: { item: Vendor }) => (
-    <View style={{ paddingHorizontal: 20 }}>
-      <View style={{ marginTop: 8, marginBottom: 24 }}>
-        <VendorShowcaseWidget vendor={item} onPressExplore={() => handleVendorPress(item)} />
-      </View>
-    </View>
-  );
-
-  const showStoresList = !isGrocery || (!collectionsLoading && collections.length === 0);
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
       <FlatList
-        data={!showStoresList || hasNoVendors ? [] : categoryVendors}
-        renderItem={renderItem}
+        // Everything renders in the header; the per-store showcase list ("Stores for you") was
+        // removed, so the list itself is empty and only carries the header and pull-to-refresh.
+        data={[] as Vendor[]}
+        renderItem={() => null}
         keyExtractor={item => item.shopId}
         ListHeaderComponent={headerElement}
-        ListEmptyComponent={hasNoVendors || showStoresList ? renderEmpty : null}
+        ListEmptyComponent={hasNoVendors ? renderEmpty : null}
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
         showsVerticalScrollIndicator={false}
@@ -520,15 +468,6 @@ const styles = StyleSheet.create({
   },
   promoContainer: {
     // marginBottom: 24,
-  },
-  showcaseList: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    alignItems: 'stretch',
-  },
-  showcaseCard: {
-    width: SHOWCASE_CARD_WIDTH,
-    marginRight: 12,
   },
   horizontalList: {
     paddingLeft: 20,
