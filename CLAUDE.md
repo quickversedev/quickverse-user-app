@@ -23,6 +23,8 @@ npm start -- --reset-cache   # Clear cache (required after .env changes)
 cd ios && pod install        # iOS CocoaPods
 ```
 
+**The gates are red on `qa` before you change anything.** `npm run typecheck` reports ~54 existing errors (starting with `tsconfig.json: File '@react-native/typescript-config/tsconfig.json' not found`), so `npm run validate` fails too; ESLint reports many existing errors (`no-explicit-any` etc.) in large screens; and `npm test` has 3 suites that fail to run (two empty `*.test.ts` files, `__tests__/App.test.tsx` can't parse). Judge a change by comparing against the base: `tsc` error count per file before/after (`git show <base>:<file> | npx eslint --stdin --stdin-filename <file>` for lint), and require your new files to be clean.
+
 ## Android Builds
 
 ```bash
@@ -94,13 +96,15 @@ AppStack
 ├── Orders, OrderDetails, OrderSuccess, OrderFailure
 ├── Search
 ├── Profile, Address, AddAddress (slide-up), HelpDesk, AboutUs
-├── CollectionDetail
+├── CollectionDetail, TagProducts
 └── Category
 ```
 
+The Daily Essentials cart is not a separate route: it is `Cart` with `cartId: 'essentials'` (`ESSENTIALS_CART_ID`), rendered by `screens/cart/EssentialsCartView.tsx`. Essentials orders reuse `OrderSuccess` and `OrderDetails`, which switch on an `essentialsOrderId` route param.
+
 ### API Configuration
 
-- **Base URL:** Hardcoded in `axios.config.ts` (`API_CONFIG.baseURL`). Switch by commenting/uncommenting production vs local URLs there.
+- **Base URL:** Hardcoded in `axios.config.ts` (`API_CONFIG.baseURL`). Switch by commenting/uncommenting production vs local URLs there. Locally it is usually left on `http://10.0.2.2:8080/quickVerse` (emulator → host) as an **uncommitted** edit: never stage it, and never `git stash` while Metro runs — stash reverts it, the running app hits production with a local session and is logged out.
 - **Default headers:** `Content-Type: application/json`, `Request-Origin: CUSTOMER`
 - **Auth:** `Authorization: Basic <AUTHORIZATION_KEY>` added via `getAuthHeader()`. Per-request auth uses `SessionKey: <jwt>` header.
 - **Timeout:** 15 seconds
@@ -129,11 +133,17 @@ AppStack
 - **Location:** Geolocation API + Ola Maps reverse geocoding, races GPS & network in parallel. Default fallback is Beed, Maharashtra (`DEFAULT_FALLBACK_COORDINATES` in `src/constants/location.ts`). `checkLocationPermission()` returns a PermissionStatus string (e.g. `'granted'`), not boolean — compare with `!== 'granted'`, not `!status`.
 - **SmartBiz addresses:** Singleton `SmartBizAddressService` (`src/store/address/smartBizAddressStore.ts`) with per-vendor 5-minute in-memory cache. Call `clearCache(vendorId)` before fetching when fresh data is needed (e.g., after adding an address).
 - **Ola Maps limitation:** Reverse geocode `formatted_address` omits sublocality/locality — build display addresses from individual `address_components` fields. Pincode accuracy can differ from expected values; this is an upstream data issue.
-- **Payment:** Eligible methods fetched per-cart from `/v3/payment/eligiblePaymentMethods`. Razorpay handles online payments; COD has configurable charges. Order creation via `createOrderService`, payment via `createPaymentService`.
+- **Payment:** Eligible methods fetched per-cart from `/v3/payment/eligiblePaymentMethods`. Razorpay handles online payments; COD has configurable charges. Order creation via `createOrderService`, payment via `createPaymentService`. The food/store cart opens Razorpay with a key hardcoded in `CartScreen.tsx` (`RAZORPAY_KEY_ID`, live), while a local server creates orders with the test key — so prepaid food checkout fails locally with Razorpay's "Something went wrong"; test with COD. Essentials checkout takes the key from the server's response and has no such mismatch.
 - **Pages/Home layout:** Server-driven home page sections via `pagesStore` — fetches page configs from `/v3/pages` by region; used by promotion carousels and home content.
 - **Search:** Local suggestions + API search (`v3/search`), recent searches persisted to MMKV (max 10)
 - **Error handling:** Centralized in axios.config with `ApiError` interface. Toast on Android, Alert on iOS.
 - **Theme:** Server-driven theme (fetched by `AppInitializer`) with `DefaultTheme` fallback. Always use `useTheme().getColor()` for colors — avoid hardcoded values. Primary: #D97706 (amber).
+
+### Daily Essentials (multi-kirana, one order)
+
+The Daily Needs (grocery `Category`) screen has a Daily Essentials section built from QuickVerse's own catalogue, not SmartBiz: groups (header, accent bar, badge) → subgroup tiles. A tile opens the ordinary store screen, `VendorProduct`, in Essentials mode (`essentials: {groupId, title, subgroupId}` param): the group stands in for the store, its subgroups for the category rail, scrolled to the tapped subgroup. `hooks/useEssentialsGroupCatalogue.ts` shapes the group into that screen's `Product`/category form (`division` = subgroup); there is no store card and no product-detail modal (it adds to a store cart). Data: `services/catalogGroupsService.ts` + `store/grocery/catalogGroupsStore.ts` (persisted, keyed by place + region, 10-min TTL, refreshed by the screen's pull-to-refresh). Adding a product goes through `hooks/useEssentialsProductActions.ts`: with the server's Essentials cart on (`essentialsCartStore.enabled`), every product, whatever its kirana, lands in **one** QuickVerse cart (`/v3/essentials/cart`) and checks out as one order (`/v3/essentials/orders`); with it off, it falls back to per-shop `vendor_<shopId>` carts, grouped at checkout via `useEssentialsShopIds()` from the older flat `groceryGroupsStore`.
+
+**Never show the customer which kiranas an Essentials order uses** — no shop names, counts or per-shop status in cards, cart, success/details screens, history or messages. Order screens read Essentials data through `useEssentialsOrderDetails` (`essentialsAsOrder` maps it to the shared `Order` shape, so fields like `paymentMethod` arrive as `'cash'`/`'upi'`, not the API's `'COD'`). Prices in this flow are whole rupees (`utils/price.ts` `wholeRupees`).
 
 ### Environment Variables
 
