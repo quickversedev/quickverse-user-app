@@ -24,8 +24,9 @@ import {
   CouponSheet,
   DeliveryInstructions,
   DeliveryInstructionId,
+  EssentialsCartCard,
   FreeDeliveryProgress,
-  PaymentSheet,
+  PaymentOptions,
   PaymentSummary,
   TipSelector,
   tipContribution,
@@ -36,6 +37,13 @@ import {
   SmartBizAddressSelectionModal,
 } from '../../components/modules/Header';
 import { useAuth } from '../../contexts/login/AuthProvider';
+import {
+  essentialsAsOrder,
+  essentialsOrderRef,
+  essentialsOrderTotal,
+  foldOrders,
+  useEssentialsOrders,
+} from '../../hooks/useEssentialsOrders';
 import { useOrders } from '../../hooks/useOrders';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { ApiError } from '../../config/api/axios.types';
@@ -47,6 +55,11 @@ import hyperlocalOrderService, { HyperlocalShopOrder } from '../../services/hype
 import { getCODCharges } from '../../services/paymentService';
 import { smartBizAddressService } from '../../store/address/smartBizAddressStore';
 import useCartStore, { Cart } from '../../store/cart/cartStore';
+import useEssentialsCartStore, {
+  ESSENTIALS_CART_ID,
+  useEssentialsLines,
+  useEssentialsSummary,
+} from '../../store/cart/essentialsCartStore';
 import { useEssentialsShopIds } from '../../store/grocery/groceryGroupsStore';
 import useConfigStore from '../../store/configStore';
 import usePricingStore from '../../store/pricingStore';
@@ -59,6 +72,8 @@ import { Product } from '../../types/product';
 import { Vendor } from '../../types/vendor';
 import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
 import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
+import { wholeRupees } from '../../utils/price';
+import EssentialsCartView from './EssentialsCartView';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
@@ -77,7 +92,8 @@ const shopIdOf = (c: Cart): string => c.cartId.replace('vendor_', '');
  */
 const RAZORPAY_KEY_ID = 'rzp_live_TAGtNIHlg9alA6';
 
-const CartScreen: React.FC = () => {
+/** A store's own cart: one SmartBiz cart, one shop. */
+const StoreCartScreen: React.FC = () => {
   const navigation = useNavigation<CartScreenNavigationProp>();
   const route = useRoute<CartScreenRouteProp>();
   const { cartId } = route.params || {};
@@ -139,7 +155,6 @@ const CartScreen: React.FC = () => {
       current.includes(id) ? current.filter(x => x !== id) : [...current, id]
     );
   }, []);
-  const [showPaymentModal, setShowPaymentModal] = React.useState(false);
   const [selectedPaymentOption, setSelectedPaymentOption] = React.useState<string | undefined>(
     'PREPAID'
   );
@@ -169,6 +184,9 @@ const CartScreen: React.FC = () => {
 
   const computePreviousOrderTotal = useCallback(
     (order: Order): number => {
+      // What was charged, when known; the estimate below is only for orders we hold no record of.
+      const charged = order.chargedAmount ?? order.finance?.payableAmount;
+      if (charged != null) return Number(charged);
       const subTotal = (order.items || []).reduce(
         (sum, it) => sum + Number(it.totalPrice ?? it.price ?? 0),
         0
@@ -216,6 +234,20 @@ const CartScreen: React.FC = () => {
    */
   const essentialsShopIds = useEssentialsShopIds();
 
+  /**
+   * With the server's Essentials cart on, Daily Essentials items no longer land in these
+   * per-shop carts at all — they have their own cart and checkout. A kirana cart here then
+   * holds only what was added from that store's own page, and must check out on its own,
+   * so the shop-based grouping below is switched off.
+   */
+  const essentialsCartEnabled = useEssentialsCartStore(s => s.enabled === true);
+  const { essentialsOrders, kiranaOrderIds } = useEssentialsOrders(orders);
+  const previousOrders = useMemo(
+    () => foldOrders(orders, essentialsOrders, kiranaOrderIds, hasMoreOrders),
+    [orders, essentialsOrders, kiranaOrderIds, hasMoreOrders]
+  );
+  const essentialsSummary = useEssentialsSummary();
+
   const openCarts = useMemo(() => Object.values(carts), [carts]);
 
   const groupableCarts = useMemo(
@@ -233,8 +265,11 @@ const CartScreen: React.FC = () => {
    * so a cold cache degrades to today's behaviour instead of failing.
    */
   const isGroupedCheckout = useMemo(
-    () => groupableCarts.length > 0 && groupableCarts.length === openCarts.length,
-    [groupableCarts.length, openCarts.length]
+    () =>
+      !essentialsCartEnabled &&
+      groupableCarts.length > 0 &&
+      groupableCarts.length === openCarts.length,
+    [essentialsCartEnabled, groupableCarts.length, openCarts.length]
   );
 
   /**
@@ -310,7 +345,6 @@ const CartScreen: React.FC = () => {
     availableOptions,
     loading: paymentMethodsLoading,
     error: paymentMethodsError,
-    refetch: refetchPaymentMethods,
   } = usePaymentMethods({
     cartId: cart?.smartBizCartId,
     shopId: vendor?.shopId,
@@ -441,13 +475,16 @@ const CartScreen: React.FC = () => {
 
   /** Cart subtotal a coupon's minimum order is tested against. */
   const couponCartTotal = useMemo(() => {
-    const apiSubtotal = cart?.totalCartAmount ?? 0;
-    if (apiSubtotal > 0) return apiSubtotal;
+    // The bill's item total, which the server's minimum-order check also uses: whole-rupee unit
+    // prices times quantity. SmartBiz's own cart total keeps paise (₹395.01 for 2 × ₹197.505),
+    // which made "Add ₹604 more" disagree with the free-delivery bar's "Add ₹603 more".
+    const billed = Number(checkoutSummary?.itemTotalAmount ?? 0);
+    if (billed > 0) return billed;
     return cartItems.reduce(
-      (sum: number, product: any) => sum + product.price * product.quantity,
+      (sum: number, product: any) => sum + wholeRupees(product.price) * product.quantity,
       0
     );
-  }, [cart?.totalCartAmount, cartItems]);
+  }, [checkoutSummary?.itemTotalAmount, cartItems]);
 
   const handleCalculateCheckoutSummary = useCallback(async () => {
     if (!cartItems || cartItems.length === 0) {
@@ -596,65 +633,6 @@ const CartScreen: React.FC = () => {
       console.log('Razorpay Payment Failed : ', error);
     }
   };
-
-  const handleCheckout = useCallback(async () => {
-    if (!authData?.jwt) {
-      setShowLoginPromptModal(true);
-      return;
-    }
-
-    const isValidUUID = (value?: string | null) =>
-      !!value &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-
-    const isAddressSelected = isValidUUID(selectedSmartBizAddress?.addressID);
-
-    if (!isAddressSelected) {
-      setShowSmartBizAddressModal(true);
-      return;
-    }
-
-    const maxKm = deliveryRadiusKm ?? 5;
-    if (distanceKm != null && distanceKm > maxKm) {
-      setShowDistanceModal(true);
-      return;
-    }
-
-    if (vendor) {
-      const storeStatus = isStoreOpen({
-        openingTime: vendor.openingTime,
-        closingTime: vendor.closingTime,
-        storeActive: vendor.storeActive,
-      });
-
-      if (!storeStatus.isOpen) {
-        const isTimeBased = vendor.storeActive !== false && storeStatus.nextOpeningTime;
-        const opensAtText = isTimeBased
-          ? ` Opens at ${formatTimeToAMPM(storeStatus.nextOpeningTime!)}.`
-          : '';
-        setStoreClosedModal({
-          visible: true,
-          message: `The store is closed at the moment.${opensAtText} Please try again later.`,
-        });
-        return;
-      }
-    }
-
-    // Everything above is a precondition for ordering at all. The method itself is
-    // chosen in the step this opens, and the order is placed from there.
-    setShowPaymentModal(true);
-  }, [
-    permissionDataInAuth?.permission,
-    selectedAddress,
-    cart,
-    vendor,
-    authData?.jwt,
-    authData?.phone,
-    selectedSmartBizAddress,
-    navigation,
-    distanceKm,
-    deliveryRadiusKm,
-  ]);
 
   /**
    * Places the order for an explicitly chosen payment method.
@@ -883,7 +861,9 @@ const CartScreen: React.FC = () => {
           authData.phone
         );
 
-        if (selectedPaymentOption === 'PREPAID') {
+        // The method passed in, not selectedPaymentOption: that state still holds the previous
+        // choice here, which once opened Razorpay for an order just placed as COD.
+        if (paymentMethod.toUpperCase() === 'PREPAID') {
           await handleRazorpayPayment(orderResponse, calculatedTotal, vendor);
         } else {
           if (cart && authData?.jwt && authData?.phone) {
@@ -956,6 +936,76 @@ const CartScreen: React.FC = () => {
     ]
   );
 
+  const submittingRef = React.useRef(false);
+  const handleCheckout = useCallback(async () => {
+    if (!authData?.jwt) {
+      setShowLoginPromptModal(true);
+      return;
+    }
+
+    const isValidUUID = (value?: string | null) =>
+      !!value &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+    const isAddressSelected = isValidUUID(selectedSmartBizAddress?.addressID);
+
+    if (!isAddressSelected) {
+      setShowSmartBizAddressModal(true);
+      return;
+    }
+
+    const maxKm = deliveryRadiusKm ?? 5;
+    if (distanceKm != null && distanceKm > maxKm) {
+      setShowDistanceModal(true);
+      return;
+    }
+
+    if (vendor) {
+      const storeStatus = isStoreOpen({
+        openingTime: vendor.openingTime,
+        closingTime: vendor.closingTime,
+        storeActive: vendor.storeActive,
+      });
+
+      if (!storeStatus.isOpen) {
+        const isTimeBased = vendor.storeActive !== false && storeStatus.nextOpeningTime;
+        const opensAtText = isTimeBased
+          ? ` Opens at ${formatTimeToAMPM(storeStatus.nextOpeningTime!)}.`
+          : '';
+        setStoreClosedModal({
+          visible: true,
+          message: `The store is closed at the moment.${opensAtText} Please try again later.`,
+        });
+        return;
+      }
+    }
+
+    // Everything above is a precondition for ordering at all. The method was chosen on the
+    // cart, and the bill on screen was priced for it.
+    // One order at a time: a second tap lands before the loading state has re-rendered, and each
+    // tap would otherwise place its own SmartBiz order.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    try {
+      await placeOrder(selectedPaymentOption?.toUpperCase() === 'COD' ? 'COD' : 'PREPAID');
+    } finally {
+      submittingRef.current = false;
+    }
+  }, [
+    placeOrder,
+    selectedPaymentOption,
+    permissionDataInAuth?.permission,
+    selectedAddress,
+    cart,
+    vendor,
+    authData?.jwt,
+    authData?.phone,
+    selectedSmartBizAddress,
+    navigation,
+    distanceKm,
+    deliveryRadiusKm,
+  ]);
+
   const handleAddressSelect = useCallback(
     (address: Address) => {
       setSelectedAddress(address);
@@ -969,25 +1019,6 @@ const CartScreen: React.FC = () => {
     setShowSmartBizAddressModal(false);
   }, []);
 
-  const handlePaymentOptionsPress = useCallback(() => {
-    setShowPaymentModal(true);
-  }, []);
-
-  const handlePaymentModalClose = useCallback(() => {
-    setShowPaymentModal(false);
-  }, []);
-
-  const handlePaymentConfirm = useCallback(
-    (selectedOption: string, _upiId?: string) => {
-      setSelectedPaymentOption(selectedOption);
-      setShowPaymentModal(false);
-      // Chosen method goes straight through, rather than being read back from state
-      // that has not re-rendered yet.
-      placeOrder(selectedOption);
-    },
-    [placeOrder]
-  );
-
   const getFormattedAddress = useCallback(() => {
     if (!selectedSmartBizAddress) return 'Select delivery address';
     const { name, addressLine1, city, state } = selectedSmartBizAddress;
@@ -996,10 +1027,23 @@ const CartScreen: React.FC = () => {
   }, [selectedSmartBizAddress, distanceText]);
 
   const isCheckoutDisabled = useMemo(() => {
-    // No longer gated on a payment method: it is chosen in the step this button
-    // opens, so requiring one first would disable the button permanently.
-    return Boolean(paymentMethodsError) || isOrderLoading;
-  }, [paymentMethodsError, isOrderLoading]);
+    // Not while the bill is being re-priced (say, for a change of payment method): the
+    // order must go out on the bill the customer is looking at.
+    return Boolean(paymentMethodsError) || isOrderLoading || checkoutSummaryLoading;
+  }, [paymentMethodsError, isOrderLoading, checkoutSummaryLoading]);
+
+  /** Whether this store takes cash on delivery, from its eligible payment methods. */
+  const codAvailable = useMemo(
+    () => availableOptions.some(option => option.key === 'COD' && option.available),
+    [availableOptions]
+  );
+
+  // A COD choice made for another store does not carry over to one without COD.
+  React.useEffect(() => {
+    if (!paymentMethodsLoading && selectedPaymentOption === 'COD' && !codAvailable) {
+      setSelectedPaymentOption('PREPAID');
+    }
+  }, [paymentMethodsLoading, selectedPaymentOption, codAvailable]);
 
   React.useEffect(() => {
     const initializeCart = async () => {
@@ -1052,7 +1096,7 @@ const CartScreen: React.FC = () => {
     setCouponLoading(true);
     try {
       const data = await couponService.getAvailableCoupons(
-        getRegionId() as string,
+        getRegionId(),
         vendor.shopId,
         vendor?.category?.toUpperCase()
       );
@@ -1092,6 +1136,16 @@ const CartScreen: React.FC = () => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: getColor('background') }}>
         <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, paddingBottom: 100 }}>
+          {essentialsCartEnabled ? (
+            <EssentialsCartCard
+              itemCount={essentialsSummary.itemCount}
+              itemTotal={essentialsSummary.itemTotal}
+              onPress={() =>
+                navigation.navigate('Cart', { cartId: ESSENTIALS_CART_ID, returnTo: cart?.cartId })
+              }
+              style={{ marginHorizontal: 0, marginTop: 0 }}
+            />
+          ) : null}
           <View style={styles.emptyCartSection}>
             <MaterialCommunityIcons name="cart-off" size={80} color={getColor('subText')} />
             <Text
@@ -1117,24 +1171,42 @@ const CartScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {ordersLoading && orders.length === 0 ? (
+          {ordersLoading && previousOrders.length === 0 ? (
             <ActivityIndicator size="small" color={getColor('primary')} style={{ marginTop: 32 }} />
-          ) : orders.length > 0 ? (
+          ) : previousOrders.length > 0 ? (
             <View style={[styles.prevOrdersSection, { backgroundColor: '#FFF8F0' }]}>
               <Text style={[styles.prevOrdersTitle, { color: getColor('text') }]}>
                 Previous Orders
               </Text>
-              {orders.map(order => (
-                <PreviousOrderCard
-                  key={order.orderId}
-                  order={order}
-                  getColor={getColor}
-                  total={computePreviousOrderTotal(order)}
-                  onPress={() =>
-                    navigation.navigate('OrderDetails', { orderId: order.orderId, order })
-                  }
-                />
-              ))}
+              {previousOrders.map(entry =>
+                entry.kind === 'order' ? (
+                  <PreviousOrderCard
+                    key={entry.key}
+                    order={entry.order}
+                    getColor={getColor}
+                    total={computePreviousOrderTotal(entry.order)}
+                    onPress={() =>
+                      navigation.navigate('OrderDetails', {
+                        orderId: entry.order.orderId,
+                        order: entry.order,
+                      })
+                    }
+                  />
+                ) : (
+                  <PreviousOrderCard
+                    key={entry.key}
+                    order={essentialsAsOrder(entry.order)}
+                    getColor={getColor}
+                    total={essentialsOrderTotal(entry.order)}
+                    onPress={() =>
+                      navigation.navigate('OrderDetails', {
+                        orderId: essentialsOrderRef(entry.order),
+                        essentialsOrderId: entry.order.orderId,
+                      })
+                    }
+                  />
+                )
+              )}
               {hasMoreOrders && (
                 <TouchableOpacity
                   style={[styles.loadMoreBtn, { borderColor: getColor('primary') }]}
@@ -1199,6 +1271,15 @@ const CartScreen: React.FC = () => {
       />
 
       <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: footerHeight + 24 }}>
+        {essentialsCartEnabled ? (
+          <EssentialsCartCard
+            itemCount={essentialsSummary.itemCount}
+            itemTotal={essentialsSummary.itemTotal}
+            onPress={() =>
+              navigation.navigate('Cart', { cartId: ESSENTIALS_CART_ID, returnTo: cart?.cartId })
+            }
+          />
+        ) : null}
         <AnimatedCard delay={0}>
           <FreeDeliveryProgress
             cartAmount={checkoutSummary?.itemTotalAmount ?? 0}
@@ -1230,6 +1311,12 @@ const CartScreen: React.FC = () => {
             selectedDeliveryCoupon={selectedDeliveryCoupon}
             onRemoveDiscountCoupon={() => setSelectedDiscountCoupon(null)}
             onRemoveDeliveryCoupon={() => setSelectedDeliveryCoupon(null)}
+            onApplyCoupon={coupon =>
+              coupon.type === 'FREE_DELIVERY'
+                ? setSelectedDeliveryCoupon(coupon)
+                : setSelectedDiscountCoupon(coupon)
+            }
+            cartTotal={couponCartTotal}
           />
         </AnimatedCard>
 
@@ -1239,8 +1326,22 @@ const CartScreen: React.FC = () => {
           </AnimatedCard>
         )}
 
-        {/* Payment method moved off the cart: the design's bar goes straight to
-            "Proceed to Pay", and the choice is made in the step that follows. */}
+        {/* Chosen on the cart so the bill below is priced for it, COD charge included. */}
+        <AnimatedCard delay={175}>
+          <PaymentOptions
+            selectedOption={selectedPaymentOption as 'COD' | 'PREPAID'}
+            onSelect={setSelectedPaymentOption}
+            codAvailable={codAvailable}
+            // The bill's figure once COD is chosen: the store's eligible-methods setting can say
+            // ₹0 while the bill adds the pricing config's COD charge.
+            codCharges={
+              selectedPaymentOption === 'COD' && checkoutSummary?.codCharges != null
+                ? Number(checkoutSummary.codCharges)
+                : codCharges
+            }
+          />
+        </AnimatedCard>
+
         <AnimatedCard delay={200}>
           <DeliveryInstructions
             selected={deliveryInstructions}
@@ -1287,6 +1388,7 @@ const CartScreen: React.FC = () => {
         disabled={isCheckoutDisabled}
         loading={isOrderLoading}
         isGuest={!authData?.jwt}
+        paymentMethod={selectedPaymentOption}
       />
 
       <AddressSelectionModal
@@ -1314,18 +1416,6 @@ const CartScreen: React.FC = () => {
         selectedDeliveryCoupon={selectedDeliveryCoupon}
         onApplyDiscount={setSelectedDiscountCoupon}
         onApplyDelivery={setSelectedDeliveryCoupon}
-      />
-
-      <PaymentSheet
-        visible={showPaymentModal}
-        onClose={handlePaymentModalClose}
-        onConfirm={handlePaymentConfirm}
-        paymentMethods={paymentMethods}
-        selectedOption={selectedPaymentOption as 'COD' | 'PREPAID'}
-        error={paymentMethodsError}
-        loading={paymentMethodsLoading}
-        onRetry={refetchPaymentMethods}
-        total={(checkoutSummary?.payableAmount ?? 0) + tipContribution(tipAmount)}
       />
 
       <Modal
@@ -1668,6 +1758,41 @@ const PreviousOrderCardBase: React.FC<PreviousOrderCardProps> = ({
 };
 
 const PreviousOrderCard = React.memo(PreviousOrderCardBase);
+
+/**
+ * The Cart screen, for a store cart or the Daily Essentials cart — the same screen either way.
+ *
+ * The Essentials cart is shown when asked for by id, or when it is the only cart there is (the
+ * Cart tab opened with nothing in any store cart). Otherwise the store cart is shown, with a card
+ * leading to the Essentials cart when that has items too.
+ */
+const CartScreen: React.FC = () => {
+  const route = useRoute<CartScreenRouteProp>();
+  const requested = route.params?.cartId;
+  const essentialsEnabled = useEssentialsCartStore(s => s.enabled === true);
+  const hasEssentials = useEssentialsLines().length > 0;
+  const hasStoreCarts = useCartStore(s => Object.keys(s.carts).length > 0);
+  const { authData } = useAuth();
+  const fetchEssentialsCart = useEssentialsCartStore(s => s.fetchCart);
+
+  // The Essentials cart lives on the server; without this the tab shows only what this device
+  // last saw, and a cart filled elsewhere (or restored at login) stays invisible here.
+  useFocusEffect(
+    useCallback(() => {
+      fetchEssentialsCart(authData?.jwt || undefined, authData?.phone || undefined);
+    }, [fetchEssentialsCart, authData?.jwt, authData?.phone])
+  );
+
+  // Asked for by id, it still gives way to a store cart once it is empty (say, after its order
+  // was placed) — just as a store cart id that no longer exists falls back to another cart.
+  const showEssentials =
+    essentialsEnabled &&
+    (requested === ESSENTIALS_CART_ID
+      ? hasEssentials || !hasStoreCarts
+      : !requested && !hasStoreCarts && hasEssentials);
+
+  return showEssentials ? <EssentialsCartView /> : <StoreCartScreen />;
+};
 
 export default React.memo(CartScreen);
 

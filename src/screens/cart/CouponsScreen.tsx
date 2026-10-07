@@ -344,7 +344,7 @@ const CouponsScreen: React.FC = () => {
     setError('');
     try {
       const data = await couponService.getAvailableCoupons(
-        getRegionId() as string,
+        getRegionId(),
         vendor?.shopId ?? '',
         vendor?.category?.toUpperCase() ?? 'FOOD'
       );

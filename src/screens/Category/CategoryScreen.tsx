@@ -26,7 +26,7 @@ import useVendorStore from '../../store/vendorStore';
 import usePagesStore from '../../store/pages/pagesStore';
 import useConfigStore from '../../store/configStore';
 import { Vendor } from '../../types/vendor';
-import { isStoreOpen } from '../../utils/storeUtils';
+import { isOrderableShop, isStoreOpen } from '../../utils/storeUtils';
 import PromotionCarousel from '../Home/components/PromotionCarousel';
 import DailyEssentials from './components/DailyEssentials';
 import CollectionsGrid from './components/CollectionsGrid';
@@ -90,9 +90,12 @@ const CategoryScreen = () => {
       const refreshedShopIds = useVendorStore
         .getState()
         .getVendorsByCategory(categoryName)
+        .filter(isOrderableShop)
         .map(vendor => vendor.shopId);
       if (refreshedShopIds.length > 0) {
-        await useProductTagsStore.getState().fetchTags(categoryName, refreshedShopIds);
+        await useProductTagsStore
+          .getState()
+          .fetchTags(categoryName, refreshedShopIds, useConfigStore.getState().getRegionId());
       }
       useFeaturedProductsStore.getState().clearCache();
       useVendorCouponsStore.getState().invalidateCache();
@@ -107,9 +110,7 @@ const CategoryScreen = () => {
   }, [categoryName, isGrocery]);
 
   const categoryVendors = React.useMemo(() => {
-    return getVendorsByCategory(categoryName).filter(
-      vendor => vendor.storeEnabled !== false && vendor.storeActive !== false
-    );
+    return getVendorsByCategory(categoryName).filter(isOrderableShop);
   }, [categoryName, getVendorsByCategory, vendors]);
 
   const browseColumns = React.useMemo(() => {

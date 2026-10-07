@@ -10,9 +10,15 @@ interface CartHeaderProps {
   onClearCart: () => void;
   /** Total units in the cart; drives the design's count pill beside the title. */
   itemCount?: number;
+  title?: string;
 }
 
-const CartHeader: React.FC<CartHeaderProps> = ({ onBack, onClearCart, itemCount = 0 }) => {
+const CartHeader: React.FC<CartHeaderProps> = ({
+  onBack,
+  onClearCart,
+  itemCount = 0,
+  title = 'Your Cart',
+}) => {
   const { getColor, getTypography, theme } = useTheme();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -136,7 +142,7 @@ const CartHeader: React.FC<CartHeaderProps> = ({ onBack, onClearCart, itemCount 
         </TouchableOpacity>
         <View style={styles.titleGroup}>
           <Text style={styles.headerTitle} numberOfLines={1}>
-            Your Cart
+            {title}
           </Text>
           {itemCount > 0 ? (
             <View style={styles.countPill}>

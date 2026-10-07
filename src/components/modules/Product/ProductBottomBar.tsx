@@ -3,6 +3,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '../../../theme/ThemeContext';
 import { ThemeText } from '../../common/theme/ThemeText';
+import { wholeRupees } from '../../../utils/price';
 
 interface ProductBottomBarProps {
   price: number;
@@ -59,13 +60,13 @@ const ProductBottomBar: React.FC<ProductBottomBarProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.priceContainer}>
-        {mrp !== price && (
+        {wholeRupees(mrp) !== wholeRupees(price) && (
           <ThemeText variant="caption" color={getColor('subText')} style={styles.mrpText}>
-            MRP ₹{mrp}
+            MRP ₹{wholeRupees(mrp)}
           </ThemeText>
         )}
         <ThemeText variant="h2" color={getColor('text')} style={styles.priceText}>
-          ₹{price}
+          ₹{wholeRupees(price)}
         </ThemeText>
       </View>
 

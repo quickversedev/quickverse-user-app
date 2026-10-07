@@ -16,6 +16,7 @@ import VegIcon from '../../common/VegIcon';
 import RatingBadge from '../../common/badges/RatingBadge';
 import AddButton from './AddButton';
 import QuantitySelector from './QuantitySelector';
+import { wholeRupees } from '../../../utils/price';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 4;
@@ -34,15 +35,6 @@ const CARD_WIDTH_BIG = (AVAILABLE_WIDTH - CARD_MARGIN * 3) / 2; // 2 cards per r
 // shared with the PDP, so it lives in constants/catalogue.ts rather than here.
 const PLP_ACCENT = CATALOGUE_ACCENT;
 const PLP_ON_ACCENT = ON_CATALOGUE_ACCENT;
-
-/**
- * The PLP grid drops a whole rupee value's ".00", as the design does. The row there
- * is only ~130px wide and the cart control claims 80 of it, so the two trailing
- * zeroes are the difference between the price fitting and being clipped. Other sizes
- * keep two decimals.
- */
-const formatAmount = (value: number, compact: boolean) =>
-  compact && Number.isInteger(value) ? String(value) : value.toFixed(2);
 
 interface ProductCardProps {
   product: Product;
@@ -451,7 +443,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     [size, product.attributes?.unit]
   );
 
-  const showMrp = useMemo(() => mrp !== price, [mrp, price]);
+  const showMrp = useMemo(() => wholeRupees(mrp) !== wholeRupees(price), [mrp, price]);
   const showDiscount = useMemo(() => discount > 0, [discount]);
   const showRating = useMemo(() => size !== 'xs', [size]);
   const isOutOfStock = useMemo(() => !inStock, [inStock]);
@@ -602,11 +594,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {isGrid ? (
             <>
               <Text style={[styles.price, isOutOfStock && { opacity: 0.6 }]} numberOfLines={1}>
-                ₹{formatAmount(price ?? 0, isGrid)}
+                ₹{wholeRupees(price)}
               </Text>
               {showMrp && (
                 <Text style={[styles.mrp, isOutOfStock && { opacity: 0.6 }]} numberOfLines={1}>
-                  ₹{formatAmount(mrp ?? 0, isGrid)}
+                  ₹{wholeRupees(mrp)}
                 </Text>
               )}
             </>
@@ -614,11 +606,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <>
               {showMrp && (
                 <Text style={[styles.mrp, isOutOfStock && { opacity: 0.6 }]} numberOfLines={1}>
-                  ₹{formatAmount(mrp ?? 0, isGrid)}
+                  ₹{wholeRupees(mrp)}
                 </Text>
               )}
               <Text style={[styles.price, isOutOfStock && { opacity: 0.6 }]} numberOfLines={1}>
-                ₹{formatAmount(price ?? 0, isGrid)}
+                ₹{wholeRupees(price)}
               </Text>
             </>
           )}

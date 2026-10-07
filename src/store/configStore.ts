@@ -17,6 +17,8 @@ interface ConfigStore {
   clearError: () => void;
   invalidateCache: () => void;
   reset: () => void;
+  /** The region, refetched once for the same place if the cached config has none. */
+  ensureRegionId: () => Promise<string | null>;
 
   getConfig: () => InitialConfigResponse | null;
   getDeliveryDistance: () => number | null;
@@ -41,7 +43,14 @@ const useConfigStore = create<ConfigStore>()(
       ...initialState,
 
       fetchInitialConfig: async (params: InitialConfigParams) => {
-        if (isCacheFresh(get()._lastFetchedAt, CACHE_TTL.CONFIG) && get().config) {
+        // A config without a region is never "fresh": the server returned no region for a town
+        // whose settings were missing (Gevrai, Oct 2026), and caching that for the TTL left
+        // every per-region request — coupons, posters — without one for hours.
+        if (
+          isCacheFresh(get()._lastFetchedAt, CACHE_TTL.CONFIG) &&
+          get().config &&
+          get().config?.regionId
+        ) {
           return;
         }
 
@@ -72,6 +81,20 @@ const useConfigStore = create<ConfigStore>()(
 
       invalidateCache: () => set({ _lastFetchedAt: 0 }),
       reset: () => set(initialState),
+
+      ensureRegionId: async () => {
+        const current = get().config?.regionId;
+        if (current) return current;
+        // Asked again for the place the config was fetched for (the server echoes it back).
+        const location = get().config?.defaultLocation;
+        if (!location) return null;
+        set({ _lastFetchedAt: 0 });
+        await get().fetchInitialConfig({
+          latitude: String(location.latitude),
+          longitude: String(location.longitude),
+        });
+        return get().config?.regionId || null;
+      },
 
       getConfig: () => get().config,
       getDeliveryDistance: () => get().config?.deliveryDistance || null,

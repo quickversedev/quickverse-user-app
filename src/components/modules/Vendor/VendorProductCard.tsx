@@ -45,8 +45,8 @@ const VendorProductCard: React.FC<VendorProductCardProps> = ({
     if (offerFetchedRef.current) return;
     offerFetchedRef.current = true;
     let cancelled = false;
-    const regionId = getRegionId() as string;
-    if (!regionId) return;
+    // May be null if the cached config has none; the coupon service resolves it.
+    const regionId = getRegionId();
     couponApi.getAvailableCoupons(regionId, vendor.shopId, vendor.category?.toUpperCase() || 'FOOD')
       .then((coupons: any[]) => {
         if (cancelled || !coupons || coupons.length === 0) return;

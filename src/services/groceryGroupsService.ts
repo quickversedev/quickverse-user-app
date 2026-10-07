@@ -47,10 +47,15 @@ class GroceryGroupsService {
    * Groups with at least one product. The server already drops empty ones — 11 of the
    * 15 rows in `qv.product_group` have no products and never appear here.
    */
-  async fetchProductGroups(): Promise<GroceryGroup[]> {
+  async fetchProductGroups(near?: {
+    latitude: number;
+    longitude: number;
+  }): Promise<GroceryGroup[]> {
+    // With a location, only products from kiranas that deliver there come back.
     const response = await apiCall(
       axiosInstance.get<GroceryGroup[]>('/v3/grocery/product-groups', {
         headers: { Authorization: getAuthHeader() },
+        params: near ? { latitude: near.latitude, longitude: near.longitude } : undefined,
       })
     );
     return Array.isArray(response) ? response : [];

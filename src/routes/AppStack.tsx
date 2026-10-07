@@ -32,7 +32,8 @@ import { Vendor } from '../types/vendor';
 
 export type TabParamList = {
   Home: undefined;
-  Cart: { cartId: string } | undefined;
+  /** `returnTo`: the store cart the Essentials cart was opened from, which Back returns to. */
+  Cart: { cartId: string; returnTo?: string } | undefined;
   Explore: undefined;
 };
 
@@ -51,9 +52,14 @@ export type RootStackParamList = {
   CollectionDetail: { collection: Collection };
   TagProducts: { tagCode: string; tagLabel: string; shopCategory?: string };
   ProductDetailDemo: undefined;
-  Cart: { cartId: string } | undefined;
+  /** `returnTo`: the store cart the Essentials cart was opened from, which Back returns to. */
+  Cart: { cartId: string; returnTo?: string } | undefined;
   Orders: undefined;
-  OrderDetails: { orderId: string; order?: Order };
+  /**
+   * `essentialsOrderId` shows a Daily Essentials order on the same screen as every other order;
+   * `orderId` is then its short reference.
+   */
+  OrderDetails: { orderId: string; order?: Order; essentialsOrderId?: string };
   OrderSuccess: {
     orderId: string;
     amount: number;
@@ -66,6 +72,8 @@ export type RootStackParamList = {
      */
     orderGroupMasterId?: string;
     shopCount?: number;
+    /** A Daily Essentials order, shown on the same success screen as every other order. */
+    essentialsOrderId?: string;
   };
   OrderFailure: { errorMessage?: string };
   Coupons: {

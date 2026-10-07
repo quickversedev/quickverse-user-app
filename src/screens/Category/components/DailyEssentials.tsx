@@ -1,14 +1,28 @@
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Image, ImageSourcePropType, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Image,
+  ImageSourcePropType,
+  Platform,
+  StyleSheet,
+  ToastAndroid,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import QuantitySelector from '../../../components/modules/Product/QuantitySelector';
 import { ThemeText } from '../../../components/common/theme/ThemeText';
 import { CATALOGUE_ACCENT, CATALOGUE_GUTTER } from '../../../constants/catalogue';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { GroceryGroupProduct } from '../../../services/groceryGroupsService';
 import useCartStore from '../../../store/cart/cartStore';
+import useEssentialsCartStore, {
+  EssentialsProductMeta,
+  EssentialsSetResult,
+} from '../../../store/cart/essentialsCartStore';
 import useGroceryGroupsStore from '../../../store/grocery/groceryGroupsStore';
 import { useTheme } from '../../../theme/ThemeContext';
+import { wholeRupees } from '../../../utils/price';
 
 /**
  * Daily Essentials — curated grocery groups, rendered from QuickVerse's own data.
@@ -16,7 +30,8 @@ import { useTheme } from '../../../theme/ThemeContext';
  * Everything else on this screen is proxied: the collections grid comes from a single
  * hardcoded shop, and grocery product grids are pulled by the device from SmartPOS.
  * These groups come from `qv.product_group`, which is why they can span shops — one
- * group legitimately mixes products from several kiranas, and each card says which.
+ * group legitimately mixes products from several kiranas. Cards never say which: to the
+ * customer, Daily Essentials is one shop and one order.
  *
  * Built on its own card rather than ProductCard. ProductCard's `Product` requires
  * `discount`, `numberOfVariants` and `primarySKU`, none of which this endpoint returns,
@@ -38,9 +53,29 @@ const imageSourceFor = (image?: string): ImageSourcePropType => {
   return cleanUrl.startsWith('http') ? { uri: cleanUrl } : PLACEHOLDER;
 };
 
+const showMessage = (message: string) => {
+  if (Platform.OS === 'android') {
+    ToastAndroid.show(message, ToastAndroid.SHORT);
+  } else {
+    Alert.alert('Daily Essentials', message);
+  }
+};
+
+const metaFor = (product: GroceryGroupProduct): EssentialsProductMeta => ({
+  sku: product.sku,
+  shopId: product.shopId,
+  shopName: product.shopName,
+  name: product.name,
+  price: product.sellingPrice || product.mrp,
+  mrp: product.mrp,
+  imageUrl: product.imageUrl,
+});
+
 const DailyEssentials: React.FC = () => {
   const { getColor, theme } = useTheme();
-  const { authData } = useAuth();
+  const { authData, selectedAddress } = useAuth();
+  const nearLat = selectedAddress?.coordinates?.latitude;
+  const nearLng = selectedAddress?.coordinates?.longitude;
   const groups = useGroceryGroupsStore(s => s.groups);
   const loading = useGroceryGroupsStore(s => s.loading);
   const fetchGroups = useGroceryGroupsStore(s => s.fetchGroups);
@@ -50,29 +85,67 @@ const DailyEssentials: React.FC = () => {
   const increment = useCartStore(s => s.increment);
   const decrement = useCartStore(s => s.decrement);
 
+  /**
+   * Where this section's items go. With the server's Essentials cart on, every product here
+   * lands in one QuickVerse cart whatever its kirana, and checks out as one order. With it
+   * off — or before the server has said — it falls back to the per-shop SmartBiz carts,
+   * which is how this section worked before the Essentials cart existed.
+   */
+  const essentialsEnabled = useEssentialsCartStore(s => s.enabled === true);
+  const essentialsView = useEssentialsCartStore(s => s.view);
+  const essentialsPending = useEssentialsCartStore(s => s.pending);
+  const fetchEssentialsCart = useEssentialsCartStore(s => s.fetchCart);
+  const setEssentialsQuantity = useEssentialsCartStore(s => s.setQuantity);
+
+  // Groups near the address being delivered to; a new town refetches.
   useEffect(() => {
-    fetchGroups();
-  }, [fetchGroups]);
+    fetchGroups(
+      Number.isFinite(nearLat) && Number.isFinite(nearLng)
+        ? { latitude: nearLat as number, longitude: nearLng as number }
+        : undefined
+    );
+  }, [fetchGroups, nearLat, nearLng]);
+
+  useEffect(() => {
+    fetchEssentialsCart(authData?.jwt, authData?.phone);
+  }, [fetchEssentialsCart, authData?.jwt, authData?.phone]);
 
   /**
-   * The cart is chosen by the *product's* shop, not by any screen-level vendor — that
-   * is what lets one group mix kiranas, and it matches FastPicks and TagProductsScreen.
-   *
-   * It also means adding from two shops in one group opens two carts, with no prompt.
-   * That is how the app already works; the mitigation chosen here is naming the shop on
-   * every card so the split is visible rather than silent. QV-22 covers making the Cart
-   * screen able to show them together.
+   * Legacy path only: the cart is chosen by the *product's* shop, so adding from two shops
+   * in one group opens two carts. The Essentials cart replaces this when enabled.
    */
   const cartIdFor = (product: GroceryGroupProduct) => `vendor_${product.shopId}`;
 
   const quantityFor = useCallback(
-    (product: GroceryGroupProduct) =>
-      carts[cartIdFor(product)]?.products[product.sku]?.quantity || 0,
-    [carts]
+    (product: GroceryGroupProduct) => {
+      if (essentialsEnabled) {
+        if (essentialsPending[product.sku] !== undefined) return essentialsPending[product.sku];
+        return essentialsView?.items.find(l => l.sku === product.sku)?.quantity ?? 0;
+      }
+      return carts[cartIdFor(product)]?.products[product.sku]?.quantity || 0;
+    },
+    [carts, essentialsEnabled, essentialsPending, essentialsView]
+  );
+
+  const setEssentials = useCallback(
+    async (product: GroceryGroupProduct, quantity: number) => {
+      const result: EssentialsSetResult = await setEssentialsQuantity(
+        metaFor(product),
+        quantity,
+        authData?.jwt,
+        authData?.phone
+      );
+      if (!result.ok && result.message) showMessage(result.message);
+    },
+    [setEssentialsQuantity, authData]
   );
 
   const handleAdd = useCallback(
     (product: GroceryGroupProduct) => {
+      if (essentialsEnabled) {
+        setEssentials(product, quantityFor(product) + 1);
+        return;
+      }
       addToCart(
         cartIdFor(product),
         {
@@ -90,19 +163,29 @@ const DailyEssentials: React.FC = () => {
         authData?.phone || ''
       );
     },
-    [addToCart, authData]
+    [addToCart, authData, essentialsEnabled, setEssentials, quantityFor]
   );
 
   const handleIncrement = useCallback(
-    (product: GroceryGroupProduct) =>
-      increment(cartIdFor(product), product.sku, authData?.jwt || '', authData?.phone || ''),
-    [increment, authData]
+    (product: GroceryGroupProduct) => {
+      if (essentialsEnabled) {
+        setEssentials(product, quantityFor(product) + 1);
+        return;
+      }
+      increment(cartIdFor(product), product.sku, authData?.jwt || '', authData?.phone || '');
+    },
+    [increment, authData, essentialsEnabled, setEssentials, quantityFor]
   );
 
   const handleDecrement = useCallback(
-    (product: GroceryGroupProduct) =>
-      decrement(cartIdFor(product), product.sku, authData?.jwt || '', authData?.phone || ''),
-    [decrement, authData]
+    (product: GroceryGroupProduct) => {
+      if (essentialsEnabled) {
+        setEssentials(product, quantityFor(product) - 1);
+        return;
+      }
+      decrement(cartIdFor(product), product.sku, authData?.jwt || '', authData?.phone || '');
+    },
+    [decrement, authData, essentialsEnabled, setEssentials, quantityFor]
   );
 
   const styles = useMemo(
@@ -177,9 +260,6 @@ const DailyEssentials: React.FC = () => {
         thumb: { width: '100%', height: '100%' },
         cardText: { flex: 1, minWidth: 0 },
         name: { fontSize: 12, lineHeight: 16, fontWeight: '700', color: getColor('text') },
-        // A group mixes shops, so the row that says which one is not decoration.
-        shopRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
-        shopName: { fontSize: 10, lineHeight: 13, color: getColor('subText'), flex: 1 },
         priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 3 },
         price: { fontSize: 15, lineHeight: 18, fontWeight: '800', color: getColor('text') },
         mrp: {
@@ -230,7 +310,10 @@ const DailyEssentials: React.FC = () => {
   const renderProduct = (product: GroceryGroupProduct) => {
     const quantity = quantityFor(product);
     const soldOut = !product.inStock;
-    const discounted = product.mrp > product.sellingPrice;
+    // Whole rupees, as the Essentials cart prices them.
+    const shownPrice = wholeRupees(product.sellingPrice);
+    const shownMrp = wholeRupees(product.mrp);
+    const discounted = shownMrp > shownPrice;
 
     return (
       <View key={`${product.shopId}-${product.sku}`} style={styles.card}>
@@ -247,21 +330,9 @@ const DailyEssentials: React.FC = () => {
             <ThemeText style={styles.name} numberOfLines={2}>
               {product.name}
             </ThemeText>
-            {product.shopName ? (
-              <View style={styles.shopRow}>
-                <MaterialCommunityIcons
-                  name="storefront-outline"
-                  size={11}
-                  color={getColor('subText')}
-                />
-                <ThemeText style={styles.shopName} numberOfLines={1}>
-                  {product.shopName}
-                </ThemeText>
-              </View>
-            ) : null}
             <View style={styles.priceRow}>
-              <ThemeText style={styles.price}>₹{product.sellingPrice}</ThemeText>
-              {discounted ? <ThemeText style={styles.mrp}>₹{product.mrp}</ThemeText> : null}
+              <ThemeText style={styles.price}>₹{shownPrice}</ThemeText>
+              {discounted ? <ThemeText style={styles.mrp}>₹{shownMrp}</ThemeText> : null}
             </View>
           </View>
         </View>
@@ -283,11 +354,7 @@ const DailyEssentials: React.FC = () => {
             disabled={soldOut}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel={
-              soldOut
-                ? `${product.name} is sold out`
-                : `Add ${product.name} from ${product.shopName}`
-            }
+            accessibilityLabel={soldOut ? `${product.name} is sold out` : `Add ${product.name}`}
           >
             {soldOut ? null : (
               <MaterialCommunityIcons name="plus" size={14} color={CATALOGUE_ACCENT} />

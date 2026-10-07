@@ -12,13 +12,21 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { TabBarVisibilityContext } from '../../../navigation/TabNavigation';
 import useCartStore from '../../../store/cart/cartStore';
+import useEssentialsCartStore, {
+  ESSENTIALS_CART_ID,
+  useEssentialsSummary,
+} from '../../../store/cart/essentialsCartStore';
 import useOrderStore from '../../../store/cart/orderStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import OrderProgressBar from '../order/OrderProgressBar';
 import CartBar from './CartBar';
+import EssentialsCartBar from './EssentialsCartBar';
 
 const { width } = Dimensions.get('window');
 const ANIMATION_DURATION = 300;
+
+/** The login whose carts were last refreshed from the server, shared by every mounted stack. */
+let cartsRefreshedFor: string | null = null;
 
 const FloatingCartsStack: React.FC = () => {
   const { authData } = useAuth();
@@ -32,15 +40,73 @@ const FloatingCartsStack: React.FC = () => {
     state.orders.some(o => o.status !== 'delivered' && o.status !== 'cancelled')
   );
 
-  // Filter to only carts with items
-  const nonEmptyCarts = allCarts.filter(
-    cart => Object.values(cart.products || {}).reduce((sum, p) => sum + (p?.quantity || 0), 0) > 0
-  );
+  const essentialsEnabled = useEssentialsCartStore(state => state.enabled === true);
+  const fetchEssentialsCart = useEssentialsCartStore(state => state.fetchCart);
+  // Load the server's Essentials cart when the stack first shows and whenever the login changes,
+  // so its bar appears without first visiting Daily Essentials.
+  useEffect(() => {
+    // Once per login, not once per screen: this stack is mounted by every browsing screen, and
+    // each mount would otherwise re-read every cart from the server (and SmartBiz).
+    const session = authData?.jwt || 'guest';
+    if (cartsRefreshedFor === session) return;
+    cartsRefreshedFor = session;
+    fetchEssentialsCart(authData?.jwt || undefined, authData?.phone || undefined);
+    // Store carts too: one emptied elsewhere (ordered on another device, cleared at the shop) is
+    // otherwise shown from this device's saved copy until its cart screen is opened.
+    if (authData?.jwt && authData?.phone) {
+      useCartStore.getState().refreshAllCarts(authData.jwt, authData.phone);
+    }
+  }, [fetchEssentialsCart, authData?.jwt, authData?.phone]);
+  const essentialsItemCount = useEssentialsSummary().itemCount;
+  const hasEssentialsCart = essentialsEnabled && essentialsItemCount > 0;
 
-  // Sort carts: most recently active at the top
+  const unitsIn = (cart: (typeof allCarts)[number]) =>
+    Object.values(cart.products || {}).reduce((sum, p) => sum + (p?.quantity || 0), 0);
+
+  /**
+   * Every cart with items, as one list. The Daily Essentials cart is one more entry — the same
+   * bar, stacked and collapsed with the rest — not a bar of its own above them.
+   */
+  const nonEmptyCarts: { key: string; itemCount: number }[] = [
+    ...allCarts
+      .filter(cart => cart.cartId && unitsIn(cart) > 0)
+      .map(cart => ({ key: cart.cartId, itemCount: unitsIn(cart) })),
+    ...(hasEssentialsCart ? [{ key: ESSENTIALS_CART_ID, itemCount: essentialsItemCount }] : []),
+  ];
+
+  /**
+   * The cart the customer last changed goes on top. Store carts report it through
+   * `activeCartId`, which the Essentials cart must not borrow (the cart store would try to
+   * fetch it from SmartBiz), so both are watched here instead.
+   */
+  const [lastChanged, setLastChanged] = useState<string | null>(null);
+  const essentialsSeen = useRef<number | null>(null);
+  useEffect(() => {
+    if (essentialsSeen.current !== null && essentialsSeen.current !== essentialsItemCount) {
+      setLastChanged(ESSENTIALS_CART_ID);
+    }
+    essentialsSeen.current = essentialsItemCount;
+  }, [essentialsItemCount]);
+  const storeCountsSeen = useRef<Record<string, number> | null>(null);
+  const storeCounts = allCarts.map(c => `${c.cartId}:${unitsIn(c)}`).join('|');
+  useEffect(() => {
+    const now: Record<string, number> = {};
+    Object.values(carts).forEach(c => {
+      now[c.cartId] = unitsIn(c);
+    });
+    const before = storeCountsSeen.current;
+    if (before) {
+      const changed = Object.keys(now).find(id => now[id] !== before[id]);
+      if (changed) setLastChanged(changed);
+    }
+    storeCountsSeen.current = now;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeCounts]);
+
+  const topKey = lastChanged ?? activeCartId;
   const sortedCarts = [...nonEmptyCarts].sort((a, b) => {
-    if (a.cartId === activeCartId) return -1;
-    if (b.cartId === activeCartId) return 1;
+    if (a.key === topKey) return -1;
+    if (b.key === topKey) return 1;
     return 0;
   });
 
@@ -228,15 +294,13 @@ const FloatingCartsStack: React.FC = () => {
             if (!expanded && originalIdx > 0) return null;
             // Guard: skip if animatedValues[originalIdx] is undefined
             if (!animatedValues[originalIdx]) return null;
-            // Guard: skip if cart.cartId is undefined
-            if (!cart.cartId) return null;
 
             const animValue = animatedValues[originalIdx];
 
             // When collapsed, wrap the cart in TouchableOpacity to expand on press
             const CartContent = (
               <Animated.View
-                key={cart.cartId}
+                key={cart.key}
                 style={[
                   styles.cartBarWrapper,
                   dynamicStyles.cartBarWrapperMain,
@@ -262,16 +326,20 @@ const FloatingCartsStack: React.FC = () => {
                   },
                 ]}
               >
-                <CartBar
-                  itemCount={Object.values(cart.products || {}).reduce(
-                    (sum, p) => sum + (p?.quantity || 0),
-                    0
-                  )}
-                  shopId={cart.cartId ? cart.cartId.replace('vendor_', '') : ''}
-                  cartId={cart.cartId || ''}
-                  isExpanded={expanded || nonEmptyCarts.length === 1}
-                  onExpand={toggleExpanded}
-                />
+                {cart.key === ESSENTIALS_CART_ID ? (
+                  <EssentialsCartBar
+                    isExpanded={expanded || nonEmptyCarts.length === 1}
+                    onExpand={toggleExpanded}
+                  />
+                ) : (
+                  <CartBar
+                    itemCount={cart.itemCount}
+                    shopId={cart.key.replace('vendor_', '')}
+                    cartId={cart.key}
+                    isExpanded={expanded || nonEmptyCarts.length === 1}
+                    onExpand={toggleExpanded}
+                  />
+                )}
               </Animated.View>
             );
             // When expanded, clicking the cart navigates to CartScreen

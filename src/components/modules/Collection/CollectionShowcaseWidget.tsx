@@ -1,12 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  Dimensions,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, Dimensions, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import CachedImage from '../../common/CachedImage';
 import LinearGradient from 'react-native-linear-gradient';
 import AntDesign from '@react-native-vector-icons/ant-design';
@@ -21,6 +14,7 @@ import { Vendor } from '../../../types/vendor';
 import { triggerAddToCartHaptic } from '../../../utils/haptics';
 import { formatTimeToAMPM, getStoreStatus } from '../../../utils/storeUtils';
 import { ThemeText } from '../../common/theme/ThemeText';
+import { wholeRupees } from '../../../utils/price';
 
 interface CategoryItem {
   id: string;
@@ -93,7 +87,13 @@ const CategoryChipBase = ({ item, isSelected, onPress }: CategoryChipProps) => (
       ]}
     >
       <CachedImage
-        uri={typeof item.image === 'object' && item.image?.uri ? item.image.uri : typeof item.image === 'string' ? item.image : undefined}
+        uri={
+          typeof item.image === 'object' && item.image?.uri
+            ? item.image.uri
+            : typeof item.image === 'string'
+              ? item.image
+              : undefined
+        }
         style={styles.categoryImage}
       />
     </View>
@@ -145,9 +145,11 @@ const ProductCardBase: React.FC<ProductCardProps> = ({
       <View style={styles.priceRow}>
         <View style={styles.prices}>
           <ThemeText style={styles.mrpText}>
-            {item.mrp > item.sellingPrice ? `₹${item.mrp}` : ' '}
+            {wholeRupees(item.mrp) > wholeRupees(item.sellingPrice)
+              ? `₹${wholeRupees(item.mrp)}`
+              : ' '}
           </ThemeText>
-          <ThemeText style={styles.sellingPriceText}>₹{item.sellingPrice}</ThemeText>
+          <ThemeText style={styles.sellingPriceText}>₹{wholeRupees(item.sellingPrice)}</ThemeText>
         </View>
 
         {quantity > 0 ? (
@@ -353,9 +355,7 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
   const cached = getWidgetCache(vendor.shopId);
 
   const [isLoading, setIsLoading] = React.useState(!cached);
-  const [fetchedProducts, setFetchedProducts] = React.useState<Product[]>(
-    cached?.products ?? []
-  );
+  const [fetchedProducts, setFetchedProducts] = React.useState<Product[]>(cached?.products ?? []);
   const [fetchedCategories, setFetchedCategories] = React.useState<CategoryItem[]>(
     cached?.categories ?? []
   );
@@ -628,9 +628,7 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
       {isLoading ? (
         <CollectionSkeleton />
       ) : (
-        <View
-          pointerEvents={!isStoreActive ? 'none' : 'auto'}
-        >
+        <View pointerEvents={!isStoreActive ? 'none' : 'auto'}>
           {!isStoreActive && <View style={styles.disabledOverlay} />}
           {/* Categories */}
           <FlatList
@@ -682,7 +680,6 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
           />
         </View>
       )}
-
     </View>
   );
 };

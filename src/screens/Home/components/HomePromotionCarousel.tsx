@@ -14,6 +14,8 @@ const BANNER_WIDTH = width - SIDE_PADDING * 2;
 const SNAP_INTERVAL = BANNER_WIDTH + BANNER_GAP;
 const PAUSE_AFTER_INTERACTION_MS = 5000;
 const AUTO_SCROLL_INTERVAL_MS = 3000;
+/** Room at the top for the search bar, which HomeMainScreen lays over this carousel. */
+const SEARCH_BAR_SPACE = 58;
 
 // Static promotions (kept for fallback/reference — replaced by /v3/pages "Home" promotions)
 // const STATIC_PROMOTIONS = [
@@ -109,7 +111,9 @@ const HomePromotionCarousel = () => {
     [getVendorById, vendors, navigation]
   );
 
-  if (bannerItems.length === 0) return null;
+  // No posters (a region with none set up): keep the search bar's room, or the absolutely
+  // positioned bar covers the category cards below.
+  if (bannerItems.length === 0) return <View style={styles.searchSpaceOnly} />;
 
   return (
     <View style={styles.container}>
@@ -155,8 +159,11 @@ const HomePromotionCarousel = () => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 58,
+    paddingTop: SEARCH_BAR_SPACE,
     paddingBottom: 2,
+  },
+  searchSpaceOnly: {
+    height: SEARCH_BAR_SPACE,
   },
   bannerScrollContainer: {
     paddingHorizontal: SIDE_PADDING,

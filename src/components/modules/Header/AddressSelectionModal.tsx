@@ -47,6 +47,12 @@ interface AddressSelectionModalProps {
   selectedAddress?: Address | null;
   needCompulsoryAddress?: boolean;
   scrollToNewest?: boolean;
+  /**
+   * Only the customer's saved addresses: no locality search, no "Use Current Location". Both of
+   * those set the app-wide location — which re-initialises the app — and neither is an address an
+   * order can be delivered to. For choosing where an order goes (the Daily Essentials cart).
+   */
+  savedOnly?: boolean;
 }
 
 export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
@@ -56,6 +62,7 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
   selectedAddress,
   needCompulsoryAddress = false,
   scrollToNewest = false,
+  savedOnly = false,
 }) => {
   const { getColor, getTypography, theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -569,79 +576,81 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
           </View>
 
           {/* Search bar - same modal experience whether compulsory or not */}
-          <View style={themedStyles.topSearchContainer} pointerEvents="box-none">
-            <View style={themedStyles.searchBar}>
-              <MaterialCommunityIcons
-                name="magnify"
-                size={20}
-                color={getColor('subText')}
-                style={themedStyles.searchIcon}
-              />
-              <TextInput
-                style={themedStyles.searchInput}
-                placeholder="Search Locality"
-                placeholderTextColor={getColor('placeholder')}
-                value={searchQuery}
-                onChangeText={handleSearchInputChange}
-                accessible={true}
-                accessibilityRole="search"
-                accessibilityLabel="Search for locations"
-                returnKeyType="search"
-                autoCapitalize="words"
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity
-                  onPress={handleClearSearch}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel="Clear search"
-                  activeOpacity={0.7}
-                >
-                  <MaterialCommunityIcons
-                    name="close-circle"
-                    size={22}
-                    color={getColor('subText')}
-                  />
-                </TouchableOpacity>
-              )}
-              {searchLoading && (
-                <ActivityIndicator
-                  size="small"
-                  color={getColor('primary')}
-                  style={{ marginLeft: 8 }}
+          {!savedOnly && (
+            <View style={themedStyles.topSearchContainer} pointerEvents="box-none">
+              <View style={themedStyles.searchBar}>
+                <MaterialCommunityIcons
+                  name="magnify"
+                  size={20}
+                  color={getColor('subText')}
+                  style={themedStyles.searchIcon}
                 />
+                <TextInput
+                  style={themedStyles.searchInput}
+                  placeholder="Search Locality"
+                  placeholderTextColor={getColor('placeholder')}
+                  value={searchQuery}
+                  onChangeText={handleSearchInputChange}
+                  accessible={true}
+                  accessibilityRole="search"
+                  accessibilityLabel="Search for locations"
+                  returnKeyType="search"
+                  autoCapitalize="words"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={handleClearSearch}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear search"
+                    activeOpacity={0.7}
+                  >
+                    <MaterialCommunityIcons
+                      name="close-circle"
+                      size={22}
+                      color={getColor('subText')}
+                    />
+                  </TouchableOpacity>
+                )}
+                {searchLoading && (
+                  <ActivityIndicator
+                    size="small"
+                    color={getColor('primary')}
+                    style={{ marginLeft: 8 }}
+                  />
+                )}
+              </View>
+
+              {/* Search results dropdown */}
+              {showSearchResults && searchResults.length > 0 && (
+                <View style={themedStyles.searchResultsContainer}>
+                  <FlatList
+                    data={searchResults}
+                    keyExtractor={(item, index) => item.place_id || index.toString()}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={themedStyles.searchResultItem}
+                        onPress={() => handleSearchResultSelect(item)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={themedStyles.searchResultMainText}>
+                          {item.structured_formatting.main_text}
+                        </Text>
+                        <Text style={themedStyles.searchResultSecondaryText}>
+                          {item.structured_formatting.secondary_text}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    style={{ maxHeight: 400 }}
+                    contentContainerStyle={{ paddingVertical: 4 }}
+                    keyboardShouldPersistTaps="handled"
+                    nestedScrollEnabled={true}
+                    showsVerticalScrollIndicator={true}
+                  />
+                </View>
               )}
             </View>
-
-            {/* Search results dropdown */}
-            {showSearchResults && searchResults.length > 0 && (
-              <View style={themedStyles.searchResultsContainer}>
-                <FlatList
-                  data={searchResults}
-                  keyExtractor={(item, index) => item.place_id || index.toString()}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={themedStyles.searchResultItem}
-                      onPress={() => handleSearchResultSelect(item)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={themedStyles.searchResultMainText}>
-                        {item.structured_formatting.main_text}
-                      </Text>
-                      <Text style={themedStyles.searchResultSecondaryText}>
-                        {item.structured_formatting.secondary_text}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  style={{ maxHeight: 400 }}
-                  contentContainerStyle={{ paddingVertical: 4 }}
-                  keyboardShouldPersistTaps="handled"
-                  nestedScrollEnabled={true}
-                  showsVerticalScrollIndicator={true}
-                />
-              </View>
-            )}
-          </View>
+          )}
 
           {/* Address selection card - positioned below search bar */}
           <View style={themedStyles.modalContainer}>
@@ -740,35 +749,37 @@ export const AddressSelectionModal: React.FC<AddressSelectionModalProps> = ({
                   </View>
 
                   {/* Use Current Location Button - same modal as home location selector */}
-                  <TouchableOpacity
-                    style={themedStyles.currentLocationButton}
-                    onPress={handleUseCurrentLocation}
-                    disabled={currentLocationLoading}
-                    accessible={true}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      currentLocationLoading ? 'Getting location...' : 'Use current location'
-                    }
-                    activeOpacity={0.8}
-                  >
-                    {currentLocationLoading ? (
-                      <ActivityIndicator
-                        size="small"
-                        color={getColor('primary')}
-                        style={{ marginRight: 10 }}
-                      />
-                    ) : (
-                      <MaterialCommunityIcons
-                        name="crosshairs-gps"
-                        size={20}
-                        color={getColor('text')}
-                        style={{ marginRight: 10 }}
-                      />
-                    )}
-                    <Text style={themedStyles.currentLocationButtonText}>
-                      {currentLocationLoading ? 'Getting Location...' : 'Use Current Location'}
-                    </Text>
-                  </TouchableOpacity>
+                  {!savedOnly && (
+                    <TouchableOpacity
+                      style={themedStyles.currentLocationButton}
+                      onPress={handleUseCurrentLocation}
+                      disabled={currentLocationLoading}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        currentLocationLoading ? 'Getting location...' : 'Use current location'
+                      }
+                      activeOpacity={0.8}
+                    >
+                      {currentLocationLoading ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={getColor('primary')}
+                          style={{ marginRight: 10 }}
+                        />
+                      ) : (
+                        <MaterialCommunityIcons
+                          name="crosshairs-gps"
+                          size={20}
+                          color={getColor('text')}
+                          style={{ marginRight: 10 }}
+                        />
+                      )}
+                      <Text style={themedStyles.currentLocationButtonText}>
+                        {currentLocationLoading ? 'Getting Location...' : 'Use Current Location'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
 
                   {/* Add Address Button */}
                   <TouchableOpacity

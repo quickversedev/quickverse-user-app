@@ -315,7 +315,11 @@ class CartApiService {
   /**
    * Transform API response to store-friendly format
    */
-  private transformCartResponse(apiResponse: CartApiResponse): TransformedCartData {
+  private transformCartResponse(response: CartApiResponse | null): TransformedCartData {
+    // SmartBiz answers a cart that no longer exists (emptied, or ordered from another device) with
+    // an empty body. That is an empty cart — which the store then removes — not an error that
+    // leaves the stale cart on screen.
+    const apiResponse: CartApiResponse = response ?? ({} as CartApiResponse);
     const products: Record<string, TransformedCartProduct> = {};
 
     // Transform skuDetailsGrouped to products with null check

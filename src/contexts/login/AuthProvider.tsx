@@ -24,6 +24,7 @@ import {
 } from '../../services/localStorage/storage.service';
 import useAddressStore from '../../store/address/addressStore';
 import useCartStore from '../../store/cart/cartStore';
+import useEssentialsCartStore from '../../store/cart/essentialsCartStore';
 import useCouponStore from '../../store/cart/couponStore';
 import useOrderStore from '../../store/cart/orderStore';
 import useConfigStore from '../../store/configStore';
@@ -216,6 +217,9 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         batchError: null,
         cacheExpiryMs: 5 * 60 * 1000,
       });
+
+      // The Daily Essentials cart belongs to the signed-in customer; the server keeps it.
+      useEssentialsCartStore.getState().reset();
 
       // Reset order store
       useOrderStore.setState({

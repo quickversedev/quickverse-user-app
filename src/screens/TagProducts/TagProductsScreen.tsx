@@ -22,6 +22,7 @@ import { RootStackParamList } from '../../routes/AppStack';
 import productsService from '../../services/productsService';
 import useCartStore from '../../store/cart/cartStore';
 import useVendorStore from '../../store/vendorStore';
+import { isOrderableShop } from '../../utils/storeUtils';
 import { useTheme } from '../../theme/ThemeContext';
 import { Product } from '../../types/product';
 
@@ -60,7 +61,8 @@ const TagProductsScreen: React.FC = () => {
 
   const shopIds = useMemo(() => {
     const list = shopCategory ? getVendorsByCategory(shopCategory) : vendors;
-    return list.map(v => v.shopId);
+    // The strip's list exactly: a disabled shop's products never appear under a tag.
+    return list.filter(isOrderableShop).map(v => v.shopId);
   }, [vendors, shopCategory, getVendorsByCategory]);
 
   const fetchProducts = useCallback(

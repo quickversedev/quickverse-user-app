@@ -450,19 +450,12 @@ const useCartStore = create<CartStore>()(
             const state = get();
             const cartIds = Object.keys(state.carts);
 
-            // Refresh all existing carts
+            // Refresh all existing carts. getCart takes the shop id (the cart is read per shop), not
+            // SmartBiz's cart id — passing that made every refresh fail.
             const refreshPromises = cartIds.map(cartId => {
-              const cart = state.carts[cartId];
-              let smartBizCartId = cart?.smartBizCartId;
-
-              // If smartBizCartId is not available, try to extract shopId as fallback
-              if (!smartBizCartId) {
-                const shopId = cartId.replace('vendor_', '');
-                smartBizCartId = shopId;
-              }
-
+              const shopId = cartId.replace('vendor_', '');
               return cartApiService
-                .getCart(smartBizCartId, jwtToken, phone)
+                .getCart(shopId, jwtToken, phone)
                 .then(apiResponse => {
                   get().syncCartWithApi(cartId, apiResponse);
                 })
@@ -487,16 +480,9 @@ const useCartStore = create<CartStore>()(
             const activeCartId = state.activeCartId;
 
             if (activeCartId) {
-              const cart = state.carts[activeCartId];
-              let smartBizCartId = cart?.smartBizCartId;
-
-              // If smartBizCartId is not available, try to extract shopId as fallback
-              if (!smartBizCartId) {
-                const shopId = activeCartId.replace('vendor_', '');
-                smartBizCartId = shopId;
-              }
-
-              const apiResponse = await cartApiService.getCart(smartBizCartId, jwtToken, phone);
+              // The shop id, as getCart expects — not SmartBiz's cart id.
+              const shopId = activeCartId.replace('vendor_', '');
+              const apiResponse = await cartApiService.getCart(shopId, jwtToken, phone);
               get().syncCartWithApi(activeCartId, apiResponse);
             }
           } catch (error) {

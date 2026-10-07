@@ -35,6 +35,8 @@ interface CartFooterProps {
   disabled?: boolean;
   loading?: boolean;
   isGuest?: boolean;
+  /** The method chosen on the cart: COD places the order outright, Prepaid goes on to pay. */
+  paymentMethod?: string;
 }
 
 const CartFooter: React.FC<CartFooterProps> = ({
@@ -50,6 +52,7 @@ const CartFooter: React.FC<CartFooterProps> = ({
   disabled = false,
   loading = false,
   isGuest = false,
+  paymentMethod,
 }) => {
   const { getColor, getTypography, theme, getButtonColor } = useTheme();
   const insets = useSafeAreaInsets();
@@ -201,9 +204,9 @@ const CartFooter: React.FC<CartFooterProps> = ({
     if (loading) return 'Processing...';
     if (isGuest) return 'Login to Continue';
     if (!isAddressSelected) return 'Select Address to Continue';
-    // "Proceed to Pay", not "Place Order": the payment method is chosen in the step
-    // this opens, so nothing is ordered by tapping it.
-    return 'Proceed to Pay';
+    // The method is chosen on the cart, so the button says what tapping it does: a COD order
+    // is placed there and then; a prepaid one goes on to the payment.
+    return paymentMethod === 'COD' ? 'Place Order' : 'Proceed to Pay';
   };
 
   return (

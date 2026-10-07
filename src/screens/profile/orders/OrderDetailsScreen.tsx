@@ -29,6 +29,12 @@ import { ThemeText } from '../../../components/common/theme/ThemeText';
 import { useAuth } from '../../../contexts/login/AuthProvider';
 import { useNotifications } from '../../../hooks/useNotifications';
 import { useOrders } from '../../../hooks/useOrders';
+import { useEssentialsOrderDetails } from '../../../hooks/useEssentialsOrderDetails';
+import essentialsOrderService, {
+  displayStatusOf,
+  EssentialsOrder,
+  partStillIn,
+} from '../../../services/essentialsOrderService';
 import orderService from '../../../services/createOrderService';
 import createPaymentService, { PaymentTender } from '../../../services/createPaymentService';
 import usePricingStore from '../../../store/pricingStore';
@@ -101,6 +107,8 @@ type ApiSkuGroup = {
 };
 type AddressShape = {
   name?: string;
+  /** The shared Order shape's first line (name and street, already joined). */
+  address?: string;
   addressLine1?: string;
   addressLine2?: string;
   city?: string;
@@ -1066,6 +1074,53 @@ const BillRow = ({
   </View>
 );
 
+/**
+ * What a Daily Essentials order's state means to the customer, in one line or two — shown above
+ * the progress steps, which cannot say "some items were unavailable" or "refund on its way".
+ * Never names or counts the kiranas.
+ */
+const essentialsStatusNote = (
+  order: EssentialsOrder
+): {
+  icon: 'progress-clock' | 'alert-circle-outline' | 'cash-refund' | 'close-circle-outline';
+  title: string;
+  lines: string[];
+} | null => {
+  const shown = displayStatusOf(order);
+  const refund =
+    order.paymentStatus === 'PAID' && order.refundDue > 0
+      ? order.refundedAmount >= order.refundDue
+        ? `₹${order.refundDue.toFixed(0)} refunded to your payment method.`
+        : `₹${order.refundDue.toFixed(0)} refund on its way to your payment method.`
+      : null;
+  const withRefund = (lines: string[]) => (refund ? [...lines, refund] : lines);
+  if (order.status === 'PLACING') {
+    return {
+      icon: 'progress-clock',
+      title: 'Placing your order…',
+      lines: ['This takes a few seconds.'],
+    };
+  }
+  if (shown === 'AWAITING_STORES') {
+    return {
+      icon: 'progress-clock',
+      title: 'Confirming your order',
+      lines: withRefund(["We're confirming your items. You'll only pay for what we can deliver."]),
+    };
+  }
+  if (shown === 'PARTIALLY_ACCEPTED' || order.status === 'PARTIALLY_CONFIRMED') {
+    return {
+      icon: 'alert-circle-outline',
+      title: "Some items weren't available",
+      lines: withRefund(['They were removed and your total updated.']),
+    };
+  }
+  if (shown === 'CANCELLED' || order.status === 'FAILED' || shown === 'PAYMENT_EXPIRED') {
+    return refund ? { icon: 'cash-refund', title: 'Order cancelled', lines: [refund] } : null;
+  }
+  return refund ? { icon: 'cash-refund', title: 'Refund', lines: [refund] } : null;
+};
+
 /* -------------------------------------------------------------------------- */
 /*                                   Screen                                   */
 /* -------------------------------------------------------------------------- */
@@ -1074,13 +1129,21 @@ const OrderDetailsScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const route = useRoute();
   const { getColor, theme } = useTheme();
-  const { selectedOrder, loadOrderById, refreshOrders, setSelectedOrder } = useOrders();
+  const { selectedOrder: storeOrder, loadOrderById, refreshOrders, setSelectedOrder } = useOrders();
   const { authData } = useAuth();
-  const { orderId, shopId } = route.params as { orderId: string; shopId?: string };
+  const { orderId, shopId, essentialsOrderId } = route.params as {
+    orderId: string;
+    shopId?: string;
+    essentialsOrderId?: string;
+  };
+  // A Daily Essentials order is shown on this same screen: loaded as itself, drawn as any order.
+  // What only it has — the kiranas' parts, refunds — is read from `essentials` where needed; the
+  // kiranas themselves are never shown.
+  const essentialsDetail = useEssentialsOrderDetails(essentialsOrderId);
+  const essentials = essentialsDetail.essentials;
+  const selectedOrder = essentialsOrderId ? essentialsDetail.order : storeOrder;
   const { getVendorById } = useVendorStore();
   const { requestPermissions } = useNotifications();
-
-  console.log(selectedOrder);
 
   // selectedOrder from the API may embed `review` / `complaint` even though the
   // shared Order type doesn't declare them yet — this widened alias lets us read
@@ -1165,7 +1228,7 @@ const OrderDetailsScreen = () => {
 
   // Clear stale data and fetch fresh on mount
   useEffect(() => {
-    if (orderId) {
+    if (orderId && !essentialsOrderId) {
       setSelectedOrder(null);
       loadOrderById(orderId, shopIdRef.current);
     }
@@ -1173,13 +1236,15 @@ const OrderDetailsScreen = () => {
   }, [orderId]);
 
   // LIVE = anything except DELIVERED / CANCELLED / REJECTED
-  const liveForPolling = selectedOrder
-    ? isOrderLive(
-        selectedOrder.status as string | undefined,
-        selectedOrder.orderMasterStatus as string | undefined,
-        (selectedOrder as unknown as ApiOrderShape).state
-      )
-    : false;
+  // A Daily Essentials order polls itself (useEssentialsOrderDetails) and has no single rider.
+  const liveForPolling =
+    !essentialsOrderId && selectedOrder
+      ? isOrderLive(
+          selectedOrder.status as string | undefined,
+          selectedOrder.orderMasterStatus as string | undefined,
+          (selectedOrder as unknown as ApiOrderShape).state
+        )
+      : false;
 
   // Poll for status & tracking updates while order is live
   useEffect(() => {
@@ -1301,11 +1366,15 @@ const OrderDetailsScreen = () => {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await loadOrderById(orderId, selectedOrder?.shopId);
+      if (essentialsOrderId) {
+        await essentialsDetail.reload(true);
+      } else {
+        await loadOrderById(orderId, selectedOrder?.shopId);
+      }
     } finally {
       setRefreshing(false);
     }
-  }, [orderId, selectedOrder?.shopId, loadOrderById]);
+  }, [orderId, selectedOrder?.shopId, loadOrderById, essentialsOrderId, essentialsDetail]);
 
   const handleShiftPin = useCallback(() => {
     // TODO: Navigate to the address / pin-adjust screen
@@ -1381,6 +1450,60 @@ const OrderDetailsScreen = () => {
   const handleCancelOrder = useCallback(async () => {
     if (!selectedOrder || !authData?.jwt || !authData?.phone) return;
 
+    if (essentialsOrderId && essentials) {
+      const jwt = authData.jwt;
+      const phone = authData.phone;
+      // What is still held: part may already have gone back (an item a store couldn't supply).
+      const toRefund = Math.max(0, essentials.payableAmount - essentials.refundedAmount);
+      setDialogConfig({
+        title: 'Cancel Order',
+        message:
+          essentials.paymentStatus === 'PAID'
+            ? `Are you sure you want to cancel this order? ₹${toRefund.toFixed(0)} will be refunded to your payment method.`
+            : 'Are you sure you want to cancel this order?',
+        confirmText: 'Yes',
+        cancelText: 'No',
+        confirmColor: '#F44336',
+        onConfirm: async () => {
+          setDialogVisible(false);
+          setCancellingOrder(true);
+          try {
+            const cancelled = await essentialsOrderService.cancelOrder(
+              essentials.orderId,
+              jwt,
+              phone
+            );
+            essentialsDetail.setEssentials(cancelled);
+            setCancellingOrder(false);
+            setDialogConfig({
+              title: 'Success',
+              message: 'Order cancelled successfully',
+              confirmText: 'OK',
+              cancelText: '',
+              onConfirm: () => setDialogVisible(false),
+              confirmColor: getColor('secondary'),
+            });
+            setDialogVisible(true);
+          } catch (error) {
+            setCancellingOrder(false);
+            setDialogConfig({
+              title: 'Error',
+              message:
+                (error as { message?: string })?.message ||
+                'Failed to cancel order. Please try again.',
+              confirmText: 'OK',
+              cancelText: '',
+              onConfirm: () => setDialogVisible(false),
+              confirmColor: getColor('secondary'),
+            });
+            setDialogVisible(true);
+          }
+        },
+      });
+      setDialogVisible(true);
+      return;
+    }
+
     const onConfirmCancel = async () => {
       setDialogVisible(false);
       setCancellingOrder(true);
@@ -1432,7 +1555,39 @@ const OrderDetailsScreen = () => {
       confirmColor: '#F44336',
     });
     setDialogVisible(true);
-  }, [selectedOrder, authData?.jwt, authData?.phone, refreshOrders, navigation, getColor]);
+  }, [
+    selectedOrder,
+    authData?.jwt,
+    authData?.phone,
+    refreshOrders,
+    navigation,
+    getColor,
+    essentialsOrderId,
+    essentials,
+    essentialsDetail,
+  ]);
+
+  /** Items of a kirana part that dropped out: shown, marked, not charged. */
+  const unavailableSkus = useMemo(() => {
+    const skus = new Set<string>();
+    if (!essentials) return skus;
+    const orderOff = displayStatusOf(essentials) === 'CANCELLED' || essentials.status === 'FAILED';
+    if (orderOff) return skus;
+    essentials.shops
+      // Placed and then dropped, or never placed; parts still being placed or paid for are not.
+      .filter(
+        part =>
+          part.placementStatus === 'FAILED' ||
+          (part.placementStatus === 'PLACED' && !partStillIn(part))
+      )
+      .forEach(part => part.items.forEach(item => skus.add(item.sku)));
+    return skus;
+  }, [essentials]);
+
+  const essentialsNote = useMemo(
+    () => (essentials ? essentialsStatusNote(essentials) : null),
+    [essentials]
+  );
 
   const handleGetHelp = useCallback(() => {
     // TODO: Navigate to help screen
@@ -1617,7 +1772,11 @@ const OrderDetailsScreen = () => {
 
   const addr = rawOrder.deliveryAddress ?? rawOrder.customerDeliveryAddress ?? null;
   const addressLine = addr
-    ? [addr.name, addr.addressLine1, addr.city, addr.pincode ?? addr.postalCode]
+    ? [
+        ...(addr.addressLine1 ? [addr.name, addr.addressLine1] : [addr.address]),
+        addr.city,
+        addr.pincode ?? addr.postalCode,
+      ]
         .filter(Boolean)
         .join(', ')
     : undefined;
@@ -1640,8 +1799,12 @@ const OrderDetailsScreen = () => {
       )
     : null;
   const vendorCoord = toCoord(
-    track('shopLatitude') ?? vendorAny?.coordinates?.latitude ?? vendorAny?.location?.coordinates?.[1],
-    track('shopLongitude') ?? vendorAny?.coordinates?.longitude ?? vendorAny?.location?.coordinates?.[0]
+    track('shopLatitude') ??
+      vendorAny?.coordinates?.latitude ??
+      vendorAny?.location?.coordinates?.[1],
+    track('shopLongitude') ??
+      vendorAny?.coordinates?.longitude ??
+      vendorAny?.location?.coordinates?.[0]
   );
 
   const showMap = isLive && !!(vendorCoord || riderCoord || customerCoord);
@@ -1840,7 +2003,27 @@ const OrderDetailsScreen = () => {
 
   const itemCount = derivedItems.reduce((sum, it) => sum + it.quantity, 0) || derivedItems.length;
 
+  const renderCancelButton = () => (
+    <TouchableOpacity
+      style={[styles.actionButton, styles.cancelButton, styles.fullWidthButton]}
+      onPress={handleCancelOrder}
+      disabled={cancellingOrder}
+      activeOpacity={0.85}
+    >
+      {cancellingOrder ? (
+        <ActivityIndicator size="small" color={RED} />
+      ) : (
+        <ThemeText style={[styles.actionButtonText, styles.cancelButtonText]}>
+          Cancel Order
+        </ThemeText>
+      )}
+    </TouchableOpacity>
+  );
+
   const renderActionButtons = () => {
+    if (essentialsOrderId) {
+      return essentials?.cancellable ? renderCancelButton() : null;
+    }
     if (status === 'payment_pending') {
       return (
         <View style={styles.actionButtonContainer}>
@@ -1877,22 +2060,7 @@ const OrderDetailsScreen = () => {
       );
     }
     if (status === 'processing') {
-      return (
-        <TouchableOpacity
-          style={[styles.actionButton, styles.cancelButton, styles.fullWidthButton]}
-          onPress={handleCancelOrder}
-          disabled={cancellingOrder}
-          activeOpacity={0.85}
-        >
-          {cancellingOrder ? (
-            <ActivityIndicator size="small" color={RED} />
-          ) : (
-            <ThemeText style={[styles.actionButtonText, styles.cancelButtonText]}>
-              Cancel Order
-            </ThemeText>
-          )}
-        </TouchableOpacity>
-      );
+      return renderCancelButton();
     }
     return null;
   };
@@ -1976,6 +2144,30 @@ const OrderDetailsScreen = () => {
               actionButton={renderActionButtons()}
               getColor={getColor}
             />
+
+            {essentialsNote ? (
+              <View
+                style={[
+                  styles.statusNote,
+                  { backgroundColor: getColor('card'), borderColor: getColor('border') },
+                ]}
+              >
+                <Icon name={essentialsNote.icon} size={20} color={getColor('primary')} />
+                <View style={styles.statusNoteText}>
+                  <ThemeText style={[styles.statusNoteTitle, { color: getColor('text') }]}>
+                    {essentialsNote.title}
+                  </ThemeText>
+                  {essentialsNote.lines.map(line => (
+                    <ThemeText
+                      key={line}
+                      style={[styles.statusNoteSub, { color: getColor('subText') }]}
+                    >
+                      {line}
+                    </ThemeText>
+                  ))}
+                </View>
+              </View>
+            ) : null}
 
             {/* Savings banner */}
             {bill.couponDiscount > 0 && (
@@ -2103,8 +2295,19 @@ const OrderDetailsScreen = () => {
                           <ThemeText style={[styles.itemMeta, { color: getColor('subText') }]}>
                             {item.quantity} {item.quantity === 1 ? 'unit' : 'units'}
                           </ThemeText>
+                          {unavailableSkus.has(item.id) ? (
+                            <ThemeText style={[styles.itemMeta, { color: getColor('error') }]}>
+                              Unavailable · not charged
+                            </ThemeText>
+                          ) : null}
                         </View>
-                        <ThemeText style={[styles.itemPrice, { color: getColor('text') }]}>
+                        <ThemeText
+                          style={[
+                            styles.itemPrice,
+                            { color: getColor('text') },
+                            unavailableSkus.has(item.id) && styles.struckPrice,
+                          ]}
+                        >
                           ₹{item.price.toFixed(0)}
                         </ThemeText>
                       </View>
@@ -2370,16 +2573,19 @@ const OrderDetailsScreen = () => {
             </View>
 
             {/* Order feedback — unchanged. OrderReviewCard reads order.review itself. */}
-            {selectedOrder.status === 'delivered' && (
+            {/* Not for a Daily Essentials order: its kiranas are never shown to the customer. */}
+            {!essentialsOrderId && selectedOrder.status === 'delivered' && (
               <OrderReviewCard order={orderWithFeedback as any} />
             )}
 
             {/* Help — unchanged. HelpCard reads order.complaint itself. */}
-            <HelpCard
-              onPress={handleGetHelp}
-              order={orderWithFeedback as any}
-              onRefresh={onRefresh}
-            />
+            {!essentialsOrderId && (
+              <HelpCard
+                onPress={handleGetHelp}
+                order={orderWithFeedback as any}
+                onRefresh={onRefresh}
+              />
+            )}
             {/* Support */}
             <View
               style={[
@@ -3235,6 +3441,20 @@ const styles = StyleSheet.create({
   },
 
   /* Savings banner */
+  statusNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  statusNoteText: { flex: 1 },
+  statusNoteTitle: { fontFamily: Fonts.bold, fontSize: 14 },
+  statusNoteSub: { fontFamily: Fonts.regular, fontSize: 12, marginTop: 2 },
+  struckPrice: { textDecorationLine: 'line-through', opacity: 0.6 },
   savingsBanner: {
     flexDirection: 'row',
     alignItems: 'center',

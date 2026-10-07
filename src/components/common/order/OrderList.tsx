@@ -12,6 +12,14 @@ import {
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { Images } from '../../../assets';
 import { useAppStateRefresh } from '../../../hooks/useAppStateRefresh';
+import {
+  essentialsAsOrder,
+  essentialsOrderRef,
+  essentialsOrderTotal,
+  foldOrders,
+  HistoryEntry,
+  useEssentialsOrders,
+} from '../../../hooks/useEssentialsOrders';
 import { useOrders } from '../../../hooks/useOrders';
 import usePricingStore from '../../../store/pricingStore';
 import useVendorStore from '../../../store/vendorStore';
@@ -33,6 +41,13 @@ const OrderList: React.FC<OrderListProps> = ({
   // Theme and data hooks
   const { getColor } = useTheme();
   const { orders, loading, error, loadMoreOrders, refreshOrders, hasMoreOrders } = useOrders();
+  // A Daily Essentials order is one order to the customer but one SmartBiz order per kirana;
+  // fold those kirana orders back into the one entry.
+  const {
+    essentialsOrders,
+    kiranaOrderIds,
+    refresh: refreshEssentialsOrders,
+  } = useEssentialsOrders(orders);
   const getVendorById = useVendorStore(state => state.getVendorById);
   // Subscribe to pricing configs so totals re-render when configs load
   const pricingConfigs = usePricingStore(state => state.configs);
@@ -40,6 +55,9 @@ const OrderList: React.FC<OrderListProps> = ({
   // Compute the final billed total for an order (matches OrderDetailsScreen formula)
   const computeOrderTotal = useCallback(
     (order: Order): number => {
+      // What was charged, when known; the estimate below is only for orders we hold no record of.
+      const charged = order.chargedAmount ?? order.finance?.payableAmount;
+      if (charged != null) return Number(charged);
       const subTotal = (order.items || []).reduce(
         (sum, it) => sum + Number(it.totalPrice ?? it.price ?? 0),
         0
@@ -82,7 +100,11 @@ const OrderList: React.FC<OrderListProps> = ({
     if (loading && orders.length === 0) return [];
     return orders;
   }, [orders, loading]);
-  const keyExtractor = useMemo(() => (item: Order) => item.orderId, []);
+  const historyEntries = useMemo(
+    () => foldOrders(filteredOrders, essentialsOrders, kiranaOrderIds, hasMoreOrders),
+    [filteredOrders, essentialsOrders, kiranaOrderIds, hasMoreOrders]
+  );
+  const keyExtractor = useMemo(() => (entry: HistoryEntry) => `${entry.kind}-${entry.key}`, []);
   const getStatusColor = useMemo(
     () => (status: Order['status']) => {
       switch (status) {
@@ -112,6 +134,7 @@ const OrderList: React.FC<OrderListProps> = ({
     if (!refreshing && !loading) {
       setRefreshing(true);
       try {
+        refreshEssentialsOrders();
         await refreshOrders(10); // Pass pageSize to ensure we get fresh data
         // Clear any existing filters after refresh
       } catch (error) {
@@ -151,15 +174,19 @@ const OrderList: React.FC<OrderListProps> = ({
     [onOrderPress, navigation]
   );
 
-  const renderOrderItem = useCallback(
-    ({ item }: { item: Order }) => {
+  /**
+   * One order card. `total` and `onPress` are given for a Daily Essentials order, which is drawn
+   * by this same card but has its own bill and its own screen.
+   */
+  const renderOrderCard = useCallback(
+    (item: Order, total: number, onPress: () => void) => {
       const statusColors = getStatusColor(item.status);
       const statusText = item.status === 'delivered' ? 'SUCCESSFUL' : item.status.toUpperCase();
 
       return (
         <TouchableOpacity
           style={[styles.orderItem, { backgroundColor: getColor('card') }]}
-          onPress={() => handleOrderPress(item)}
+          onPress={onPress}
           activeOpacity={0.7}
         >
           {/* Left Side - Items Grid */}
@@ -308,14 +335,20 @@ const OrderList: React.FC<OrderListProps> = ({
           {/* Right Side */}
           <View style={styles.orderAmount}>
             <Text style={[styles.amountText, { color: getColor('text') }]}>
-              ₹ {computeOrderTotal(item).toFixed(0)}
+              ₹ {total.toFixed(0)}
             </Text>
             <MaterialCommunityIcons name="chevron-right" size={16} color={getColor('primary')} />
           </View>
         </TouchableOpacity>
       );
     },
-    [getColor, getStatusColor, handleOrderPress, computeOrderTotal]
+    [getColor, getStatusColor]
+  );
+
+  const renderOrderItem = useCallback(
+    ({ item }: { item: Order }) =>
+      renderOrderCard(item, computeOrderTotal(item), () => handleOrderPress(item)),
+    [renderOrderCard, computeOrderTotal, handleOrderPress]
   );
 
   // Memoize the error component
@@ -334,6 +367,19 @@ const OrderList: React.FC<OrderListProps> = ({
     );
   }, [error, getColor, refreshOrders]);
 
+  const renderHistoryEntry = useCallback(
+    ({ item }: { item: HistoryEntry }) =>
+      item.kind === 'order'
+        ? renderOrderItem({ item: item.order })
+        : renderOrderCard(essentialsAsOrder(item.order), essentialsOrderTotal(item.order), () =>
+            navigation?.navigate('OrderDetails', {
+              orderId: essentialsOrderRef(item.order),
+              essentialsOrderId: item.order.orderId,
+            })
+          ),
+    [renderOrderItem, renderOrderCard, navigation]
+  );
+
   // If there's an error, render the error component
   if (error) {
     return errorComponent;
@@ -342,8 +388,8 @@ const OrderList: React.FC<OrderListProps> = ({
   return (
     <View style={[styles.container, { backgroundColor: getColor('background') }]}>
       <FlatList
-        data={filteredOrders}
-        renderItem={renderOrderItem}
+        data={historyEntries}
+        renderItem={renderHistoryEntry}
         keyExtractor={keyExtractor}
         contentContainerStyle={styles.listContainer}
         refreshControl={
@@ -362,7 +408,7 @@ const OrderList: React.FC<OrderListProps> = ({
         windowSize={10}
         initialNumToRender={5}
         ListFooterComponent={
-          filteredOrders.length > 0 && hasMoreOrders ? (
+          historyEntries.length > 0 && hasMoreOrders ? (
             loading && !isLoadMoreClicking ? (
               <ActivityIndicator size="small" color={getColor('primary')} style={styles.loader} />
             ) : isLoadMoreClicking ? (

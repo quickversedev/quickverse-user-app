@@ -76,6 +76,33 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
   const { setSelectedAddress, selectedAddress, authData } = useAuth();
   const isLoggedIn = Boolean(authData?.jwt);
 
+  /**
+   * The region comes from the delivery address (the phone's position only when there is none),
+   * and posters are fetched after it. Posters are stored per region; fetched alongside the
+   * config they were asked for with the previous region, so after moving the delivery address
+   * to another town the old town's posters stayed until a pull-to-refresh.
+   */
+  const configThenPages = useCallback(async () => {
+    await fetchInitialConfig({
+      longitude:
+        selectedAddress?.coordinates?.longitude?.toString() ||
+        locationData?.location?.longitude?.toString() ||
+        String(DEFAULT_FALLBACK_COORDINATES.longitude),
+      latitude:
+        selectedAddress?.coordinates?.latitude?.toString() ||
+        locationData?.location?.latitude?.toString() ||
+        String(DEFAULT_FALLBACK_COORDINATES.latitude),
+    }).catch(() => {});
+    await fetchPages();
+  }, [
+    fetchInitialConfig,
+    fetchPages,
+    selectedAddress?.coordinates?.latitude,
+    selectedAddress?.coordinates?.longitude,
+    locationData?.location?.latitude,
+    locationData?.location?.longitude,
+  ]);
+
   const refreshAppData = useCallback(async () => {
     if (!isLoggedIn) return;
     try {
@@ -86,16 +113,11 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       await Promise.allSettled([
         vendorPromise,
         fetchAddresses(),
-        fetchInitialConfig({
-          longitude:
-            locationData?.location?.longitude?.toString() ||
-            String(DEFAULT_FALLBACK_COORDINATES.longitude),
-          latitude:
-            locationData?.location?.latitude?.toString() ||
-            String(DEFAULT_FALLBACK_COORDINATES.latitude),
-        }),
+        // Region by the delivery address, as everywhere else — not the phone's position — and
+        // posters only once it is known: they are per region, and asking in parallel used the
+        // previous region's (see configThenPages).
+        configThenPages(),
         fetchTheme(),
-        fetchPages(),
         fetchPricing('FOOD'),
         fetchPricing('GROCERY'),
         authData?.jwt && authData?.phone
@@ -109,13 +131,10 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
     isLoggedIn,
     fetchVendors,
     fetchAddresses,
-    fetchInitialConfig,
+    configThenPages,
     fetchTheme,
-    fetchPages,
     fetchPricing,
     fetchOrders,
-    locationData?.location?.longitude,
-    locationData?.location?.latitude,
     authData?.jwt,
     authData?.phone,
     selectedAddress?.coordinates,
@@ -305,19 +324,11 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
         // so don't await geocoding — let the prevAddressRef effect handle it.
         initializeSelectedAddress().catch(() => {});
         Promise.allSettled([
-          fetchInitialConfig({
-            longitude:
-              selectedAddress?.coordinates?.longitude?.toString() ||
-              locationData?.location?.longitude?.toString() ||
-              String(DEFAULT_FALLBACK_COORDINATES.longitude),
-            latitude:
-              selectedAddress?.coordinates?.latitude?.toString() ||
-              locationData?.location?.latitude?.toString() ||
-              String(DEFAULT_FALLBACK_COORDINATES.latitude),
-          }),
+          // Also the path a change of delivery address takes: posters must follow the new
+          // region, so they are fetched after it, not alongside.
+          configThenPages(),
           isLoggedIn ? fetchAddresses() : Promise.resolve(),
           fetchTheme(),
-          fetchPages(),
           fetchPricing('FOOD'),
           fetchPricing('GROCERY'),
           isLoggedIn && authData?.jwt && authData?.phone
@@ -369,6 +380,7 @@ const AppInitializer: React.FC<AppInitializerProps> = ({ children, locationData 
       console.error('app initializer initializeApp error', e);
     }
   }, [
+    configThenPages,
     fetchInitialConfig,
     fetchAddresses,
     fetchTheme,

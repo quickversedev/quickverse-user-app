@@ -6,6 +6,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { ThemeText } from '../../common/theme/ThemeText';
 import AddButton from '../Product/AddButton';
 import QuantitySelector from '../Product/QuantitySelector';
+import { wholeRupees } from '../../../utils/price';
 
 /**
  * One cart line, in the QV Cart design: a raised white card holding a contained
@@ -30,12 +31,14 @@ const CONTROL_W = 96;
 
 interface CartItemProps extends CartProduct {
   tag?: string;
+  /** `error` marks a line that cannot be ordered: red tag, dimmed row. */
+  tagTone?: 'accent' | 'error';
   onInc: () => void;
   onDec: () => void;
 }
 
 const CartItem: React.FC<CartItemProps> = React.memo(
-  ({ name, price, mrp, quantity, packSize, tag, onInc, onDec, image }) => {
+  ({ name, price, mrp, quantity, packSize, tag, tagTone = 'accent', onInc, onDec, image }) => {
     const { getColor, theme } = useTheme();
 
     const styles = useMemo(
@@ -131,6 +134,9 @@ const CartItem: React.FC<CartItemProps> = React.memo(
             borderRadius: 6,
             backgroundColor: `${CATALOGUE_ACCENT}14`,
           },
+          tagError: { backgroundColor: `${getColor('error')}14` },
+          tagTextError: { color: getColor('error') },
+          dimmed: { opacity: 0.45 },
           tagText: {
             fontSize: 10,
             lineHeight: 12,
@@ -151,14 +157,17 @@ const CartItem: React.FC<CartItemProps> = React.memo(
       [image]
     );
 
-    const lineTotal = price * quantity;
-    const lineMrp = mrp * quantity;
-    const showMrp = mrp > price;
+    // Each unit rounded to whole rupees before multiplying, exactly as the bill charges it.
+    const unitPrice = wholeRupees(price);
+    const unitMrp = wholeRupees(mrp);
+    const lineTotal = unitPrice * quantity;
+    const lineMrp = unitMrp * quantity;
+    const showMrp = unitMrp > unitPrice;
     const showUnitPrice = quantity > 1;
 
     return (
       <View style={styles.card}>
-        <View style={styles.thumbWrap}>
+        <View style={[styles.thumbWrap, tagTone === 'error' && styles.dimmed]}>
           <Image source={imageSource} style={styles.thumb} resizeMode="contain" />
         </View>
 
@@ -172,10 +181,10 @@ const CartItem: React.FC<CartItemProps> = React.memo(
             {name}
           </ThemeText>
           <View style={styles.priceRow}>
-            <ThemeText style={styles.price}>₹{lineTotal.toFixed(2)}</ThemeText>
-            {showMrp ? <ThemeText style={styles.mrp}>₹{lineMrp.toFixed(2)}</ThemeText> : null}
+            <ThemeText style={styles.price}>₹{lineTotal}</ThemeText>
+            {showMrp ? <ThemeText style={styles.mrp}>₹{lineMrp}</ThemeText> : null}
             {showUnitPrice ? (
-              <ThemeText style={styles.unitPrice}>₹{price.toFixed(2)} each</ThemeText>
+              <ThemeText style={styles.unitPrice}>₹{unitPrice} each</ThemeText>
             ) : null}
           </View>
         </View>
@@ -200,8 +209,10 @@ const CartItem: React.FC<CartItemProps> = React.memo(
             />
           )}
           {tag ? (
-            <View style={styles.tag}>
-              <ThemeText style={styles.tagText}>{tag}</ThemeText>
+            <View style={[styles.tag, tagTone === 'error' && styles.tagError]}>
+              <ThemeText style={[styles.tagText, tagTone === 'error' && styles.tagTextError]}>
+                {tag}
+              </ThemeText>
             </View>
           ) : null}
         </View>

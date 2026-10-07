@@ -6,6 +6,7 @@ import CartScreen from '../screens/cart/CartScreen';
 import ExploreScreen from '../screens/Explore/ExploreScreen';
 import HomeStack from './HomeStack';
 import useCartStore from '../store/cart/cartStore';
+import useEssentialsCartStore, { useEssentialsSummary } from '../store/cart/essentialsCartStore';
 import { useTheme } from '../theme/ThemeContext';
 import HomeFilled from '../assets/svg/bottom-navBar/homeIcon/homeIcon_filled.svg';
 import HomeOutline from '../assets/svg/bottom-navBar/homeIcon/homeIcon_outline.svg';
@@ -34,6 +35,9 @@ const TabNavigation = () => {
   const fullTabBarHeight = TAB_BAR_HEIGHT + bottomInset;
 
   const carts = useCartStore(state => state.carts);
+  // The Daily Essentials cart counts like any other cart.
+  const essentialsEnabled = useEssentialsCartStore(state => state.enabled === true);
+  const essentialsItemCount = useEssentialsSummary().itemCount;
   const cartItemCount = useMemo(
     () =>
       Object.values(carts).reduce(
@@ -41,8 +45,8 @@ const TabNavigation = () => {
           sum +
           Object.values(cart?.products ?? {}).reduce((s, p) => s + Number(p?.quantity ?? 0), 0),
         0
-      ),
-    [carts]
+      ) + (essentialsEnabled ? essentialsItemCount : 0),
+    [carts, essentialsEnabled, essentialsItemCount]
   );
 
   return (

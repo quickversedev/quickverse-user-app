@@ -511,15 +511,24 @@ class ProductsService {
    *
    * shopIds should be the same list the tag screen will query with: nonEmpty counts
    * within that scope, so a tag only survives if it will actually return something.
+   *
+   * regionId: tags can be created for one region; with it the server returns that region's
+   * tags plus the global ones, and never another region's.
    */
   async fetchProductTags({
     shopIds,
     nonEmpty = true,
-  }: { shopIds?: string[]; nonEmpty?: boolean } = {}): Promise<ProductTagOption[]> {
+    regionId,
+  }: { shopIds?: string[]; nonEmpty?: boolean; regionId?: string | null } = {}): Promise<
+    ProductTagOption[]
+  > {
     const authHeader = getAuthHeader();
     const params: Record<string, string | boolean> = { nonEmpty };
     if (shopIds && shopIds.length > 0) {
       params.shopIds = shopIds.join(',');
+    }
+    if (regionId) {
+      params.regionId = regionId;
     }
     const response = await apiCall(
       axiosInstance.get<ProductTagOption[]>('/v3/product-tags', {
