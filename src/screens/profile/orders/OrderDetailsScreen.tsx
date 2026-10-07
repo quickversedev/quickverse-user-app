@@ -1993,10 +1993,15 @@ const OrderDetailsScreen = () => {
 
   /* ---------------------------------- Payment ---------------------------------- */
 
-  const isCod = (rawOrder.paymentMethod || '').toUpperCase() === 'COD';
+  // A Daily Essentials order arrives in the shared Order shape ('cash', paymentStatus 'pending')
+  // rather than the API's ('COD', paymentReceivalStatus 'YET_TO_RECEIVE'); both mean unpaid COD.
+  const isCod = ['COD', 'CASH'].includes((rawOrder.paymentMethod || '').toUpperCase());
+  const cashStillDue =
+    rawOrder.paymentReceivalStatus === 'YET_TO_RECEIVE' ||
+    (essentialsOrderId != null && selectedOrder.paymentStatus === 'pending');
   const paymentLine = isCancelled
     ? 'Order cancelled'
-    : rawOrder.paymentReceivalStatus === 'YET_TO_RECEIVE' && isCod
+    : cashStillDue && isCod
       ? `Pay ₹${bill.total.toFixed(0)} on delivery`
       : `Paid ₹${bill.total.toFixed(0)}${rawOrder.paymentMethod ? ` via ${isCod ? 'Cash' : String(rawOrder.paymentMethod).toUpperCase()}` : ''}`;
   const paymentSubtitle = [paymentLine, vendorDetails?.name].filter(Boolean).join(' • ');
