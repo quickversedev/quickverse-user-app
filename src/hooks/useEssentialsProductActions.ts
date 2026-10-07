@@ -37,7 +37,7 @@ const cartIdFor = (product: GroceryGroupProduct) => `vendor_${product.shopId}`;
  * back to the per-shop SmartBiz carts, which is how Daily Essentials worked before that cart
  * existed (adding from two shops then opens two carts).
  */
-export const useEssentialsProductActions = () => {
+export const useEssentialsProductActions = (enabled = true) => {
   const { authData } = useAuth();
 
   const carts = useCartStore(s => s.carts);
@@ -51,9 +51,11 @@ export const useEssentialsProductActions = () => {
   const fetchEssentialsCart = useEssentialsCartStore(s => s.fetchCart);
   const setEssentialsQuantity = useEssentialsCartStore(s => s.setQuantity);
 
+  // `enabled` false: a screen that only sometimes shows Essentials products (the store screen)
+  // does not fetch the Essentials cart for every ordinary store.
   useEffect(() => {
-    fetchEssentialsCart(authData?.jwt, authData?.phone);
-  }, [fetchEssentialsCart, authData?.jwt, authData?.phone]);
+    if (enabled) fetchEssentialsCart(authData?.jwt, authData?.phone);
+  }, [enabled, fetchEssentialsCart, authData?.jwt, authData?.phone]);
 
   const quantityFor = useCallback(
     (product: GroceryGroupProduct) => {

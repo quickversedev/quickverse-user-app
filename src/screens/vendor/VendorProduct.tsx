@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Images } from '../../assets';
 import CartBar from '../../components/common/Cart/CartBar';
+import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import ProductCard from '../../components/modules/Product/ProductCard';
 import ProductDetailModal from '../../components/modules/Product/ProductDetailModal';
 import VariantsModal from '../../components/modules/Product/VariantsModal';
@@ -31,6 +32,8 @@ import ProductFilterBar, {
 import CategoryTabs, { CategoryItem } from '../../components/vendor/CategoryTabs';
 import VendorHeaderCard from '../../components/vendor/VendorHeaderCard';
 import { useAuth } from '../../contexts/login/AuthProvider';
+import { useEssentialsGroupCatalogue } from '../../hooks/useEssentialsGroupCatalogue';
+import { useEssentialsProductActions } from '../../hooks/useEssentialsProductActions';
 import { API_STORE_ID } from '../../data/collectionsData';
 import { RootStackParamList } from '../../routes/AppStack';
 import useCartStore from '../../store/cart/cartStore';
@@ -50,6 +53,7 @@ interface VendorProductRouteParams {
   searchQuery?: string;
   collection?: { id: string; name: string; categories: { id: string; name: string }[] }; // Simplified collection type or import it
   shopId?: string;
+  essentials?: RootStackParamList['VendorProduct']['essentials'];
 }
 type VendorProductRouteProp = RouteProp<
   { VendorProduct: VendorProductRouteParams },
@@ -171,7 +175,17 @@ const VendorProductComponent: React.FC = () => {
     searchQuery: initialSearchQuery,
     collection,
     shopId: routeShopId,
+    essentials,
   } = route.params;
+
+  /**
+   * Daily Essentials mode: the same store screen, with a catalogue group standing in for the
+   * store and its subgroups for the categories. Products come from QuickVerse's own catalogue
+   * (several kiranas, never named) and go into the one Essentials cart, not a store cart.
+   */
+  const isEssentials = !!essentials;
+  const essentialsCatalogue = useEssentialsGroupCatalogue(essentials?.groupId);
+  const essentialsActions = useEssentialsProductActions(isEssentials);
 
   // Use passed vendor or derive/fallback
   const vendor = routeVendor || ({ shopId: routeShopId || '' } as Vendor);
@@ -189,22 +203,26 @@ const VendorProductComponent: React.FC = () => {
 
   // Products store integration
   const {
-    products,
-    loading: productsLoading,
-    error: productsError,
+    products: storeProducts,
+    loading: storeProductsLoading,
+    error: storeProductsError,
     fetchProducts,
     resetProducts,
-    categories,
+    categories: storeCategories,
     fetchCategories,
     setShopId,
     fetchCollectionProducts, // Destructure new method
   } = useProductsStore();
+  const products = isEssentials ? essentialsCatalogue.products : storeProducts;
+  const categories = isEssentials ? essentialsCatalogue.categories : storeCategories;
+  const productsLoading = isEssentials ? essentialsCatalogue.loading : storeProductsLoading;
+  const productsError = isEssentials ? essentialsCatalogue.error : storeProductsError;
 
   // Memoized values
 
   const storeStatus = useMemo(() => getStoreStatus(vendor), [vendor]);
   // In collection mode always treat store as active so products are never greyed out; otherwise use vendor open status
-  const isStoreActive = collection ? true : routeVendor ? storeStatus.isOpen : true;
+  const isStoreActive = collection || isEssentials ? true : routeVendor ? storeStatus.isOpen : true;
 
   // In collection mode, vendor may only have shopId → modals see store as closed. Pass a vendor with store open so add-to-cart works.
   const vendorForModals = useMemo((): Vendor => {
@@ -228,6 +246,7 @@ const VendorProductComponent: React.FC = () => {
 
   // Fetch products and categories on mount or when vendor.shopId changes
   useEffect(() => {
+    if (isEssentials) return;
     setShopId(shopId);
     resetProducts();
 
@@ -257,6 +276,7 @@ const VendorProductComponent: React.FC = () => {
   useEffect(() => {
     const isGroceryVendor = vendor.category === 'Grocery';
     if (
+      !isEssentials &&
       (shopId === API_STORE_ID || isGroceryVendor) &&
       !collection &&
       categories.length > 0 &&
@@ -280,6 +300,7 @@ const VendorProductComponent: React.FC = () => {
     productsError,
     fetchCollectionProducts,
     vendor.category,
+    isEssentials,
   ]);
 
   // Log fetched products
@@ -465,8 +486,8 @@ const VendorProductComponent: React.FC = () => {
 
   // Set this cart as active when component mounts
   useEffect(() => {
-    setActiveCart(cartId);
-  }, [cartId, setActiveCart]);
+    if (!isEssentials) setActiveCart(cartId);
+  }, [cartId, setActiveCart, isEssentials]);
 
   // Get item count for this cart
   const itemCount = useMemo(
@@ -701,6 +722,20 @@ const VendorProductComponent: React.FC = () => {
     [filteredCategories, categoryIndexMap]
   );
 
+  /**
+   * Daily Essentials opens on the tile that was tapped: once its subgroup's header is in the
+   * list, jump to it — once, so the customer's own scrolling is never pulled back.
+   */
+  const openedOnSubgroupRef = useRef(false);
+  useEffect(() => {
+    const target = essentials?.subgroupId;
+    if (!target || openedOnSubgroupRef.current || categoryIndexMap[target] === undefined) return;
+    openedOnSubgroupRef.current = true;
+    // After the list's first layout, or scrollToIndex has nothing to measure against.
+    const timer = setTimeout(() => handleCategorySelect(target), SCROLL_DELAY);
+    return () => clearTimeout(timer);
+  }, [essentials?.subgroupId, categoryIndexMap, handleCategorySelect]);
+
   // Listen to scroll for category selection
   const handleScroll = useMemo(
     () =>
@@ -787,6 +822,12 @@ const VendorProductComponent: React.FC = () => {
     (product: Product) => {
       if (!isStoreActive || !product.inStock) return;
 
+      if (isEssentials) {
+        const original = essentialsCatalogue.originals.get(product.sku);
+        if (original) essentialsActions.add(original);
+        return;
+      }
+
       // If product has multiple variants, show variants modal
       if (product.numberOfVariants && product.numberOfVariants > 1) {
         setSelectedProductForVariants(product);
@@ -810,7 +851,16 @@ const VendorProductComponent: React.FC = () => {
         authData?.phone || ''
       );
     },
-    [isStoreActive, addToCart, cartId, vendor.shopId, authData]
+    [
+      isStoreActive,
+      addToCart,
+      cartId,
+      vendor.shopId,
+      authData,
+      isEssentials,
+      essentialsCatalogue.originals,
+      essentialsActions,
+    ]
   );
 
   const handleVariantSelect = useCallback(
@@ -844,25 +894,56 @@ const VendorProductComponent: React.FC = () => {
       if (!isStoreActive) return;
       const product = products.find(p => p.sku === sku);
       if (product && !product.inStock) return;
+      if (isEssentials) {
+        const original = essentialsCatalogue.originals.get(sku);
+        if (original) essentialsActions.increment(original);
+        return;
+      }
       increment(cartId, sku, authData?.jwt || '', authData?.phone || '');
     },
-    [isStoreActive, increment, cartId, authData, products]
+    [
+      isStoreActive,
+      increment,
+      cartId,
+      authData,
+      products,
+      isEssentials,
+      essentialsCatalogue.originals,
+      essentialsActions,
+    ]
   );
 
   const handleDecrement = useCallback(
     (sku: string) => {
       if (!isStoreActive) return;
+      if (isEssentials) {
+        const original = essentialsCatalogue.originals.get(sku);
+        if (original) essentialsActions.decrement(original);
+        return;
+      }
       decrement(cartId, sku, authData?.jwt || '', authData?.phone || '');
     },
-    [isStoreActive, decrement, cartId, authData]
+    [
+      isStoreActive,
+      decrement,
+      cartId,
+      authData,
+      isEssentials,
+      essentialsCatalogue.originals,
+      essentialsActions,
+    ]
   );
 
   // Optimized product quantity lookup using memoized map
   const getProductQuantity = useCallback(
     (sku: string) => {
+      if (isEssentials) {
+        const original = essentialsCatalogue.originals.get(sku);
+        return original ? essentialsActions.quantityFor(original) : 0;
+      }
       return productQuantityMap.get(sku) || 0;
     },
-    [productQuantityMap]
+    [productQuantityMap, isEssentials, essentialsCatalogue.originals, essentialsActions]
   );
 
   // Memoize modal handlers
@@ -1308,7 +1389,8 @@ const VendorProductComponent: React.FC = () => {
                 onDecrement={() => handleDecrement(product.sku)}
                 disabled={!isStoreActive || !product.inStock}
                 showVariantsCount={true}
-                onPress={() => handleProductPress(product)}
+                // The detail modal adds to a store cart; Essentials products go only to theirs.
+                onPress={isEssentials ? undefined : () => handleProductPress(product)}
                 isStoreClosed={!isStoreActive}
                 // The product the user arrived here searching for. The row sort already
                 // pins it to the top of its category; this keeps it visually findable now
@@ -1334,6 +1416,7 @@ const VendorProductComponent: React.FC = () => {
       MemoizedProductCard,
       styles.productRow,
       getColor,
+      isEssentials,
     ]
   );
 
@@ -1369,7 +1452,7 @@ const VendorProductComponent: React.FC = () => {
 
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 18, fontWeight: 'bold', color: getColor('text') }}>
-                {collection ? collection.name : vendor.name}
+                {essentials ? essentials.title : collection ? collection.name : vendor.name}
               </Text>
             </View>
 
@@ -1416,7 +1499,8 @@ const VendorProductComponent: React.FC = () => {
 
           {/* Vendor Card */}
           {/* Vendor Card - Only show if not in collection mode */}
-          {!collection && (
+          {/* No store card for Daily Essentials: its kiranas are never shown. */}
+          {!collection && !isEssentials && (
             <VendorHeaderCard
               vendor={vendor}
               onPress={() => navigation.navigate('VendorProfile', { vendor })}
@@ -1439,9 +1523,11 @@ const VendorProductComponent: React.FC = () => {
               </View>
               <Text style={styles.zeroStateTitle}>No Products Available</Text>
               <Text style={styles.zeroStateMessage}>
-                {!isStoreActive
-                  ? 'This store is currently closed. Please check back during business hours.'
-                  : "This store doesn't have any products available at the moment."}
+                {isEssentials
+                  ? 'None of these are available near you right now. Check back soon.'
+                  : !isStoreActive
+                    ? 'This store is currently closed. Please check back during business hours.'
+                    : "This store doesn't have any products available at the moment."}
               </Text>
               {!isStoreActive && (
                 <View style={styles.businessHoursContainer}>
@@ -1570,8 +1656,9 @@ const VendorProductComponent: React.FC = () => {
                 </View>
               </View>
             )}
-          {/* CartBar at the bottom */}
-          {itemCount > 0 && (
+          {/* CartBar at the bottom — for Daily Essentials, the Essentials cart's own bar. */}
+          {isEssentials && <FloatingCartsStack />}
+          {!isEssentials && itemCount > 0 && (
             <CartBar
               itemCount={itemCount}
               style={{

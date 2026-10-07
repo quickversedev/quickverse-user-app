@@ -21,7 +21,8 @@ import { wholeRupees } from '../../../utils/price';
  *
  * Two levels here and one further in: each group ("Snacks & Beverages") is a header with its
  * accent bar and badge, over a grid of its subgroups ("Chips & Namkeen") as tiles. A tile opens
- * that subgroup's products (EssentialsSubgroup); none are listed on this screen. Admin arranges
+ * the store screen (VendorProduct) with the group as the store and its subgroups as the
+ * categories, scrolled to the tapped one; no products are listed on this screen. Admin arranges
  * all of it in the web panel, and a subgroup not yet placed in a group is not shown.
  *
  * Subgroups span shops — one can mix products from several kiranas — and nothing here says
@@ -159,17 +160,17 @@ const DailyEssentials: React.FC = () => {
   // Nothing to show and nothing on the way — take up no space at all.
   if (!loading && groups.length === 0) return null;
 
-  const renderTile = (subgroup: CatalogSubgroup, accent: string) => {
+  const renderTile = (group: CatalogGroup, subgroup: CatalogSubgroup, accent: string) => {
     const offer = offerLine(subgroup);
     return (
       <TouchableOpacity
         key={subgroup.groupId}
         style={styles.tile}
         activeOpacity={0.8}
+        // The store screen, with this group as the store and its subgroups as the categories.
         onPress={() =>
-          navigation.navigate('EssentialsSubgroup', {
-            subgroupId: subgroup.groupId,
-            title: subgroup.name,
+          navigation.navigate('VendorProduct', {
+            essentials: { groupId: group.groupId, title: group.name, subgroupId: subgroup.groupId },
           })
         }
         accessibilityRole="button"
@@ -228,7 +229,7 @@ const DailyEssentials: React.FC = () => {
               ) : null}
             </View>
             <View style={styles.grid}>
-              {group.subgroups.map(subgroup => renderTile(subgroup, accent))}
+              {group.subgroups.map(subgroup => renderTile(group, subgroup, accent))}
             </View>
           </View>
         );

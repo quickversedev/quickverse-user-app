@@ -13,7 +13,6 @@ import TabNavigation from '../navigation/TabNavigation';
 import CouponsScreen from '../screens/cart/CouponsScreen';
 import CollectionDetailScreen from '../screens/collections/CollectionDetailScreen';
 import TagProductsScreen from '../screens/TagProducts/TagProductsScreen';
-import EssentialsSubgroupScreen from '../screens/essentials/EssentialsSubgroupScreen';
 import OrderFailureScreen from '../screens/order/OrderFailureScreen';
 import OrderSuccessScreen from '../screens/order/OrderSuccessScreen';
 import AboutUsScreen from '../screens/profile/AboutUsScreen';
@@ -46,14 +45,17 @@ export type RootStackParamList = {
     searchQuery?: string;
     collection?: Collection;
     shopId?: string;
+    /**
+     * A Daily Essentials group shown as a store: its subgroups are the categories, and the
+     * screen opens scrolled to `subgroupId`, the tile that was tapped.
+     */
+    essentials?: { groupId: string; title: string; subgroupId?: string };
   }; // Updated params
   VendorProfile: { vendor: Vendor };
   VendorDetails: { vendor: Vendor };
   // CollectionProduct removed
   CollectionDetail: { collection: Collection };
   TagProducts: { tagCode: string; tagLabel: string; shopCategory?: string };
-  /** A Daily Essentials subgroup's products, opened from its tile. */
-  EssentialsSubgroup: { subgroupId: string; title: string };
   ProductDetailDemo: undefined;
   /** `returnTo`: the store cart the Essentials cart was opened from, which Back returns to. */
   Cart: { cartId: string; returnTo?: string } | undefined;
@@ -202,11 +204,6 @@ export const AppStack = () => {
       <Stack.Screen
         name="TagProducts"
         component={TagProductsScreen}
-        options={slideFromRightOptions}
-      />
-      <Stack.Screen
-        name="EssentialsSubgroup"
-        component={EssentialsSubgroupScreen}
         options={slideFromRightOptions}
       />
 
