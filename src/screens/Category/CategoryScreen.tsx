@@ -37,6 +37,7 @@ import QuickSearchStrip from './components/QuickSearchStrip';
 import BestSellersSection from './components/BestSellersSection';
 import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
 import useVendorCouponsStore from '../../store/coupons/vendorCouponsStore';
+import useCatalogGroupsStore from '../../store/grocery/catalogGroupsStore';
 
 type CategoryScreenRouteProp = RouteProp<RootStackParamList, 'Category'>;
 
@@ -102,6 +103,10 @@ const CategoryScreen = () => {
       const serviceType = isGrocery ? 'GROCERY' : 'FOOD';
       await useVendorCouponsStore.getState().fetchForVendors(refreshedShopIds, serviceType);
       useVendorCouponsStore.getState().startRotation();
+      if (isGrocery) {
+        // Daily Essentials: admin's latest groups and tiles, for the same place and region.
+        await useCatalogGroupsStore.getState().refresh();
+      }
     } catch (error) {
       console.warn('Error refreshing category screen:', error);
     } finally {

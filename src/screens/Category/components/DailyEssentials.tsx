@@ -1,370 +1,203 @@
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import React, { useCallback, useEffect, useMemo } from 'react';
-import {
-  Alert,
-  Image,
-  ImageSourcePropType,
-  Platform,
-  StyleSheet,
-  ToastAndroid,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import QuantitySelector from '../../../components/modules/Product/QuantitySelector';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import React, { useEffect, useMemo } from 'react';
+import { StyleSheet, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import CachedImage from '../../../components/common/CachedImage';
 import { ThemeText } from '../../../components/common/theme/ThemeText';
 import { CATALOGUE_ACCENT, CATALOGUE_GUTTER } from '../../../constants/catalogue';
 import { useAuth } from '../../../contexts/login/AuthProvider';
-import { GroceryGroupProduct } from '../../../services/groceryGroupsService';
-import useCartStore from '../../../store/cart/cartStore';
-import useEssentialsCartStore, {
-  EssentialsProductMeta,
-  EssentialsSetResult,
-} from '../../../store/cart/essentialsCartStore';
+import { RootStackParamList } from '../../../routes/AppStack';
+import { CatalogGroup, CatalogSubgroup } from '../../../services/catalogGroupsService';
+import useEssentialsCartStore from '../../../store/cart/essentialsCartStore';
+import useConfigStore from '../../../store/configStore';
+import useCatalogGroupsStore from '../../../store/grocery/catalogGroupsStore';
 import useGroceryGroupsStore from '../../../store/grocery/groceryGroupsStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { wholeRupees } from '../../../utils/price';
 
 /**
- * Daily Essentials — curated grocery groups, rendered from QuickVerse's own data.
+ * Daily Essentials — the curated catalogue, rendered from QuickVerse's own data.
  *
- * Everything else on this screen is proxied: the collections grid comes from a single
- * hardcoded shop, and grocery product grids are pulled by the device from SmartPOS.
- * These groups come from `qv.product_group`, which is why they can span shops — one
- * group legitimately mixes products from several kiranas. Cards never say which: to the
- * customer, Daily Essentials is one shop and one order.
+ * Two levels here and one further in: each group ("Snacks & Beverages") is a header with its
+ * accent bar and badge, over a grid of its subgroups ("Chips & Namkeen") as tiles. A tile opens
+ * that subgroup's products (EssentialsSubgroup); none are listed on this screen. Admin arranges
+ * all of it in the web panel, and a subgroup not yet placed in a group is not shown.
  *
- * Built on its own card rather than ProductCard. ProductCard's `Product` requires
- * `discount`, `numberOfVariants` and `primarySKU`, none of which this endpoint returns,
- * and below `size="big"` it draws a rating badge with 0. The shape here is the one
- * Product/SuggestedItems settled on for exactly this reason.
+ * Subgroups span shops — one can mix products from several kiranas — and nothing here says
+ * which: to the customer, Daily Essentials is one shop and one order.
  */
 
-const THUMB = 56;
-/** ADD and the stepper share this, so a card cannot resize on first add. */
-const CONTROL_H = 28;
+const COLUMNS = 3;
+const GAP = 10;
+const DEFAULT_ACCENT = CATALOGUE_ACCENT;
 
-// Hoisted so the source fallback and defaultSource share one reference.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const PLACEHOLDER = require('../../../assets/images/food.png');
+/** `#RRGGBB` → the same colour at about 10% opacity, for the badge pill. */
+const tint = (hex: string) => (/^#[0-9A-Fa-f]{6}$/.test(hex) ? `${hex}1A` : 'rgba(0,0,0,0.06)');
 
-/** Mirrors ProductCard's handling, including the leading `@` some catalogue URLs carry. */
-const imageSourceFor = (image?: string): ImageSourcePropType => {
-  const cleanUrl = typeof image === 'string' ? image.trim().replace(/^@+/, '') : '';
-  return cleanUrl.startsWith('http') ? { uri: cleanUrl } : PLACEHOLDER;
-};
+const accentOf = (group: CatalogGroup) =>
+  group.accentColor && /^#[0-9A-Fa-f]{6}$/.test(group.accentColor)
+    ? group.accentColor
+    : DEFAULT_ACCENT;
 
-const showMessage = (message: string) => {
-  if (Platform.OS === 'android') {
-    ToastAndroid.show(message, ToastAndroid.SHORT);
-  } else {
-    Alert.alert('Daily Essentials', message);
-  }
-};
-
-const metaFor = (product: GroceryGroupProduct): EssentialsProductMeta => ({
-  sku: product.sku,
-  shopId: product.shopId,
-  shopName: product.shopName,
-  name: product.name,
-  price: product.sellingPrice || product.mrp,
-  mrp: product.mrp,
-  imageUrl: product.imageUrl,
-});
+/** Admin's line when there is one, otherwise the cheapest thing inside. */
+const offerLine = (subgroup: CatalogSubgroup) =>
+  subgroup.offerText ||
+  (subgroup.lowestSellingPrice ? `From ₹${wholeRupees(subgroup.lowestSellingPrice)}` : '');
 
 const DailyEssentials: React.FC = () => {
-  const { getColor, theme } = useTheme();
-  const { authData, selectedAddress } = useAuth();
+  const { getColor } = useTheme();
+  const { width } = useWindowDimensions();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const { selectedAddress } = useAuth();
   const nearLat = selectedAddress?.coordinates?.latitude;
   const nearLng = selectedAddress?.coordinates?.longitude;
-  const groups = useGroceryGroupsStore(s => s.groups);
-  const loading = useGroceryGroupsStore(s => s.loading);
-  const fetchGroups = useGroceryGroupsStore(s => s.fetchGroups);
+  const regionId = useConfigStore(s => s.config?.regionId ?? null);
 
-  const carts = useCartStore(s => s.carts);
-  const addToCart = useCartStore(s => s.addToCart);
-  const increment = useCartStore(s => s.increment);
-  const decrement = useCartStore(s => s.decrement);
+  const groups = useCatalogGroupsStore(s => s.groups);
+  const loading = useCatalogGroupsStore(s => s.loading);
+  const fetchCatalog = useCatalogGroupsStore(s => s.fetchCatalog);
+
+  // The catalogue near the address being delivered to; a new town or region refetches.
+  useEffect(() => {
+    fetchCatalog(
+      Number.isFinite(nearLat) && Number.isFinite(nearLng)
+        ? { latitude: nearLat as number, longitude: nearLng as number }
+        : undefined,
+      regionId
+    );
+  }, [fetchCatalog, nearLat, nearLng, regionId]);
 
   /**
-   * Where this section's items go. With the server's Essentials cart on, every product here
-   * lands in one QuickVerse cart whatever its kirana, and checks out as one order. With it
-   * off — or before the server has said — it falls back to the per-shop SmartBiz carts,
-   * which is how this section worked before the Essentials cart existed.
+   * Without the server's Essentials cart, items go to per-shop carts, and the cart screen
+   * groups those whose shop supplies Daily Essentials (`useEssentialsShopIds`), which it reads
+   * from the flat groups list. Kept loaded for that path only.
    */
-  const essentialsEnabled = useEssentialsCartStore(s => s.enabled === true);
-  const essentialsView = useEssentialsCartStore(s => s.view);
-  const essentialsPending = useEssentialsCartStore(s => s.pending);
-  const fetchEssentialsCart = useEssentialsCartStore(s => s.fetchCart);
-  const setEssentialsQuantity = useEssentialsCartStore(s => s.setQuantity);
-
-  // Groups near the address being delivered to; a new town refetches.
+  const essentialsCartOff = useEssentialsCartStore(s => s.enabled === false);
+  const fetchLegacyGroups = useGroceryGroupsStore(s => s.fetchGroups);
   useEffect(() => {
-    fetchGroups(
+    if (!essentialsCartOff) return;
+    fetchLegacyGroups(
       Number.isFinite(nearLat) && Number.isFinite(nearLng)
         ? { latitude: nearLat as number, longitude: nearLng as number }
         : undefined
     );
-  }, [fetchGroups, nearLat, nearLng]);
+  }, [essentialsCartOff, fetchLegacyGroups, nearLat, nearLng]);
 
-  useEffect(() => {
-    fetchEssentialsCart(authData?.jwt, authData?.phone);
-  }, [fetchEssentialsCart, authData?.jwt, authData?.phone]);
-
-  /**
-   * Legacy path only: the cart is chosen by the *product's* shop, so adding from two shops
-   * in one group opens two carts. The Essentials cart replaces this when enabled.
-   */
-  const cartIdFor = (product: GroceryGroupProduct) => `vendor_${product.shopId}`;
-
-  const quantityFor = useCallback(
-    (product: GroceryGroupProduct) => {
-      if (essentialsEnabled) {
-        if (essentialsPending[product.sku] !== undefined) return essentialsPending[product.sku];
-        return essentialsView?.items.find(l => l.sku === product.sku)?.quantity ?? 0;
-      }
-      return carts[cartIdFor(product)]?.products[product.sku]?.quantity || 0;
-    },
-    [carts, essentialsEnabled, essentialsPending, essentialsView]
-  );
-
-  const setEssentials = useCallback(
-    async (product: GroceryGroupProduct, quantity: number) => {
-      const result: EssentialsSetResult = await setEssentialsQuantity(
-        metaFor(product),
-        quantity,
-        authData?.jwt,
-        authData?.phone
-      );
-      if (!result.ok && result.message) showMessage(result.message);
-    },
-    [setEssentialsQuantity, authData]
-  );
-
-  const handleAdd = useCallback(
-    (product: GroceryGroupProduct) => {
-      if (essentialsEnabled) {
-        setEssentials(product, quantityFor(product) + 1);
-        return;
-      }
-      addToCart(
-        cartIdFor(product),
-        {
-          sku: product.sku,
-          shopId: product.shopId,
-          name: product.name,
-          price: product.sellingPrice || product.mrp,
-          mrp: product.mrp,
-          image: product.imageUrl || '',
-          // No diet flag on this endpoint. Inert either way: every server sync
-          // overwrites it, and the cart row deliberately renders no veg marker from it.
-          veg: true,
-        },
-        authData?.jwt || '',
-        authData?.phone || ''
-      );
-    },
-    [addToCart, authData, essentialsEnabled, setEssentials, quantityFor]
-  );
-
-  const handleIncrement = useCallback(
-    (product: GroceryGroupProduct) => {
-      if (essentialsEnabled) {
-        setEssentials(product, quantityFor(product) + 1);
-        return;
-      }
-      increment(cartIdFor(product), product.sku, authData?.jwt || '', authData?.phone || '');
-    },
-    [increment, authData, essentialsEnabled, setEssentials, quantityFor]
-  );
-
-  const handleDecrement = useCallback(
-    (product: GroceryGroupProduct) => {
-      if (essentialsEnabled) {
-        setEssentials(product, quantityFor(product) - 1);
-        return;
-      }
-      decrement(cartIdFor(product), product.sku, authData?.jwt || '', authData?.phone || '');
-    },
-    [decrement, authData, essentialsEnabled, setEssentials, quantityFor]
-  );
+  const tileWidth = Math.floor((width - CATALOGUE_GUTTER * 2 - GAP * (COLUMNS - 1)) / COLUMNS);
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
         section: { marginHorizontal: CATALOGUE_GUTTER, marginTop: 14 },
-        sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
+        sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
         sectionTitle: {
           fontSize: 14,
           lineHeight: 18,
           fontWeight: '700',
           color: getColor('text'),
         },
-        group: { marginBottom: 14 },
+        group: { marginBottom: 18 },
         groupHead: {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 8,
+          marginBottom: 10,
           gap: 8,
         },
+        groupTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 },
+        accentBar: { width: 4, height: 18, borderRadius: 2 },
         groupName: {
-          fontSize: 13,
-          lineHeight: 17,
-          fontWeight: '700',
+          fontSize: 15,
+          lineHeight: 20,
+          fontWeight: '800',
           color: getColor('text'),
-          flex: 1,
-          minWidth: 0,
+          flexShrink: 1,
         },
-        countBadge: {
-          paddingHorizontal: 8,
-          paddingVertical: 2,
-          borderRadius: 999,
+        badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
+        badgeText: { fontSize: 10, lineHeight: 12, fontWeight: '800', letterSpacing: 0.6 },
+        grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: GAP, rowGap: 14 },
+        tile: { width: tileWidth },
+        imageBox: {
+          width: tileWidth,
+          height: tileWidth,
+          borderRadius: 14,
+          overflow: 'hidden',
           backgroundColor: getColor('overlay'),
-        },
-        countText: {
-          fontSize: 10,
-          lineHeight: 13,
-          fontWeight: '700',
-          color: getColor('subText'),
-        },
-        grid: {
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          justifyContent: 'space-between',
-          rowGap: 8,
-        },
-        card: {
-          width: '49%',
-          justifyContent: 'space-between',
-          backgroundColor: getColor('white'),
-          borderRadius: 12,
-          padding: 10,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: getColor('border'),
-          shadowColor: theme.colors.shadow.color,
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: theme.colors.shadow.opacity,
-          shadowRadius: 3,
-          elevation: 2,
-        },
-        cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-        thumbWrap: {
-          width: THUMB,
-          height: THUMB,
-          borderRadius: 8,
-          backgroundColor: getColor('overlay'),
-          padding: 4,
-        },
-        // `contain`, not `cover`: at 56px these are packshots, and cropping one to fill
-        // the square cuts the product out of its own thumbnail.
-        thumb: { width: '100%', height: '100%' },
-        cardText: { flex: 1, minWidth: 0 },
-        name: { fontSize: 12, lineHeight: 16, fontWeight: '700', color: getColor('text') },
-        priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 3 },
-        price: { fontSize: 15, lineHeight: 18, fontWeight: '800', color: getColor('text') },
-        mrp: {
-          fontSize: 11,
-          lineHeight: 14,
-          color: getColor('subText'),
-          textDecorationLine: 'line-through',
-        },
-        addBtn: {
-          flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 4,
-          height: CONTROL_H,
-          marginTop: 8,
-          borderRadius: 8,
-          backgroundColor: getColor('overlay'),
         },
-        addLabel: {
+        image: { width: '100%', height: '100%' },
+        chip: {
+          position: 'absolute',
+          top: 6,
+          left: 6,
+          maxWidth: tileWidth - 12,
+          paddingHorizontal: 6,
+          paddingVertical: 2,
+          borderRadius: 6,
+        },
+        chipText: { fontSize: 9, lineHeight: 12, fontWeight: '800', color: '#FFFFFF' },
+        name: {
+          marginTop: 6,
+          fontSize: 12,
+          lineHeight: 15,
+          fontWeight: '700',
+          color: getColor('text'),
+        },
+        offer: {
+          marginTop: 2,
           fontSize: 11,
           lineHeight: 14,
-          fontWeight: '800',
-          letterSpacing: 0.4,
+          fontWeight: '700',
           color: CATALOGUE_ACCENT,
         },
-        soldOutLabel: { color: getColor('placeholder') },
-        /** Filled green in the cart, as on the PLP grid, the PDP and the cart itself. */
-        stepper: {
-          position: 'relative',
-          right: 0,
-          bottom: 0,
-          alignSelf: 'stretch',
-          minWidth: 0,
-          height: CONTROL_H,
-          marginTop: 8,
-          borderRadius: 8,
-          backgroundColor: CATALOGUE_ACCENT,
-          borderColor: CATALOGUE_ACCENT,
-          paddingHorizontal: 0,
-        },
       }),
-    [getColor, theme]
+    [getColor, tileWidth]
   );
 
   // Nothing to show and nothing on the way — take up no space at all.
   if (!loading && groups.length === 0) return null;
 
-  const renderProduct = (product: GroceryGroupProduct) => {
-    const quantity = quantityFor(product);
-    const soldOut = !product.inStock;
-    // Whole rupees, as the Essentials cart prices them.
-    const shownPrice = wholeRupees(product.sellingPrice);
-    const shownMrp = wholeRupees(product.mrp);
-    const discounted = shownMrp > shownPrice;
-
+  const renderTile = (subgroup: CatalogSubgroup, accent: string) => {
+    const offer = offerLine(subgroup);
     return (
-      <View key={`${product.shopId}-${product.sku}`} style={styles.card}>
-        <View style={styles.cardTop}>
-          <View style={styles.thumbWrap}>
-            <Image
-              source={imageSourceFor(product.imageUrl)}
-              style={styles.thumb}
-              resizeMode="contain"
-              defaultSource={PLACEHOLDER}
-            />
-          </View>
-          <View style={styles.cardText}>
-            <ThemeText style={styles.name} numberOfLines={2}>
-              {product.name}
-            </ThemeText>
-            <View style={styles.priceRow}>
-              <ThemeText style={styles.price}>₹{shownPrice}</ThemeText>
-              {discounted ? <ThemeText style={styles.mrp}>₹{shownMrp}</ThemeText> : null}
+      <TouchableOpacity
+        key={subgroup.groupId}
+        style={styles.tile}
+        activeOpacity={0.8}
+        onPress={() =>
+          navigation.navigate('EssentialsSubgroup', {
+            subgroupId: subgroup.groupId,
+            title: subgroup.name,
+          })
+        }
+        accessibilityRole="button"
+        accessibilityLabel={`${subgroup.name}${offer ? `, ${offer}` : ''}`}
+      >
+        <View style={styles.imageBox}>
+          {subgroup.imageUrl?.startsWith('http') ? (
+            <CachedImage uri={subgroup.imageUrl} style={styles.image} resizeMode="cover" />
+          ) : (
+            <MaterialCommunityIcons name="basket-outline" size={28} color={getColor('subText')} />
+          )}
+          {subgroup.badgeLabel ? (
+            <View style={[styles.chip, { backgroundColor: accent }]}>
+              <ThemeText style={styles.chipText} numberOfLines={1}>
+                {subgroup.badgeLabel}
+              </ThemeText>
             </View>
-          </View>
+          ) : null}
         </View>
-
-        {quantity > 0 && !soldOut ? (
-          <QuantitySelector
-            quantity={quantity}
-            onIncrement={() => handleIncrement(product)}
-            onDecrement={() => handleDecrement(product)}
-            size="xs"
-            containerStyle={styles.stepper}
-            tintColor={getColor('white')}
-            quantityColor={getColor('white')}
-          />
-        ) : (
-          <TouchableOpacity
-            style={styles.addBtn}
-            onPress={() => handleAdd(product)}
-            disabled={soldOut}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={soldOut ? `${product.name} is sold out` : `Add ${product.name}`}
-          >
-            {soldOut ? null : (
-              <MaterialCommunityIcons name="plus" size={14} color={CATALOGUE_ACCENT} />
-            )}
-            <ThemeText style={[styles.addLabel, soldOut && styles.soldOutLabel]}>
-              {soldOut ? 'SOLD OUT' : 'ADD'}
-            </ThemeText>
-          </TouchableOpacity>
-        )}
-      </View>
+        <ThemeText style={styles.name} numberOfLines={2}>
+          {subgroup.name}
+        </ThemeText>
+        {offer ? (
+          <ThemeText style={styles.offer} numberOfLines={1}>
+            {offer}
+          </ThemeText>
+        ) : null}
+      </TouchableOpacity>
     );
   };
 
@@ -375,23 +208,31 @@ const DailyEssentials: React.FC = () => {
         <ThemeText style={styles.sectionTitle}>Daily Essentials</ThemeText>
       </View>
 
-      {groups.map(group => (
-        <View key={group.groupId} style={styles.group}>
-          <View style={styles.groupHead}>
-            <ThemeText style={styles.groupName} numberOfLines={1}>
-              {group.name}
-            </ThemeText>
-            {group.productCount > 0 ? (
-              <View style={styles.countBadge}>
-                <ThemeText style={styles.countText}>
-                  {group.productCount} {group.productCount === 1 ? 'item' : 'items'}
+      {groups.map(group => {
+        const accent = accentOf(group);
+        return (
+          <View key={group.groupId} style={styles.group}>
+            <View style={styles.groupHead}>
+              <View style={styles.groupTitleRow}>
+                <View style={[styles.accentBar, { backgroundColor: accent }]} />
+                <ThemeText style={styles.groupName} numberOfLines={1}>
+                  {group.name}
                 </ThemeText>
               </View>
-            ) : null}
+              {group.badgeText ? (
+                <View style={[styles.badge, { backgroundColor: tint(accent) }]}>
+                  <ThemeText style={[styles.badgeText, { color: accent }]}>
+                    {group.badgeText}
+                  </ThemeText>
+                </View>
+              ) : null}
+            </View>
+            <View style={styles.grid}>
+              {group.subgroups.map(subgroup => renderTile(subgroup, accent))}
+            </View>
           </View>
-          <View style={styles.grid}>{group.products.map(renderProduct)}</View>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 };
