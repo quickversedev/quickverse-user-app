@@ -15,7 +15,6 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 4;
-const LOGO_SIZE = 44;
 
 const StoreItem = React.memo(
   ({ vendor, onPress }: { vendor: Vendor; onPress: (v: Vendor) => void }) => {
@@ -43,7 +42,7 @@ const StoreItem = React.memo(
             <Image source={{ uri: logoUri }} style={styles.logo} resizeMode="cover" />
           ) : (
             <View style={styles.logoPlaceholder}>
-              <MaterialIcons name="store" size={22} color="#FFFFFF" />
+              <MaterialIcons name="store" size={32} color="#FFFFFF" />
             </View>
           )}
         </View>
@@ -162,11 +161,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     gap: 16 / 3,
   },
+  // The logo runs edge to edge across the top of the card, so the card clips it to its corners.
   card: {
     width: CARD_WIDTH,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    paddingVertical: 8,
+    overflow: 'hidden',
+    paddingBottom: 4,
     alignItems: 'center',
     elevation: 2,
     shadowColor: '#000',
@@ -177,13 +178,13 @@ const styles = StyleSheet.create({
   cardClosed: {
     opacity: 0.5,
   },
+  // Square, the card's full width: shop logos are square, so `cover` fills it without cropping them.
+  // Any shorter and the logos get cut; the card's height is trimmed in the text below instead.
   logoContainer: {
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
-    borderRadius: 10,
-    overflow: 'hidden',
+    width: CARD_WIDTH,
+    height: CARD_WIDTH,
     backgroundColor: '#1E3A5F',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   logo: {
     width: '100%',
@@ -205,7 +206,7 @@ const styles = StyleSheet.create({
   deliveryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 1,
+    marginTop: 0,
     gap: 3,
   },
   deliveryTime: {
