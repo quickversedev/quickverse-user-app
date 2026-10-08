@@ -15,6 +15,7 @@ import { triggerAddToCartHaptic } from '../../../utils/haptics';
 import { formatTimeToAMPM, getStoreStatus } from '../../../utils/storeUtils';
 import { ThemeText } from '../../common/theme/ThemeText';
 import { wholeRupees } from '../../../utils/price';
+import { useCartQuantity } from '../../../hooks/useCartQuantity';
 
 interface CategoryItem {
   id: string;
@@ -413,13 +414,13 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
   }, [activeCategories, selectedCategory]);
 
   // Cart Integration
-  const { addToCart, increment, decrement, carts, setActiveCart } = useCartStore();
+  const { addToCart, increment, decrement, setActiveCart } = useCartStore();
   const { authData } = useAuth();
   const storeStatus = React.useMemo(() => getStoreStatus(vendor), [vendor]);
   const isStoreActive = React.useMemo(() => storeStatus.isOpen, [storeStatus.isOpen]);
 
   const cartId = React.useMemo(() => `vendor_${vendor.shopId}`, [vendor.shopId]);
-  const cart = carts[cartId];
+  const cartQuantity = useCartQuantity();
 
   // Filter products
   const displayedProducts = React.useMemo(() => {
@@ -531,12 +532,10 @@ const CollectionShowcaseWidget: React.FC<CollectionShowcaseWidgetProps> = ({
     [isStoreActive, cartId, decrement, authData]
   );
 
+  // Through useCartQuantity: a grocery shop's lines live in the Essentials cart.
   const getProductQuantity = useCallback(
-    (sku: string) => {
-      if (!cart || !cart.products) return 0;
-      return cart.products[sku]?.quantity || 0;
-    },
-    [cart]
+    (sku: string) => cartQuantity(cartId, sku),
+    [cartQuantity, cartId]
   );
 
   const handleCategorySelect = useCallback(

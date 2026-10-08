@@ -25,6 +25,7 @@ import useVendorStore from '../../store/vendorStore';
 import { isOrderableShop } from '../../utils/storeUtils';
 import { useTheme } from '../../theme/ThemeContext';
 import { Product } from '../../types/product';
+import { useCartQuantity } from '../../hooks/useCartQuantity';
 
 const PAGE_SIZE = 20;
 
@@ -42,7 +43,8 @@ const TagProductsScreen: React.FC = () => {
   const { tagCode, tagLabel, shopCategory } = route.params;
 
   const { vendors, getVendorsByCategory } = useVendorStore();
-  const { addToCart, increment, decrement, carts } = useCartStore();
+  const { addToCart, increment, decrement } = useCartStore();
+  const cartQuantity = useCartQuantity();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,12 +180,10 @@ const TagProductsScreen: React.FC = () => {
     return rows;
   }, [products, vendorNameMap]);
 
+  // Through useCartQuantity: a grocery shop's lines live in the Essentials cart.
   const getProductQuantity = useCallback(
-    (product: Product) => {
-      const cartId = `vendor_${product.shopId}`;
-      return carts[cartId]?.products?.[product.sku]?.quantity || 0;
-    },
-    [carts]
+    (product: Product) => cartQuantity(product.shopId, product.sku),
+    [cartQuantity]
   );
 
   const handleAddToCart = useCallback(

@@ -32,6 +32,7 @@ import useCartStore from '../../store/cart/cartStore';
 import useVendorStore from '../../store/vendorStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Product } from '../../types/product';
+import { useCartQuantity } from '../../hooks/useCartQuantity';
 
 const CD_CACHE_TTL = 5 * 60 * 1000;
 const CD_CACHE_PREFIX = 'cd-cache-';
@@ -131,9 +132,14 @@ const CollectionDetailScreen: React.FC = () => {
   const searchInputRef = useRef<TextInput>(null);
 
   // Data state (from backend) — initialize from MMKV cache to avoid skeleton flash
-  const cached = useMemo(() => getCDCache(collection.id, collectionsVendorId), [collection.id, collectionsVendorId]);
+  const cached = useMemo(
+    () => getCDCache(collection.id, collectionsVendorId),
+    [collection.id, collectionsVendorId]
+  );
   const [products, setProducts] = useState<Product[]>(cached?.products ?? []);
-  const [apiCategories, setApiCategories] = useState<CollectionCategoryApi[]>(cached?.categories ?? []);
+  const [apiCategories, setApiCategories] = useState<CollectionCategoryApi[]>(
+    cached?.categories ?? []
+  );
   const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
 
@@ -287,15 +293,17 @@ const CollectionDetailScreen: React.FC = () => {
     return map;
   }, [products]);
 
+  const cartQuantity = useCartQuantity();
   const productQuantityMap = useMemo(() => {
     const map = new Map<string, number>();
     productBySku.forEach((product, sku) => {
       const targetCartId = `vendor_${product.shopId || collectionsVendorId}`;
-      const qty = carts[targetCartId]?.products?.[sku]?.quantity || 0;
+      // Through useCartQuantity: a grocery shop's lines live in the Essentials cart.
+      const qty = cartQuantity(targetCartId, sku);
       if (qty > 0) map.set(sku, qty);
     });
     return map;
-  }, [carts, productBySku, collectionsVendorId]);
+  }, [cartQuantity, productBySku, collectionsVendorId]);
 
   type RowProductListItem =
     | { type: 'header'; category: CategoryItem }

@@ -24,6 +24,7 @@ import VariantsModalSkeleton from '../Vendor/VariantsModalSkeleton';
 import AddButton from './AddButton';
 import QuantitySelector from './QuantitySelector';
 import { wholeRupees } from '../../../utils/price';
+import { useCartQuantity } from '../../../hooks/useCartQuantity';
 
 const { height } = Dimensions.get('window');
 
@@ -45,11 +46,11 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
   const { getColor, theme } = useTheme();
   const { authData } = useAuth();
   const { variants, loading, error, hasData, fetchVariants, clearError, reset } = useVariants();
-  const { addToCart, increment, decrement, carts } = useCartStore();
+  const { addToCart, increment, decrement } = useCartStore();
 
   // Create vendor-specific cart ID
   const cartId = `vendor_${vendor.shopId}`;
-  const cart = carts[cartId];
+  const cartQuantity = useCartQuantity();
 
   useEffect(() => {
     if (visible && product.primarySKU) {
@@ -95,9 +96,8 @@ const VariantsModal: React.FC<VariantsModalProps> = ({
     decrement(cartId, variantId, authData?.jwt || '', authData?.phone || '');
   };
 
-  const getVariantQuantity = (variantId: string) => {
-    return cart?.products[variantId]?.quantity || 0;
-  };
+  // Through useCartQuantity: a grocery shop's lines live in the Essentials cart.
+  const getVariantQuantity = (variantId: string) => cartQuantity(cartId, variantId);
 
   const handleRetry = () => {
     if (product.sku) {

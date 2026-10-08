@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import cartApiService, { TransformedCartData } from '../../services/cartApiService';
 import { storage } from '../../services/localStorage/storage.service';
+import { essentialsQuantityOf, isEssentialsShop, setEssentialsQuantity } from './essentialsRouting';
 
 // Custom storage adapter for MMKV
 const mmkvStorage = {
@@ -144,6 +145,25 @@ const useCartStore = create<CartStore>()(
         latestRequestIdPerCart: {},
 
         addToCart: async (cartId, product, jwtToken, phone) => {
+          // A grocery shop's product goes into the one Essentials cart, not a cart of its own.
+          if (isEssentialsShop(cartId)) {
+            await setEssentialsQuantity(
+              product.shopId,
+              product.sku,
+              essentialsQuantityOf(product.sku) + 1,
+              jwtToken,
+              phone,
+              {
+                sku: product.sku,
+                shopId: product.shopId,
+                name: product.name,
+                price: product.price,
+                mrp: product.mrp,
+                imageUrl: product.image,
+              }
+            );
+            return;
+          }
           const state = get();
           const prevCart = state.carts[cartId];
 
@@ -255,6 +275,17 @@ const useCartStore = create<CartStore>()(
         },
 
         increment: async (cartId, sku, jwtToken, phone) => {
+          // A line already in an older per-shop grocery cart stays there until it empties.
+          if (isEssentialsShop(cartId) && !get().carts[cartId]?.products?.[sku]) {
+            await setEssentialsQuantity(
+              cartId.replace('vendor_', ''),
+              sku,
+              essentialsQuantityOf(sku) + 1,
+              jwtToken,
+              phone
+            );
+            return;
+          }
           const state = get();
           const prevCart = state.carts[cartId];
           if (!prevCart) return;
@@ -314,6 +345,17 @@ const useCartStore = create<CartStore>()(
         },
 
         decrement: async (cartId, sku, jwtToken, phone) => {
+          // A line already in an older per-shop grocery cart stays there until it empties.
+          if (isEssentialsShop(cartId) && !get().carts[cartId]?.products?.[sku]) {
+            await setEssentialsQuantity(
+              cartId.replace('vendor_', ''),
+              sku,
+              essentialsQuantityOf(sku) - 1,
+              jwtToken,
+              phone
+            );
+            return;
+          }
           const state = get();
           const prevCart = state.carts[cartId];
           if (!prevCart) return;

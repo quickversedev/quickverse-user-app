@@ -8,6 +8,7 @@ import { Vendor } from '../../types/vendor';
 import useVendorCouponsStore from '../../store/coupons/vendorCouponsStore';
 import { getStoreStatus } from '../../utils/storeUtils';
 import { ThemeText } from '../common/theme/ThemeText';
+import useEssentialsCartStore from '../../store/cart/essentialsCartStore';
 
 /** Same green the category screens' vendor coupon badges use, kept in step by hand. */
 const COUPON_ACCENT = '#16A34A';
@@ -48,11 +49,15 @@ const VendorHeaderCard: React.FC<VendorHeaderCardProps> = ({
     return () => useVendorCouponsStore.getState().stopRotation();
   }, [vendor.shopId, vendor.category]);
 
+  // A grocery shop's offers don't apply in the Daily Essentials cart its products go into.
+  const essentialsCartOn = useEssentialsCartStore(s => s.enabled === true);
+  const isGroceryVendor = vendor.category?.toUpperCase() === 'GROCERY';
   const activeCoupon = useMemo(() => {
+    if (isGroceryVendor && essentialsCartOn) return null;
     const labels = couponsByVendor[vendor.shopId];
     if (!labels || labels.length === 0) return null;
     return labels[couponTick % labels.length];
-  }, [couponsByVendor, couponTick, vendor.shopId]);
+  }, [couponsByVendor, couponTick, vendor.shopId, isGroceryVendor, essentialsCartOn]);
 
   const storeStatus = getStoreStatus({
     storeActive: vendor.storeActive,

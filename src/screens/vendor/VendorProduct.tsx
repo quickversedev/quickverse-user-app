@@ -42,6 +42,8 @@ import { useTheme } from '../../theme/ThemeContext';
 import { Product } from '../../types/product';
 import { Vendor } from '../../types/vendor';
 import { formatTimeToAMPM, getStoreStatus } from '../../utils/storeUtils';
+import useEssentialsCartStore from '../../store/cart/essentialsCartStore';
+import { useCartQuantity } from '../../hooks/useCartQuantity';
 
 // Category type for local use (as expected by CategoryTabs)
 type Category = CategoryItem;
@@ -489,6 +491,15 @@ const VendorProductComponent: React.FC = () => {
     if (!isEssentials) setActiveCart(cartId);
   }, [cartId, setActiveCart, isEssentials]);
 
+  /**
+   * A grocery store's products go into the one Daily Essentials cart (store/cart/essentialsRouting),
+   * so its page shows that cart's bar instead of a cart of its own.
+   */
+  const essentialsCartOn = useEssentialsCartStore(s => s.enabled === true);
+  const usesEssentialsCart =
+    isEssentials || (essentialsCartOn && vendor.category?.toUpperCase() === 'GROCERY');
+  const cartQuantity = useCartQuantity();
+
   // Get item count for this cart
   const itemCount = useMemo(
     () => Object.values(carts[cartId]?.products || {}).reduce((sum, p) => sum + p.quantity, 0),
@@ -603,15 +614,14 @@ const VendorProductComponent: React.FC = () => {
 
   // Memoized product quantity map for O(1) lookup
   const productQuantityMap = useMemo(() => {
-    const cart = carts[cartId];
-    if (!cart?.products) return new Map<string, number>();
-
     const map = new Map<string, number>();
-    Object.entries(cart.products).forEach(([sku, product]) => {
-      map.set(sku, product.quantity);
+    products.forEach(product => {
+      // Through useCartQuantity: a grocery shop's lines live in the Essentials cart.
+      const quantity = cartQuantity(cartId, product.sku);
+      if (quantity > 0) map.set(product.sku, quantity);
     });
     return map;
-  }, [carts, cartId]);
+  }, [products, cartQuantity, cartId]);
 
   type RowProductListItem =
     | { type: 'header'; category: Category }
@@ -1657,8 +1667,8 @@ const VendorProductComponent: React.FC = () => {
               </View>
             )}
           {/* CartBar at the bottom — for Daily Essentials, the Essentials cart's own bar. */}
-          {isEssentials && <FloatingCartsStack />}
-          {!isEssentials && itemCount > 0 && (
+          {usesEssentialsCart && <FloatingCartsStack />}
+          {!usesEssentialsCart && itemCount > 0 && (
             <CartBar
               itemCount={itemCount}
               style={{

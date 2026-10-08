@@ -29,6 +29,7 @@ import ProductInfo from './ProductInfo';
 import QuantitySelector from './QuantitySelector';
 import SuggestedItems from './SuggestedItems';
 import { wholeRupees } from '../../../utils/price';
+import { useCartQuantity } from '../../../hooks/useCartQuantity';
 
 const { height, width } = Dimensions.get('window');
 
@@ -87,13 +88,12 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [loadingVariants, setLoadingVariants] = useState(false);
   const [variantsError, setVariantsError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const { addToCart, increment, decrement, carts } = useCartStore();
+  const { addToCart, increment, decrement } = useCartStore();
   const categories = useProductsStore(state => state.categories);
 
   // Create vendor-specific cart ID
   const cartId = `vendor_${vendor.shopId}`;
-  // Get current cart
-  const cart = carts[cartId];
+  const cartQuantity = useCartQuantity();
 
   // Get display values from selected variant or fallback to product
   const displayImageUrl = selectedVariant?.imageUrl || product.imageUrl || '';
@@ -119,7 +119,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     : '';
 
   // Get current quantity for this product
-  const currentQuantity = cart?.products[displaySku]?.quantity || 0;
+  // Through useCartQuantity: a grocery shop's lines live in the Essentials cart.
+  const currentQuantity = cartQuantity(cartId, displaySku);
 
   /**
    * Keep the product being viewed out of its own suggestions. Both SKUs matter:

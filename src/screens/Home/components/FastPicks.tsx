@@ -9,6 +9,7 @@ import { useAuth } from '../../../contexts/login/AuthProvider';
 import useCartStore from '../../../store/cart/cartStore';
 import useFastPicks from '../../../hooks/useFastPicks';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { useCartQuantity } from '../../../hooks/useCartQuantity';
 
 const COLUMNS = 4;
 const ROWS = 1;
@@ -117,18 +118,16 @@ const FastPicks = () => {
   const { theme } = useTheme();
   const { authData } = useAuth();
   const { fastPicks, loading } = useFastPicks();
-  const carts = useCartStore(s => s.carts);
   const addToCart = useCartStore(s => s.addToCart);
   const increment = useCartStore(s => s.increment);
   const decrement = useCartStore(s => s.decrement);
+  const cartQuantity = useCartQuantity();
   const visiblePicks = useMemo(() => fastPicks.slice(0, MAX_ITEMS), [fastPicks]);
 
+  // Through useCartQuantity: a grocery shop's lines live in the Essentials cart.
   const getQuantity = useCallback(
-    (pick: FastPick) => {
-      const cartId = `vendor_${pick.shopId}`;
-      return carts[cartId]?.products[pick.sku]?.quantity || 0;
-    },
-    [carts]
+    (pick: FastPick) => cartQuantity(pick.shopId, pick.sku),
+    [cartQuantity]
   );
 
   const handleAdd = useCallback(

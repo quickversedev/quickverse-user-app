@@ -9,6 +9,7 @@ import { Product } from '../../../types/product';
 import { ThemeText } from '../../common/theme/ThemeText';
 import QuantitySelector from './QuantitySelector';
 import { wholeRupees } from '../../../utils/price';
+import { useCartQuantity } from '../../../hooks/useCartQuantity';
 
 /**
  * "Pairs well with" suggestions, laid out as the QV PDP design has them: a two-up
@@ -99,13 +100,15 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
 }) => {
   const { getColor, theme } = useTheme();
   const { getProductsByCategories } = useProductsStore();
-  const { carts, activeCartId } = useCartStore();
+  const { activeCartId } = useCartStore();
+  const cartQuantity = useCartQuantity();
   const [suggestedProducts, setSuggestedProducts] = useState<SuggestedItem[]>([]);
 
   // Resolve items from provided products or categories
   useEffect(() => {
     const resolvedCartId = cartId ?? activeCartId;
-    const cartProducts = (resolvedCartId ? carts[resolvedCartId] : null)?.products || {};
+    // Through useCartQuantity: a grocery shop's lines live in the Essentials cart.
+    const quantityOf = (sku: string) => (resolvedCartId ? cartQuantity(resolvedCartId, sku) : 0);
 
     // Filtered before slicing, so excluding an item doesn't shrink the grid.
     const isExcluded = (sku: string) => (excludeSkus ? excludeSkus.includes(sku) : false);
@@ -116,7 +119,7 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
       price: p.sellingPrice,
       mrp: p.mrp,
       image: typeof p.imageUrl === 'string' ? p.imageUrl : '',
-      quantity: cartProducts[p.sku]?.quantity || 0,
+      quantity: quantityOf(p.sku),
     });
 
     const source = products && products.length > 0 ? products : null;
@@ -143,7 +146,15 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
     setSuggestedProducts([]);
     // NOTE: callers must pass a referentially stable `excludeSkus` (useMemo) —
     // a fresh array literal each render would re-run this effect indefinitely.
-  }, [products, categories, excludeSkus, getProductsByCategories, cartId, activeCartId, carts]);
+  }, [
+    products,
+    categories,
+    excludeSkus,
+    getProductsByCategories,
+    cartId,
+    activeCartId,
+    cartQuantity,
+  ]);
 
   const styles = useMemo(
     () =>

@@ -38,6 +38,7 @@ import BestSellersSection from './components/BestSellersSection';
 import useFeaturedProductsStore from '../../store/products/featuredProductsStore';
 import useVendorCouponsStore from '../../store/coupons/vendorCouponsStore';
 import useCatalogGroupsStore from '../../store/grocery/catalogGroupsStore';
+import useEssentialsCartStore from '../../store/cart/essentialsCartStore';
 
 type CategoryScreenRouteProp = RouteProp<RootStackParamList, 'Category'>;
 
@@ -222,13 +223,17 @@ const CategoryScreen = () => {
     return () => useVendorCouponsStore.getState().stopRotation();
   }, [isGrocery, categoryVendors]);
 
+  // Per-store offers don't apply in the one Daily Essentials cart every grocery shop feeds, so a
+  // grocery card shows none while that cart is on (its own coupons apply at checkout).
+  const essentialsCartOn = useEssentialsCartStore(s => s.enabled === true);
   const getActiveCoupon = React.useCallback(
     (shopId: string): string | null => {
+      if (isGrocery && essentialsCartOn) return null;
       const labels = couponsByVendor[shopId];
       if (!labels || labels.length === 0) return null;
       return labels[couponTick % labels.length];
     },
-    [couponsByVendor, couponTick]
+    [couponsByVendor, couponTick, isGrocery, essentialsCartOn]
   );
 
   // Cart Logic
