@@ -325,11 +325,6 @@ const CategoryScreen = () => {
       {/* Conditional Content if Vendors Exist */}
       {!hasNoVendors && (
         <>
-          {/* Curated grocery groups, from our own `qv.product_group` rather than the
-              proxied catalogue everything below it reads. Renders nothing when the
-              endpoint returns no groups. */}
-          {isGrocery && <DailyEssentials />}
-
           {/* Collections Grid (Grocery Only) */}
           {isGrocery && collectionsLoading && <CollectionsGridSkeleton />}
           {isGrocery && !collectionsLoading && collections.length > 0 && (
@@ -406,6 +401,12 @@ const CategoryScreen = () => {
               )}
             </>
           )}
+
+          {/* Curated grocery groups, from our own `qv.product_group` rather than the
+              proxied catalogue the stores above read. Below Browse stores, and outside
+              its block so it still shows when the collections grid replaces the stores.
+              Renders nothing when the endpoint returns no groups. */}
+          {isGrocery && <DailyEssentials />}
         </>
       )}
     </View>
@@ -454,8 +455,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  // Room for the floating cart / order bars, so the last row clears them (Home uses the same 130).
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 130,
   },
   headerRow: {
     flexDirection: 'row',

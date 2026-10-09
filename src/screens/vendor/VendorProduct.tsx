@@ -1096,6 +1096,9 @@ const VendorProductComponent: React.FC = () => {
           flex: 1,
           padding: 8,
         },
+        productListContent: {
+          paddingBottom: 130,
+        },
         productCard: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -1618,6 +1621,8 @@ const VendorProductComponent: React.FC = () => {
                   <Animated.View style={[styles.productList, { flex: 1 }]}>
                     <Animated.FlatList
                       ref={flatListRef}
+                      // Room for the floating cart / order bars, so the last row clears them.
+                      contentContainerStyle={styles.productListContent}
                       data={rowProductList}
                       keyExtractor={keyExtractor}
                       renderItem={renderItem}

@@ -61,8 +61,10 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({
       borderTopRightRadius: theme.borderRadius.md,
       borderTopLeftRadius: theme.borderRadius.md,
     },
+    // The bottom clears the floating cart / order bars, so the last category can be reached.
     scrollContent: {
-      paddingVertical: 8,
+      paddingTop: 8,
+      paddingBottom: 130,
     },
     item: {
       alignItems: 'center',
