@@ -958,7 +958,7 @@ const CollectionDetailScreen: React.FC = () => {
             />
           )}
         </View>
-        <FloatingCartsStack />
+        <FloatingCartsStack bottomOffset={30} />
       </SafeAreaView>
 
       {selectedProductForDetail && (

@@ -28,7 +28,16 @@ const ANIMATION_DURATION = 300;
 /** The login whose carts were last refreshed from the server, shared by every mounted stack. */
 let cartsRefreshedFor: string | null = null;
 
-const FloatingCartsStack: React.FC = () => {
+interface FloatingCartsStackProps {
+  /**
+   * Distance from the bottom on a screen without the tab bar (a store page, a tag or collection
+   * list): there it sits where a store's own cart bar does, rather than above a tab bar that is
+   * not there. Omit on tab screens, which place it above the tab bar.
+   */
+  bottomOffset?: number;
+}
+
+const FloatingCartsStack: React.FC<FloatingCartsStackProps> = ({ bottomOffset }) => {
   const { authData } = useAuth();
   const carts = useCartStore(state => state.carts);
   const allCarts = Object.values(carts);
@@ -230,7 +239,8 @@ const FloatingCartsStack: React.FC = () => {
   const showSecondCartBehind = !expanded && sortedCarts.length > 1;
 
   // Calculate the bottom position based on tab bar height
-  const baseBottom = tabBarContext?.fullTabBarHeight ? tabBarContext.fullTabBarHeight + 10 : 75;
+  const baseBottom =
+    bottomOffset ?? (tabBarContext?.fullTabBarHeight ? tabBarContext.fullTabBarHeight + 10 : 75);
 
   return (
     <>
@@ -247,9 +257,11 @@ const FloatingCartsStack: React.FC = () => {
           styles.container,
           {
             bottom: baseBottom,
-            transform: tabBarContext?.tabBarTranslateY
-              ? [{ translateY: tabBarContext.tabBarTranslateY }]
-              : [],
+            // No tab bar on such screens, so nothing to move with.
+            transform:
+              bottomOffset === undefined && tabBarContext?.tabBarTranslateY
+                ? [{ translateY: tabBarContext.tabBarTranslateY }]
+                : [],
           },
         ]}
         pointerEvents="box-none"

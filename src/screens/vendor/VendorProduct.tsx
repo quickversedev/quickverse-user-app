@@ -1672,7 +1672,7 @@ const VendorProductComponent: React.FC = () => {
               </View>
             )}
           {/* CartBar at the bottom — for Daily Essentials, the Essentials cart's own bar. */}
-          {usesEssentialsCart && <FloatingCartsStack />}
+          {usesEssentialsCart && <FloatingCartsStack bottomOffset={30} />}
           {!usesEssentialsCart && itemCount > 0 && (
             <CartBar
               itemCount={itemCount}

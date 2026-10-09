@@ -438,7 +438,7 @@ const TagProductsScreen: React.FC = () => {
             />
           )}
         </View>
-        <FloatingCartsStack />
+        <FloatingCartsStack bottomOffset={30} />
       </SafeAreaView>
 
       {selectedProductForDetail && mockVendorForModal && (
