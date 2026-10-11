@@ -641,16 +641,18 @@ const EssentialsCartView: React.FC = () => {
           />
         </AnimatedCard>
 
-        <AnimatedCard delay={200}>
+        // TODO: need to implement on backend
+        {/* <AnimatedCard delay={200}>
           <DeliveryInstructions
             selected={deliveryInstructions}
             onToggle={handleToggleInstruction}
           />
-        </AnimatedCard>
+        </AnimatedCard> */}
 
-        <AnimatedCard delay={250}>
+        // TODO: need to implement on backend
+        {/* <AnimatedCard delay={250}>
           <TipSelector tip={tipAmount} onChange={setTipAmount} />
-        </AnimatedCard>
+        </AnimatedCard> */}
 
         {showBill ? (
           <View onLayout={e => setBillOffsetY(e.nativeEvent.layout.y)}>

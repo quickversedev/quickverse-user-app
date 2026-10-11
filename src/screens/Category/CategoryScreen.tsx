@@ -320,7 +320,7 @@ const CategoryScreen = () => {
         comes back empty — so a category with nothing tagged shows nothing at all rather
         than a row of dead chips. Put the `!isGrocery &&` guard back to restrict it.
       */}
-      <TagStrip shopCategory={categoryName} />
+      {/* <TagStrip shopCategory={categoryName} /> */}
 
       {/* Conditional Content if Vendors Exist */}
       {!hasNoVendors && (

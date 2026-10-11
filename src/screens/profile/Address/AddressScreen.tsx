@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Icon from '@react-native-vector-icons/material-design-icons';
 import { ThemeText } from '../../../components/common/theme/ThemeText';
@@ -223,7 +223,7 @@ const AddressScreen = () => {
   );
 
   return (
-    <View
+    <SafeAreaView
       style={themedStyles.container}
       accessible={true}
       accessibilityLabel="Saved addresses screen"
@@ -303,7 +303,7 @@ const AddressScreen = () => {
           </>
         )}
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
