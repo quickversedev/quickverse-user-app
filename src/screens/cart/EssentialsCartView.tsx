@@ -53,6 +53,8 @@ import useConfigStore from '../../store/configStore';
 import usePricingStore from '../../store/pricingStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { Address } from '../../types/address';
+import FarFromYouDialog from '../../components/common/FarFromYouDialog';
+import { useFarFromYouCheck } from '../../hooks/useFarFromYouCheck';
 
 /**
  * The Daily Essentials cart, as the Cart screen shows it.
@@ -470,6 +472,8 @@ const EssentialsCartView: React.FC = () => {
   );
 
   const submittingRef = useRef(false);
+  const farFromYou = useFarFromYouCheck();
+
   const handleCheckout = useCallback(() => {
     if (!jwt) {
       setShowLoginPrompt(true);
@@ -682,11 +686,24 @@ const EssentialsCartView: React.FC = () => {
         address={formattedAddress}
         addressTag={selectedAddress?.tag || selectedAddress?.name || ''}
         onSelectAddress={() => setShowAddressModal(true)}
-        onCheckout={handleCheckout}
+        // Ask first when the delivery address is away from where the phone is.
+        onCheckout={() => farFromYou.check(addressId, selectedAddress?.coordinates, handleCheckout)}
         disabled={placing || resolving || summaryLoading}
         loading={placing}
         isGuest={!jwt}
         paymentMethod={paymentMethod}
+      />
+
+      <FarFromYouDialog
+        distanceKm={farFromYou.distanceKm}
+        subject={`Your delivery address${selectedAddress?.tag ? ` (${selectedAddress.tag})` : ''}`}
+        onCancel={() => {
+          farFromYou.cancel();
+          setShowAddressModal(true);
+        }}
+        onConfirm={farFromYou.confirm}
+        cancelText="Change address"
+        confirmText="Deliver here"
       />
 
       <AddressSelectionModal

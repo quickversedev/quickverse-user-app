@@ -74,6 +74,8 @@ import { formatDistanceKm, getDistanceInKm } from '../../utils/distance';
 import { formatTimeToAMPM, isStoreOpen } from '../../utils/storeUtils';
 import { wholeRupees } from '../../utils/price';
 import EssentialsCartView from './EssentialsCartView';
+import FarFromYouDialog from '../../components/common/FarFromYouDialog';
+import { useFarFromYouCheck } from '../../hooks/useFarFromYouCheck';
 
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
 type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
@@ -937,6 +939,8 @@ const StoreCartScreen: React.FC = () => {
   );
 
   const submittingRef = React.useRef(false);
+  const farFromYou = useFarFromYouCheck();
+
   const handleCheckout = useCallback(async () => {
     if (!authData?.jwt) {
       setShowLoginPromptModal(true);
@@ -1386,11 +1390,30 @@ const StoreCartScreen: React.FC = () => {
         address={getFormattedAddress()}
         addressTag={selectedSmartBizAddress?.tag || selectedSmartBizAddress?.name || ''}
         onSelectAddress={() => setShowSmartBizAddressModal(true)}
-        onCheckout={handleCheckout}
+        // Ask first when the delivery address is away from where the phone is.
+        onCheckout={() =>
+          farFromYou.check(
+            selectedSmartBizAddress?.addressID,
+            selectedSmartBizAddress?.coordinates,
+            handleCheckout
+          )
+        }
         disabled={isCheckoutDisabled}
         loading={isOrderLoading}
         isGuest={!authData?.jwt}
         paymentMethod={selectedPaymentOption}
+      />
+
+      <FarFromYouDialog
+        distanceKm={farFromYou.distanceKm}
+        subject={`Your delivery address${selectedSmartBizAddress?.tag ? ` (${selectedSmartBizAddress.tag})` : ''}`}
+        onCancel={() => {
+          farFromYou.cancel();
+          setShowSmartBizAddressModal(true);
+        }}
+        onConfirm={farFromYou.confirm}
+        cancelText="Change address"
+        confirmText="Deliver here"
       />
 
       <AddressSelectionModal
