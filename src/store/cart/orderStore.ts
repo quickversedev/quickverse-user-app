@@ -43,6 +43,20 @@ const normalizeStatus = (state?: string): Order['status'] => {
   }
 };
 
+/**
+ * How long an unfinished order still counts as live. A day is well past any delivery: an order
+ * older than that which never reached delivered/cancelled is stuck, not on its way, and is
+ * neither shown in the live-order bar nor polled (each poll is also passed on to SmartBiz).
+ */
+export const LIVE_ORDER_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+/** Unfinished and placed within LIVE_ORDER_MAX_AGE_MS. */
+export const isLiveOrder = (order: { status: string; orderDate: string }): boolean => {
+  if (order.status === 'delivered' || order.status === 'cancelled') return false;
+  const placed = new Date(order.orderDate).getTime();
+  return Number.isFinite(placed) && placed >= Date.now() - LIVE_ORDER_MAX_AGE_MS;
+};
+
 const useOrderStore = create<OrderStore>((set, get) => ({
   // Initial state
   orders: [],
@@ -581,9 +595,7 @@ const useOrderStore = create<OrderStore>((set, get) => ({
   },
 
   refreshInProgressStatuses: async (jwt: string, phone: string) => {
-    const inProgress = get().orders.filter(
-      o => o.status !== 'delivered' && o.status !== 'cancelled'
-    );
+    const inProgress = get().orders.filter(isLiveOrder);
     if (inProgress.length === 0) return;
 
     const updates = await Promise.all(

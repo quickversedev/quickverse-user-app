@@ -1,4 +1,4 @@
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -13,13 +13,16 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useAuth } from '../../../contexts/login/AuthProvider';
-import useOrderStore from '../../../store/cart/orderStore';
+import useOrderStore, { isLiveOrder, LIVE_ORDER_MAX_AGE_MS } from '../../../store/cart/orderStore';
 import { essentialsAsOrder, useEssentialsOrders } from '../../../hooks/useEssentialsOrders';
 import { displayStatusOf } from '../../../services/essentialsOrderService';
 import useVendorStore from '../../../store/vendorStore';
 import { useTheme } from '../../../theme/ThemeContext';
 // import type { Order } from '../../../types/order';
 import { AppNavigationProp } from '../../../types/navigation';
+
+/** How often the bar re-checks statuses — only while it is showing a live order. */
+const LIVE_POLL_MS = 60_000;
 
 interface OrderProgressBarProps {
   style?: ViewStyle;
@@ -118,8 +121,8 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
   // AppInitializer's list API data lacks orderMasterStatus, so statuses can be stale.
   const [statusesVerified, setStatusesVerified] = useState(false);
 
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
+  // Once per screen visit: the unfinished orders' true statuses. The Daily Essentials list is
+  // loaded on focus by useEssentialsOrders itself, so it is not fetched again here.
   useFocusEffect(
     useCallback(() => {
       const jwt = authData?.jwt || '';
@@ -127,29 +130,17 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
       if (!jwt || !phone) return;
 
       setStatusesVerified(false);
-
-      // Daily Essentials orders load alongside: until they have, a kirana's own order could show
-      // here as if it were the customer's order, shop and all.
-      const refresh = () =>
-        Promise.all([refreshInProgressStatuses(jwt, phone), refreshEssentialsOrders()])
+      const verify = () =>
+        refreshInProgressStatuses(jwt, phone)
           .then(() => setStatusesVerified(true))
           .catch(() => setStatusesVerified(true));
 
       const currentOrders = useOrderStore.getState().orders;
       if (currentOrders.length === 0) {
-        fetchOrders(jwt, phone, null, 5).then(refresh).catch(refresh);
+        fetchOrders(jwt, phone, null, 5).then(verify).catch(verify);
       } else {
-        refresh();
+        verify();
       }
-
-      pollingRef.current = setInterval(refresh, 30_000);
-
-      return () => {
-        if (pollingRef.current) {
-          clearInterval(pollingRef.current);
-          pollingRef.current = null;
-        }
-      };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authData?.jwt, authData?.phone])
   );
@@ -161,12 +152,12 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
    */
   const inProgressOrders = useMemo(() => {
     const plain = orders
-      .filter(o => o.status !== 'delivered' && o.status !== 'cancelled')
+      .filter(isLiveOrder)
       .filter(o => !kiranaOrderIds.has(o.orderId))
       .map(o => ({ ...o, essentialsOrderId: undefined as string | undefined }));
     // A day is well past any delivery; an order older than that is not "on its way" whatever its
     // last recorded state, and must not sit in this bar for good.
-    const since = Date.now() - 24 * 60 * 60 * 1000;
+    const since = Date.now() - LIVE_ORDER_MAX_AGE_MS;
     const essentials = essentialsOrders
       .filter(o => Number(o.createdAt) >= since)
       .filter(
@@ -175,6 +166,30 @@ const OrderProgressBar: React.FC<OrderProgressBarProps> = ({ style }) => {
       .map(o => ({ ...essentialsAsOrder(o), essentialsOrderId: o.orderId as string | undefined }));
     return [...essentials, ...plain];
   }, [orders, essentialsOrders, kiranaOrderIds]);
+
+  /**
+   * Keep the bar current while it shows a live order — and only then: with nothing in progress
+   * there is nothing to track, and a new order shows up on the next screen visit.
+   */
+  const isFocused = useIsFocused();
+  const hasLiveOrder = inProgressOrders.length > 0;
+  useEffect(() => {
+    const jwt = authData?.jwt || '';
+    const phone = authData?.phone || '';
+    if (!isFocused || !hasLiveOrder || !jwt || !phone) return;
+    const timer = setInterval(() => {
+      refreshInProgressStatuses(jwt, phone).catch(() => {});
+      refreshEssentialsOrders();
+    }, LIVE_POLL_MS);
+    return () => clearInterval(timer);
+  }, [
+    isFocused,
+    hasLiveOrder,
+    authData?.jwt,
+    authData?.phone,
+    refreshInProgressStatuses,
+    refreshEssentialsOrders,
+  ]);
 
   const scrollRef = useRef<ScrollView | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);

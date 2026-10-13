@@ -1158,7 +1158,7 @@ const OrderDetailsScreen = () => {
 
   // Polling interval ref
   const pollingIntervalRef = useRef<any>(null);
-  const POLLING_INTERVAL_MS = 15000; // 15 seconds (keeps the rider pin fresh)
+  const POLLING_INTERVAL_MS = 30000; // 30 seconds: order + rider pin, while the order is live
 
   // Live tracking data (rider info + coordinates, shop location, stage timestamps)
   const [trackingInfo, setTrackingInfo] = useState<OrderTrackingInfo | null>(null);
