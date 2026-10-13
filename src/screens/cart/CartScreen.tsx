@@ -1342,7 +1342,7 @@ const StoreCartScreen: React.FC = () => {
           />
         </AnimatedCard>
 
-        // TODO: need to implement on backend
+        {/* TODO: need to implement on backend */}
         {/* <AnimatedCard delay={200}>
           <DeliveryInstructions
             selected={deliveryInstructions}
@@ -1350,7 +1350,7 @@ const StoreCartScreen: React.FC = () => {
           />
         </AnimatedCard> */}
 
-        // TODO: need to implement on backend
+        {/* TODO: need to implement on backend */}
         {/* <AnimatedCard delay={250}>
           <TipSelector tip={tipAmount} onChange={setTipAmount} />
         </AnimatedCard> */}
