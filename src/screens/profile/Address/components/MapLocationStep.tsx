@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Keyboard,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -27,6 +28,7 @@ import {
 } from '../../../../services/api/olaLocationService';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { getRegionFromLocation } from '../utils/mapUtils';
+import { getDistanceInKm } from '../../../../utils/distance';
 
 const { width, height } = Dimensions.get('window');
 
@@ -35,6 +37,15 @@ interface MapLocationStepProps {
 }
 
 const PIN_SIZE = Math.max(48, width * 0.12);
+
+/**
+ * How far the pin may be from the phone's own GPS fix before the customer is asked to confirm.
+ * Above GPS jitter (tens of metres), well below "a different building down the road".
+ */
+const FAR_FROM_YOU_KM = 0.3;
+
+const formatDistance = (km: number) =>
+  km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(km < 10 ? 1 : 0)} km`;
 
 const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
   const { getColor, getTypography, theme } = useTheme();
@@ -235,10 +246,39 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     updateSelectedLocationAndAddress(newLocation);
   };
 
-  const handleLocationConfirm = () => {
+  /** Set while the "this isn't where you are" warning is open: the pin's distance from the phone. */
+  const [farFromYouKm, setFarFromYouKm] = useState<number | null>(null);
+
+  const proceedWithLocation = () => {
+    setFarFromYouKm(null);
     if (selectedLocation) {
       onLocationSelect(selectedLocation, selectedAddressDescription);
     }
+  };
+
+  /**
+   * Orders go to the pin, not to the phone. A pin far from where the customer is standing is
+   * often a slip (the map dragged by accident, a search result in the wrong area), so it is
+   * confirmed before the address is saved. Adding a friend's or office address stays one tap
+   * away. No GPS fix (permission denied, location off) means nothing to compare: no warning.
+   */
+  const handleLocationConfirm = () => {
+    if (!selectedLocation) return;
+    const hereLat = currentLocation.latitude;
+    const hereLng = currentLocation.longitude;
+    if (hereLat != null && hereLng != null) {
+      const km = getDistanceInKm(
+        Number(hereLat),
+        Number(hereLng),
+        selectedLocation.latitude,
+        selectedLocation.longitude
+      );
+      if (Number.isFinite(km) && km > FAR_FROM_YOU_KM) {
+        setFarFromYouKm(km);
+        return;
+      }
+    }
+    proceedWithLocation();
   };
 
   // Theme-driven styles
@@ -460,6 +500,63 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
     primaryButtonTextDisabled: {
       color: getColor('subText'),
     },
+    warningOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+    },
+    warningCard: {
+      width: '100%',
+      maxWidth: 360,
+      borderRadius: 16,
+      padding: 20,
+      alignItems: 'center',
+    },
+    warningIcon: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: '#FEF3C7',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 12,
+    },
+    warningTitle: {
+      fontSize: 17,
+      fontWeight: '700',
+      textAlign: 'center',
+    },
+    warningMessage: {
+      fontSize: 14,
+      lineHeight: 20,
+      textAlign: 'center',
+      marginTop: 8,
+    },
+    warningButtons: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: 20,
+      alignSelf: 'stretch',
+    },
+    warningButton: {
+      flex: 1,
+      borderRadius: 10,
+      borderWidth: 1,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    warningButtonPrimary: {
+      borderWidth: 0,
+    },
+    warningButtonText: {
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    warningButtonTextPrimary: {
+      color: '#FFFFFF',
+    },
     currentLocationDot: {
       width: 24,
       height: 24,
@@ -490,49 +587,48 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
       >
         {/* Map with rounded top corners */}
         <View style={themedStyles.mapContainer}>
-              <MapView
-                ref={mapRef}
-                style={themedStyles.map}
-                initialRegion={region}
-                onRegionChangeComplete={handleRegionChangeComplete}
-                showsUserLocation={true}
-                showsMyLocationButton={false}
-                onPress={() => {
-                  Keyboard.dismiss();
-                  if (searchResults.length > 0) {
-                    setSearchResults([]);
-                  }
+          <MapView
+            ref={mapRef}
+            style={themedStyles.map}
+            initialRegion={region}
+            onRegionChangeComplete={handleRegionChangeComplete}
+            showsUserLocation={true}
+            showsMyLocationButton={false}
+            onPress={() => {
+              Keyboard.dismiss();
+              if (searchResults.length > 0) {
+                setSearchResults([]);
+              }
+            }}
+          >
+            {/* Show current location marker if available */}
+            {currentLocation.latitude && currentLocation.longitude && (
+              <Marker
+                coordinate={{
+                  latitude: currentLocation.latitude,
+                  longitude: currentLocation.longitude,
                 }}
+                title="Current Location"
+                description="Your current location"
+                anchor={{ x: 0.5, y: 0.5 }}
+                zIndex={10}
+                tracksViewChanges={false}
               >
-                {/* Show current location marker if available */}
-                {currentLocation.latitude && currentLocation.longitude && (
-                  <Marker
-                    coordinate={{
-                      latitude: currentLocation.latitude,
-                      longitude: currentLocation.longitude,
-                    }}
-                    title="Current Location"
-                    description="Your current location"
-                    anchor={{ x: 0.5, y: 0.5 }}
-                    zIndex={10}
-                    tracksViewChanges={false}
-                  >
-                    <View style={themedStyles.currentLocationDot} />
-                  </Marker>
-                )}
-
-              </MapView>
-              {/* Center Pin Overlay - Only show when no search results */}
-              {searchResults.length === 0 && (
-                <View pointerEvents="none" style={themedStyles.centerPinContainer}>
-                  <MaterialCommunityIcons
-                    name="map-marker"
-                    size={PIN_SIZE}
-                    color="#E53935"
-                    style={themedStyles.centerPinOffset}
-                  />
-                </View>
-              )}
+                <View style={themedStyles.currentLocationDot} />
+              </Marker>
+            )}
+          </MapView>
+          {/* Center Pin Overlay - Only show when no search results */}
+          {searchResults.length === 0 && (
+            <View pointerEvents="none" style={themedStyles.centerPinContainer}>
+              <MaterialCommunityIcons
+                name="map-marker"
+                size={PIN_SIZE}
+                color="#E53935"
+                style={themedStyles.centerPinOffset}
+              />
+            </View>
+          )}
           {/* Search Bar Overlay */}
           <View pointerEvents="box-none" style={themedStyles.searchBarContainer}>
             <View style={themedStyles.searchBar}>
@@ -692,8 +788,6 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
                 )}
               </View>
             )}
-
-
           </View>
 
           <View style={themedStyles.buttonContainer}>
@@ -723,6 +817,55 @@ const MapLocationStep = ({ onLocationSelect }: MapLocationStepProps) => {
           </View>
         </View>
       </View>
+      <Modal
+        visible={farFromYouKm !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFarFromYouKm(null)}
+      >
+        <View style={themedStyles.warningOverlay}>
+          <View style={[themedStyles.warningCard, { backgroundColor: getColor('card') }]}>
+            <View style={themedStyles.warningIcon}>
+              <MaterialCommunityIcons name="map-marker-alert-outline" size={28} color="#D97706" />
+            </View>
+            <Text style={[themedStyles.warningTitle, { color: getColor('text') }]}>
+              This isn't your current location
+            </Text>
+            <Text style={[themedStyles.warningMessage, { color: getColor('subText') }]}>
+              The pin is {farFromYouKm !== null ? formatDistance(farFromYouKm) : ''} from where you
+              are now. Orders will be delivered to the pin, so make sure it's on the right place.
+            </Text>
+            <View style={themedStyles.warningButtons}>
+              <TouchableOpacity
+                style={[themedStyles.warningButton, { borderColor: getColor('border') }]}
+                onPress={() => setFarFromYouKm(null)}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+              >
+                <Text style={[themedStyles.warningButtonText, { color: getColor('text') }]}>
+                  Change pin
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  themedStyles.warningButton,
+                  themedStyles.warningButtonPrimary,
+                  { backgroundColor: getColor('primary') },
+                ]}
+                onPress={proceedWithLocation}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+              >
+                <Text
+                  style={[themedStyles.warningButtonText, themedStyles.warningButtonTextPrimary]}
+                >
+                  Use this address
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <MapOnboardingOverlay
         step={onboardingStep}
         visible={showOnboarding}
