@@ -123,6 +123,7 @@ android {
 
 // Force specific Google Play Services versions project-wide to avoid runtime mismatches
 configurations.all {
+    exclude group: 'com.android.support'
     resolutionStrategy {
         force "com.google.android.gms:play-services-base:18.4.0"
         force "com.google.android.gms:play-services-maps:19.1.0"

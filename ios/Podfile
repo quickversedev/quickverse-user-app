@@ -22,7 +22,9 @@ setup_permissions([
   'LocationWhenInUse',
   'Notifications',
   'PhotoLibrary',
-  'Camera'
+  'Camera',
+  'Microphone',
+  'SpeechRecognition'
 ])
 
 linkage = ENV['USE_FRAMEWORKS']

@@ -265,6 +265,13 @@ const CategoryScreen = () => {
     navigation.navigate('Search', { restrictCategory });
   }, [navigation, restrictCategory]);
 
+  const handleVoiceSearch = React.useCallback(
+    (query: string) => {
+      navigation.navigate('Search', { restrictCategory, query });
+    },
+    [navigation, restrictCategory]
+  );
+
   /**
    * Quick Search chip tap. Sends restrictCategory alongside the query — it is
    * threaded through several filters in useSearch, so without it a Grocery
@@ -297,6 +304,7 @@ const CategoryScreen = () => {
         <View style={styles.searchFlex}>
           <SearchBar
             onPress={handleSearchPress}
+            onVoiceSearch={handleVoiceSearch}
             placeholder={isGrocery ? "Search for 'Milk'" : "Search for 'Shawarma'"}
           />
         </View>

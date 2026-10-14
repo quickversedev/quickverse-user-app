@@ -79,6 +79,14 @@ const HomeMainScreen_2 = React.memo(() => {
     navigation.navigate('Search');
   }, [navigation]);
 
+  const handleVoiceSearch = useCallback(
+    (query: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (navigation as any).navigate('Search', { query });
+    },
+    [navigation]
+  );
+
   /**
    * Pull-to-refresh. This screen had none, and the only other refresh path is
    * useAppStateRefresh's 100-second background threshold — far too coarse for
@@ -154,7 +162,7 @@ const HomeMainScreen_2 = React.memo(() => {
               <>
                 <View style={styles.searchCarouselContainer}>
                   <View style={styles.searchOverlay}>
-                    <SearchBar onPress={handleSearchPress} />
+                    <SearchBar onPress={handleSearchPress} onVoiceSearch={handleVoiceSearch} />
                   </View>
                   <HomePromotionCarousel />
                 </View>

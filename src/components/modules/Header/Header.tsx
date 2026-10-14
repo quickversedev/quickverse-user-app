@@ -30,6 +30,11 @@ export const Header: React.FC<HeaderProps> = ({ translateY, hiddenSectionsOpacit
     navigation.navigate('Search' as never);
   };
 
+  const handleVoiceSearch = (query: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (navigation as any).navigate('Search', { query });
+  };
+
   return (
     <Animated.View
       style={[
@@ -68,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({ translateY, hiddenSectionsOpacit
         <View style={styles.visibleSections}>
           {/* Section 2: Search Bar */}
           <View style={styles.searchSection}>
-            <SearchBar onPress={handleSearchPress} />
+            <SearchBar onPress={handleSearchPress} onVoiceSearch={handleVoiceSearch} />
           </View>
 
           {/* Section 4: Navigation Tabs */}

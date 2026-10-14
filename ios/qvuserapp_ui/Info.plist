@@ -43,6 +43,10 @@
     </dict>
     <key>NSCameraUsageDescription</key>
     <string>Allow camera access to attach a photo to feedback</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>QuickVerse needs microphone access to enable voice search so you can find products by speaking.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>QuickVerse uses speech recognition to convert your voice into search text.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>QuickVerse needs access to your photo library so you can upload images when required.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

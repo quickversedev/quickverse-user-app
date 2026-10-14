@@ -11,6 +11,7 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { useSearchSuggestions } from '../../hooks/useSearchSuggestions';
 import { useTheme } from '../../theme/ThemeContext';
 import SearchSuggestions from './SearchSuggestions';
+import VoiceSearchModal from './VoiceSearchModal';
 
 interface SearchHeaderProps {
   searchQuery: string;
@@ -42,6 +43,7 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
   const searchInputRef = useRef<TextInput>(null);
   // Removed focus tracking; we control visibility with showSuggestions
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [voiceModalVisible, setVoiceModalVisible] = useState(false);
 
   // Use search suggestions hook
   const { suggestions, isLoading, clearSuggestions } = useSearchSuggestions(searchQuery);
@@ -177,12 +179,32 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
               <MaterialCommunityIcons name="close-circle" size={20} color={getColor('subText')} />
             </TouchableOpacity>
           )}
+          {searchQuery.length === 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={() => setVoiceModalVisible(true)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <MaterialCommunityIcons name="microphone-outline" size={20} color={getColor('subText')} />
+            </TouchableOpacity>
+          )}
         </View>
         <SearchSuggestions
           suggestions={suggestions}
           isLoading={isLoading}
           onSuggestionPress={handleSuggestionPress}
           visible={showSuggestions && searchQuery.length > 0 && suggestions.length > 0}
+        />
+        <VoiceSearchModal
+          visible={voiceModalVisible}
+          onClose={() => setVoiceModalVisible(false)}
+          onSearch={(query) => {
+            setVoiceModalVisible(false);
+            onSearchChange(query);
+            if (onSuggestionPress) {
+              onSuggestionPress(query);
+            }
+          }}
         />
       </View>
     </TouchableWithoutFeedback>
