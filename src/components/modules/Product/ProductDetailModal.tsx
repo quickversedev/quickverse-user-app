@@ -64,6 +64,25 @@ interface ProductDetailModalProps {
   onClose: () => void;
   product: Product;
   vendor: Vendor;
+  /**
+   * Daily Essentials: products go into the one Essentials cart, never a store cart, so the caller
+   * supplies the cart handlers, the category line, the suggestions and the delivery time. Pack
+   * sizes are a single shop's and stay hidden; the kirana is never named.
+   */
+  essentials?: EssentialsDetail;
+}
+
+export interface EssentialsDetail {
+  /** `GROUP • SUBGROUP`, in place of the store category breadcrumb. */
+  breadcrumb: string;
+  /** The product's kirana's preparation time, without its name. */
+  deliveryTime?: string;
+  /** Other products of the group, its own subgroup first. */
+  suggestions: Product[];
+  quantityOf: (sku: string) => number;
+  add: (sku: string) => void;
+  increment: (sku: string) => void;
+  decrement: (sku: string) => void;
 }
 
 const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -71,6 +90,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   product,
   vendor,
+  essentials,
 }) => {
   const storeStatus = getStoreStatus({
     storeActive: vendor.storeActive !== false,
@@ -120,7 +140,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   // Get current quantity for this product
   // Through useCartQuantity: a grocery shop's lines live in the Essentials cart.
-  const currentQuantity = cartQuantity(cartId, displaySku);
+  const currentQuantity = essentials
+    ? essentials.quantityOf(displaySku)
+    : cartQuantity(cartId, displaySku);
 
   /**
    * Keep the product being viewed out of its own suggestions. Both SKUs matter:
@@ -162,7 +184,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
    * resolves to no category — which is what happens in collection mode, where the
    * division ids come from SmartPOS rather than the QuickVerse catalogue.
    */
-  const breadcrumb = useMemo(() => {
+  const storeBreadcrumb = useMemo(() => {
     const own = categories.find(c => c.id === product.division);
     if (!own) return '';
     const parent = own.parentCategory
@@ -170,6 +192,11 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       : undefined;
     return [parent?.name, own.name].filter(Boolean).join(' • ');
   }, [categories, product.division]);
+  const breadcrumb = essentials ? essentials.breadcrumb : storeBreadcrumb;
+
+  // The delivery line: a store names itself; an Essentials order never names its kiranas.
+  const deliveryTime = essentials ? essentials.deliveryTime : vendor.preparationTime;
+  const deliveryFrom = essentials ? 'Daily Essentials' : vendor.name;
 
   const displayDiscount = selectedVariant?.discount ?? product.discount ?? 0;
   // Shown in whole rupees, as the bill charges them; the raw values still seed the cart line.
@@ -182,7 +209,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const hasPackSizes = variants.length > 1;
 
   useEffect(() => {
-    if (visible) {
+    if (visible && !essentials) {
       fetchVariants();
     }
   }, [visible]);
@@ -217,6 +244,10 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   // Cart handlers
   const handleAddToCart = () => {
     if (isUnavailable) return;
+    if (essentials) {
+      essentials.add(displaySku);
+      return;
+    }
     addToCart(
       cartId,
       {
@@ -246,11 +277,19 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   const handleIncrement = () => {
     if (isUnavailable) return;
+    if (essentials) {
+      essentials.increment(displaySku);
+      return;
+    }
     increment(cartId, displaySku, authData?.jwt || '', authData?.phone || '');
   };
 
   const handleDecrement = () => {
     if (isUnavailable) return;
+    if (essentials) {
+      essentials.decrement(displaySku);
+      return;
+    }
     decrement(cartId, displaySku, authData?.jwt || '', authData?.phone || '');
   };
 
@@ -610,6 +649,10 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   const handleSuggestedItemAdd = (item: SuggestedItem) => {
+    if (essentials) {
+      essentials.add(item.id);
+      return;
+    }
     const cartProduct = {
       sku: item.id,
       shopId: vendor.shopId,
@@ -623,10 +666,18 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   const handleSuggestedItemIncrement = (item: SuggestedItem) => {
+    if (essentials) {
+      essentials.increment(item.id);
+      return;
+    }
     increment(cartId, item.id, authData?.jwt || '', authData?.phone || '');
   };
 
   const handleSuggestedItemDecrement = (item: SuggestedItem) => {
+    if (essentials) {
+      essentials.decrement(item.id);
+      return;
+    }
     decrement(cartId, item.id, authData?.jwt || '', authData?.phone || '');
   };
 
@@ -857,18 +908,16 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               store is the vendor being ordered from. The design also names the
               delivery address here; that lives in the address store, not on this
               modal's props, so it is left out rather than invented. */}
-          {vendor.preparationTime ? (
+          {deliveryTime ? (
             <View style={styles.etaBanner}>
               <View style={styles.etaIcon}>
                 <MaterialCommunityIcons name="flash" size={18} color={getColor('white')} />
               </View>
               <View style={styles.ctaPriceBlock}>
-                <ThemeText style={styles.etaTitle}>
-                  Delivering in {vendor.preparationTime}
-                </ThemeText>
-                {vendor.name ? (
+                <ThemeText style={styles.etaTitle}>Delivering in {deliveryTime}</ThemeText>
+                {deliveryFrom ? (
                   <ThemeText variant="small" color={getColor('subText')}>
-                    from {vendor.name}
+                    from {deliveryFrom}
                   </ThemeText>
                 ) : null}
               </View>
@@ -904,7 +953,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           </View>
 
           <SuggestedItems
-            categories={product.division || ''}
+            categories={essentials ? undefined : product.division || ''}
+            products={essentials?.suggestions}
+            quantityOf={essentials?.quantityOf}
             excludeSkus={excludeSkus}
             cartId={cartId}
             onItemPress={handleSuggestedItemPress}
@@ -938,7 +989,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </ThemeText>
                 ) : null}
               </View>
-              {vendor.name ? (
+              {deliveryFrom ? (
                 <View style={styles.ctaStoreRow}>
                   <MaterialCommunityIcons
                     name="storefront-outline"
@@ -946,8 +997,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     color={getColor('subText')}
                   />
                   <ThemeText variant="small" color={getColor('subText')}>
-                    {vendor.name}
-                    {vendor.preparationTime ? ` (${vendor.preparationTime})` : ''}
+                    {deliveryFrom}
+                    {deliveryTime ? ` (${deliveryTime})` : ''}
                   </ThemeText>
                 </View>
               ) : null}

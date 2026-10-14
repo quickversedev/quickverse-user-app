@@ -74,6 +74,8 @@ interface SuggestedItemsProps {
    * or none while the item is in fact in the one being added to.
    */
   cartId?: string;
+  /** Overrides the cart lookup: Daily Essentials quantities live in the Essentials cart. */
+  quantityOf?: (sku: string) => number;
   onItemPress: (item: SuggestedItem) => void;
   onAdd: (item: SuggestedItem) => void;
   onIncrement: (item: SuggestedItem) => void;
@@ -92,6 +94,7 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
   products,
   excludeSkus,
   cartId,
+  quantityOf: quantityOverride,
   onItemPress,
   onAdd,
   onIncrement,
@@ -108,7 +111,12 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
   useEffect(() => {
     const resolvedCartId = cartId ?? activeCartId;
     // Through useCartQuantity: a grocery shop's lines live in the Essentials cart.
-    const quantityOf = (sku: string) => (resolvedCartId ? cartQuantity(resolvedCartId, sku) : 0);
+    const quantityOf = (sku: string) =>
+      quantityOverride
+        ? quantityOverride(sku)
+        : resolvedCartId
+          ? cartQuantity(resolvedCartId, sku)
+          : 0;
 
     // Filtered before slicing, so excluding an item doesn't shrink the grid.
     const isExcluded = (sku: string) => (excludeSkus ? excludeSkus.includes(sku) : false);
@@ -154,6 +162,7 @@ const SuggestedItems: React.FC<SuggestedItemsProps> = ({
     cartId,
     activeCartId,
     cartQuantity,
+    quantityOverride,
   ]);
 
   const styles = useMemo(

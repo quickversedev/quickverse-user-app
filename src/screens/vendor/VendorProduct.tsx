@@ -21,7 +21,9 @@ import { Images } from '../../assets';
 import CartBar from '../../components/common/Cart/CartBar';
 import FloatingCartsStack from '../../components/common/Cart/FloatingCartsStack';
 import ProductCard from '../../components/modules/Product/ProductCard';
-import ProductDetailModal from '../../components/modules/Product/ProductDetailModal';
+import ProductDetailModal, {
+  EssentialsDetail,
+} from '../../components/modules/Product/ProductDetailModal';
 import VariantsModal from '../../components/modules/Product/VariantsModal';
 import VendorProductSkeleton from '../../components/modules/Vendor/VendorProductSkeleton';
 import CategoryHeader from '../../components/vendor/CategoryHeader';
@@ -43,6 +45,7 @@ import { Product } from '../../types/product';
 import { Vendor } from '../../types/vendor';
 import { formatTimeToAMPM, getStoreStatus } from '../../utils/storeUtils';
 import useEssentialsCartStore from '../../store/cart/essentialsCartStore';
+import useVendorStore from '../../store/vendorStore';
 import { useCartQuantity } from '../../hooks/useCartQuantity';
 
 // Category type for local use (as expected by CategoryTabs)
@@ -967,6 +970,50 @@ const VendorProductComponent: React.FC = () => {
     setSelectedProductForDetail(null);
   }, []);
 
+  /**
+   * The detail modal's Daily Essentials input: the same page a store product gets, fed from the
+   * group instead — the group and subgroup as its category line, the rest of the group as its
+   * suggestions (own subgroup first), and the delivery time of the product's kirana, unnamed.
+   */
+  const vendors = useVendorStore(s => s.vendors);
+  const essentialsDetail = useMemo((): EssentialsDetail | undefined => {
+    if (!isEssentials || !selectedProductForDetail) return undefined;
+    const selected = selectedProductForDetail;
+    const subgroup = categories.find(c => c.id === selected.division)?.name;
+    const groupName = essentialsCatalogue.group?.name ?? essentials?.title;
+    const shopId = essentialsCatalogue.originals.get(selected.sku)?.shopId;
+    const bySku = (sku: string) => products.find(p => p.sku === sku);
+    const inStock = products.filter(p => p.inStock !== false);
+    return {
+      breadcrumb: [groupName, subgroup].filter(Boolean).join(' • '),
+      deliveryTime: vendors.find(v => v.shopId === shopId)?.preparationTime || undefined,
+      suggestions: [
+        ...inStock.filter(p => p.division === selected.division),
+        ...inStock.filter(p => p.division !== selected.division),
+      ],
+      quantityOf: getProductQuantity,
+      add: sku => {
+        const product = bySku(sku);
+        if (product) handleAddToCart(product);
+      },
+      increment: handleIncrement,
+      decrement: handleDecrement,
+    };
+  }, [
+    isEssentials,
+    selectedProductForDetail,
+    categories,
+    essentialsCatalogue.group?.name,
+    essentials?.title,
+    essentialsCatalogue.originals,
+    products,
+    vendors,
+    getProductQuantity,
+    handleAddToCart,
+    handleIncrement,
+    handleDecrement,
+  ]);
+
   const handleProductPress = useCallback((product: Product) => {
     setSelectedProductForDetail(product);
     setProductDetailModalVisible(true);
@@ -1402,8 +1449,7 @@ const VendorProductComponent: React.FC = () => {
                 onDecrement={() => handleDecrement(product.sku)}
                 disabled={!isStoreActive || !product.inStock}
                 showVariantsCount={true}
-                // The detail modal adds to a store cart; Essentials products go only to theirs.
-                onPress={isEssentials ? undefined : () => handleProductPress(product)}
+                onPress={() => handleProductPress(product)}
                 isStoreClosed={!isStoreActive}
                 // The product the user arrived here searching for. The row sort already
                 // pins it to the top of its category; this keeps it visually findable now
@@ -1429,7 +1475,6 @@ const VendorProductComponent: React.FC = () => {
       MemoizedProductCard,
       styles.productRow,
       getColor,
-      isEssentials,
     ]
   );
 
@@ -1706,6 +1751,8 @@ const VendorProductComponent: React.FC = () => {
           onClose={handleCloseProductDetailModal}
           product={selectedProductForDetail}
           vendor={vendorForModals}
+          // Essentials products go only into the Essentials cart, through the grid's own handlers.
+          essentials={essentialsDetail}
         />
       )}
     </>
