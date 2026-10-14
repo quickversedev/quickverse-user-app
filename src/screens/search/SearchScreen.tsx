@@ -1,6 +1,6 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, ToastAndroid, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import SectionDivider from '../../components/common/SectionDivider';
 import VendorCard from '../../components/modules/Vendor/VendorCard';
@@ -126,10 +126,19 @@ const SearchScreen: React.FC = () => {
     (navigation as any).navigate('VendorProduct', { vendor });
   };
 
-  const handleProductPress = (product: Product) => {
-    // Find the vendor for this product
-    //console.log('product', product);
-    const vendor = getVendorById(product?.shopId);
+  /**
+   * Search covers more shops than the nearby list on Home (`vendorStore.vendors`), so a result's
+   * shop may not be in it — then it is fetched by id, as the Pharmacy card does. A shop that
+   * cannot be loaded says so rather than leaving the tap doing nothing.
+   */
+  const handleProductPress = async (product: Product) => {
+    if (!product?.shopId) return;
+    let vendor = getVendorById(product.shopId);
+    if (!vendor) {
+      await useVendorStore.getState().fetchVendorById(product.shopId);
+      const fetched = useVendorStore.getState().selectedVendor;
+      vendor = fetched?.shopId === product.shopId ? fetched : null;
+    }
 
     if (vendor) {
       // Navigate to vendor product page with the product name pre-filled in search
@@ -138,10 +147,10 @@ const SearchScreen: React.FC = () => {
         vendor,
         searchQuery: product.name,
       });
+    } else if (Platform.OS === 'android') {
+      ToastAndroid.show('This store is not available right now', ToastAndroid.SHORT);
     } else {
-      // Fallback: just log if vendor not found
-      // eslint-disable-next-line no-console
-      //console.log('Vendor not found for product:', product.name);
+      Alert.alert('Store not available', 'This store is not available right now.');
     }
   };
 
